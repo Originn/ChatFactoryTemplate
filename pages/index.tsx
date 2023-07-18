@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/accordion';
 
 export default function Home() {
+  const firstSourceRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +41,13 @@ export default function Home() {
   useEffect(() => {
     textAreaRef.current?.focus();
   }, []);
+
+   // Add this useEffect hook to scroll down whenever messages change
+   useEffect(() => {
+    if (firstSourceRef.current) {
+      firstSourceRef.current.scrollIntoView();
+    }
+  }, [messages]);
 
   //handle form submission
   async function handleSubmit(e: any) {
@@ -185,7 +193,7 @@ export default function Home() {
                             className="flex-col"
                           >
                             {message.sourceDocs.map((doc, index) => (
-                              <div key={`messageSourceDocs-${index}`}>
+                              <div key={`messageSourceDocs-${index}`} ref={index === 0 ? firstSourceRef : null}>
                                 <AccordionItem value={`item-${index}`}>
                                   <AccordionTrigger>
                                     <h3>Source {index + 1}</h3>
