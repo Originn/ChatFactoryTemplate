@@ -1,0 +1,4 @@
+# .slugignore
+
+# ignore all files in the `docs` directory
+docs/*
