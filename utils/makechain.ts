@@ -18,6 +18,9 @@ Helpful answer in markdown:`;
 
 const TEMPRATURE = parseFloat(process.env.TEMPRATURE || "0");
 
+console.log('TEMPRATURE:', TEMPRATURE);
+console.log('QA_PROMPT:', QA_PROMPT);
+
 export const makeChain = (vectorstore: PineconeStore) => {
   const model = new OpenAI({
     temperature: TEMPRATURE, // increase temepreature to get more creative answers
