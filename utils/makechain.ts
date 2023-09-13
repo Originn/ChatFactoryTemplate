@@ -2,6 +2,8 @@ import { OpenAI } from 'langchain/llms/openai';
 import { PineconeStore } from 'langchain/vectorstores/pinecone';
 import { ConversationalRetrievalQAChain } from 'langchain/chains';
 
+const MODEL_NAME = process.env.MODEL_NAME;
+
 const CONDENSE_PROMPT = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
 
 Chat History:
@@ -21,7 +23,7 @@ Helpful answer in markdown:`;
 export const makeChain = (vectorstore: PineconeStore) => {
   const model = new OpenAI({
     temperature: 0, // increase temepreature to get more creative answers
-    modelName: 'gpt-3.5-turbo', //change this to gpt-4 if you have access
+    modelName: MODEL_NAME, 
   });
 
   const chain = ConversationalRetrievalQAChain.fromLLM(
