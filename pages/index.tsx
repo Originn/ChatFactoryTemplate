@@ -146,6 +146,7 @@ export default function Home() {
           message: question,
         },
       ],
+      history: [...state.history, [question, ""]],
     }));
 
     setLoading(true);
