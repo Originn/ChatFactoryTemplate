@@ -1,3 +1,5 @@
+//server.cjs
+
 const { createServer } = require("http");
 const { parse } = require("url");
 const { init } = require("./socketServer.cjs");
@@ -24,8 +26,9 @@ app.prepare().then(() => {
     });
   });
 
-  server.listen(3000, (err) => {
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, (err) => {
     if (err) throw err;
-    console.log("> Ready on http://localhost:3000");
+    console.log(`> Ready on http://localhost:${PORT}`);
   });
 });
