@@ -6,7 +6,7 @@ import { ConversationalRetrievalQAChain } from 'langchain/chains';
 import { CallbackManager } from "langchain/callbacks";
 
 const MODEL_NAME = process.env.MODEL_NAME;
-
+const nonStreamingModel = new OpenAI({});
 const CONDENSE_PROMPT = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
 
 Chat History:
@@ -40,10 +40,13 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     model,
     vectorstore.asRetriever(),
     {
+      questionGeneratorChainOptions: {
+        llm: nonStreamingModel,
+      },
       qaTemplate: QA_PROMPT,
       questionGeneratorTemplate: CONDENSE_PROMPT,
       returnSourceDocuments: true, //The number of source documents returned is 4 by default
-    },
+    }
   );
   return chain;
 };
