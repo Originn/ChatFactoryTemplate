@@ -53,7 +53,7 @@ export default function Home() {
   }, [messages]);
 
   useEffect(() => {
-    const socket = io("http://localhost:3000");
+    const socket = io();
 
     socket.on('connect', () => {
       console.log('Connected to the server');
