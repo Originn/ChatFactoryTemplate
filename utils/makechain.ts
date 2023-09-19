@@ -1,6 +1,9 @@
+//makechain.ts
+
 import { OpenAI } from 'langchain/llms/openai';
 import { PineconeStore } from 'langchain/vectorstores/pinecone';
 import { ConversationalRetrievalQAChain } from 'langchain/chains';
+import { CallbackManager } from "langchain/callbacks";
 
 const MODEL_NAME = process.env.MODEL_NAME;
 
@@ -21,10 +24,16 @@ const TEMPRATURE = parseFloat(process.env.TEMPRATURE || "0");
 console.log('TEMPRATURE:', TEMPRATURE);
 console.log('QA_PROMPT:', QA_PROMPT);
 
-export const makeChain = (vectorstore: PineconeStore) => {
+export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void) => {
   const model = new OpenAI({
     temperature: TEMPRATURE, // increase temepreature to get more creative answers
     modelName: MODEL_NAME, 
+    streaming: true,
+    callbackManager: CallbackManager.fromHandlers({
+      handleLLMNewToken: async (token) => {
+        onTokenStream(token);
+      },
+    }),
   });
 
   const chain = ConversationalRetrievalQAChain.fromLLM(

@@ -1,4 +1,8 @@
+//index.tsx
+
 import { useRef, useState, useEffect } from 'react';
+import React from 'react';
+import { io } from "socket.io-client";
 import Layout from '@/components/layout';
 import styles from '@/styles/Home.module.css';
 import { Message } from '@/types/chat';
@@ -20,7 +24,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [messageState, setMessageState] = useState<{
     messages: Message[];
-    pending?: string;
     history: [string, string][];
     pendingSourceDocs?: Document[];
   }>({
@@ -42,13 +45,84 @@ export default function Home() {
     textAreaRef.current?.focus();
   }, []);
 
-   // Add this useEffect hook to scroll down whenever messages change
-   useEffect(() => {
+  // Add this useEffect hook to scroll down whenever messages change
+  useEffect(() => {
     if (answerStartRef.current) {
       answerStartRef.current.scrollIntoView();
     }
   }, [messages]);
-  
+
+  useEffect(() => {
+    const socket = io("http://localhost:3000");
+
+    socket.on('connect', () => {
+      console.log('Connected to the server');
+    });
+    
+    socket.on('connect_error', (error) => {
+      console.log('Connection Error:', error);
+    });
+
+    socket.on("newToken", (token) => {
+      setMessageState((state) => {
+        // Check if the last message is an apiMessage
+        const lastMessage = state.messages[state.messages.length - 1];
+        if (lastMessage && lastMessage.type === 'apiMessage') {
+          // Concatenate token to the last message
+          return {
+            ...state,
+            messages: [
+              ...state.messages.slice(0, -1),
+              {
+                ...lastMessage,
+                message: lastMessage.message + token,
+              },
+            ],
+          };
+        } else {
+          // If the last message is not an apiMessage, create a new one
+          return {
+            ...state,
+            messages: [
+              ...state.messages,
+              {
+                type: 'apiMessage',
+                message: token,
+              },
+            ],
+          };
+        }
+      });
+    });
+
+    socket.on("fullResponse", (response) => {
+      setMessageState((state) => {
+        // Extract the message and documents from the response
+        const { answer, sourceDocs } = response;
+    
+        // Update the last message with the full answer and append sourceDocs
+        const updatedMessages = [...state.messages];
+        if (updatedMessages.length) {
+          const lastMessage = updatedMessages[updatedMessages.length - 1];
+          if (lastMessage.type === 'apiMessage') {
+            lastMessage.message = answer;  // Update the last message with the full answer
+            if (sourceDocs) {
+              lastMessage.sourceDocs = sourceDocs; // Append sourceDocs
+            }
+          }
+        }
+    
+        return {
+          ...state,
+          messages: updatedMessages,
+        };
+      });
+    });
+    
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   //handle form submission
   async function handleSubmit(e: any) {
@@ -78,7 +152,7 @@ export default function Home() {
     setQuery('');
 
     try {
-      const response = await fetch('/api/chat', {
+      await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,30 +162,10 @@ export default function Home() {
           history,
         }),
       });
-      const data = await response.json();
-      console.log('data', data);
-
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setMessageState((state) => ({
-          ...state,
-          messages: [
-            ...state.messages,
-            {
-              type: 'apiMessage',
-              message: data.text,
-              sourceDocs: data.sourceDocuments,
-            },
-          ],
-          history: [...state.history, [question, data.text]],
-        }));
-      }
-      console.log('messageState', messageState);
 
       setLoading(false);
 
-      //scroll to bottom
+      // Scroll to bottom
       messageListRef.current?.scrollTo(0, messageListRef.current.scrollHeight);
     } catch (error) {
       setLoading(false);
@@ -139,83 +193,81 @@ export default function Home() {
           <main className={styles.main}>
             <div className={styles.cloud}>
               <div ref={messageListRef} className={styles.messagelist}>
-                {messages.map((message, index) => {
-                  let icon;
-                  let className;
-                  if (message.type === 'apiMessage') {
-                    icon = (
-                      <Image
-                        key={index}
-                        src="/bot-image.png"
-                        alt="AI"
-                        width="40"
-                        height="40"
-                        className={styles.boticon}
-                        priority
-                      />
-                    );
-                    className = styles.apimessage;
-                  } else {
-                    icon = (
-                      <Image
-                        key={index}
-                        src="/usericon.png"
-                        alt="Me"
-                        width="30"
-                        height="30"
-                        className={styles.usericon}
-                        priority
-                      />
-                    );
-                    // The latest message sent by the user will be animated while waiting for a response
-                    className =
-                      loading && index === messages.length - 1
-                        ? styles.usermessagewaiting
-                        : styles.usermessage;
-                  }
-                  return (
-                    <>
-                      <div key={`chatMessage-${index}`} className={className}>
-                        {icon}
-                        <div className={styles.markdownanswer} ref={answerStartRef}>
-                          <ReactMarkdown linkTarget="_blank">
-                            {message.message}
-                          </ReactMarkdown>
-                        </div>
-                      </div>
-                      {message.sourceDocs && (
-                        <div
-                          className="p-5"
-                          key={`sourceDocsAccordion-${index}`}
-                        >
-                          <Accordion
-                            type="single"
-                            collapsible
-                            className="flex-col"
-                          >
-                            {message.sourceDocs.map((doc, index) => (
-                              <div key={`messageSourceDocs-${index}`}>
-                                <AccordionItem value={`item-${index}`}>
-                                  <AccordionTrigger>
-                                    <h3>Source {index + 1}</h3>
-                                  </AccordionTrigger>
-                                  <AccordionContent>
-                                    <ReactMarkdown linkTarget="_blank">
-                                      {doc.pageContent}
-                                    </ReactMarkdown>
-                                    <p className="mt-2">
-                                      <b>Source:</b> {doc.metadata.source}
-                                    </p>
-                                  </AccordionContent>
-                                </AccordionItem>
-                              </div>
-                            ))}
-                          </Accordion>
-                        </div>
-                      )}
-                    </>
+              {messages.map((message, index) => {
+                let icon;
+                let className;
+                if (message.type === 'apiMessage') {
+                  icon = (
+                    <Image
+                      src="/bot-image.png"
+                      alt="AI"
+                      width="40"
+                      height="40"
+                      className={styles.boticon}
+                      priority
+                    />
                   );
-                })}
+                  className = styles.apimessage;
+                } else {
+                  icon = (
+                    <Image
+                      src="/usericon.png"
+                      alt="Me"
+                      width="30"
+                      height="30"
+                      className={styles.usericon}
+                      priority
+                    />
+                  );
+                  className =
+                    loading && index === messages.length - 1
+                      ? styles.usermessagewaiting
+                      : styles.usermessage;
+                }
+                return (
+                  <React.Fragment key={`chatMessageFragment-${index}`}>
+                    <div className={className}>
+                      {icon}
+                      <div className={styles.markdownanswer} ref={answerStartRef}>
+                        <ReactMarkdown linkTarget="_blank">
+                          {message.message}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                    {message.sourceDocs && (
+                      <div
+                        className="p-5"
+                        key={`sourceDocsAccordion-${index}`}
+                      >
+                        <Accordion
+                          type="single"
+                          collapsible
+                          className="flex-col"
+                        >
+                          {message.sourceDocs.map((doc, docIndex) => (
+                            <div key={`messageSourceDocs-${docIndex}`}>
+                              <AccordionItem value={`item-${docIndex}`}>
+                                <AccordionTrigger>
+                                  <h3>Source {docIndex + 1}</h3>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <ReactMarkdown linkTarget="_blank">
+                                    {doc.pageContent}
+                                  </ReactMarkdown>
+                                  <p className="mt-2">
+                                    <b>Source:</b> {doc.metadata.source}
+                                  </p>
+                                </AccordionContent>
+                              </AccordionItem>
+                            </div>
+                          ))}
+                        </Accordion>
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+
               </div>
             </div>
             <div className={styles.center}>
@@ -249,7 +301,6 @@ export default function Home() {
                         <LoadingDots color="#000" />
                       </div>
                     ) : (
-                      // Send icon SVG in input field
                       <svg
                         viewBox="0 0 20 20"
                         className={styles.svgicon}
@@ -273,5 +324,4 @@ export default function Home() {
         </footer>
       </Layout>
     </>
-  );
-}
+  )};
