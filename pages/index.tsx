@@ -18,6 +18,16 @@ import {
 } from '@/components/ui/accordion';
 
 export default function Home() {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => {
+        const newTheme = prevTheme === 'light' ? 'dark' : 'light';
+        return newTheme;
+    });
+};
+
+
   const answerStartRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -184,9 +194,24 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+        setTheme(savedTheme);
+    } else {
+        window.localStorage.setItem('theme', 'light');
+    }
+}, []);
+
+useEffect(() => {
+    window.localStorage.setItem('theme', theme);
+    document.body.className = theme;
+}, [theme]);
+
+  
   return (
     <>
-      <Layout>
+      <Layout theme={theme} toggleTheme={toggleTheme}>
         <div className="mx-auto flex flex-col gap-4">
           <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
             Chat With SolidCAM Docs
