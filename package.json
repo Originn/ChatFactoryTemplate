@@ -15,6 +15,7 @@
     "ingest": "tsx -r dotenv/config scripts/ingest-data.ts"
   },
   "dependencies": {
+    "@google-cloud/storage": "^6.12.0",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@pinecone-database/pinecone": "0.0.12",
     "@radix-ui/react-accordion": "^1.1.1",
@@ -50,7 +51,7 @@
   "engines": {
     "node": "20.7.0",
     "npm": "9.8.0"
-},
+  },
   "keywords": [
     "starter",
     "gpt4",
