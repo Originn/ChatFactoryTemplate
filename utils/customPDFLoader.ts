@@ -1,3 +1,5 @@
+//customPDFLoader.ts
+
 import { Document } from 'langchain/document';
 import { readFile } from 'fs/promises';
 import { BaseDocumentLoader } from 'langchain/dist/document_loaders/base.js';
