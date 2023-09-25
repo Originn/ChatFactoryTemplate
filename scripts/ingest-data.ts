@@ -12,13 +12,25 @@ export function extractYouTubeLink(content: string): string | null {
 }
 
 function extractFirstTimestampInSeconds(content: string): number | null {
-    const timestampMatch = content.match(/\((\d+:\d+)\)/);
-    if (timestampMatch) {
-        const [minutes, seconds] = timestampMatch[1].split(':').map(Number);
-        return minutes * 60 + seconds;
+    const timestampMatch = content.match(/\((?:(\d{1,2}):)?(\d{1,2}):(\d{1,2})\)/);
+    if (!timestampMatch) {
+        // Match the pattern (MM:SS)
+        const minSecMatch = content.match(/\((\d{1,2}):(\d{1,2})\)/);
+        if (minSecMatch) {
+            const minutes = Number(minSecMatch[1]);
+            const seconds = Number(minSecMatch[2]);
+            return minutes * 60 + seconds;
+        }
+        return null;
     }
-    return null;
+    const hours = timestampMatch[1] ? Number(timestampMatch[1]) : 0;
+    const minutes = Number(timestampMatch[2]);
+    const seconds = Number(timestampMatch[3]);
+
+    return hours * 3600 + minutes * 60 + seconds;
 }
+
+
 
 function extractYouTubeLinkFromSingleDoc(document: any): string | null {
   return extractYouTubeLink(document.pageContent);
@@ -50,7 +62,7 @@ export const run = async () => {
 
           if (YouTubeLink) {
               processedChunks = chunks.map(chunk => {
-                  const currentTimestampMatch = chunk.pageContent.match(/^\((\d+:\d+)\)/);
+                  const currentTimestampMatch = chunk.pageContent.match(/\((\d+:\d+)\)/);
                   const currentTimestamp = currentTimestampMatch ? currentTimestampMatch[1] : null;
 
                   // If there's a timestamp for the current chunk, update the lastValidTimestamp
