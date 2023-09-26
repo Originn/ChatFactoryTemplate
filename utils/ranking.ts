@@ -1,7 +1,26 @@
 //ranking.ts
 
 import { TfIdf } from 'natural';
-import { Document } from 'langchain/document';
+
+export interface DocumentInput<Metadata extends Record<string, any> = Record<string, any>> {
+    pageContent: string;
+    metadata?: Metadata;
+}
+
+export class Document<Metadata extends Record<string, any> = Record<string, any>> implements DocumentInput<Metadata> {
+    pageContent: string;
+    metadata: Metadata;
+    score?: number;
+
+    constructor(fields: DocumentInput<Metadata>) {
+        this.pageContent = fields.pageContent;
+        this.metadata = fields.metadata || {} as Metadata;
+        if ('score' in fields) {
+            this.score = fields['score'] as number | undefined;
+        }
+    }
+}
+
 
 function getTfIdfVector(text: string, tfidf: TfIdf, vocabulary: string[], documentIndices: { [doc: string]: number }): number[] {
     const index = documentIndices[text];
