@@ -7,6 +7,7 @@ import { makeChain } from '@/utils/makechain';
 import { pinecone } from '@/utils/pinecone-client';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { getIO } from "@/socketServer.cjs";
+import { rankDocumentsByRelevance } from 'utils/ranking';
 
 export default async function handler(
   req: NextApiRequest,
@@ -44,10 +45,9 @@ export default async function handler(
       io.emit("newToken", token);
     });
 
-    const response = await chain.call({
-      question: sanitizedQuestion,
-      chat_history: history || [],
-    });
+    const response = await chain.call(sanitizedQuestion);
+
+    response.sourceDocuments = rankDocumentsByRelevance(sanitizedQuestion, response.sourceDocuments);
 
     io.emit("fullResponse", {
       answer: response.text,
