@@ -1,11 +1,7 @@
 import { Storage, GetSignedUrlConfig } from '@google-cloud/storage';
 import { default as pdfParse } from 'pdf-parse/lib/pdf-parse.js';
 import { extractYouTubeLink } from 'scripts/ingest-data';
-
-interface Document {
-    pageContent: string;
-    metadata: Record<string, any>;
-}
+import { Document } from 'langchain/document';
 
 class GCSLoader {
     private storage: Storage;

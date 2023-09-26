@@ -109,6 +109,8 @@ export default function Home() {
       setMessageState((state) => {
         // Extract the message and documents from the response
         const { answer, sourceDocs } = response;
+
+        const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score > 0.085) : [];
     
         // Update the last message with the full answer and append sourceDocs
         const updatedMessages = [...state.messages];
@@ -116,8 +118,8 @@ export default function Home() {
           const lastMessage = updatedMessages[updatedMessages.length - 1];
           if (lastMessage.type === 'apiMessage') {
             lastMessage.message = answer;  // Update the last message with the full answer
-            if (sourceDocs) {
-              lastMessage.sourceDocs = sourceDocs; // Append sourceDocs
+            if (filteredSourceDocs.length) {
+              lastMessage.sourceDocs = filteredSourceDocs; // Append filteredSourceDocs
             }
           }
         }
@@ -281,7 +283,12 @@ useEffect(() => {
                                     {doc.pageContent}
                                   </ReactMarkdown>
                                   <p className="mt-2">
-                                    <b>Source:</b> <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View</a>
+                                  <b>Source:</b>
+                                  {
+                                      doc.metadata && doc.metadata.source
+                                      ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View</a>
+                                      : 'Unavailable'
+                                  }
                                   </p>
                                 </AccordionContent>
                               </AccordionItem>

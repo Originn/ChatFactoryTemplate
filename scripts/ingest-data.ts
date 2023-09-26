@@ -42,6 +42,7 @@ export const run = async () => {
       const bucketName = 'solidcam';
       const gcsLoader = new GCSLoader(bucketName);
       const rawDocs = await gcsLoader.load();
+      
 
       /* Split text into chunks */
       const textSplitter = new RecursiveCharacterTextSplitter({
