@@ -9,13 +9,25 @@ import { Message } from '@/types/chat';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import LoadingDots from '@/components/ui/LoadingDots';
-import { Document } from 'utils/ranking';
+import { Document } from 'utils/GCSLoader';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import rehypeRaw from 'rehype-raw';
+
+function addHyperlinksToPageNumbers(content: string, source: string): string {
+  // Find all page numbers in the format (number)
+  const regex = /\((\d+)\)/g;
+  
+  return content.replace(regex, (match, pageNumber) => {
+      // Construct the hyperlink
+      const link = `${source}#page=${pageNumber}`;
+      return `<a href="${link}" target="_blank" rel="noopener noreferrer" style="color: blue;">${match}</a>`;
+  });
+}
 
 export default function Home() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -110,7 +122,7 @@ export default function Home() {
         // Extract the message and documents from the response
         const { answer, sourceDocs } = response;
 
-        const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score > 0.085) : [];
+        const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score >= 0) : [];
     
         // Update the last message with the full answer and append sourceDocs
         const updatedMessages = [...state.messages];
@@ -257,9 +269,10 @@ useEffect(() => {
                     <div className={className}>
                       {icon}
                       <div className={styles.markdownanswer} ref={answerStartRef}>
-                        <ReactMarkdown linkTarget="_blank">
+                      <ReactMarkdown linkTarget="_blank" rehypePlugins={[rehypeRaw as any]}>
                           {message.message}
-                        </ReactMarkdown>
+                      </ReactMarkdown>
+
                       </div>
                     </div>
                     {message.sourceDocs && (
@@ -279,9 +292,9 @@ useEffect(() => {
                                   <h3>Source {docIndex + 1}</h3>
                                 </AccordionTrigger>
                                 <AccordionContent>
-                                  <ReactMarkdown linkTarget="_blank">
-                                    {doc.pageContent}
-                                  </ReactMarkdown>
+                                <ReactMarkdown linkTarget="_blank" rehypePlugins={[rehypeRaw as any]}>
+                                  {addHyperlinksToPageNumbers(doc.pageContent, doc.metadata.source)}
+                                </ReactMarkdown>
                                   <p className="mt-2">
                                   <b>Source:</b>
                                   {

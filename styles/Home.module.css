@@ -260,3 +260,10 @@
     text-align: center;
   }
 }
+
+.markdownanswer ol {
+  list-style-type: decimal;
+  list-style-position: outside;
+  margin-left: 1em;
+  padding-left: 1em;
+}

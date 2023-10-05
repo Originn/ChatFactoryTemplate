@@ -22,15 +22,18 @@ Chat History:
 Follow Up Input: {question}
 Standalone question:`;
 
-const QA_PROMPT = `${process.env.QA_PROMPT || ""}{context}
+const QA_PROMPT = `${process.env.QA_PROMPT || ""}
+
+{context}
 
 Question: {question}
-Helpful answer in markdown:`;
+Helpful answer:`;
 
 const TEMPRATURE = parseFloat(process.env.TEMPRATURE || "0");
 
 console.log('TEMPRATURE:', TEMPRATURE);
 console.log('QA_PROMPT:', QA_PROMPT);
+console.log('CONDENSE_PROMPT:', CONDENSE_PROMPT);
 
 export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void) => {
   const model = new OpenAI({
@@ -56,33 +59,44 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       returnSourceDocuments: true,
     }
   );
+    return {
+      call: async (question: string, documentScores: Record<string, number>) => {
+        const response = await chain.call({
+          question: question,
+          chat_history: chatHistory.map(entry => entry.question + " " + entry.answer).join(" "),
+        });
 
-  return {
-    call: async (question: string) => {
-      const response = await chain.call({
-        question: question,
-        chat_history: chatHistory.map(entry => entry.question + " " + entry.answer),
-      });
+        console.log('History:', chatHistory)
 
-      // Update the chat history with the new question, answer, and score
-      chatHistory.push({
-        question: question,
-        answer: response.text,
-        score: response.sourceDocuments[0]?.score || 0,
-      });
+        let totalScore = 0;
+        if (response.sourceDocuments && response.sourceDocuments.length > 0) {
+          for (let doc of response.sourceDocuments) {
+            totalScore += documentScores[doc.pageContent] || 0;
+          }
+          totalScore /= response.sourceDocuments.length;
+        }
 
-      // Filter the chat history by score
-      const SCORE_THRESHOLD = 0.1;
-      chatHistory = chatHistory.filter(entry => entry.score >= SCORE_THRESHOLD);
 
-      // Manage chat history size
-      const MAX_HISTORY_LENGTH = 50;
-      if (chatHistory.length > MAX_HISTORY_LENGTH) {
-        chatHistory = chatHistory.slice(-MAX_HISTORY_LENGTH);
+      
+        // Update the chat history with the new question, answer, and average score
+        chatHistory.push({
+          question: question,
+          answer: response.text,
+          score: totalScore,
+        });
+      
+        // Filter the chat history by score
+        const SCORE_THRESHOLD = 0.02;
+        chatHistory = chatHistory.filter(entry => entry.score >= SCORE_THRESHOLD);
+      
+        // Manage chat history size
+        const MAX_HISTORY_LENGTH = 10;
+        if (chatHistory.length > MAX_HISTORY_LENGTH) {
+          chatHistory = chatHistory.slice(-MAX_HISTORY_LENGTH);
+        }
+      
+        return response;
       }
-
-      return response;
-    }
-  };
+    };
 };
 
