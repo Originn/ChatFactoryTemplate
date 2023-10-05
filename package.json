@@ -1,9 +1,9 @@
 {
-  "name": "gpt4-langchain-pdf-chatbot",
+  "name": "solidcam-chat",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
-  "author": "Mayooear<twitter:@mayowaoshin>",
+  "author": "orisomekh<orisomekh.solidcam.com>",
   "type": "module",
   "scripts": {
     "dev": "node server.cjs",
@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@google-cloud/storage": "^6.12.0",
-    "@huggingface/inference": "^1.8.0",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@pinecone-database/pinecone": "0.0.12",
     "@radix-ui/react-accordion": "^1.1.1",
