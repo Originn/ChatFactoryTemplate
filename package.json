@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@google-cloud/storage": "^6.12.0",
+    "@huggingface/inference": "^1.8.0",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@pinecone-database/pinecone": "0.0.12",
     "@radix-ui/react-accordion": "^1.1.1",
@@ -24,14 +25,16 @@
     "langchain": "^0.0.151",
     "lucide-react": "^0.125.0",
     "natural": "^6.7.2",
-    "next": "13.2.3",
+    "next": "^13.5.4",
     "pdf-parse": "1.1.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-markdown": "^8.0.5",
+    "react-markdown": "^8.0.7",
+    "rehype-raw": "^7.0.0",
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2",
-    "tailwind-merge": "^1.10.0"
+    "tailwind-merge": "^1.10.0",
+    "tmp-promise": "^3.0.3"
   },
   "devDependencies": {
     "@types/node": "^18.14.6",

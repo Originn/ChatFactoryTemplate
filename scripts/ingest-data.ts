@@ -5,64 +5,79 @@ import { PineconeStore } from 'langchain/vectorstores/pinecone';
 import { pinecone } from '@/utils/pinecone-client';
 import GCSLoader from '@/utils/GCSLoader';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
-
-export function extractYouTubeLink(content: string): string | null {
-  const youtubeMatch = content.match(/https:\/\/www\.youtube\.com\/watch\?v=[a-zA-Z0-9_-]+/);
-  return youtubeMatch ? youtubeMatch[0] : null;
-}
-
-function extractFirstTimestampInSeconds(content: string): number | null {
-    const timestampMatch = content.match(/\((?:(\d{1,2}):)?(\d{1,2}):(\d{1,2})\)/);
-    if (!timestampMatch) {
-        // Match the pattern (MM:SS)
-        const minSecMatch = content.match(/\((\d{1,2}):(\d{1,2})\)/);
-        if (minSecMatch) {
-            const minutes = Number(minSecMatch[1]);
-            const seconds = Number(minSecMatch[2]);
-            return minutes * 60 + seconds;
-        }
-        return null;
-    }
-    const hours = timestampMatch[1] ? Number(timestampMatch[1]) : 0;
-    const minutes = Number(timestampMatch[2]);
-    const seconds = Number(timestampMatch[3]);
-
-    return hours * 3600 + minutes * 60 + seconds;
-}
+import { waitForUserInput, extractAndConcatenateHeaders, extractYouTubeLinkFromSingleDoc, extractFirstTimestampInSeconds, extractPotentialSubHeader } from '@/utils/textsplitter'
 
 
-
-function extractYouTubeLinkFromSingleDoc(document: any): string | null {
-  return extractYouTubeLink(document.pageContent);
-}
 
 export const run = async () => {
-  try {
-      /*load raw docs from GCS bucket */
-      const bucketName = 'solidcam';
-      const gcsLoader = new GCSLoader(bucketName);
-      const rawDocs = await gcsLoader.load();
+    try {
+        /*load raw docs from GCS bucket */
+        const bucketName = 'solidcam';
+        const gcsLoader = new GCSLoader(bucketName);
+        const rawDocs = await gcsLoader.load();
+        // console.log(rawDocs.slice(0, 10));
+        // await waitForUserInput();
+
+        const splitDocs: any[] = [];  // This will store the results after splitting
+
+        /* Split text into chunks */
+        const textSplitter = new RecursiveCharacterTextSplitter({
+            chunkSize: 1000,
+            chunkOverlap: 200,
+        });
       
-
-      /* Split text into chunks */
-      const textSplitter = new RecursiveCharacterTextSplitter({
-          chunkSize: 1000,
-          chunkOverlap: 200,
-      });
-
       // Associate each chunk with its first timestamp
       const processedDocs: any[] = [];
       
       let lastValidTimestamp: string | null = null;
 
       for (const doc of rawDocs) {
-          const YouTubeLink = extractYouTubeLinkFromSingleDoc(doc);
-          const chunks = await textSplitter.splitDocuments([doc]);
+        // Modify the source metadata to append the page number
+        //doc.metadata.source += `#page=${doc.pageNumber}`;
 
-          let processedChunks: any[] = chunks;
+        const YouTubeLink = extractYouTubeLinkFromSingleDoc(doc);
+        const initialHeader = (doc.pageHeader || "");
+        const chunk = await textSplitter.createDocuments([doc.pageContent],[doc.metadata], {chunkHeader: initialHeader + '\n\n',
+        appendChunkOverlapHeader: true,});
+        console.log('chunk:',chunk)
+        // await waitForUserInput();  
+    
+        if (chunk.length > 1) {
+            // Extract headers from the first chunk
+            const potentialSubHeaderFirst = extractPotentialSubHeader(chunk[0].pageContent);
+
+            if (initialHeader) {
+                const newHeaderFirst = potentialSubHeaderFirst ? `${initialHeader} | ${potentialSubHeaderFirst}` : initialHeader;
+                
+                chunk.map((document, index) => {
+                    if (index === 1 && initialHeader) {
+                        document.pageContent = document.pageContent.replace(initialHeader, newHeaderFirst);
+                    }
+                    return document;
+                });                                    
+
+                console.log('updatedChunks:', chunk);
+
+                // Start from the third chunk and prepend the header from the first chunk and subheader from previous chunk
+                for (let i = 2; i < chunk.length; i++) {
+                    const potentialSubHeader = extractPotentialSubHeader(chunk[i - 1].pageContent);
+                    const newHeader = potentialSubHeader ? `${initialHeader} | ${potentialSubHeader}` : initialHeader;
+                    chunk.map((document, index) => {
+                        if (index === i && initialHeader) {
+                            document.pageContent = document.pageContent.replace(initialHeader, newHeader);
+                        }
+                        return document;
+                    });    
+                }
+                console.log('updatedChunks1:', chunk);
+                
+            }      
+        } 
+        
+          let processedChunks: any[] = chunk;
 
           if (YouTubeLink) {
-              processedChunks = chunks.map(chunk => {
+              processedChunks = chunk.map(chunk => {
                   const currentTimestampMatch = chunk.pageContent.match(/\((\d+:\d+)\)/);
                   const currentTimestamp = currentTimestampMatch ? currentTimestampMatch[1] : null;
 
@@ -85,20 +100,21 @@ export const run = async () => {
                       ...chunk,
                       metadata: {
                           ...chunk.metadata,
-                          source: updatedSource
+                          source: updatedSource,
                       }
                   };
               });
           }
-
           processedDocs.push(...processedChunks);
       }
 
       console.log('Processed docs with timestamps', processedDocs);
 
+      await waitForUserInput();
+
       console.log('creating vector store...');
       /*create and store the embeddings in the vectorStore*/
-      const embeddings = new OpenAIEmbeddings();
+      const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
       const index = pinecone.Index(PINECONE_INDEX_NAME);
 
       //embed the documents
