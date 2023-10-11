@@ -7,6 +7,7 @@ import Layout from '@/components/layout';
 import styles from '@/styles/Home.module.css';
 import { Message } from '@/types/chat';
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
 import LoadingDots from '@/components/ui/LoadingDots';
 import { Document } from 'utils/GCSLoader';
 import {
@@ -15,6 +16,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import rehypeRaw from 'rehype-raw';
 
 function addHyperlinksToPageNumbers(content: string, source: string): string {
   // Find all page numbers in the format (number)
@@ -73,7 +75,8 @@ export default function Home() {
   }, [messages]);
 
   useEffect(() => {
-    const socket = io();
+    const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : 'http://localhost:3000';
+    const socket = io(serverUrl);
 
     socket.on('connect', () => {
       console.log('Connected to the server');
@@ -267,7 +270,14 @@ useEffect(() => {
                     <div className={className}>
                       {icon}
                       <div className={styles.markdownanswer} ref={answerStartRef}>
-
+                      <ReactMarkdown
+                        rehypePlugins={[rehypeRaw as any]}
+                        components={{
+                          a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                        }}
+                      >
+                        {message.message}
+                      </ReactMarkdown>
                       </div>
                     </div>
                     {message.sourceDocs && (
@@ -296,12 +306,20 @@ useEffect(() => {
                                         {
                                           doc.metadata && doc.metadata.source
                                           ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View Webinar</a>
-                                          : 'Unavailableok'
+                                          : 'Unavailable'
                                         }
                                       </p>
                                     )
                                     : (
                                       <>
+                                        <ReactMarkdown
+                                          rehypePlugins={[rehypeRaw as any]}
+                                          components={{
+                                            a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                                          }}
+                                        >
+                                          {addHyperlinksToPageNumbers(doc.pageContent, doc.metadata.source)}
+                                        </ReactMarkdown>
                                         <p className="mt-2">
                                           <b>Source:</b>
                                           {
