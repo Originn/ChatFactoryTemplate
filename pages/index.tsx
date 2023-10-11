@@ -76,6 +76,7 @@ export default function Home() {
 
   useEffect(() => {
     const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : 'http://localhost:3000';
+    console.log(serverUrl)
     const socket = io(serverUrl);
 
     socket.on('connect', () => {
