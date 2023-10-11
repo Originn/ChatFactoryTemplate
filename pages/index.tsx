@@ -297,7 +297,7 @@ useEffect(() => {
                                         {
                                           doc.metadata && doc.metadata.source
                                           ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View Webinar</a>
-                                          : 'Unavailable'
+                                          : 'Unavailableok'
                                         }
                                       </p>
                                     )
