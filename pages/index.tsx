@@ -16,7 +16,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import rehypeRaw from 'rehype-raw';
 
 function addHyperlinksToPageNumbers(content: string, source: string): string {
   // Find all page numbers in the format (number)
@@ -269,9 +268,6 @@ useEffect(() => {
                     <div className={className}>
                       {icon}
                       <div className={styles.markdownanswer} ref={answerStartRef}>
-                      <ReactMarkdown linkTarget="_blank" rehypePlugins={[rehypeRaw as any]}>
-                          {message.message}
-                      </ReactMarkdown>
 
                       </div>
                     </div>
