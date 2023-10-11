@@ -292,17 +292,35 @@ useEffect(() => {
                                   <h3>Source {docIndex + 1}</h3>
                                 </AccordionTrigger>
                                 <AccordionContent>
-                                <ReactMarkdown linkTarget="_blank" rehypePlugins={[rehypeRaw as any]}>
-                                  {addHyperlinksToPageNumbers(doc.pageContent, doc.metadata.source)}
-                                </ReactMarkdown>
-                                  <p className="mt-2">
-                                  <b>Source:</b>
                                   {
-                                      doc.metadata && doc.metadata.source
-                                      ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View</a>
-                                      : 'Unavailable'
+                                    // Add your logic to determine if the content is from a webinar
+                                    doc.metadata.source.includes("youtube")
+                                    ? (
+                                      <p>
+                                        <b>Source:</b>
+                                        {
+                                          doc.metadata && doc.metadata.source
+                                          ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View Webinar</a>
+                                          : 'Unavailable'
+                                        }
+                                      </p>
+                                    )
+                                    : (
+                                      <>
+                                        <ReactMarkdown linkTarget="_blank" rehypePlugins={[rehypeRaw as any]}>
+                                          {addHyperlinksToPageNumbers(doc.pageContent, doc.metadata.source)}
+                                        </ReactMarkdown>
+                                        <p className="mt-2">
+                                          <b>Source:</b>
+                                          {
+                                            doc.metadata && doc.metadata.source
+                                            ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View</a>
+                                            : 'Unavailable'
+                                          }
+                                        </p>
+                                      </>
+                                    )
                                   }
-                                  </p>
                                 </AccordionContent>
                               </AccordionItem>
                             </div>

@@ -5,7 +5,7 @@ import { PineconeStore } from 'langchain/vectorstores/pinecone';
 import { pinecone } from '@/utils/pinecone-client';
 import GCSLoader from '@/utils/GCSLoader';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
-import { waitForUserInput, extractAndConcatenateHeaders, extractYouTubeLinkFromSingleDoc, extractFirstTimestampInSeconds, extractPotentialSubHeader } from '@/utils/textsplitter'
+import { waitForUserInput, extractTimestamp, extractAndConcatenateHeaders, extractYouTubeLinkFromSingleDoc, extractFirstTimestampInSeconds, extractPotentialSubHeader } from '@/utils/textsplitter'
 
 
 
@@ -15,8 +15,6 @@ export const run = async () => {
         const bucketName = 'solidcam';
         const gcsLoader = new GCSLoader(bucketName);
         const rawDocs = await gcsLoader.load();
-        // console.log(rawDocs.slice(0, 10));
-        // await waitForUserInput();
 
         const splitDocs: any[] = [];  // This will store the results after splitting
 
@@ -33,9 +31,7 @@ export const run = async () => {
 
       for (const doc of rawDocs) {
         // Modify the source metadata to append the page number
-        //doc.metadata.source += `#page=${doc.pageNumber}`;
-
-        const YouTubeLink = extractYouTubeLinkFromSingleDoc(doc);
+        const Timestamp = extractTimestamp(doc);
         const initialHeader = (doc.pageHeader || "");
         const chunk = await textSplitter.createDocuments([doc.pageContent],[doc.metadata], {chunkHeader: initialHeader + '\n\n',
         appendChunkOverlapHeader: true,});
@@ -76,25 +72,12 @@ export const run = async () => {
         
           let processedChunks: any[] = chunk;
 
-          if (YouTubeLink) {
+          if (Timestamp) {
               processedChunks = chunk.map(chunk => {
-                  const currentTimestampMatch = chunk.pageContent.match(/\((\d+:\d+)\)/);
-                  const currentTimestamp = currentTimestampMatch ? currentTimestampMatch[1] : null;
-
-                  // If there's a timestamp for the current chunk, update the lastValidTimestamp
-                  if (currentTimestamp) {
-                      lastValidTimestamp = currentTimestamp;
-                  }
-
-                  // If there's no timestamp for the current chunk but there's a lastValidTimestamp, prepend it
-                  if (!currentTimestamp && lastValidTimestamp) {
-                      chunk.pageContent = `(${lastValidTimestamp}) ${chunk.pageContent}`;
-                  }
-                  
                   const timestampInSeconds = extractFirstTimestampInSeconds(chunk.pageContent);
                   const updatedSource = timestampInSeconds !== null 
-                      ? `${YouTubeLink}&t=${timestampInSeconds}s` 
-                      : YouTubeLink;
+                      ? `${chunk.metadata.source}&t=${timestampInSeconds}s` 
+                      : chunk.metadata.source;
 
                   return {
                       ...chunk,
@@ -113,6 +96,7 @@ export const run = async () => {
       await waitForUserInput();
 
       console.log('creating vector store...');
+      await waitForUserInput();
       /*create and store the embeddings in the vectorStore*/
       const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
       const index = pinecone.Index(PINECONE_INDEX_NAME);
