@@ -307,9 +307,6 @@ useEffect(() => {
                                     )
                                     : (
                                       <>
-                                        <ReactMarkdown linkTarget="_blank" rehypePlugins={[rehypeRaw as any]}>
-                                          {addHyperlinksToPageNumbers(doc.pageContent, doc.metadata.source)}
-                                        </ReactMarkdown>
                                         <p className="mt-2">
                                           <b>Source:</b>
                                           {
