@@ -160,9 +160,16 @@ export function extractYouTubeLink(content: string): string | null {
   
   
   export function extractYouTubeLinkFromSingleDoc(document: any): string | null {
-    return extractYouTubeLink(document.pageContent);
+    return extractYouTubeLink(document.pageHeader);
   }
 
+  export function extractTimestamp(document: any): string | null {
+    const pattern = /\((\d{1,2}:\d{2}:\d{2}|\d{2}:\d{2})\)/;
+    const match = document.pageContent.match(pattern);
+    
+    return match ? match[1] : null;
+  }
+  
   export const waitForUserInput = () => {
     const rl = readline.createInterface({
         input: process.stdin,

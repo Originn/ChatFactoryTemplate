@@ -88,11 +88,11 @@ class GCSLoader {
     }
     
     
-    async parsePDF(filePath: string): Promise<string> {
+    async parse(filePath: string): Promise<string> {
         // Call the Python script and capture the result
         const content = await this.callPythonScript(filePath);
         return content;
-    }    
+    }
 
     async load(): Promise<Document[]> {
         const bucket = this.storage.bucket(this.bucketName);
@@ -101,22 +101,45 @@ class GCSLoader {
         const documents: Document[] = [];
     
         for (const file of files[0]) {
-            // Create a temporary file
-            const tempFile = await tmp.file({ postfix: '.pdf' });
-            const tempPdfPath = tempFile.path;
-    
-            // Download the file directly to the temporary file
-            await file.download({ destination: tempPdfPath });
-    
-            let contentString;
+            let tempFile: tmp.FileResult | undefined;
+            let tempFilePath: string | undefined;
+        
             if (file.name.endsWith('.pdf')) {
-                contentString = await this.parsePDF(tempPdfPath);
+                tempFile = await tmp.file({ postfix: '.pdf' });
+                tempFilePath = tempFile.path;
+            } else if (file.name.endsWith('.txt')) {
+                tempFile = await tmp.file({ postfix: '.txt' });
+                tempFilePath = tempFile.path;
+            }
+        
+            if (!tempFilePath) {
+                console.log(`Skipping unsupported file: ${file.name}`);
+                continue;
+            }
+        
+            await file.download({ destination: tempFilePath });
+            await new Promise(resolve => setTimeout(resolve, 3000));  // wait for 2 seconds
+
+        
+            let contentString: string;
+            if (file.name.endsWith('.pdf')) {
+                contentString = await this.parse(tempFilePath);
+            } else if (file.name.endsWith('.txt')) {
+                contentString = await this.parse(tempFilePath);
             } else {
-                contentString = (await fs.readFile(tempPdfPath)).toString('utf-8');
+                console.log(`Unsupported file type for ${file.name}`);
+                continue;
             }
     
-            await tempFile.cleanup();
-    
+            // Log and Cleanup
+            console.log(contentString);
+            await waitForUserInput();
+            if (tempFile) {
+                await tempFile.cleanup();
+            } else {
+                console.log(`tempFile is undefined for ${file.name}`);
+            }
+            
             let existingSource = extractYouTubeLink(contentString);
             if (!existingSource) { // If there's no YouTube link, use the GCS link
                 existingSource = this.generatePublicUrl(file.name);

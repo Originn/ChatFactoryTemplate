@@ -231,13 +231,6 @@ def wrap_large_bold_sentences(text, chars):
 
     return text
 
-
-
-
-
-
-
-
 def wrap_bold_text(text, chars):
     # Extract bold text segments
     bold_text_segments = []
@@ -411,6 +404,60 @@ def append_related_topics(text):
 
     return '\n'.join(lines)
 
+def process_webinar_text(text_file_path):
+    results = []
+    try:
+        with open(text_file_path, 'r', encoding='utf-8') as text_file:
+            main_header = None  # Initialize main_header as None
+            for line in text_file:
+                line = line.strip()
+                if line:  # Check if the line contains text
+                    main_header = line  # Set main_header
+                    break  # Exit the loop
+            remaining_lines = text_file.readlines()
+            
+            paragraphs = []
+            current_paragraph = []
+            for line in remaining_lines:
+                line = line.strip()
+                if line:
+                    current_paragraph.append(line)
+                else:
+                    if current_paragraph:
+                        paragraphs.append(" ".join(current_paragraph))
+                        current_paragraph = []
+            
+            if current_paragraph:
+                paragraphs.append(" ".join(current_paragraph))
+            
+            for paragraph in paragraphs:
+                first_paren_index = paragraph.find('(')
+                if first_paren_index != -1:
+                    first_line = paragraph[:first_paren_index].strip()
+                    rest_of_paragraph = paragraph[first_paren_index:]
+                else:
+                    first_line = paragraph
+                    rest_of_paragraph = ''
+                
+                header_and_first_line = f"{main_header} | {first_line}"
+                
+                paragraph_data = {
+                    "header": header_and_first_line,
+                    "contents": [
+                        {
+                            "page_number": 0,
+                            "PageContent": rest_of_paragraph
+                        }
+                    ]
+                }
+                results.append(paragraph_data)
+            
+    except FileNotFoundError:
+        print(f"Text file {text_file_path} not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    return results
 
 # Usage:
 ##pdf_path = "C:\\Users\\ori_s\\Downloads\\SolidCAM related\\SolidCAM_docs\\scturn.pdf"
@@ -558,33 +605,40 @@ def append_related_topics(text):
 
 if __name__ == "__main__":
     pdf_path = sys.argv[1]  # Get the PDF path from the command line argument
-    pages_with_home = find_pages_starting_with(pdf_path, "Home >")
+    # Check if 'webinar' is in the file name
+    if pdf_path.endswith('.txt'):
+        # Call the functions specific to webinar PDFs
+        results = process_webinar_text(pdf_path)
+        sys.stdout.write(json.dumps(results))
+    else:
+        pages_with_home = find_pages_starting_with(pdf_path, "Home >")
 
-    grouped_results = {}
+        grouped_results = {}
 
-    for page_info in pages_with_home:
-        # Clean the header PageContent
-        header = combine_multiline_header(page_info['header'])
-        
-        if header not in grouped_results:
-            grouped_results[header] = []
-
-        for (page_number, PageContent_text) in page_info['PageContent']:
-            # Append "Related Topics" where necessary
-            PageContent_text = append_related_topics(PageContent_text)
-            # Clean the PageContent using the remove_related_topics_sentences function
-            PageContent_text = remove_related_topics_sentences(PageContent_text)
+        for page_info in pages_with_home:
+            # Clean the header PageContent
+            header = combine_multiline_header(page_info['header'])
             
-            # Store the cleaned PageContent with its page number
-            content_data = {
-                "page_number": page_number,
-                "PageContent": PageContent_text
-            }
-            grouped_results[header].append(content_data)
+            if header not in grouped_results:
+                grouped_results[header] = []
 
-    # Convert the dictionary to a list format
-    results = [{"header": key, "contents": value} for key, value in grouped_results.items()]
-    sys.stdout.write(json.dumps(results))
+            for (page_number, PageContent_text) in page_info['PageContent']:
+                # Append "Related Topics" where necessary
+                PageContent_text = append_related_topics(PageContent_text)
+                # Clean the PageContent using the remove_related_topics_sentences function
+                PageContent_text = remove_related_topics_sentences(PageContent_text)
+                
+                # Store the cleaned PageContent with its page number
+                content_data = {
+                    "page_number": page_number,
+                    "PageContent": PageContent_text
+                }
+                grouped_results[header].append(content_data)
+
+        # Convert the dictionary to a list format
+        results = [{"header": key, "contents": value} for key, value in grouped_results.items()]
+        sys.stdout.write(json.dumps(results))
+
 
 
 
