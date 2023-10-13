@@ -242,7 +242,7 @@ useEffect(() => {
                   icon = (
                     <Image
                       key={index}
-                      src="/bot-image.png"
+                      src={`${process.env.BASE_URL}/bot-image.png`}
                       alt="AI"
                       width="40"
                       height="40"
@@ -255,7 +255,7 @@ useEffect(() => {
                   icon = (
                     <Image
                       key={index}
-                      src="/usericon.png"
+                      src={`${process.env.BASE_URL}/usericon.png`}
                       alt="Me"
                       width="30"
                       height="30"
