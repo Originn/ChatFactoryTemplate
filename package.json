@@ -21,6 +21,7 @@
     "@radix-ui/react-accordion": "^1.1.1",
     "clsx": "^1.2.1",
     "dotenv": "^16.0.3",
+    "express": "^4.18.2",
     "langchain": "^0.0.151",
     "lucide-react": "^0.125.0",
     "natural": "^6.7.2",
