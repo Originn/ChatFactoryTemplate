@@ -4,7 +4,6 @@
   "private": true,
   "license": "MIT",
   "author": "orisomekh<orisomekh.solidcam.com>",
-  "type": "module",
   "scripts": {
     "dev": "node server.cjs",
     "build": "next build",
