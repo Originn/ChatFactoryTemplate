@@ -2,6 +2,7 @@ const express = require('express');
 const { parse } = require('url');
 const next = require('next');
 const { init } = require('./socketServer.cjs');  // Import the init method
+const path = require('path');
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
