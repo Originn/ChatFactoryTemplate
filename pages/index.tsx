@@ -274,6 +274,7 @@ useEffect(() => {
                       {icon}
                       <div className={styles.markdownanswer} ref={answerStartRef}>
                       <ReactMarkdown
+                        rehypePlugins={[rehypeRaw as any]}
                         components={{
                           a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
                         }}
@@ -315,6 +316,7 @@ useEffect(() => {
                                     : (
                                       <>
                                         <ReactMarkdown
+                                          rehypePlugins={[rehypeRaw as any]}
                                           components={{
                                             a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
                                           }}
