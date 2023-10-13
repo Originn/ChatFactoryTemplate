@@ -9,6 +9,7 @@ const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   const server = express();
+  server.use(express.static(path.join(__dirname, 'public')))
 
   // This ensures that all Next.js handling is still in place
   server.all('*', (req, res) => {
