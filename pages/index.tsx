@@ -18,6 +18,14 @@ import {
 } from '@/components/ui/accordion';
 import rehypeRaw from 'rehype-raw';
 
+let imageUrlUserIcon = '/usericon.png';
+let botimageIcon = '/bot-image.png';
+
+if (process.env.NODE_ENV === 'production') {
+    imageUrlUserIcon = `${process.env.BASE_URL}/usericon.png`;
+    botimageIcon = `${process.env.BASE_URL}/bot-image.png`;
+}
+
 function addHyperlinksToPageNumbers(content: string, source: string): string {
   // Find all page numbers in the format (number)
   const regex = /\((\d+)\)/g;
@@ -242,7 +250,7 @@ useEffect(() => {
                   icon = (
                     <Image
                       key={index}
-                      src={`${process.env.BASE_URL}/bot-image.png`}
+                      src={botimageIcon}
                       alt="AI"
                       width="40"
                       height="40"
@@ -255,7 +263,7 @@ useEffect(() => {
                   icon = (
                     <Image
                       key={index}
-                      src={`${process.env.BASE_URL}/usericon.png`}
+                      src={imageUrlUserIcon}
                       alt="Me"
                       width="30"
                       height="30"

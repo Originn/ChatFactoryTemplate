@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: ['solidcam.herokuapp.com'],
+    domains: ['solidcam.herokuapp.com', 'localhost'],
 },
 webpack(config) {
 config.experiments = { ...config.experiments, topLevelAwait: true };
