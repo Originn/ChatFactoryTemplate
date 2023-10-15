@@ -34,9 +34,7 @@ export const run = async () => {
         const Timestamp = extractTimestamp(doc);
         const initialHeader = (doc.pageHeader || "");
         const chunk = await textSplitter.createDocuments([doc.pageContent],[doc.metadata], {chunkHeader: initialHeader + '\n\n',
-        appendChunkOverlapHeader: true,});
-        console.log('chunk:',chunk)
-        // await waitForUserInput();  
+        appendChunkOverlapHeader: true,});  
     
         if (chunk.length > 1) {
             // Extract headers from the first chunk
@@ -52,8 +50,6 @@ export const run = async () => {
                     return document;
                 });                                    
 
-                console.log('updatedChunks:', chunk);
-
                 // Start from the third chunk and prepend the header from the first chunk and subheader from previous chunk
                 for (let i = 2; i < chunk.length; i++) {
                     const potentialSubHeader = extractPotentialSubHeader(chunk[i - 1].pageContent);
@@ -65,7 +61,6 @@ export const run = async () => {
                         return document;
                     });    
                 }
-                console.log('updatedChunks1:', chunk);
                 
             }      
         } 
@@ -73,30 +68,22 @@ export const run = async () => {
           let processedChunks: any[] = chunk;
 
           if (Timestamp) {
-              processedChunks = chunk.map(chunk => {
-                  const timestampInSeconds = extractFirstTimestampInSeconds(chunk.pageContent);
-                  const updatedSource = timestampInSeconds !== null 
-                      ? `${chunk.metadata.source}&t=${timestampInSeconds}s` 
-                      : chunk.metadata.source;
+            processedChunks = chunk.map(document => {
+                const timestampInSeconds = extractFirstTimestampInSeconds(document.pageContent);
+                const updatedSource = timestampInSeconds !== null 
+                    ? `${document.metadata.source}&t=${timestampInSeconds}s` 
+                    : document.metadata.source;
+        
+                // Update the source property of the current document's metadata
+                document.metadata.source = updatedSource;
+        
+                return document; // Return the updated Document object
+            });
+        }        
+        processedDocs.push(...processedChunks);        
+        }
+        console.log('Processed docs with timestamps (first 10)', processedDocs.slice(0, 10));
 
-                  return {
-                      ...chunk,
-                      metadata: {
-                          ...chunk.metadata,
-                          source: updatedSource,
-                      }
-                  };
-              });
-          }
-          processedDocs.push(...processedChunks);
-      }
-
-      console.log('Processed docs with timestamps', processedDocs);
-
-      await waitForUserInput();
-
-      console.log('creating vector store...');
-      await waitForUserInput();
       /*create and store the embeddings in the vectorStore*/
       const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
       const pinecone = await getPinecone();
