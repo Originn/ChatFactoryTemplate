@@ -4,7 +4,6 @@ import { Storage, GetSignedUrlConfig } from '@google-cloud/storage';
 //import { default as pdfParse } from 'pdf-parse/lib/pdf-parse.js';
 import { waitForUserInput, extractYouTubeLink } from 'utils/textsplitter';
 import { spawn } from 'child_process';
-import { promises as fs } from 'fs';
 import * as tmp from 'tmp-promise';
 
 export interface DocumentInput<Metadata extends Record<string, any> = Record<string, any>> {

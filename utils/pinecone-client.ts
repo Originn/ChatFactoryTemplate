@@ -20,4 +20,11 @@ async function initPinecone() {
   }
 }
 
-export const pinecone = await initPinecone();
+let pineconeInstance: PineconeClient | undefined;
+
+export const getPinecone = async () => {
+  if (!pineconeInstance) {
+    pineconeInstance = await initPinecone();
+  }
+  return pineconeInstance;
+};
