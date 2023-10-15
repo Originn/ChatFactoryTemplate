@@ -22,8 +22,8 @@ let imageUrlUserIcon = '/usericon.png';
 let botimageIcon = '/bot-image.png';
 
 if (process.env.NODE_ENV === 'production') {
-    imageUrlUserIcon = `${process.env.BASE_URL}usericon.png`;
-    botimageIcon = `${process.env.BASE_URL}bot-image.png`;
+    imageUrlUserIcon = `${process.env.BASE_URL}public/usericon.png`;
+    botimageIcon = `${process.env.BASE_URL}public/bot-image.png`;
 }
 
 function addHyperlinksToPageNumbers(content: string, source: string): string {
