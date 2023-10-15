@@ -23,8 +23,8 @@ let botimageIcon = '/bot-image.png';
 
 if (process.env.NODE_ENV === 'production') {
   let baseUrl = process.env.BASE_URL || '/'; 
-  imageUrlUserIcon = `${baseUrl}usericon.png`;
-  botimageIcon = `${baseUrl}bot-image.png`;  
+  imageUrlUserIcon = 'https://solidcam.herokuapp.com/usericon.png';
+  botimageIcon = 'https://solidcam.herokuapp.com/bot-image.png';  
 }
 
 function addHyperlinksToPageNumbers(content: string, source: string): string {
