@@ -22,7 +22,6 @@ let imageUrlUserIcon = '/usericon.png';
 let botimageIcon = '/bot-image.png';
 
 if (process.env.NODE_ENV === 'production') {
-  let baseUrl = process.env.BASE_URL || '/'; 
   imageUrlUserIcon = 'https://solidcam.herokuapp.com/usericon.png';
   botimageIcon = 'https://solidcam.herokuapp.com/bot-image.png';  
 }

@@ -2,7 +2,7 @@
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { PineconeStore } from 'langchain/vectorstores/pinecone';
-import { pinecone } from '@/utils/pinecone-client';
+import { getPinecone } from '@/utils/pinecone-client';
 import GCSLoader from '@/utils/GCSLoader';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { waitForUserInput, extractTimestamp, extractAndConcatenateHeaders, extractYouTubeLinkFromSingleDoc, extractFirstTimestampInSeconds, extractPotentialSubHeader } from '@/utils/textsplitter'
@@ -99,6 +99,7 @@ export const run = async () => {
       await waitForUserInput();
       /*create and store the embeddings in the vectorStore*/
       const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
+      const pinecone = await getPinecone();
       const index = pinecone.Index(PINECONE_INDEX_NAME);
 
       //embed the documents
