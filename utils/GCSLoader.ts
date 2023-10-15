@@ -130,9 +130,6 @@ class GCSLoader {
                 continue;
             }
     
-            // Log and Cleanup
-            console.log(contentString);
-            await waitForUserInput();
             if (tempFile) {
                 await tempFile.cleanup();
             } else {
