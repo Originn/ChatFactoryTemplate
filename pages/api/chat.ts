@@ -13,7 +13,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  const { question } = req.body;
+  const { question, roomId } = req.body;
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -25,8 +25,6 @@ export default async function handler(
   }
 
   const sanitizedQuestion = question.trim().replaceAll('\n', ' ');
-
-  console.log('sanitizedQuestion:', sanitizedQuestion);
 
   try {
     const io = getIO();
@@ -48,8 +46,6 @@ export default async function handler(
         documentScores[document.pageContent] = score;
     }
 
-
-
     // Create chain and use the already retrieved io instance
     const chain = makeChain(vectorStore, (token) => {
       io.emit("newToken", token);
@@ -62,17 +58,19 @@ export default async function handler(
     });
     
 
-    io.emit("fullResponse", {
-      answer: response.text,
-      sourceDocs: response.sourceDocuments
-    });
-    
-    console.log('response', response);
+    // Emit response to specific room
+    if (roomId) { // <-- Make sure roomId exists
+      io.to(roomId).emit("fullResponse", {
+        answer: response.text,
+        sourceDocs: response.sourceDocuments
+      });
+    } else {
+      io.emit("fullResponse", {
+        answer: response.text,
+        sourceDocs: response.sourceDocuments
+      });
+    }
 
-    response.sourceDocuments.forEach((doc: Document) => {
-      console.log(doc.metadata);
-    });    
-  
     res.status(200).json(response);
   } catch (error: any) {
     console.log('error', error);
