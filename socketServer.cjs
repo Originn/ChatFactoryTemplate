@@ -45,6 +45,7 @@ module.exports.init = (httpServer) => {
       });
 
       socket.on("message", (roomId, message) => {
+        console.log(`Message sent to room: ${roomId} by socket: ${socket.id}`);
         if (roomId !== currentRoom) {
           return;
         }

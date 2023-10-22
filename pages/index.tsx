@@ -19,6 +19,7 @@ import {
 import rehypeRaw from 'rehype-raw';
 //
 
+
 let imageUrlUserIcon = '/usericon.png';
 let botimageIcon = '/bot-image.png';
 
@@ -40,6 +41,8 @@ function addHyperlinksToPageNumbers(content: string, source: string): string {
 
 export default function Home() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [roomId, setRoomId] = useState<string | null>(null);
+
 
   const toggleTheme = () => {
     setTheme(prevTheme => {
@@ -87,9 +90,11 @@ export default function Home() {
     const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : 'http://localhost:3000';
     const socket = io(serverUrl);
 
-    socket.on("assignedRoom", (roomId) => {
-      console.log("I have been assigned to room:", roomId);
+    socket.on("assignedRoom", (newRoomId) => {
+      console.log("I have been assigned to room:", newRoomId);
+      setRoomId(newRoomId);
     });
+    
 
     socket.on('connect', () => {
       console.log('Connected to the server');
@@ -207,6 +212,7 @@ export default function Home() {
         body: JSON.stringify({
           question,
           history,
+          roomId,
         }),
       });
 
