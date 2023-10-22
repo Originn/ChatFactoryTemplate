@@ -59,8 +59,8 @@ export default async function handler(
     
 
     // Emit response to specific room
-    if (roomId) { // <-- Make sure roomId exists
-      io.to(roomId).emit("fullResponse", {
+    if (roomId) {
+      io.to(roomId).emit(`fullResponse-${roomId}`, {
         answer: response.text,
         sourceDocs: response.sourceDocuments
       });
