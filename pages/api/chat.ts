@@ -48,7 +48,11 @@ export default async function handler(
 
     // Create chain and use the already retrieved io instance
     const chain = makeChain(vectorStore, (token) => {
-      io.emit("newToken", token);
+      if (roomId) {
+        io.to(roomId).emit("newToken", token);
+      } else {
+        io.emit("newToken", token);
+      }
     });
 
     const response = await chain.call(sanitizedQuestion, documentScores);
