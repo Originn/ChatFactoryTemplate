@@ -49,7 +49,7 @@ module.exports.init = (httpServer) => {
         if (roomId !== currentRoom) {
           return;
         }
-        global.io.to(roomId).emit("message", message);
+        global.io.to(roomId).emit(`fullResponse-${roomId}`, message);
       });
       
     });
