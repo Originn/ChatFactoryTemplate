@@ -42,6 +42,8 @@ function addHyperlinksToPageNumbers(content: string, source: string): string {
 export default function Home() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [roomId, setRoomId] = useState<string | null>(null);
+  const roomIdRef = useRef<string | null>(null);
+
 
 
   const toggleTheme = () => {
@@ -75,6 +77,10 @@ export default function Home() {
   const messageListRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
+  useEffect(() => {
+    roomIdRef.current = roomId;
+  }, [roomId]);
+  
   useEffect(() => {
     textAreaRef.current?.focus();
   }, []);
@@ -137,7 +143,7 @@ export default function Home() {
       });
     });
 
-    socket.on("fullResponse", (response) => {
+    socket.on(`fullResponse-${roomIdRef.current}`, (response) => {
       setMessageState((prevState) => {
         // Create a copy of the previous messages state
         const updatedMessages = [...prevState.messages];
