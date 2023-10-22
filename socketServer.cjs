@@ -44,10 +44,13 @@ module.exports.init = (httpServer) => {
         }
       });
 
-      socket.on("message", (message) => {
-        // Assume the message is for the room the user is currently in
-        global.io.to(currentRoom).emit("message", message);
+      socket.on("message", (roomId, message) => {
+        if (roomId !== currentRoom) {
+          return;
+        }
+        global.io.to(roomId).emit("message", message);
       });
+      
     });
   }
   return global.io;
