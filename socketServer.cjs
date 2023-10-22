@@ -1,3 +1,4 @@
+//sockerServer.cjs
 const { Server } = require("socket.io");
 
 global.io = global.io || null;
@@ -8,6 +9,45 @@ module.exports.init = (httpServer) => {
       cors: {
         origin: "*",
       },
+    });
+
+    global.io.on("connection", (socket) => {
+      console.log('New connection:', socket.id);
+
+      // Use the socket's ID as the room ID
+      const roomId = socket.id;
+      socket.join(roomId);
+
+      // Optionally: Notify the user that they have joined their unique room
+      socket.emit("assignedRoom", roomId);
+
+      // For handling the 'joinRoom' event, in case you still need it for other purposes
+      let currentRoom = roomId;
+
+      socket.on("joinRoom", (customRoomId) => {
+        console.log(`joinRoom event received for room: ${customRoomId}`);
+        if (currentRoom) {
+          socket.leave(currentRoom);
+        }
+        socket.join(customRoomId);
+        currentRoom = customRoomId;
+        // Optionally: Notify the room that a new user has joined
+        global.io.to(customRoomId).emit("userJoined", `User joined room ${customRoomId}`);
+      });
+
+      socket.on("leaveRoom", () => {
+        if (currentRoom) {
+          socket.leave(currentRoom);
+          // Optionally: Notify the room that a user has left
+          global.io.to(currentRoom).emit("userLeft", `User left room ${currentRoom}`);
+          currentRoom = null;
+        }
+      });
+
+      socket.on("message", (message) => {
+        // Assume the message is for the room the user is currently in
+        global.io.to(currentRoom).emit("message", message);
+      });
     });
   }
   return global.io;

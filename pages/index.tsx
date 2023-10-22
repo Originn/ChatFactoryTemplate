@@ -85,8 +85,11 @@ export default function Home() {
 
   useEffect(() => {
     const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : 'http://localhost:3000';
-    console.log(serverUrl)
     const socket = io(serverUrl);
+
+    socket.on("assignedRoom", (roomId) => {
+      console.log("I have been assigned to room:", roomId);
+    });
 
     socket.on('connect', () => {
       console.log('Connected to the server');
@@ -95,6 +98,7 @@ export default function Home() {
     socket.on('connect_error', (error) => {
       console.log('Connection Error:', error);
     });
+
 
     socket.on("newToken", (token) => {
       setMessageState((state) => {
@@ -129,30 +133,37 @@ export default function Home() {
     });
 
     socket.on("fullResponse", (response) => {
-      setMessageState((state) => {
+      setMessageState((prevState) => {
+        // Create a copy of the previous messages state
+        const updatedMessages = [...prevState.messages];
+        const lastMessageIndex = updatedMessages.length - 1;
+    
         // Extract the message and documents from the response
         const { answer, sourceDocs } = response;
-
         const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score >= 0.82) : [];
-    
+        
         // Update the last message with the full answer and append sourceDocs
-        const updatedMessages = [...state.messages];
-        if (updatedMessages.length) {
-          const lastMessage = updatedMessages[updatedMessages.length - 1];
+        if (lastMessageIndex >= 0) {
+          const lastMessage = updatedMessages[lastMessageIndex];
           if (lastMessage.type === 'apiMessage') {
-            lastMessage.message = answer;  // Update the last message with the full answer
-            if (filteredSourceDocs.length) {
-              lastMessage.sourceDocs = filteredSourceDocs; // Append filteredSourceDocs
-            }
+            // Create a new last message with the updated details
+            const newLastMessage = {
+              ...lastMessage,
+              message: answer,
+              sourceDocs: filteredSourceDocs.length ? filteredSourceDocs : undefined,
+            };
+            // Replace the last message
+            updatedMessages[lastMessageIndex] = newLastMessage;
           }
         }
     
+        // Return the updated state
         return {
-          ...state,
+          ...prevState,
           messages: updatedMessages,
         };
       });
-    });
+    });    
     
     return () => {
       socket.disconnect();

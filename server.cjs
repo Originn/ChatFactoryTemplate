@@ -10,9 +10,11 @@ const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   const server = express();
-  server.use(express.static(path.join(__dirname, 'public')))
 
-  // This ensures that all Next.js handling is still in place
+  // Serve static files from the 'public' directory
+  server.use(express.static(path.join(__dirname, 'public')));
+
+  // All other requests are forwarded to Next.js
   server.all('*', (req, res) => {
     const parsedUrl = parse(req.url, true);
     handle(req, res, parsedUrl);
@@ -23,12 +25,6 @@ app.prepare().then(() => {
     console.log(`> Ready on http://localhost:${process.env.PORT || 3000}`);
   });
 
-  // Initialize socket.io using the init method from socketServer.cjs
-  const io = init(httpServer);
-  io.on('connection', (socket) => {
-    console.log('Client connected!');
-    socket.on('disconnect', () => {
-      console.log('Client disconnected');
-    });
-  });
+  // Initialize Socket.io
+  init(httpServer);
 });
