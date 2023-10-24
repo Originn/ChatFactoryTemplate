@@ -151,7 +151,7 @@ export default function Home() {
     
         // Extract the message and documents from the response
         const { answer, sourceDocs } = response;
-        const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score >= 0.82) : [];
+        const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score >= 0.6) : [];
         
         // Update the last message with the full answer and append sourceDocs
         if (lastMessageIndex >= 0) {

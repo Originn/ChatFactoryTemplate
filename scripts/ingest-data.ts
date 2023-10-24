@@ -15,6 +15,7 @@ export const run = async () => {
         const bucketName = 'solidcam';
         const gcsLoader = new GCSLoader(bucketName);
         const rawDocs = await gcsLoader.load();
+        console.log('Number of raw documents:', rawDocs.length);
 
         const splitDocs: any[] = [];  // This will store the results after splitting
 
@@ -30,6 +31,8 @@ export const run = async () => {
       let lastValidTimestamp: string | null = null;
 
       for (const doc of rawDocs) {
+        console.log(doc);
+        await waitForUserInput();
         // Modify the source metadata to append the page number
         const Timestamp = extractTimestamp(doc);
         const initialHeader = (doc.pageHeader || "");
@@ -82,7 +85,7 @@ export const run = async () => {
         }        
         processedDocs.push(...processedChunks);        
         }
-        console.log('Processed docs with timestamps (first 10)', processedDocs.slice(0, 10));
+        console.log('Processed docs with timestamps', processedDocs);
 
       /*create and store the embeddings in the vectorStore*/
       const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
