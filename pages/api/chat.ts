@@ -8,12 +8,15 @@ import { getPinecone } from '@/utils/pinecone-client';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { getIO } from "@/socketServer.cjs";
 import { Document } from 'utils/GCSLoader';
+import {waitForUserInput} from 'utils/textsplitter';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  console.log("req.body", req.body);
   const { question, roomId } = req.body;
+
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -56,6 +59,7 @@ export default async function handler(
     });
 
     const response = await chain.call(sanitizedQuestion, documentScores, roomId);
+    console.log("The RESPONSE IS:", response);
 
     response.sourceDocuments.forEach((doc: Document) => {
       doc.score = documentScores[doc.pageContent];
@@ -63,6 +67,11 @@ export default async function handler(
     
 
     if (roomId) {
+      console.log("INSIDE ROOM_ID", roomId);
+      console.log("About to emit full response:", JSON.stringify({
+        answer: response.text,
+        sourceDocs: response.sourceDocuments
+      }, null, 2));      
       io.to(roomId).emit(`fullResponse-${roomId}`, {
         answer: response.text,
         sourceDocs: response.sourceDocuments

@@ -18,16 +18,6 @@ import {
 } from '@/components/ui/accordion';
 import rehypeRaw from 'rehype-raw';
 
-
-
-let imageUrlUserIcon = '/usericon.png';
-let botimageIcon = '/bot-image.png';
-
-if (process.env.NODE_ENV === 'production') {
-  imageUrlUserIcon = 'https://solidcam.herokuapp.com/usericon.png';
-  botimageIcon = 'https://solidcam.herokuapp.com/bot-image.png';  
-}
-
 function addHyperlinksToPageNumbers(content: string, source: string): string {
   // Find all page numbers in the format (number)
   const regex = /\((\d+)\)/g;
@@ -41,10 +31,6 @@ function addHyperlinksToPageNumbers(content: string, source: string): string {
 
 export default function Home() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [roomId, setRoomId] = useState<string | null>(null);
-  const roomIdRef = useRef<string | null>(null);
-
-
 
   const toggleTheme = () => {
     setTheme(prevTheme => {
@@ -58,6 +44,7 @@ export default function Home() {
   const [query, setQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [roomId, setRoomId] = useState<string | null>(null);
   const [messageState, setMessageState] = useState<{
     messages: Message[];
     history: [string, string][];
@@ -78,10 +65,6 @@ export default function Home() {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    roomIdRef.current = roomId;
-  }, [roomId]);
-  
-  useEffect(() => {
     textAreaRef.current?.focus();
   }, []);
 
@@ -95,21 +78,39 @@ export default function Home() {
   useEffect(() => {
     const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : 'http://localhost:3000';
     const socket = io(serverUrl);
-
-    socket.on("assignedRoom", (newRoomId) => {
-      console.log("I have been assigned to room:", newRoomId);
-      setRoomId(newRoomId);
-    });
-    
-
-    socket.on('connect', () => {
-      console.log('Connected to the server');
-    });
-    
+  
+    // Event handler for 'assignedRoom'
+    const handleAssignedRoom = (assignedRoomId: any) => {
+      setRoomId(assignedRoomId);
+      socket.on(`fullResponse-${assignedRoomId}`, (response) => {
+        setMessageState((state) => {
+          // Extract the message and documents from the response
+          const { answer, sourceDocs } = response;
+          const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score >= 0) : [];
+  
+          // Update the last message with the full answer and append sourceDocs
+          const updatedMessages = [...state.messages];
+          if (updatedMessages.length) {
+            const lastMessage = updatedMessages[updatedMessages.length - 1];
+            if (lastMessage.type === 'apiMessage') {
+              lastMessage.message = answer;
+              if (filteredSourceDocs.length) {
+                lastMessage.sourceDocs = filteredSourceDocs;
+              }
+            }
+          }
+  
+          return {
+            ...state,
+            messages: updatedMessages,
+          };
+        });
+      });
+    }; // <-- This was missing, causing a scope error
+  
     socket.on('connect_error', (error) => {
       console.log('Connection Error:', error);
     });
-
 
     socket.on("newToken", (token) => {
       setMessageState((state) => {
@@ -143,43 +144,13 @@ export default function Home() {
       });
     });
 
-    socket.on(`fullResponse-${roomIdRef.current}`, (response) => {
-      setMessageState((prevState) => {
-        // Create a copy of the previous messages state
-        const updatedMessages = [...prevState.messages];
-        const lastMessageIndex = updatedMessages.length - 1;
-    
-        // Extract the message and documents from the response
-        const { answer, sourceDocs } = response;
-        const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score >= 0.6) : [];
-        
-        // Update the last message with the full answer and append sourceDocs
-        if (lastMessageIndex >= 0) {
-          const lastMessage = updatedMessages[lastMessageIndex];
-          if (lastMessage.type === 'apiMessage') {
-            // Create a new last message with the updated details
-            const newLastMessage = {
-              ...lastMessage,
-              message: answer,
-              sourceDocs: filteredSourceDocs.length ? filteredSourceDocs : undefined,
-            };
-            // Replace the last message
-            updatedMessages[lastMessageIndex] = newLastMessage;
-          }
-        }
-    
-        // Return the updated state
-        return {
-          ...prevState,
-          messages: updatedMessages,
-        };
-      });
-    });    
-    
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
+    socket.on('assignedRoom', handleAssignedRoom); // <-- Moved this out from handleAssignedRoom
+
+  return () => {
+    socket.off('assignedRoom', handleAssignedRoom);
+    socket.disconnect();
+  };
+}, []);
 
   //handle form submission
   async function handleSubmit(e: any) {
@@ -273,8 +244,7 @@ useEffect(() => {
                 if (message.type === 'apiMessage') {
                   icon = (
                     <Image
-                      key={index}
-                      src={botimageIcon}
+                      src="/bot-image.png"
                       alt="AI"
                       width="40"
                       height="40"
@@ -286,8 +256,7 @@ useEffect(() => {
                 } else {
                   icon = (
                     <Image
-                      key={index}
-                      src={imageUrlUserIcon}
+                      src="/usericon.png"
                       alt="Me"
                       width="30"
                       height="30"
