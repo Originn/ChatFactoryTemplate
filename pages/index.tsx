@@ -18,6 +18,14 @@ import {
 } from '@/components/ui/accordion';
 import rehypeRaw from 'rehype-raw';
 
+let imageUrlUserIcon = '/usericon.png';
+let botimageIcon = '/bot-image.png';
+
+if (process.env.NODE_ENV === 'production') {
+  imageUrlUserIcon = 'https://solidcam.herokuapp.com/usericon.png';
+  botimageIcon = 'https://solidcam.herokuapp.com/bot-image.png';  
+}
+
 function addHyperlinksToPageNumbers(content: string, source: string): string {
   // Find all page numbers in the format (number)
   const regex = /\((\d+)\)/g;
