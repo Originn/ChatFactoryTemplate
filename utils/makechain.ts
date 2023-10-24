@@ -11,6 +11,9 @@ type ChatEntry = {
   score: number;
 };
 
+const roomChatHistories: Record<string, ChatEntry[]> = {};
+
+
 let chatHistory: ChatEntry[] = [];
 
 const MODEL_NAME = process.env.MODEL_NAME;
@@ -59,14 +62,22 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       returnSourceDocuments: true,
     }
   );
-    return {
-      call: async (question: string, documentScores: Record<string, number>) => {
+  return {
+      call: async (question: string, documentScores: Record<string, number>, roomId: string) => {
+        if (!roomChatHistories[roomId]) {
+          roomChatHistories[roomId] = [];
+        }
+        let chatHistory = roomChatHistories[roomId];
+
         const response = await chain.call({
           question: question,
           chat_history: chatHistory.map(entry => entry.question + " " + entry.answer).join(" "),
         });
 
-        console.log('History:', chatHistory)
+        console.log(`History for room ${roomId}:`, chatHistory);
+      
+        // Log the received documentScores
+        console.log('Received documentScores:', documentScores);
 
         let totalScore = 0;
         if (response.sourceDocuments && response.sourceDocuments.length > 0) {
@@ -76,8 +87,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           totalScore /= response.sourceDocuments.length;
         }
 
-
-      
         // Update the chat history with the new question, answer, and average score
         chatHistory.push({
           question: question,
@@ -94,7 +103,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         if (chatHistory.length > MAX_HISTORY_LENGTH) {
           chatHistory = chatHistory.slice(-MAX_HISTORY_LENGTH);
         }
-      
+        roomChatHistories[roomId] = chatHistory;
         return response;
       }
     };

@@ -55,14 +55,13 @@ export default async function handler(
       }
     });
 
-    const response = await chain.call(sanitizedQuestion, documentScores);
+    const response = await chain.call(sanitizedQuestion, documentScores, roomId);
 
     response.sourceDocuments.forEach((doc: Document) => {
       doc.score = documentScores[doc.pageContent];
     });
     
 
-    // Emit response to specific room
     if (roomId) {
       io.to(roomId).emit(`fullResponse-${roomId}`, {
         answer: response.text,
