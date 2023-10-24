@@ -252,7 +252,8 @@ useEffect(() => {
                 if (message.type === 'apiMessage') {
                   icon = (
                     <Image
-                      src="/bot-image.png"
+                      key={index}
+                      src={botimageIcon}
                       alt="AI"
                       width="40"
                       height="40"
@@ -264,7 +265,8 @@ useEffect(() => {
                 } else {
                   icon = (
                     <Image
-                      src="/usericon.png"
+                      key={index}
+                      src={imageUrlUserIcon}
                       alt="Me"
                       width="30"
                       height="30"
