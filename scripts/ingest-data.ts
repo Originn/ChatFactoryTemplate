@@ -32,9 +32,9 @@ export const run = async () => {
 
       for (const doc of rawDocs) {
         console.log(doc);
-        await waitForUserInput();
+        //await waitForUserInput();
         // Modify the source metadata to append the page number
-        const Timestamp = extractTimestamp(doc);
+        const Timestamp = extractFirstTimestampInSeconds(doc.pageContent);
         const initialHeader = (doc.pageHeader || "");
         const chunk = await textSplitter.createDocuments([doc.pageContent],[doc.metadata], {chunkHeader: initialHeader + '\n\n',
         appendChunkOverlapHeader: true,});  
@@ -70,19 +70,20 @@ export const run = async () => {
         
           let processedChunks: any[] = chunk;
 
-          if (Timestamp) {
+          let last_timestamp: any = null; // Initialize variable to store the last seen timestamp
+
             processedChunks = chunk.map(document => {
-                const timestampInSeconds = extractFirstTimestampInSeconds(document.pageContent);
-                const updatedSource = timestampInSeconds !== null 
-                    ? `${document.metadata.source}&t=${timestampInSeconds}s` 
+
+                const updatedSource = Timestamp !== null
+                    ? `${document.metadata.source}&t=${Timestamp}s`
                     : document.metadata.source;
-        
+
                 // Update the source property of the current document's metadata
                 document.metadata.source = updatedSource;
-        
+
                 return document; // Return the updated Document object
             });
-        }        
+
         processedDocs.push(...processedChunks);        
         }
         console.log('Processed docs with timestamps', processedDocs);

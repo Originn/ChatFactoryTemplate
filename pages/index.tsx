@@ -94,7 +94,7 @@ export default function Home() {
         setMessageState((state) => {
           // Extract the message and documents from the response
           const { answer, sourceDocs } = response;
-          const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score >= 0) : [];
+          const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score >= 0.8) : [];
   
           // Update the last message with the full answer and append sourceDocs
           const updatedMessages = [...state.messages];
@@ -114,7 +114,7 @@ export default function Home() {
           };
         });
       });
-    }; // <-- This was missing, causing a scope error
+    };
   
     socket.on('connect_error', (error) => {
       console.log('Connection Error:', error);
