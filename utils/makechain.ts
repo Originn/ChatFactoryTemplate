@@ -34,10 +34,6 @@ Helpful answer:`;
 
 const TEMPRATURE = parseFloat(process.env.TEMPRATURE || "0");
 
-console.log('TEMPRATURE:', TEMPRATURE);
-console.log('QA_PROMPT:', QA_PROMPT);
-console.log('CONDENSE_PROMPT:', CONDENSE_PROMPT);
-
 export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void) => {
   const model = new OpenAI({
     temperature: TEMPRATURE,
@@ -63,21 +59,30 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     }
   );
   return {
-      call: async (question: string, documentScores: Record<string, number>, roomId: string) => {
-        if (!roomChatHistories[roomId]) {
-          roomChatHistories[roomId] = [];
-        }
-        let chatHistory = roomChatHistories[roomId];
+    call: async (question: string, documentScores: Record<string, number>, roomId: string) => {
+      if (!roomChatHistories[roomId]) {
+        roomChatHistories[roomId] = [];
+      }
+      let chatHistory = roomChatHistories[roomId];
 
-        const response = await chain.call({
-          question: question,
-          chat_history: chatHistory.map(entry => entry.question + " " + entry.answer).join(" "),
-        });
-
-        console.log(`History for room ${roomId}:`, chatHistory);
+      const actualChatHistoryText = chatHistory.map(entry => `User: ${entry.question} Bot: ${entry.answer}`).join(' ');
       
-        // Log the received documentScores
-        console.log('Received documentScores:', documentScores);
+
+      // Creating the formatted string to log
+      const formattedString = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
+
+      Chat History:
+      ${actualChatHistoryText}
+      Follow Up Input: ${question}
+      Standalone question:`;
+
+      console.log("Debug: Formatted String: ", formattedString);
+
+      const response = await chain.call({
+        question: question,
+        chat_history: actualChatHistoryText,
+      });
+  
 
         let totalScore = 0;
         if (response.sourceDocuments && response.sourceDocuments.length > 0) {

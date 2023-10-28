@@ -93,8 +93,9 @@ export default function Home() {
       socket.on(`fullResponse-${assignedRoomId}`, (response) => {
         setMessageState((state) => {
           // Extract the message and documents from the response
+          const filterScore = parseFloat(process.env.FILTER_SCORE || "0.82");
           const { answer, sourceDocs } = response;
-          const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score >= 0.8) : [];
+          const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score >= filterScore) : [];
   
           // Update the last message with the full answer and append sourceDocs
           const updatedMessages = [...state.messages];
