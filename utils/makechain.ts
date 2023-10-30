@@ -13,9 +13,6 @@ type ChatEntry = {
 
 const roomChatHistories: Record<string, ChatEntry[]> = {};
 
-
-let chatHistory: ChatEntry[] = [];
-
 const MODEL_NAME = process.env.MODEL_NAME;
 const nonStreamingModel = new OpenAI({});
 const CONDENSE_PROMPT = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
@@ -23,7 +20,7 @@ const CONDENSE_PROMPT = `Given the history of the conversation and a follow up q
 Chat History:
 {chat_history}
 Follow Up Input: {question}
-Standalone question:`;
+Helpful answer in markdown:`;
 
 const QA_PROMPT = `${process.env.QA_PROMPT || ""}
 
@@ -66,22 +63,13 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       let chatHistory = roomChatHistories[roomId];
 
       const actualChatHistoryText = chatHistory.map(entry => `User: ${entry.question} Bot: ${entry.answer}`).join(' ');
-      
-
-      // Creating the formatted string to log
-      const formattedString = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
-
-      Chat History:
-      ${actualChatHistoryText}
-      Follow Up Input: ${question}
-      Standalone question:`;
-
-      console.log("Debug: Formatted String: ", formattedString);
 
       const response = await chain.call({
         question: question,
         chat_history: actualChatHistoryText,
       });
+      console.log("Debug: chat_history used in API call:", actualChatHistoryText);
+      console.log("Debug: API Response: ", response);
   
 
         let totalScore = 0;
@@ -99,15 +87,17 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           score: totalScore,
         });
       
-        // Filter the chat history by score
-        const SCORE_THRESHOLD = 0.02;
-        chatHistory = chatHistory.filter(entry => entry.score >= SCORE_THRESHOLD);
-      
         // Manage chat history size
         const MAX_HISTORY_LENGTH = 10;
-        if (chatHistory.length > MAX_HISTORY_LENGTH) {
-          chatHistory = chatHistory.slice(-MAX_HISTORY_LENGTH);
+
+        // Filter the chat history by score
+        const SCORE_THRESHOLD = 0.02;
+        roomChatHistories[roomId] = roomChatHistories[roomId].filter(entry => entry.score >= SCORE_THRESHOLD);
+        // Manage chat history size
+        if (roomChatHistories[roomId].length > MAX_HISTORY_LENGTH) {
+          roomChatHistories[roomId] = roomChatHistories[roomId].slice(-MAX_HISTORY_LENGTH);
         }
+      
         roomChatHistories[roomId] = chatHistory;
         return response;
       }
