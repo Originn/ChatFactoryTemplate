@@ -46,7 +46,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
   const chain = ConversationalRetrievalQAChain.fromLLM(
     model,
-    vectorstore.asRetriever(10),
+    vectorstore.asRetriever(4),
     {
       questionGeneratorChainOptions: {
         llm: nonStreamingModel,

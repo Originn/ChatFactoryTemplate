@@ -1,5 +1,5 @@
 //ingest-data.ts
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import { CharacterTextSplitter } from 'langchain/text_splitter';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { PineconeStore } from 'langchain/vectorstores/pinecone';
 import { getPinecone } from '@/utils/pinecone-client';
@@ -20,7 +20,7 @@ export const run = async () => {
         const splitDocs: any[] = [];  // This will store the results after splitting
 
         /* Split text into chunks */
-        const textSplitter = new RecursiveCharacterTextSplitter({
+        const textSplitter = new CharacterTextSplitter({
             chunkSize: 1000,
             chunkOverlap: 200,
         });
@@ -31,13 +31,16 @@ export const run = async () => {
       let lastValidTimestamp: string | null = null;
 
       for (const doc of rawDocs) {
-        console.log(doc);
+        // console.log('doc log', doc);
+        // await waitForUserInput();
         //await waitForUserInput();
         // Modify the source metadata to append the page number
         const Timestamp = extractFirstTimestampInSeconds(doc.pageContent);
         const initialHeader = (doc.pageHeader || "");
         const chunk = await textSplitter.createDocuments([doc.pageContent],[doc.metadata], {chunkHeader: initialHeader + '\n\n',
         appendChunkOverlapHeader: true,});  
+        // console.log('Chunck log', chunk);
+        // await waitForUserInput();
     
         if (chunk.length > 1) {
             // Extract headers from the first chunk
