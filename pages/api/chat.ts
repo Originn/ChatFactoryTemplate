@@ -45,7 +45,7 @@ export default async function handler(
 
 
 // Perform similarity search on sanitized question and limit the results to 6
-const results = await vectorStore.similaritySearchWithScore(sanitizedQuestion, 10);
+const results = await vectorStore.similaritySearchWithScore(sanitizedQuestion, 4);
 console.log("Debug: Results:", results);
 
 // Map the returned results to MyDocument[] format, storing the score in the metadata
