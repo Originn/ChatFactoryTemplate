@@ -7,7 +7,7 @@ import { makeChain } from '@/utils/makechain';
 import { getPinecone } from '@/utils/pinecone-client';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { getIO } from "@/socketServer.cjs";
-import { Document } from 'utils/GCSLoader';
+import { MyDocument } from 'utils/GCSLoader';
 import {waitForUserInput} from 'utils/textsplitter';
 import { AIMessage, HumanMessage } from 'langchain/schema';
 
@@ -43,41 +43,52 @@ export default async function handler(
       },
     );
 
-    const documentScores: Record<string, number> = {};
 
-    const results = await vectorStore.similaritySearchWithScore(sanitizedQuestion, 4);
-    for (const [document, score] of results) {
-        documentScores[document.pageContent] = score;
+// Perform similarity search on sanitized question and limit the results to 6
+const results = await vectorStore.similaritySearchWithScore(sanitizedQuestion, 10);
+console.log("Debug: Results:", results);
+
+// Map the returned results to MyDocument[] format, storing the score in the metadata
+const scoredDocuments: MyDocument[] = results.map(([document, score]) => {
+  return {
+    ...document,
+    metadata: {
+      ...document.metadata,
+      score: score // Attach the similarity score to the metadata
     }
+  };
+});
 
-    // Create chain and use the already retrieved io instance
-    const chain = makeChain(vectorStore, (token) => {
-      if (roomId) {
-        io.to(roomId).emit("newToken", token);
-      } else {
-        io.emit("newToken", token);
-      }
-    });
+console.log("Debug: ScoredDocuments:", scoredDocuments);
 
-    const response = await chain.call(sanitizedQuestion, documentScores, roomId);
+// Initialize chain for API calls, also define token handling through io instance
+const chain = makeChain(vectorStore, (token) => {
+  // If a room ID exists, emit the new token to the specific room. Otherwise, emit to all.
+  if (roomId) {
+    io.to(roomId).emit("newToken", token);
+  } else {
+    io.emit("newToken", token);
+  }
+});
 
-    response.sourceDocuments.forEach((doc: Document) => {
-      doc.score = documentScores[doc.pageContent];
-    });
-    
+// Make the API call using the chain, passing in the sanitized question, scored documents, and room ID
+const response = await chain.call(sanitizedQuestion, scoredDocuments, roomId);
 
-    if (roomId) {
-      console.log("INSIDE ROOM_ID", roomId);     
-      io.to(roomId).emit(`fullResponse-${roomId}`, {
-        answer: response.text,
-        sourceDocs: response.sourceDocuments
-      });
-    } else {
-      io.emit("fullResponse", {
-        answer: response.text,
-        sourceDocs: response.sourceDocuments
-      });
-    }
+console.log("Debug: Complete API Response with Metadata: ", JSON.stringify(response, null, 2));
+
+// If room ID is specified, emit the response to that room. Otherwise, emit to all.
+if (roomId) {
+  console.log("INSIDE ROOM_ID", roomId);     
+  io.to(roomId).emit(`fullResponse-${roomId}`, {
+    answer: response.text,
+    sourceDocs: response.sourceDocuments // Emit the source documents along with the answer
+  });
+} else {
+  io.emit("fullResponse", {
+    answer: response.text,
+    sourceDocs: response.sourceDocuments // Emit the source documents along with the answer
+  });
+}
 
     res.status(200).json(response);
   } catch (error: any) {

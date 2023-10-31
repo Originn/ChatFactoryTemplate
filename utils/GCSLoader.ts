@@ -13,7 +13,7 @@ export interface DocumentInput<Metadata extends Record<string, any> = Record<str
     metadata?: Metadata;
 }
 
-export class Document<Metadata extends Record<string, any> = Record<string, any>> implements DocumentInput<Metadata> {
+export class MyDocument<Metadata extends Record<string, any> = Record<string, any>> implements DocumentInput<Metadata> {
     pageNumber?: number;
     pageHeader?: string;
     pageContent: string;
@@ -93,11 +93,11 @@ class GCSLoader {
         return content;
     }
 
-    async load(): Promise<Document[]> {
+    async load(): Promise<MyDocument[]> {
         const bucket = this.storage.bucket(this.bucketName);
         const files = await bucket.getFiles();
     
-        const documents: Document[] = [];
+        const documents: MyDocument[] = [];
     
         for (const file of files[0]) {
             let tempFile: tmp.FileResult | undefined;

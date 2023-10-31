@@ -4,6 +4,7 @@ import { OpenAI } from 'langchain/llms/openai';
 import { PineconeStore } from 'langchain/vectorstores/pinecone';
 import { ConversationalRetrievalQAChain } from 'langchain/chains';
 import { CallbackManager } from "langchain/callbacks";
+import { MyDocument } from 'utils/GCSLoader';
 
 type ChatEntry = {
   question: string;
@@ -45,7 +46,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
   const chain = ConversationalRetrievalQAChain.fromLLM(
     model,
-    vectorstore.asRetriever(),
+    vectorstore.asRetriever(10),
     {
       questionGeneratorChainOptions: {
         llm: nonStreamingModel,
@@ -56,7 +57,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     }
   );
   return {
-    call: async (question: string, documentScores: Record<string, number>, roomId: string) => {
+    call: async (question: string, documentScores: MyDocument[], roomId: string) => {
       if (!roomChatHistories[roomId]) {
         roomChatHistories[roomId] = [];
       }
@@ -69,16 +70,31 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         chat_history: actualChatHistoryText,
       });
       console.log("Debug: chat_history used in API call:", actualChatHistoryText);
-      console.log("Debug: API Response: ", response);
-  
 
-        let totalScore = 0;
-        if (response.sourceDocuments && response.sourceDocuments.length > 0) {
-          for (let doc of response.sourceDocuments) {
-            totalScore += documentScores[doc.pageContent] || 0;
+      let totalScore = 0;
+      if (response.sourceDocuments && response.sourceDocuments.length > 0) {
+        for (let doc of response.sourceDocuments) {
+          const matchingDoc = documentScores.find(d => d.pageContent === doc.pageContent);
+          if (matchingDoc) {
+            totalScore += matchingDoc.metadata.score || 0;
           }
-          totalScore /= response.sourceDocuments.length;
         }
+        totalScore /= response.sourceDocuments.length;
+      }
+      console.log('totalScore', totalScore);
+
+      if (response.sourceDocuments && response.sourceDocuments.length > 0) {
+        response.sourceDocuments = response.sourceDocuments.map((doc: MyDocument) => {
+            const matchingDoc = documentScores.find(d => d.pageContent === doc.pageContent);
+            return {
+                ...doc,
+                metadata: {
+                    ...doc.metadata,
+                    score: matchingDoc ? matchingDoc.metadata.score : 0
+                }
+            };
+        });
+    }
 
         // Update the chat history with the new question, answer, and average score
         chatHistory.push({
@@ -86,19 +102,20 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           answer: response.text,
           score: totalScore,
         });
-      
-        // Manage chat history size
-        const MAX_HISTORY_LENGTH = 10;
-
+        
         // Filter the chat history by score
         const SCORE_THRESHOLD = 0.02;
-        roomChatHistories[roomId] = roomChatHistories[roomId].filter(entry => entry.score >= SCORE_THRESHOLD);
+        chatHistory = chatHistory.filter(entry => entry.score >= SCORE_THRESHOLD);
+  
         // Manage chat history size
-        if (roomChatHistories[roomId].length > MAX_HISTORY_LENGTH) {
-          roomChatHistories[roomId] = roomChatHistories[roomId].slice(-MAX_HISTORY_LENGTH);
+        const MAX_HISTORY_LENGTH = 10;
+        if (chatHistory.length > MAX_HISTORY_LENGTH) {
+          chatHistory = chatHistory.slice(-MAX_HISTORY_LENGTH);
         }
-      
+  
+        // Update roomChatHistories with the filtered and truncated chatHistory
         roomChatHistories[roomId] = chatHistory;
+  
         return response;
       }
     };
