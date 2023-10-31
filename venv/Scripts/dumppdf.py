@@ -1,4 +1,4 @@
-#!C:\Users\ori_s\code_projects\solidcam\venv\Scripts\python.exe
+#!C:\Users\ori.somekh\solidcam\venv\Scripts\python.exe
 """Extract pdf structure in XML format"""
 import logging
 import os.path

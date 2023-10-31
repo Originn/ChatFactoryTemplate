@@ -9,7 +9,7 @@ import { Message } from '@/types/chat';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import LoadingDots from '@/components/ui/LoadingDots';
-import { Document } from 'utils/GCSLoader';
+import { MyDocument } from 'utils/GCSLoader';
 import {
   Accordion,
   AccordionContent,
@@ -92,19 +92,34 @@ export default function Home() {
       setRoomId(assignedRoomId);
       socket.on(`fullResponse-${assignedRoomId}`, (response) => {
         setMessageState((state) => {
-          // Extract the message and documents from the response
-          const filterScore = parseFloat(process.env.FILTER_SCORE || "0.82");
+          const filterScore = parseFloat(process.env.FILTER_SCORE || "0.81");
           const { answer, sourceDocs } = response;
-          const filteredSourceDocs = sourceDocs ? (sourceDocs as Document[]).filter(doc => doc.score !== undefined && doc.score >= filterScore) : [];
   
+          const filteredSourceDocs: MyDocument[] = sourceDocs ? sourceDocs.filter((doc: MyDocument) => {
+            const score = parseFloat(doc.metadata.score);
+            return !isNaN(score) && score >= filterScore;
+          }) : [];
+          
+          const deduplicatedDocs = filteredSourceDocs.reduce((acc: MyDocument[], doc: MyDocument) => {
+            const sourceURL = doc.metadata.source as string;  // Assuming source is a string
+            // Extract timestamp value from URL
+            const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
+          
+            if (timestamp && !acc.some(d => (d.metadata.source as string).includes(`t=${timestamp}s`))) {
+              acc.push(doc);
+            }
+            return acc;
+          }, []);
+          
           // Update the last message with the full answer and append sourceDocs
           const updatedMessages = [...state.messages];
           if (updatedMessages.length) {
             const lastMessage = updatedMessages[updatedMessages.length - 1];
             if (lastMessage.type === 'apiMessage') {
               lastMessage.message = answer;
-              if (filteredSourceDocs.length) {
-                lastMessage.sourceDocs = filteredSourceDocs;
+              // Replace this with deduplicatedDocs
+              if (deduplicatedDocs.length) {
+                lastMessage.sourceDocs = deduplicatedDocs;
               }
             }
           }

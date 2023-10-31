@@ -1,4 +1,4 @@
-#!C:\Users\ori_s\code_projects\solidcam\venv\Scripts\python.exe
+#!C:\Users\ori.somekh\solidcam\venv\Scripts\python.exe
 """A command line tool for extracting text and images from PDF and
 output it to plain text, html, xml or tags."""
 import argparse
