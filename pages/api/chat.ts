@@ -15,6 +15,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  let roomIdError = false;
   console.log("req.body", req.body);
   const { question, history, roomId } = req.body;
 
@@ -65,7 +66,7 @@ const chain = makeChain(vectorStore, (token) => {
   if (roomId) {
     io.to(roomId).emit("newToken", token);
   } else {
-    io.emit("newToken", token);
+    roomIdError = true;
   }
 });
 
@@ -98,9 +99,15 @@ if (roomId) {
   });
 }
 
-    res.status(200).json(Documents);
-  } catch (error: any) {
-    console.log('error', error);
-    res.status(500).json({ error: error.message || 'Something went wrong' });
-  }
+if (roomIdError) {
+  res.status(400).json({ error: 'roomId was not found' });  // Return 400 Bad Request
+  return;
+}
+
+res.status(200).json(Documents);
+
+} catch (error: any) {
+  console.log('error', error);
+  res.status(500).json({ error: error.message || 'Something went wrong' });
+}
 }

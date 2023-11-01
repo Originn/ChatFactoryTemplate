@@ -37,8 +37,7 @@ export const run = async () => {
         // Modify the source metadata to append the page number
         const Timestamp = extractFirstTimestampInSeconds(doc.pageContent);
         const initialHeader = (doc.pageHeader || "");
-        const chunk = await textSplitter.createDocuments([doc.pageContent],[doc.metadata], {chunkHeader: initialHeader + '\n\n',
-        appendChunkOverlapHeader: true,});  
+        const chunk = await textSplitter.createDocuments([doc.pageContent],[doc.metadata]);  
         // console.log('Chunck log', chunk);
         // await waitForUserInput();
     
@@ -70,7 +69,8 @@ export const run = async () => {
                 
             }      
         } 
-        
+        // console.log('Chunck log2', chunk);
+        // await waitForUserInput();
           let processedChunks: any[] = chunk;
 
           let last_timestamp: any = null; // Initialize variable to store the last seen timestamp
