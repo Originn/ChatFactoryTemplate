@@ -104,12 +104,19 @@ export default function Home() {
             const sourceURL = doc.metadata.source as string;  // Assuming source is a string
             // Extract timestamp value from URL
             const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
-          
-            if (timestamp && !acc.some(d => (d.metadata.source as string).includes(`t=${timestamp}s`))) {
+            
+            if (timestamp) {
+              // If the document has a timestamp, push it only if it's unique
+              if (!acc.some(d => (d.metadata.source as string).includes(`t=${timestamp}s`))) {
+                acc.push(doc);
+              }
+            } else {
+              // If the document does not have a timestamp, push it unconditionally
               acc.push(doc);
             }
             return acc;
           }, []);
+          
           
           // Update the last message with the full answer and append sourceDocs
           const updatedMessages = [...state.messages];
