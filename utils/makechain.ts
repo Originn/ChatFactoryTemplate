@@ -57,7 +57,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     }
   );
   return {
-    call: async (question: string, documentScores: MyDocument[], roomId: string) => {
+    call: async (question: string, Documents: MyDocument[], roomId: string) => {
       if (!roomChatHistories[roomId]) {
         roomChatHistories[roomId] = [];
       }
@@ -65,41 +65,32 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       const actualChatHistoryText = chatHistory.map(entry => `User: ${entry.question} Bot: ${entry.answer}`).join(' ');
 
-      const response = await chain.call({
-        question: question,
-        chat_history: actualChatHistoryText,
-      });
-      console.log("Debug: chat_history used in API call:", actualChatHistoryText);
+      const responseText = (await (async () => {
+        const response = await chain.call({
+            question: question,
+            chat_history: actualChatHistoryText,
+        });
+        return response.text;
+      })());
+
+      Documents.unshift({ responseText } as any);
 
       let totalScore = 0;
-      if (response.sourceDocuments && response.sourceDocuments.length > 0) {
-        for (let doc of response.sourceDocuments) {
-          const matchingDoc = documentScores.find(d => d.pageContent === doc.pageContent);
-          if (matchingDoc) {
-            totalScore += matchingDoc.metadata.score || 0;
+      let count = 0;
+      if (Documents && Documents.length > 0) {
+        for (let doc of Documents) {
+          if (doc.metadata) {
+            totalScore += doc.metadata.score || 0;
+            count++;
           }
         }
-        totalScore /= response.sourceDocuments.length;
+        totalScore = count > 0 ? totalScore / count : 0;
       }
-      console.log('totalScore', totalScore);
-
-      if (response.sourceDocuments && response.sourceDocuments.length > 0) {
-        response.sourceDocuments = response.sourceDocuments.map((doc: MyDocument) => {
-            const matchingDoc = documentScores.find(d => d.pageContent === doc.pageContent);
-            return {
-                ...doc,
-                metadata: {
-                    ...doc.metadata,
-                    score: matchingDoc ? matchingDoc.metadata.score : 0
-                }
-            };
-        });
-    }
 
         // Update the chat history with the new question, answer, and average score
         chatHistory.push({
           question: question,
-          answer: response.text,
+          answer: (Documents[0] as any).responseText,
           score: totalScore,
         });
         
@@ -116,7 +107,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         // Update roomChatHistories with the filtered and truncated chatHistory
         roomChatHistories[roomId] = chatHistory;
   
-        return response;
+        return Documents;
       }
     };
 };
