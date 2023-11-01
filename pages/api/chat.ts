@@ -44,22 +44,20 @@ export default async function handler(
     );
 
 
-// Perform similarity search on sanitized question and limit the results to 6
-const results = await vectorStore.similaritySearchWithScore(sanitizedQuestion, 4);
-console.log("Debug: Results:", results);
+// Perform similarity search on sanitized question and limit the results to 4
+let results = await vectorStore.similaritySearchWithScore(sanitizedQuestion, 4);
 
 // Map the returned results to MyDocument[] format, storing the score in the metadata
-const scoredDocuments: MyDocument[] = results.map(([document, score]) => {
+let Documents: MyDocument[] = results.map(([document, score]) => {
   return {
     ...document,
     metadata: {
       ...document.metadata,
-      score: score // Attach the similarity score to the metadata
+      score: score
     }
   };
 });
 
-console.log("Debug: ScoredDocuments:", scoredDocuments);
 
 // Initialize chain for API calls, also define token handling through io instance
 const chain = makeChain(vectorStore, (token) => {
@@ -72,25 +70,35 @@ const chain = makeChain(vectorStore, (token) => {
 });
 
 // Make the API call using the chain, passing in the sanitized question, scored documents, and room ID
-const response = await chain.call(sanitizedQuestion, scoredDocuments, roomId);
+await chain.call(sanitizedQuestion, Documents, roomId);
 
-console.log("Debug: Complete API Response with Metadata: ", JSON.stringify(response, null, 2));
+results = await vectorStore.similaritySearchWithScore((Documents[0] as any).responseText, 4);
 
-// If room ID is specified, emit the response to that room. Otherwise, emit to all.
+console.log("Debug: Complete API Response with Metadata: ", JSON.stringify(results, null, 3));
+Documents = results.map(([document, score]) => {
+  return {
+    ...document,
+    metadata: {
+      ...document.metadata,
+      score: score 
+    }
+  };
+});
+console.log("Debug: Complete API Response with Metadata: ", JSON.stringify(Documents, null, 3));
+
+//If room ID is specified, emit the response to that room. Otherwise, emit to all.
 if (roomId) {
   console.log("INSIDE ROOM_ID", roomId);     
   io.to(roomId).emit(`fullResponse-${roomId}`, {
-    answer: response.text,
-    sourceDocs: response.sourceDocuments // Emit the source documents along with the answer
+    sourceDocs: Documents
   });
 } else {
   io.emit("fullResponse", {
-    answer: response.text,
-    sourceDocs: response.sourceDocuments // Emit the source documents along with the answer
+    sourceDocs: Documents
   });
 }
 
-    res.status(200).json(response);
+    res.status(200).json(Documents);
   } catch (error: any) {
     console.log('error', error);
     res.status(500).json({ error: error.message || 'Something went wrong' });

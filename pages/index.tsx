@@ -93,7 +93,7 @@ export default function Home() {
       socket.on(`fullResponse-${assignedRoomId}`, (response) => {
         setMessageState((state) => {
           const filterScore = parseFloat(process.env.FILTER_SCORE || "0.81");
-          const { answer, sourceDocs } = response;
+          const { sourceDocs } = response;
   
           const filteredSourceDocs: MyDocument[] = sourceDocs ? sourceDocs.filter((doc: MyDocument) => {
             const score = parseFloat(doc.metadata.score);
@@ -116,7 +116,6 @@ export default function Home() {
           if (updatedMessages.length) {
             const lastMessage = updatedMessages[updatedMessages.length - 1];
             if (lastMessage.type === 'apiMessage') {
-              lastMessage.message = answer;
               // Replace this with deduplicatedDocs
               if (deduplicatedDocs.length) {
                 lastMessage.sourceDocs = deduplicatedDocs;
