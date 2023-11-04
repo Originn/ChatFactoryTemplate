@@ -73,6 +73,8 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         return response.text;
       })());
 
+      console.log("Debug: chat_history used in API call:", actualChatHistoryText);
+
       Documents.unshift({ responseText } as any);
 
       let totalScore = 0;
@@ -86,6 +88,10 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         }
         totalScore = count > 0 ? totalScore / count : 0;
       }
+
+      console.log('totalScore', totalScore);
+      console.log('Documents', Documents);
+  
 
         // Update the chat history with the new question, answer, and average score
         chatHistory.push({
