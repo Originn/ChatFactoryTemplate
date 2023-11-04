@@ -22,6 +22,7 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   let roomIdError = false;
+  console.log("req.body", req.body);
   const { question, history, roomId } = req.body;
 
 
@@ -78,16 +79,18 @@ const chain = makeChain(vectorStore, (token) => {
 // Make the API call using the chain, passing in the sanitized question, scored documents, and room ID
 await chain.call(sanitizedQuestion, Documents, roomId);
 
-//results = await vectorStore.similaritySearchWithScore((Documents[0] as any).responseText, 4);
 
   const pdfResults = await filteredSimilaritySearch(vectorStore, sanitizedQuestion, 'pdf', 2);
+  console.log("Debug: pdfResults: ",pdfResults);
 
   const webinarResults = await filteredSimilaritySearch(vectorStore, sanitizedQuestion, 'youtube', 2);
+  console.log("Debug: webinarResults: ",webinarResults);
   
   const combinedResults = [...pdfResults, ...webinarResults];
 
   combinedResults.sort((a, b) => b[1] - a[1]);
-
+  
+  console.log("Debug: Results with Metadata: ", JSON.stringify(results, null, 3));
   Documents = combinedResults.map(([document, score]) => {
     return {
       ...document,
@@ -98,10 +101,11 @@ await chain.call(sanitizedQuestion, Documents, roomId);
     };
   });
 
-  //console.log("Debug: Complete API Response with Metadata: ", JSON.stringify(Documents, null, 3));
+  console.log("Debug: Documents with Metadata: ", JSON.stringify(Documents, null, 3));
 
   //If room ID is specified, emit the response to that room. Otherwise, emit to all.
-  if (roomId) { 
+  if (roomId) {
+    console.log("INSIDE ROOM_ID", roomId);     
     io.to(roomId).emit(`fullResponse-${roomId}`, {
       sourceDocs: Documents
     });
