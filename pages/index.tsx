@@ -92,7 +92,7 @@ export default function Home() {
       setRoomId(assignedRoomId);
       socket.on(`fullResponse-${assignedRoomId}`, (response) => {
         setMessageState((state) => {
-          const filterScore = parseFloat(process.env.FILTER_SCORE || "0.81");
+          const filterScore = parseFloat(process.env.NEXT_PUBLIC_FILTER_SCORE || "0.81");
           const { sourceDocs } = response;
   
           const filteredSourceDocs: MyDocument[] = sourceDocs ? sourceDocs.filter((doc: MyDocument) => {
@@ -330,7 +330,7 @@ useEffect(() => {
                             <div key={`messageSourceDocs-${docIndex}`}>
                               <AccordionItem value={`item-${docIndex}`}>
                                 <AccordionTrigger>
-                                  <h3>Source {docIndex + 1}</h3>
+                                  <h3>{doc.metadata.type === 'youtube' ? 'Webinar' : 'Help Document'}</h3>
                                 </AccordionTrigger>
                                 <AccordionContent>
                                   {

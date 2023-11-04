@@ -7,7 +7,11 @@ import GCSLoader from '@/utils/GCSLoader';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { waitForUserInput, extractTimestamp, extractAndConcatenateHeaders, extractYouTubeLinkFromSingleDoc, extractFirstTimestampInSeconds, extractPotentialSubHeader } from '@/utils/textsplitter'
 
-
+function determineSourceType(url: string): string {
+    if (url.includes('youtube')) return 'youtube';
+    if (url.includes('.pdf')) return 'pdf';
+    return 'other';  // Default if neither match
+}
 
 export const run = async () => {
     try {
@@ -15,9 +19,7 @@ export const run = async () => {
         const bucketName = 'solidcam';
         const gcsLoader = new GCSLoader(bucketName);
         const rawDocs = await gcsLoader.load();
-        console.log('Number of raw documents:', rawDocs.length);
-
-        const splitDocs: any[] = [];  // This will store the results after splitting
+        //console.log('Number of raw documents:', rawDocs.length);
 
         /* Split text into chunks */
         const textSplitter = new CharacterTextSplitter({
@@ -27,13 +29,9 @@ export const run = async () => {
       
       // Associate each chunk with its first timestamp
       const processedDocs: any[] = [];
-      
-      let lastValidTimestamp: string | null = null;
 
       for (const doc of rawDocs) {
-        // console.log('doc log', doc);
-        // await waitForUserInput();
-        //await waitForUserInput();
+
         // Modify the source metadata to append the page number
         const Timestamp = extractFirstTimestampInSeconds(doc.pageContent);
         const initialHeader = (doc.pageHeader || "");
@@ -73,8 +71,6 @@ export const run = async () => {
         // await waitForUserInput();
           let processedChunks: any[] = chunk;
 
-          let last_timestamp: any = null; // Initialize variable to store the last seen timestamp
-
             processedChunks = chunk.map(document => {
 
                 const updatedSource = Timestamp !== null
@@ -83,6 +79,8 @@ export const run = async () => {
 
                 // Update the source property of the current document's metadata
                 document.metadata.source = updatedSource;
+
+                document.metadata.type = determineSourceType(updatedSource);
 
                 return document; // Return the updated Document object
             });

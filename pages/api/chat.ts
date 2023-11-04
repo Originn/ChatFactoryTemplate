@@ -11,12 +11,17 @@ import { MyDocument } from 'utils/GCSLoader';
 import {waitForUserInput} from 'utils/textsplitter';
 import { AIMessage, HumanMessage } from 'langchain/schema';
 
+async function filteredSimilaritySearch(vectorStore:any, queryText:any, type:any, limit:any) {
+  return vectorStore.similaritySearchWithScore(queryText, limit, { type: type });
+}
+
+
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
   let roomIdError = false;
-  console.log("req.body", req.body);
   const { question, history, roomId } = req.body;
 
 
@@ -73,41 +78,48 @@ const chain = makeChain(vectorStore, (token) => {
 // Make the API call using the chain, passing in the sanitized question, scored documents, and room ID
 await chain.call(sanitizedQuestion, Documents, roomId);
 
-results = await vectorStore.similaritySearchWithScore((Documents[0] as any).responseText, 4);
+//results = await vectorStore.similaritySearchWithScore((Documents[0] as any).responseText, 4);
 
-console.log("Debug: Complete API Response with Metadata: ", JSON.stringify(results, null, 3));
-Documents = results.map(([document, score]) => {
-  return {
-    ...document,
-    metadata: {
-      ...document.metadata,
-      score: score 
-    }
-  };
-});
-console.log("Debug: Complete API Response with Metadata: ", JSON.stringify(Documents, null, 3));
+  const pdfResults = await filteredSimilaritySearch(vectorStore, sanitizedQuestion, 'pdf', 2);
 
-//If room ID is specified, emit the response to that room. Otherwise, emit to all.
-if (roomId) {
-  console.log("INSIDE ROOM_ID", roomId);     
-  io.to(roomId).emit(`fullResponse-${roomId}`, {
-    sourceDocs: Documents
+  const webinarResults = await filteredSimilaritySearch(vectorStore, sanitizedQuestion, 'youtube', 2);
+  
+  const combinedResults = [...pdfResults, ...webinarResults];
+
+  combinedResults.sort((a, b) => b[1] - a[1]);
+
+  Documents = combinedResults.map(([document, score]) => {
+    return {
+      ...document,
+      metadata: {
+        ...document.metadata,
+        score: score 
+      }
+    };
   });
-} else {
-  io.emit("fullResponse", {
-    sourceDocs: Documents
-  });
-}
 
-if (roomIdError) {
-  res.status(400).json({ error: 'roomId was not found' });  // Return 400 Bad Request
-  return;
-}
+  //console.log("Debug: Complete API Response with Metadata: ", JSON.stringify(Documents, null, 3));
 
-res.status(200).json(Documents);
+  //If room ID is specified, emit the response to that room. Otherwise, emit to all.
+  if (roomId) { 
+    io.to(roomId).emit(`fullResponse-${roomId}`, {
+      sourceDocs: Documents
+    });
+  } else {
+    io.emit("fullResponse", {
+      sourceDocs: Documents
+    });
+  }
 
-} catch (error: any) {
-  console.log('error', error);
-  res.status(500).json({ error: error.message || 'Something went wrong' });
-}
-}
+  if (roomIdError) {
+    res.status(400).json({ error: 'roomId was not found' });  // Return 400 Bad Request
+    return;
+  }
+
+  res.status(200).json(Documents);
+
+  } catch (error: any) {
+    console.log('error', error);
+    res.status(500).json({ error: error.message || 'Something went wrong' });
+  }
+  }
