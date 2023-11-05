@@ -31,13 +31,13 @@ export const run = async () => {
       const processedDocs: any[] = [];
 
       for (const doc of rawDocs) {
-
+        console.log('Doc', doc);
         // Modify the source metadata to append the page number
         const Timestamp = extractFirstTimestampInSeconds(doc.pageContent);
         const initialHeader = (doc.pageHeader || "");
-        const chunk = await textSplitter.createDocuments([doc.pageContent],[doc.metadata]);  
-        // console.log('Chunck log', chunk);
-        // await waitForUserInput();
+        const chunk = await textSplitter.createDocuments([doc.pageContent],[doc.metadata]
+        );  
+        console.log('Chunck log', chunk);
     
         if (chunk.length > 1) {
             // Extract headers from the first chunk
@@ -82,6 +82,8 @@ export const run = async () => {
 
                 document.metadata.type = determineSourceType(updatedSource);
 
+                console.log('Document:', document)
+
                 return document; // Return the updated Document object
             });
 
@@ -89,6 +91,7 @@ export const run = async () => {
         }
         console.log('Processed docs with timestamps', processedDocs);
 
+        await waitForUserInput();
       /*create and store the embeddings in the vectorStore*/
       const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
       const pinecone = await getPinecone();

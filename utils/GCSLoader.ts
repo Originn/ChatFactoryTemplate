@@ -5,6 +5,8 @@ import { Storage, GetSignedUrlConfig } from '@google-cloud/storage';
 import { waitForUserInput, extractYouTubeLink } from 'utils/textsplitter';
 import { spawn } from 'child_process';
 import * as tmp from 'tmp-promise';
+import fs from 'fs';
+import path from 'path';
 
 export interface DocumentInput<Metadata extends Record<string, any> = Record<string, any>> {
     pageNumber?: number;
@@ -41,7 +43,7 @@ class GCSLoader {
 
     constructor(bucketName: string) {
         this.storage = new Storage();
-        this.bucketName = bucketName;
+        this.bucketName = "solidcam";
     }
 
     generatePublicUrl(fileName: string): string {
@@ -85,8 +87,7 @@ class GCSLoader {
             });
         });
     }
-    
-    
+
     async parse(filePath: string): Promise<string> {
         // Call the Python script and capture the result
         const content = await this.callPythonScript(filePath);
@@ -94,57 +95,38 @@ class GCSLoader {
     }
 
     async load(): Promise<MyDocument[]> {
-        const bucket = this.storage.bucket(this.bucketName);
-        const files = await bucket.getFiles();
+        const localDirectoryPath = "C:\\Users\\ori.somekh\\Desktop\\SolidcamChat_uploads";
+        const fileNames = fs.readdirSync(localDirectoryPath);
     
         const documents: MyDocument[] = [];
     
-        for (const file of files[0]) {
-            let tempFile: tmp.FileResult | undefined;
-            let tempFilePath: string | undefined;
-        
-            if (file.name.endsWith('.pdf')) {
-                tempFile = await tmp.file({ postfix: '.pdf' });
-                tempFilePath = tempFile.path;
-            } else if (file.name.endsWith('.txt')) {
-                tempFile = await tmp.file({ postfix: '.txt' });
-                tempFilePath = tempFile.path;
-            }
-        
-            if (!tempFilePath) {
-                console.log(`Skipping unsupported file: ${file.name}`);
-                continue;
-            }
-        
-            await file.download({ destination: tempFilePath });
-            await new Promise(resolve => setTimeout(resolve, 3000));  // wait for 2 seconds
-
-        
-            let contentString: string;
-            if (file.name.endsWith('.pdf')) {
-                contentString = await this.parse(tempFilePath);
-            } else if (file.name.endsWith('.txt')) {
-                contentString = await this.parse(tempFilePath);
-            } else {
-                console.log(`Unsupported file type for ${file.name}`);
+        for (const fileName of fileNames) {
+            const filePath = path.join(localDirectoryPath, fileName);
+    
+            if (!fileName.endsWith('.pdf') && !fileName.endsWith('.txt')) {
+                console.log(`Skipping unsupported file: ${fileName}`);
                 continue;
             }
     
-            if (tempFile) {
-                await tempFile.cleanup();
+            let contentString: string;
+            if (fileName.endsWith('.pdf')) {
+                contentString = await this.parse(filePath);
+            } else if (fileName.endsWith('.txt')) {
+                contentString = fs.readFileSync(filePath, 'utf8');
             } else {
-                console.log(`tempFile is undefined for ${file.name}`);
+                console.log(`Unsupported file type for ${fileName}`);
+                continue;
             }
-            
+    
             let existingSource = extractYouTubeLink(contentString);
             if (!existingSource) { // If there's no YouTube link, use the GCS link
-                existingSource = this.generatePublicUrl(file.name);
+                existingSource = this.generatePublicUrl(fileName);
             }
     
             const contentData = JSON.parse(contentString);
-
+    
             // Temporary dictionary to group content by header
-            const groupedContent: Record<string, {contents: string[], source: string}> = {};
+            const groupedContent: Record<string, { contents: string[], source: string }> = {};
 
             for (let pageInfoGroup of contentData) {
                 for (let content of pageInfoGroup.contents) {

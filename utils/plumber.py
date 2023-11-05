@@ -4,6 +4,45 @@ import re
 import sys
 import json
 
+def get_token_count(text):
+    tokens = text.split()
+    return len(tokens)
+
+def remove_home_header(text):
+    header_start = 'Home >'
+    # Find the start index of 'Home >'
+    start_index = text.find(header_start)
+    
+    # If 'Home >' is not found, return the original text
+    if start_index == -1:
+        return text
+
+    # Find the index of the newline character after 'Home >'
+    end_index = text.find('\n', start_index)
+    
+    # If newline is found, remove the header, otherwise return text without 'Home >'
+    if end_index != -1:
+        # Remove the header by returning the text from after the newline character
+        return text[end_index + 1:]
+    else:
+        # 'Home >' is found but no newline after it, return text without 'Home >'
+        return text[start_index + len(header_start):]
+    
+def extract_header(text, header_start="Home >"):
+    # Find the index where "Home >" starts
+    start_index = text.find(header_start)
+    if start_index != -1:
+        # Find the index of the first newline character after "Home >"
+        end_index = text.find('\n', start_index)
+        # If a newline character is found after "Home >"
+        if end_index != -1:
+            # Extract the header up to the newline character
+            return text[start_index:end_index].strip()
+        else:
+            # If there's no newline, return the text starting from "Home >"
+            return text[start_index:].strip()
+    return None  # Return None if "Home >" is not found
+
 def clean_text(text):
     index_last_checked = 0
     while True:
@@ -159,7 +198,16 @@ def find_pages_starting_with(pdf_path, start_string):
                         'PageContent': PageContent_accumulator
                     })
                     PageContent_accumulator = []  # Reset the accumulator for the next header
-                last_header = clean_text(text)
+                if 'scmill' in pdf_path:
+                    header_extracted = extract_header(text)
+                    last_header = clean_text(header_extracted)
+                    chars = page.chars
+                    wrapped_text = wrap_bold_text(text, chars)
+                    wrapped_text = wrap_large_bold_sentences(wrapped_text, chars)
+                    wrapped_text = remove_home_header(wrapped_text)
+                    PageContent_accumulator.append((i, wrapped_text))
+                else:
+                    last_header = clean_text(text)
                 last_header_page_number = i
             else:
                 # Accumulate PageContent
@@ -364,6 +412,8 @@ if __name__ == "__main__":
 
         # Convert the dictionary to a list format
         results = [{"header": key, "contents": value} for key, value in grouped_results.items()]
+        if results:
+            results.pop()
         sys.stdout.write(json.dumps(results))
 
 
