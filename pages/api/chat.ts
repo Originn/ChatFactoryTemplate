@@ -80,10 +80,10 @@ const chain = makeChain(vectorStore, (token) => {
 await chain.call(sanitizedQuestion, Documents, roomId);
 
 
-  const pdfResults = await filteredSimilaritySearch(vectorStore, sanitizedQuestion, 'pdf', 2);
+  const pdfResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'pdf', 2);
   console.log("Debug: pdfResults: ",pdfResults);
 
-  const webinarResults = await filteredSimilaritySearch(vectorStore, sanitizedQuestion, 'youtube', 2);
+  const webinarResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'youtube', 2);
   console.log("Debug: webinarResults: ",webinarResults);
   
   const combinedResults = [...pdfResults, ...webinarResults];
