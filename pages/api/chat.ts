@@ -10,6 +10,8 @@ import { getIO } from "@/socketServer.cjs";
 import { MyDocument } from 'utils/GCSLoader';
 import {waitForUserInput} from 'utils/textsplitter';
 import { AIMessage, HumanMessage } from 'langchain/schema';
+import { insertQA } from '../../db';
+
 
 async function filteredSimilaritySearch(vectorStore:any, queryText:any, type:any, limit:any) {
   return vectorStore.similaritySearchWithScore(queryText, limit, { type: type });
@@ -79,7 +81,7 @@ const chain = makeChain(vectorStore, (token) => {
 // Make the API call using the chain, passing in the sanitized question, scored documents, and room ID
 await chain.call(sanitizedQuestion, Documents, roomId);
 
-
+  console.log('answer caught:', (Documents[0] as any).responseText);
   const pdfResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'pdf', 2);
   console.log("Debug: pdfResults: ",pdfResults);
 
@@ -89,6 +91,8 @@ await chain.call(sanitizedQuestion, Documents, roomId);
   const combinedResults = [...pdfResults, ...webinarResults];
 
   combinedResults.sort((a, b) => b[1] - a[1]);
+
+  await insertQA(question, (Documents[0] as any).responseText);
   
   console.log("Debug: Results with Metadata: ", JSON.stringify(results, null, 3));
   Documents = combinedResults.map(([document, score]) => {
@@ -114,6 +118,7 @@ await chain.call(sanitizedQuestion, Documents, roomId);
       sourceDocs: Documents
     });
   }
+
 
   if (roomIdError) {
     res.status(400).json({ error: 'roomId was not found' });  // Return 400 Bad Request

@@ -186,7 +186,7 @@ def find_pages_starting_with(pdf_path, start_string):
         last_header = None
         last_header_page_number = None
         PageContent_accumulator = []
-        for i, page in enumerate(pdf.pages):
+        for i , page in enumerate(pdf.pages, start=1):
             text = page.extract_text()
 
             if text and text.startswith(start_string):
