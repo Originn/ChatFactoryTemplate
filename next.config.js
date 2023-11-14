@@ -10,5 +10,9 @@ config.experiments = { ...config.experiments, topLevelAwait: true };
 return config;
 },
 };
-
+module.exports = {
+  env: {
+    NEXT_PUBLIC_FILTER_SCORE: process.env.NEXT_PUBLIC_FILTER_SCORE,
+  },
+};
 module.exports = nextConfig;

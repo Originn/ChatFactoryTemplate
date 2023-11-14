@@ -7,11 +7,56 @@ import GCSLoader from '@/utils/GCSLoader';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { waitForUserInput, extractTimestamp, extractAndConcatenateHeaders, extractYouTubeLinkFromSingleDoc, extractFirstTimestampInSeconds, extractPotentialSubHeader } from '@/utils/textsplitter'
 
+import { get_encoding, encoding_for_model } from 'tiktoken';
+
+let encoding =  get_encoding("cl100k_base")
+ encoding = encoding_for_model("gpt-3.5-turbo");
+
 function determineSourceType(url: string): string {
     if (url.includes('youtube')) return 'youtube';
     if (url.includes('.pdf')) return 'pdf';
     return 'other';  // Default if neither match
 }
+
+function removeDuplicateContent(text: string, compareLength: number = 100): string {
+    // Use the first 'compareLength' characters of the text for comparison.
+    const comparisonText = text.substring(0, compareLength).trim();
+    // Look for the second occurrence of the comparison text.
+    const secondOccurrenceIndex = text.indexOf(comparisonText, compareLength);
+  
+    if (secondOccurrenceIndex === -1) {
+      // If the comparison text does not repeat, return the original text.
+      return text;
+    } else {
+      // If a duplicate is found, return the text up to the start of the duplicate.
+      return text.substring(0, secondOccurrenceIndex).trim();
+    }
+  }
+  
+  async function checkDocumentsTokenLength(processedDocs: any[]) {
+    for (const doc of processedDocs) {
+      // Remove duplicate content from the page content.
+  
+      // Now check the token count of the cleaned content.
+      let tokens = encoding.encode(doc.pageContent);
+  
+      console.log(`Document with cleaned content has ${tokens.length} tokens.`);
+  
+      if (tokens.length > 5000) {
+        console.log(`Document with pageContent "${doc.pageContent}" has ${tokens.length} tokens.`);
+        await waitForUserInput();
+        const cleanedContent = removeDuplicateContent(doc.pageContent, 100);
+        tokens = encoding.encode(cleanedContent);
+        console.log(`cleanedContent Document "${cleanedContent}" has ${tokens.length} tokens.`);
+        await waitForUserInput();
+        // Handle the case where the token count is too high.
+      } else {
+        // Proceed with embedding if token count is within limits.
+        // Embedding logic goes here.
+      }
+    }
+  }
+
 
 export const run = async () => {
     try {
@@ -89,9 +134,14 @@ export const run = async () => {
 
         processedDocs.push(...processedChunks);        
         }
+
+        
         console.log('Processed docs with timestamps', processedDocs);
 
+        await checkDocumentsTokenLength(processedDocs);
         await waitForUserInput();
+
+        
       /*create and store the embeddings in the vectorStore*/
       const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
       const pinecone = await getPinecone();

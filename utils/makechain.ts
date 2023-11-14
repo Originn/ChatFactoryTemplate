@@ -114,7 +114,8 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         roomChatHistories[roomId] = chatHistory;
   
         return Documents;
-      }
+      },
+      vectorstore,
     };
 };
 
