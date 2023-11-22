@@ -44,11 +44,11 @@ function removeDuplicateContent(text: string, compareLength: number = 100): stri
   
       if (tokens.length > 5000) {
         console.log(`Document with pageContent "${doc.pageContent}" has ${tokens.length} tokens.`);
-        await waitForUserInput();
+        //await waitForUserInput();
         const cleanedContent = removeDuplicateContent(doc.pageContent, 100);
         tokens = encoding.encode(cleanedContent);
         console.log(`cleanedContent Document "${cleanedContent}" has ${tokens.length} tokens.`);
-        await waitForUserInput();
+        //await waitForUserInput();
         // Handle the case where the token count is too high.
       } else {
         // Proceed with embedding if token count is within limits.
@@ -139,7 +139,7 @@ export const run = async () => {
         console.log('Processed docs with timestamps', processedDocs);
 
         await checkDocumentsTokenLength(processedDocs);
-        await waitForUserInput();
+        //await waitForUserInput();
 
         
       /*create and store the embeddings in the vectorStore*/

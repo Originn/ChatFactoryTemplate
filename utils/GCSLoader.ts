@@ -112,7 +112,7 @@ class GCSLoader {
             if (fileName.endsWith('.pdf')) {
                 contentString = await this.parse(filePath);
             } else if (fileName.endsWith('.txt')) {
-                contentString = fs.readFileSync(filePath, 'utf8');
+                contentString = await this.parse(filePath);
             } else {
                 console.log(`Unsupported file type for ${fileName}`);
                 continue;
@@ -122,8 +122,11 @@ class GCSLoader {
             if (!existingSource) { // If there's no YouTube link, use the GCS link
                 existingSource = this.generatePublicUrl(fileName);
             }
-    
+
+            console.log('contentString:', contentString)
             const contentData = JSON.parse(contentString);
+            //await waitForUserInput();
+            
     
             // Temporary dictionary to group content by header
             const groupedContent: Record<string, { contents: string[], source: string }> = {};
