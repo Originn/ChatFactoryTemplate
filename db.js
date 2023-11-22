@@ -19,21 +19,51 @@ const poolConfig = isProduction ? {
 
 const pool = new Pool(poolConfig);
 
-const insertQA = async (question, answer) => {
+const insertQA = async (question, answer, embeddings, qaId) => {
   const query = `
-    INSERT INTO QuestionsAndAnswers (question, answer)
-    VALUES ($1, $2)
+    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, qaId)
+    VALUES ($1, $2, $3, $4)
     RETURNING *;
   `;
 
   try {
-    const res = await pool.query(query, [question, answer]);
+    // Ensure embeddings is a JSON string
+    const embeddingsJson = JSON.stringify(embeddings);
+
+    const res = await pool.query(query, [question, answer, embeddingsJson, qaId]);
     console.log(res.rows[0]); // Output the inserted row to the console
-    return res.rows[0];
+    return res.rows[0]; // Return the inserted row
   } catch (err) {
     console.error('Error running query', err);
     throw err;
   }
 };
 
-export { pool, insertQA };
+
+// Assuming `pool` is your database connection pool
+const updateFeedback = async (qaId, thumb, comment) => {
+  const query = `
+  UPDATE QuestionsAndAnswers
+  SET thumb = $2, comment = $3
+  WHERE qaId = $1
+  RETURNING *;
+`;
+
+  try {
+    const res = await pool.query(query, [qaId, thumb, comment]);
+    console.log('Updated feedback:', res.rows[0]); // Log the updated row
+    return res.rows[0]; // Return the updated row
+  } catch (err) {
+    // Check if error is an instance of Error
+    if (err instanceof Error) {
+      console.error('Error running updateFeedback query:', err.message, 'Stack:', err.stack);
+    } else {
+      console.error('Unknown error running updateFeedback query');
+    }
+    throw err;  // Rethrow the error to be caught by the calling handler
+  }
+};
+
+
+
+export { pool, insertQA, updateFeedback };

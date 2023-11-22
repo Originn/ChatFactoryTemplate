@@ -1,263 +1,390 @@
 //index.tsx
-
-import { useRef, useState, useEffect } from 'react';
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { io } from "socket.io-client";
-import Layout from '@/components/layout';
-import styles from '@/styles/Home.module.css';
-import { Message } from '@/types/chat';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
-import LoadingDots from '@/components/ui/LoadingDots';
-import { MyDocument } from 'utils/GCSLoader';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import rehypeRaw from 'rehype-raw';
+import Layout from '@/components/layout';
+import LoadingDots from '@/components/ui/LoadingDots';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import styles from '@/styles/Home.module.css';
+import { Message } from '@/types/chat';
+import { MyDocument } from 'utils/GCSLoader';
 
+// Constants
+const DEFAULT_THEME = 'light';
+const PRODUCTION_ENV = 'production';
+const LOCAL_URL = 'http://localhost:3000';
+const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
+
+// Image URLs
 let imageUrlUserIcon = '/usericon.png';
 let botimageIcon = '/bot-image.png';
 
-if (process.env.NODE_ENV === 'production') {
-  imageUrlUserIcon = 'https://solidcam.herokuapp.com/usericon.png';
-  botimageIcon = 'https://solidcam.herokuapp.com/bot-image.png';  
+if (process.env.NODE_ENV === PRODUCTION_ENV) {
+  imageUrlUserIcon = `${PRODUCTION_URL}usericon.png`;
+  botimageIcon = `${PRODUCTION_URL}bot-image.png`;
 }
 
+// Utility Functions
 function addHyperlinksToPageNumbers(content: string, source: string): string {
-  // Find all page numbers in the format (number)
   const regex = /\((\d+)\)/g;
-  
   return content.replace(regex, (match, pageNumber) => {
-      // Construct the hyperlink
-      const link = `${source}#page=${pageNumber}`;
-      return `<a href="${link}" target="_blank" rel="noopener noreferrer" style="color: blue;">${match}</a>`;
+    const link = `${source}#page=${pageNumber}`;
+    return `<a href="${link}" target="_blank" rel="noopener noreferrer" style="color: blue;">${match}</a>`;
   });
 }
 
+// Component: Home
 export default function Home() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-
-  const toggleTheme = () => {
-    setTheme(prevTheme => {
-        const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-        return newTheme;
+    // State Hooks
+    const [theme, setTheme] = useState<'light' | 'dark'>('light');
+    const [query, setQuery] = useState<string>('');
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+    const [roomId, setRoomId] = useState<string | null>(null);
+    const [messageState, setMessageState] = useState<{
+        messages: Message[];
+        history: [string, string][];
+        pendingSourceDocs?: Document[];
+    }>({
+        messages: [
+        {
+            message: 'Hi, what would you like to learn about SolidCAM?',
+            type: 'apiMessage',
+        },
+        ],
+        history: [],
     });
-};
+    const { messages, history } = messageState;
+    const [feedback, setFeedback] = useState<FeedbackState>({});
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activeMessageIndex, setActiveMessageIndex] = useState<number | null>(null);
 
+    // Refs
+    const answerStartRef = useRef<HTMLDivElement>(null);
+    const messageListRef = useRef<HTMLDivElement>(null);
+    const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
-  const answerStartRef = useRef<HTMLDivElement>(null);
-  const [query, setQuery] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [roomId, setRoomId] = useState<string | null>(null);
-  const [messageState, setMessageState] = useState<{
-    messages: Message[];
-    history: [string, string][];
-    pendingSourceDocs?: Document[];
-  }>({
-    messages: [
-      {
-        message: 'Hi, what would you like to learn about SolidCAM?',
-        type: 'apiMessage',
-      },
-    ],
-    history: [],
-  });
+    // Event Handlers
+    const toggleTheme = () => {
+        setTheme(prevTheme => prevTheme === DEFAULT_THEME ? 'dark' : DEFAULT_THEME);
+    };
 
-  const { messages, history } = messageState;
+    const handleEnter = (e: any) => {
+        if (e.key === 'Enter' && query) {
+        handleSubmit(e);
+        } else if (e.key == 'Enter') {
+        e.preventDefault();
+        }
+    };
 
-  const messageListRef = useRef<HTMLDivElement>(null);
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
+    const handleFeedback = (messageIndex: number, type: string) => {
+        setFeedback(prev => ({ ...prev, [messageIndex]: { ...prev[messageIndex], type } }));
+    };
 
-  useEffect(() => {
-    textAreaRef.current?.focus();
-  }, []);
-
-  // Add this useEffect hook to scroll down whenever messages change
-  useEffect(() => {
-    if (answerStartRef.current) {
-      answerStartRef.current.scrollIntoView();
-    }
-  }, [messages]);
-
-  useEffect(() => {
-    const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : 'http://localhost:3000';
-    const socket = io(serverUrl);
-  
-    // Event handler for 'assignedRoom'
-    const handleAssignedRoom = (assignedRoomId: any) => {
-      setRoomId(assignedRoomId);
-      socket.on(`fullResponse-${assignedRoomId}`, (response) => {
-        setMessageState((state) => {
-          const filterScore = parseFloat(process.env.NEXT_PUBLIC_FILTER_SCORE || "0.81");
-          const { sourceDocs } = response;
-  
-          const filteredSourceDocs: MyDocument[] = sourceDocs ? sourceDocs.filter((doc: MyDocument) => {
-            const score = parseFloat(doc.metadata.score);
-            return !isNaN(score) && score >= filterScore;
-          }) : [];
-          
-          const deduplicatedDocs = filteredSourceDocs.reduce((acc: MyDocument[], doc: MyDocument) => {
-            const sourceURL = doc.metadata.source as string;  // Assuming source is a string
-            // Extract timestamp value from URL
-            const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
-            
-            if (timestamp) {
-              // If the document has a timestamp, push it only if it's unique
-              if (!acc.some(d => (d.metadata.source as string).includes(`t=${timestamp}s`))) {
-                acc.push(doc);
-              }
-            } else {
-              // If the document does not have a timestamp, push it unconditionally
-              acc.push(doc);
-            }
-            return acc;
-          }, []);
-          
-          
-          // Update the last message with the full answer and append sourceDocs
-          const updatedMessages = [...state.messages];
-          if (updatedMessages.length) {
-            const lastMessage = updatedMessages[updatedMessages.length - 1];
-            if (lastMessage.type === 'apiMessage') {
-              // Replace this with deduplicatedDocs
-              if (deduplicatedDocs.length) {
-                lastMessage.sourceDocs = deduplicatedDocs;
-              }
-            }
-          }
-  
-          return {
-            ...state,
-            messages: updatedMessages,
-          };
+    const handleSubmitRemark = async (messageIndex : any, remark : any) => {
+        console.log(`Attempting to submit feedback for messageIndex: ${messageIndex}`);
+        console.log("Message at this index:", messages[messageIndex]);
+        console.log("Feedback state at messageIndex:", feedback[messageIndex]);
+        // Retrieve the feedback type ('up' or 'down') and the qaId from the message
+        const feedbackType = feedback[messageIndex]?.type;
+        const qaId = messages[messageIndex]?.qaId;
+    
+        // Ensure qaId is present
+        if (!qaId) {
+        console.error("No qaId found for message index " + messageIndex);
+        return;
+        }
+    
+        // Send this information to the server
+        try {
+        const response = await fetch('/api/submit-feedback', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+            qaId: qaId,
+            thumb: feedbackType,
+            comment: remark,
+            }),
         });
-      });
+    
+        if (response.ok) {
+            // Handle successful feedback submission
+            setFeedback((prev) => ({
+            ...prev,
+            [messageIndex]: {
+                ...prev[messageIndex],
+                remark: '',
+                type: undefined,
+            },
+            }));
+            setIsModalOpen(false);
+        } else {
+            // Check if the response is empty
+            const text = await response.text();
+            if (text.trim() === "") {
+            console.error('Failed to submit feedback: Empty response');
+            } else {
+            try {
+                // Attempt to parse response as JSON
+                const data = JSON.parse(text);
+                if (data && data.message) {
+                console.error('Failed to submit feedback:', data.message);
+                } else {
+                console.error('Failed to submit feedback: Invalid response');
+                }
+            } catch (jsonError) {
+                console.error('Failed to parse server response as JSON:', (jsonError as Error).message);
+            }
+            }
+        }
+        } catch (error) {
+        if (error instanceof TypeError) {
+            console.error('Network error when submitting feedback:', (error as Error).message);
+        } else {
+            console.error('Error when submitting feedback:', (error as Error).message);
+        }
+        }
+    };
+
+    const handleSubmit = async (e: any) => {
+        e.preventDefault();
+
+        setError(null);
+
+        if (!query) {
+        alert('Please input a question');
+        return;
+        }
+
+        const question = query.trim();
+
+        setMessageState((state) => ({
+        ...state,
+        messages: [
+            ...state.messages,
+            {
+            type: 'userMessage',
+            message: question,
+            },
+        ],
+        history: [...state.history, [question, ""]],
+        }));
+
+        setLoading(true);
+        setQuery('');
+
+        try {
+        await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+            question,
+            history,
+            roomId,
+            }),
+        });
+
+        setLoading(false);
+
+        // Scroll to bottom
+        messageListRef.current?.scrollTo(0, messageListRef.current.scrollHeight);
+    } catch (error) {
+        setLoading(false);
+        setError('An error occurred while fetching the data. Please try again.');
+        console.log('error', error);
+    }
+    };
+
+  // Effects
+    useEffect(() => {
+        const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : LOCAL_URL;
+        const socket = io(serverUrl);
+    
+        // Event handler for 'assignedRoom'
+        const handleAssignedRoom = (assignedRoomId: any) => {
+        setRoomId(assignedRoomId);
+        socket.on(`fullResponse-${assignedRoomId}`, (response) => {
+            setMessageState((state) => {
+            const filterScore = parseFloat(process.env.NEXT_PUBLIC_FILTER_SCORE || "0.81");
+            const { sourceDocs, qaId  } = response;
+            console.log('full response with qaId:', qaId)
+    
+            const filteredSourceDocs: MyDocument[] = sourceDocs ? sourceDocs.filter((doc: MyDocument) => {
+                const score = parseFloat(doc.metadata.score);
+                return !isNaN(score) && score >= filterScore;
+            }) : [];
+            
+            const deduplicatedDocs = filteredSourceDocs.reduce((acc: MyDocument[], doc: MyDocument) => {
+                const sourceURL = doc.metadata.source as string;  // Assuming source is a string
+                // Extract timestamp value from URL
+                const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
+                
+                if (timestamp) {
+                // If the document has a timestamp, push it only if it's unique
+                if (!acc.some(d => (d.metadata.source as string).includes(`t=${timestamp}s`))) {
+                    acc.push(doc);
+                }
+                } else {
+                // If the document does not have a timestamp, push it unconditionally
+                acc.push(doc);
+                }
+                return acc;
+            }, []);
+            
+            
+                    // Create a new array for messages and update the last message with a new object
+                const updatedMessages = state.messages.map((message, index, arr) => {
+                if (index === arr.length - 1 && message.type === 'apiMessage') {
+                    // Spread the existing message and append the new properties
+                    return { ...message, sourceDocs: deduplicatedDocs, qaId: qaId };
+                }
+                return message; // Return unmodified messages
+                });
+                console.log("Updated messages with qaId:", updatedMessages);
+                return {
+                ...state,
+                messages: updatedMessages,
+                };
+            });
+            });
+        };
+    
+        socket.on('connect_error', (error) => {
+        console.log('Connection Error:', error);
+        });
+
+        socket.on("newToken", (token) => {
+        setMessageState((state) => {
+            // Check if the last message is an apiMessage
+            const lastMessage = state.messages[state.messages.length - 1];
+            if (lastMessage && lastMessage.type === 'apiMessage') {
+            // Concatenate token to the last message
+            return {
+                ...state,
+                messages: [
+                ...state.messages.slice(0, -1),
+                {
+                    ...lastMessage,
+                    message: lastMessage.message + token,
+                },
+                ],
+            };
+            } else {
+            // If the last message is not an apiMessage, create a new one
+            return {
+                ...state,
+                messages: [
+                ...state.messages,
+                {
+                    type: 'apiMessage',
+                    message: token,
+                },
+                ],
+            };
+            }
+        });
+        });
+
+        socket.on('assignedRoom', handleAssignedRoom); // <-- Moved this out from handleAssignedRoom
+
+    return () => {
+        socket.off('assignedRoom', handleAssignedRoom);
+        socket.disconnect();
+    };
+    }, []);
+
+    useEffect(() => {
+        textAreaRef.current?.focus();
+    }, []);
+
+    useEffect(() => {
+        window.localStorage.setItem('theme', theme);
+        document.body.className = theme;
+    }, [theme]);
+
+    useEffect(() => {
+        if (answerStartRef.current) {
+            answerStartRef.current.scrollIntoView();
+        }
+    }, [messages]);
+
+    useEffect(() => {
+        const savedTheme = window.localStorage.getItem('theme') as 'light' | 'dark' | null;
+        if (savedTheme) {
+            setTheme(savedTheme);
+        } else {
+            window.localStorage.setItem('theme', DEFAULT_THEME);
+        }
+    }, []);
+
+    // Component: FeedbackComponent
+    const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ messageIndex }) => {
+        const handleOpenModal = (type: string) => {
+        console.log("Opening modal for message index", messageIndex);
+        setActiveMessageIndex(messageIndex);
+    
+        handleFeedback(messageIndex, type);
+        setIsModalOpen(true);
+        };
+    
+        return (
+        <div className="feedback-container">
+            <button onClick={() => handleOpenModal('up')}>👍</button>
+            <button onClick={() => handleOpenModal('down')}>👎</button>
+        </div>
+        );
+    };
+
+  // Component: RemarksModal
+  const RemarksModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    messageIndex: number | null;
+    onSubmit: (messageIndex: number | null, remark: string) => void;
+  }> = ({ isOpen, onClose, messageIndex, onSubmit }) => {
+    const [remark, setRemark] = useState('');
+  
+    const submitRemark = () => {
+      console.log("Submitting remark for activeMessageIndex", activeMessageIndex);
+      if (activeMessageIndex != null) {
+        handleSubmitRemark(activeMessageIndex, remark);
+        setRemark('');  // Clear the remark
+      }
+      onClose(); // Close the modal after submission
     };
   
-    socket.on('connect_error', (error) => {
-      console.log('Connection Error:', error);
-    });
-
-    socket.on("newToken", (token) => {
-      setMessageState((state) => {
-        // Check if the last message is an apiMessage
-        const lastMessage = state.messages[state.messages.length - 1];
-        if (lastMessage && lastMessage.type === 'apiMessage') {
-          // Concatenate token to the last message
-          return {
-            ...state,
-            messages: [
-              ...state.messages.slice(0, -1),
-              {
-                ...lastMessage,
-                message: lastMessage.message + token,
-              },
-            ],
-          };
-        } else {
-          // If the last message is not an apiMessage, create a new one
-          return {
-            ...state,
-            messages: [
-              ...state.messages,
-              {
-                type: 'apiMessage',
-                message: token,
-              },
-            ],
-          };
-        }
-      });
-    });
-
-    socket.on('assignedRoom', handleAssignedRoom); // <-- Moved this out from handleAssignedRoom
-
-  return () => {
-    socket.off('assignedRoom', handleAssignedRoom);
-    socket.disconnect();
-  };
-}, []);
-
-  //handle form submission
-  async function handleSubmit(e: any) {
-    e.preventDefault();
-
-    setError(null);
-
-    if (!query) {
-      alert('Please input a question');
-      return;
-    }
-
-    const question = query.trim();
-
-    setMessageState((state) => ({
-      ...state,
-      messages: [
-        ...state.messages,
-        {
-          type: 'userMessage',
-          message: question,
-        },
-      ],
-      history: [...state.history, [question, ""]],
-    }));
-
-    setLoading(true);
-    setQuery('');
-
-    try {
-      await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question,
-          history,
-          roomId,
-        }),
-      });
-
-      setLoading(false);
-
-      // Scroll to bottom
-      messageListRef.current?.scrollTo(0, messageListRef.current.scrollHeight);
-    } catch (error) {
-      setLoading(false);
-      setError('An error occurred while fetching the data. Please try again.');
-      console.log('error', error);
-    }
-  }
-
-  //prevent empty submissions
-  const handleEnter = (e: any) => {
-    if (e.key === 'Enter' && query) {
-      handleSubmit(e);
-    } else if (e.key == 'Enter') {
-      e.preventDefault();
-    }
-  };
-
-  useEffect(() => {
-    const savedTheme = window.localStorage.getItem('theme') as 'light' | 'dark' | null;
-    if (savedTheme) {
-        setTheme(savedTheme);
-    } else {
-        window.localStorage.setItem('theme', 'light');
-    }
-}, []);
-
-useEffect(() => {
-    window.localStorage.setItem('theme', theme);
-    document.body.className = theme;
-}, [theme]);
-
+    if (!isOpen) return null;
   
+    return (
+      <div className="modal-backdrop">
+        <div className="modal">
+          <div className="modal-header">
+            <h2>Provide additional feedback</h2>
+            <span className="close" onClick={onClose}>&times;</span>
+          </div>
+          <div className="modal-body">
+            <p>What do you like about the response?</p>
+            <textarea 
+              placeholder="Your remarks..." 
+              value={remark}
+              onChange={(e) => setRemark(e.target.value)}
+            ></textarea>
+          </div>
+          <div className="modal-footer">
+            <button className="btn" onClick={submitRemark}>Submit feedback</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Main Render
   return (
     <>
       <Layout theme={theme} toggleTheme={toggleTheme}>
@@ -301,6 +428,7 @@ useEffect(() => {
                       ? styles.usermessagewaiting
                       : styles.usermessage;
                 }
+                const hasSources = message.sourceDocs && message.sourceDocs.length > 0;
                 return (
                   <React.Fragment key={`chatMessageFragment-${index}`}>
                     <div className={className}>
@@ -374,6 +502,7 @@ useEffect(() => {
                         </Accordion>
                       </div>
                     )}
+                    {hasSources && <FeedbackComponent messageIndex={index} />}
                   </React.Fragment>
                 );
               })}
@@ -433,5 +562,24 @@ useEffect(() => {
         <footer className="m-auto p-4">
         </footer>
       </Layout>
+      <RemarksModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        messageIndex={activeMessageIndex}
+        onSubmit={handleSubmitRemark}
+      />
     </>
-  )};
+  )
+};
+
+// Supporting Interfaces
+interface FeedbackState {
+  [key: number]: {
+    type?: string;
+    remark?: string;
+  };
+}
+
+interface FeedbackComponentProps {
+  messageIndex: number;
+}

@@ -11,6 +11,7 @@ import { MyDocument } from 'utils/GCSLoader';
 import {waitForUserInput} from 'utils/textsplitter';
 import { AIMessage, HumanMessage } from 'langchain/schema';
 import { insertQA } from '../../db';
+import { v4 as uuidv4 } from 'uuid';
 
 
 async function filteredSimilaritySearch(vectorStore:any, queryText:any, type:any, limit:any) {
@@ -26,7 +27,7 @@ export default async function handler(
   let roomIdError = false;
   console.log("req.body", req.body);
   const { question, history, roomId } = req.body;
-
+  
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -51,10 +52,13 @@ export default async function handler(
         namespace: PINECONE_NAME_SPACE,
       },
     );
+    
 
 
 // Perform similarity search on sanitized question and limit the results to 4
 let results = await vectorStore.similaritySearchWithScore(sanitizedQuestion, 4);
+console.log('results:', results);
+//await waitForUserInput();
 
 // Map the returned results to MyDocument[] format, storing the score in the metadata
 let Documents: MyDocument[] = results.map(([document, score]) => {
@@ -92,7 +96,14 @@ await chain.call(sanitizedQuestion, Documents, roomId);
 
   combinedResults.sort((a, b) => b[1] - a[1]);
 
-  await insertQA(question, (Documents[0] as any).responseText);
+  function generateUniqueId(): string {
+    return uuidv4();
+  }
+  
+  
+  const qaId = generateUniqueId();
+  await insertQA(question, (Documents[0] as any).responseText, results, qaId);
+    
   
   console.log("Debug: Results with Metadata: ", JSON.stringify(results, null, 3));
   Documents = combinedResults.map(([document, score]) => {
@@ -111,11 +122,13 @@ await chain.call(sanitizedQuestion, Documents, roomId);
   if (roomId) {
     console.log("INSIDE ROOM_ID", roomId);     
     io.to(roomId).emit(`fullResponse-${roomId}`, {
-      sourceDocs: Documents
+      sourceDocs: Documents,
+      qaId: qaId
     });
   } else {
     io.emit("fullResponse", {
-      sourceDocs: Documents
+      sourceDocs: Documents,
+      qaId: qaId
     });
   }
 
@@ -124,8 +137,8 @@ await chain.call(sanitizedQuestion, Documents, roomId);
     res.status(400).json({ error: 'roomId was not found' });  // Return 400 Bad Request
     return;
   }
-
-  res.status(200).json(Documents);
+  
+  res.status(200).json({ sourceDocs: Documents});
 
   } catch (error: any) {
     console.log('error', error);

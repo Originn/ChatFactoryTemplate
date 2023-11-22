@@ -267,3 +267,20 @@
   margin-left: 1em;
   padding-left: 1em;
 }
+
+.feedback-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.feedback-container button {
+  margin: 5px;
+}
+
+.feedback-container textarea {
+  margin-top: 5px;
+  width: 90%;
+}
+
+ 
