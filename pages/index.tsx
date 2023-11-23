@@ -108,6 +108,7 @@ export default function Home() {
             qaId: qaId,
             thumb: feedbackType,
             comment: remark,
+            roomId: roomId,
             }),
         });
     
@@ -212,7 +213,7 @@ export default function Home() {
         socket.on(`fullResponse-${assignedRoomId}`, (response) => {
             setMessageState((state) => {
             const filterScore = parseFloat(process.env.NEXT_PUBLIC_FILTER_SCORE || "0.81");
-            const { sourceDocs, qaId  } = response;
+            const { sourceDocs, qaId, roomId  } = response;
             console.log('full response with qaId:', qaId)
     
             const filteredSourceDocs: MyDocument[] = sourceDocs ? sourceDocs.filter((doc: MyDocument) => {
