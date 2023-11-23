@@ -102,7 +102,7 @@ await chain.call(sanitizedQuestion, Documents, roomId);
   
   
   const qaId = generateUniqueId();
-  await insertQA(question, (Documents[0] as any).responseText, results, qaId);
+  await insertQA(question, (Documents[0] as any).responseText, results, qaId, roomId);
     
   
   console.log("Debug: Results with Metadata: ", JSON.stringify(results, null, 3));
@@ -122,6 +122,7 @@ await chain.call(sanitizedQuestion, Documents, roomId);
   if (roomId) {
     console.log("INSIDE ROOM_ID", roomId);     
     io.to(roomId).emit(`fullResponse-${roomId}`, {
+      roomId: roomId,
       sourceDocs: Documents,
       qaId: qaId
     });

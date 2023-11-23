@@ -19,10 +19,10 @@ const poolConfig = isProduction ? {
 
 const pool = new Pool(poolConfig);
 
-const insertQA = async (question, answer, embeddings, qaId) => {
+const insertQA = async (question, answer, embeddings, qaId, roomId) => {
   const query = `
-    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, qaId)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, qaId, roomId)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *;
   `;
 
@@ -30,7 +30,7 @@ const insertQA = async (question, answer, embeddings, qaId) => {
     // Ensure embeddings is a JSON string
     const embeddingsJson = JSON.stringify(embeddings);
 
-    const res = await pool.query(query, [question, answer, embeddingsJson, qaId]);
+    const res = await pool.query(query, [question, answer, embeddingsJson, qaId, roomId]);
     console.log(res.rows[0]); // Output the inserted row to the console
     return res.rows[0]; // Return the inserted row
   } catch (err) {
@@ -41,16 +41,16 @@ const insertQA = async (question, answer, embeddings, qaId) => {
 
 
 // Assuming `pool` is your database connection pool
-const updateFeedback = async (qaId, thumb, comment) => {
+const updateFeedback = async (qaId, thumb, comment, roomId) => {
   const query = `
   UPDATE QuestionsAndAnswers
   SET thumb = $2, comment = $3
-  WHERE qaId = $1
+  WHERE qaId = $1 and roomId = $4
   RETURNING *;
 `;
 
   try {
-    const res = await pool.query(query, [qaId, thumb, comment]);
+    const res = await pool.query(query, [qaId, thumb, comment, roomId]);
     console.log('Updated feedback:', res.rows[0]); // Log the updated row
     return res.rows[0]; // Return the updated row
   } catch (err) {
