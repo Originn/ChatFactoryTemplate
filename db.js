@@ -19,18 +19,19 @@ const poolConfig = isProduction ? {
 
 const pool = new Pool(poolConfig);
 
-const insertQA = async (question, answer, embeddings, qaId, roomId) => {
+const insertQA = async (question, answer, embeddings, sources, qaId, roomId) => {
   const query = `
-    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, qaId, roomId)
-    VALUES ($1, $2, $3, $4, $5)
+    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, qaId, roomId)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING *;
   `;
 
   try {
     // Ensure embeddings is a JSON string
     const embeddingsJson = JSON.stringify(embeddings);
+    const sourcesJson = JSON.stringify(sources);
 
-    const res = await pool.query(query, [question, answer, embeddingsJson, qaId, roomId]);
+    const res = await pool.query(query, [question, answer, embeddingsJson, sourcesJson, qaId, roomId]);
     console.log(res.rows[0]); // Output the inserted row to the console
     return res.rows[0]; // Return the inserted row
   } catch (err) {

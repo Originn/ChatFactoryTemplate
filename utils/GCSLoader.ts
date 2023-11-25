@@ -123,7 +123,7 @@ class GCSLoader {
                 existingSource = this.generatePublicUrl(fileName);
             }
 
-            console.log('contentString:', contentString)
+            //console.log('contentString:', contentString)
             const contentData = JSON.parse(contentString);
             //await waitForUserInput();
             

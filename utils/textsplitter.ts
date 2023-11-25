@@ -106,20 +106,38 @@ export class MarkdownHeaderTextSplitter {
     
 }
 
-export function extractAndConcatenateHeaders(chunk: string): string | null {
-    const regex = /\*\*([^*]+)\*\*/g; // Matches strings wrapped with **
-
-    let matches = chunk.match(regex); // Find all matches
-
-    if (matches && matches.length > 0) {
-        // Map over the matches to remove ** and then join them with the | separator
-        return ' | ' + matches.map(match => match.replace(/\*\*/g, '')).join(' | ');
+abstract class TextSplitter {
+    abstract splitText(text: string): Promise<string[]>;
+  }
+  
+  export class CustomTextSplitter extends TextSplitter {
+    async splitText(text: string): Promise<string[]> {
+      const chunks: string[] = [];
+      const lines = text.split('\n');
+      let chunk = '';
+  
+      lines.forEach((line, index) => {
+        if (line.startsWith('**')) {
+          if (chunk !== '') {
+            // Finish the current chunk and push it to chunks array
+            chunks.push(chunk.trim());
+            chunk = '';
+          }
+        }
+        // Add the line to the current chunk
+        chunk += line + '\n';
+  
+        // Check if it's the last line
+        if (index === lines.length - 1 && chunk !== '') {
+          chunks.push(chunk.trim());
+        }
+      });
+  
+      return chunks;
     }
-
-    return null;
-}
-
-
+  }
+  
+  
 export function extractPotentialSubHeader(chunk: string): string | null {
     const regex = /\*\*([^*]+)\*\*/g; // Matches strings wrapped with **
 

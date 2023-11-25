@@ -85,12 +85,12 @@ const chain = makeChain(vectorStore, (token) => {
 // Make the API call using the chain, passing in the sanitized question, scored documents, and room ID
 await chain.call(sanitizedQuestion, Documents, roomId);
 
-  console.log('answer caught:', (Documents[0] as any).responseText);
+  //console.log('answer caught:', (Documents[0] as any).responseText);
   const pdfResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'pdf', 2);
-  console.log("Debug: pdfResults: ",pdfResults);
+  //console.log("Debug: pdfResults: ",pdfResults);
 
   const webinarResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'youtube', 2);
-  console.log("Debug: webinarResults: ",webinarResults);
+  //console.log("Debug: webinarResults: ",webinarResults);
   
   const combinedResults = [...pdfResults, ...webinarResults];
 
@@ -102,7 +102,7 @@ await chain.call(sanitizedQuestion, Documents, roomId);
   
   
   const qaId = generateUniqueId();
-  await insertQA(question, (Documents[0] as any).responseText, results, qaId, roomId);
+  await insertQA(question, (Documents[0] as any).responseText, results, combinedResults, qaId, roomId);
     
   
   console.log("Debug: Results with Metadata: ", JSON.stringify(results, null, 3));
