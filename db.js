@@ -21,7 +21,7 @@ const pool = new Pool(poolConfig);
 
 const insertQA = async (question, answer, embeddings, sources, qaId, roomId) => {
   const query = `
-    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, qaId, roomId)
+    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, "qaId", "roomId")
     VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING *;
   `;
@@ -46,7 +46,7 @@ const updateFeedback = async (qaId, thumb, comment, roomId) => {
   const query = `
   UPDATE QuestionsAndAnswers
   SET thumb = $2, comment = $3
-  WHERE qaId = $1 and roomId = $4
+  WHERE "qaId" = $1 and "roomId" = $4
   RETURNING *;
 `;
 
