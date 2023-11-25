@@ -1,11 +1,11 @@
 //ingest-data.ts
-import { CharacterTextSplitter } from 'langchain/text_splitter';
+import { CharacterTextSplitter, RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { PineconeStore } from 'langchain/vectorstores/pinecone';
 import { getPinecone } from '@/utils/pinecone-client';
 import GCSLoader from '@/utils/GCSLoader';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
-import { waitForUserInput, extractTimestamp, extractAndConcatenateHeaders, extractYouTubeLinkFromSingleDoc, extractFirstTimestampInSeconds, extractPotentialSubHeader } from '@/utils/textsplitter'
+import { waitForUserInput, extractFirstTimestampInSeconds, extractPotentialSubHeader } from '@/utils/textsplitter'
 
 import { get_encoding, encoding_for_model } from 'tiktoken';
 
@@ -33,29 +33,42 @@ function removeDuplicateContent(text: string, compareLength: number = 100): stri
     }
   }
   
-  async function checkDocumentsTokenLength(processedDocs: any[]) {
-    for (const doc of processedDocs) {
-      // Remove duplicate content from the page content.
+  async function checkDocumentsTokenLength(processedDocs: any[]): Promise<any[]> {
+    let cleanProcessedDocs: any[] = [];
   
-      // Now check the token count of the cleaned content.
+    for (const doc of processedDocs) {
       let tokens = encoding.encode(doc.pageContent);
   
-      console.log(`Document with cleaned content has ${tokens.length} tokens.`);
-  
-      if (tokens.length > 5000) {
-        console.log(`Document with pageContent "${doc.pageContent}" has ${tokens.length} tokens.`);
-        //await waitForUserInput();
+      if (tokens.length > 1200) {
         const cleanedContent = removeDuplicateContent(doc.pageContent, 100);
         tokens = encoding.encode(cleanedContent);
-        console.log(`cleanedContent Document "${cleanedContent}" has ${tokens.length} tokens.`);
-        //await waitForUserInput();
-        // Handle the case where the token count is too high.
+  
+        const splitter = new RecursiveCharacterTextSplitter({
+          chunkSize: 1000,
+          chunkOverlap: 200,
+          separators: ["\n**"],
+        });
+  
+        const lines = cleanedContent.split('\n');
+        const firstHeaderLine = lines.find(line => line.startsWith('**') && line.endsWith('**'));
+        const header = firstHeaderLine ? firstHeaderLine + '\n\n---\n\n' : 'Default Header\n\n---\n\n';
+  
+        const cleanedChunks = await splitter.createDocuments([cleanedContent], [doc.metadata], {
+          chunkHeader: header,
+          appendChunkOverlapHeader: true,
+        });
+  
+        // Add the new smaller chunks to cleanProcessedDocs
+        cleanProcessedDocs.push(...cleanedChunks);
       } else {
-        // Proceed with embedding if token count is within limits.
-        // Embedding logic goes here.
+        // Add the original document to cleanProcessedDocs
+        cleanProcessedDocs.push(doc);
       }
     }
+  
+    return cleanProcessedDocs;
   }
+  
 
 
 export const run = async () => {
@@ -76,44 +89,15 @@ export const run = async () => {
       const processedDocs: any[] = [];
 
       for (const doc of rawDocs) {
-        console.log('Doc', doc);
+        //console.log('Doc', doc);
         // Modify the source metadata to append the page number
         const Timestamp = extractFirstTimestampInSeconds(doc.pageContent);
-        const initialHeader = (doc.pageHeader || "");
+        //const initialHeader = (doc.pageHeader || "");
         const chunk = await textSplitter.createDocuments([doc.pageContent],[doc.metadata]
         );  
-        console.log('Chunck log', chunk);
-    
-        if (chunk.length > 1) {
-            // Extract headers from the first chunk
-            const potentialSubHeaderFirst = extractPotentialSubHeader(chunk[0].pageContent);
-
-            if (initialHeader) {
-                const newHeaderFirst = potentialSubHeaderFirst ? `${initialHeader} | ${potentialSubHeaderFirst}` : initialHeader;
-                
-                chunk.map((document, index) => {
-                    if (index === 1 && initialHeader) {
-                        document.pageContent = document.pageContent.replace(initialHeader, newHeaderFirst);
-                    }
-                    return document;
-                });                                    
-
-                // Start from the third chunk and prepend the header from the first chunk and subheader from previous chunk
-                for (let i = 2; i < chunk.length; i++) {
-                    const potentialSubHeader = extractPotentialSubHeader(chunk[i - 1].pageContent);
-                    const newHeader = potentialSubHeader ? `${initialHeader} | ${potentialSubHeader}` : initialHeader;
-                    chunk.map((document, index) => {
-                        if (index === i && initialHeader) {
-                            document.pageContent = document.pageContent.replace(initialHeader, newHeader);
-                        }
-                        return document;
-                    });    
-                }
-                
-            }      
-        } 
-        // console.log('Chunck log2', chunk);
-        // await waitForUserInput();
+        //console.log('Chunck log', chunk);
+                            
+                                
           let processedChunks: any[] = chunk;
 
             processedChunks = chunk.map(document => {
@@ -127,7 +111,7 @@ export const run = async () => {
 
                 document.metadata.type = determineSourceType(updatedSource);
 
-                console.log('Document:', document)
+                //console.log('Document:', document)
 
                 return document; // Return the updated Document object
             });
@@ -135,20 +119,21 @@ export const run = async () => {
         processedDocs.push(...processedChunks);        
         }
 
-        
-        console.log('Processed docs with timestamps', processedDocs);
+        //console.log('Processed docs with timestamps', processedDocs);
 
-        await checkDocumentsTokenLength(processedDocs);
-        //await waitForUserInput();
+        const cleanProcessedDocs = await checkDocumentsTokenLength(processedDocs);
+        await waitForUserInput();
 
         
       /*create and store the embeddings in the vectorStore*/
       const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
       const pinecone = await getPinecone();
       const index = pinecone.Index(PINECONE_INDEX_NAME);
-
+      
+      console.log('ARE YOU READY TO EMBED???')
+      await waitForUserInput();
       //embed the documents
-      await PineconeStore.fromDocuments(processedDocs, embeddings, {
+      await PineconeStore.fromDocuments(cleanProcessedDocs, embeddings, {
           pineconeIndex: index,
           namespace: PINECONE_NAME_SPACE,
           textKey: 'text',
