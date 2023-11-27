@@ -119,10 +119,10 @@ export const run = async () => {
         processedDocs.push(...processedChunks);        
         }
 
-        //console.log('Processed docs with timestamps', processedDocs);
+        console.log('Processed docs with timestamps', processedDocs);
 
         const cleanProcessedDocs = await checkDocumentsTokenLength(processedDocs);
-        await waitForUserInput();
+        //await waitForUserInput();
 
         
       /*create and store the embeddings in the vectorStore*/

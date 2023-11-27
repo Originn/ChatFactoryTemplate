@@ -40,6 +40,7 @@ export default function Home() {
     // State Hooks
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [query, setQuery] = useState<string>('');
+    const [isRequestInProgress, setIsRequestInProgress] = useState(false);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [roomId, setRoomId] = useState<string | null>(null);
@@ -154,6 +155,11 @@ export default function Home() {
     const handleSubmit = async (e: any) => {
         e.preventDefault();
 
+        if (isRequestInProgress || !query.trim()) {
+          return;
+        }
+        setIsRequestInProgress(true);
+
         setError(null);
 
         if (!query) {
@@ -199,6 +205,8 @@ export default function Home() {
         setLoading(false);
         setError('An error occurred while fetching the data. Please try again.');
         console.log('error', error);
+      } finally {
+        setIsRequestInProgress(false);
     }
     };
 
@@ -213,11 +221,14 @@ export default function Home() {
         socket.on(`fullResponse-${assignedRoomId}`, (response) => {
             setMessageState((state) => {
             const filterScore = parseFloat(process.env.NEXT_PUBLIC_FILTER_SCORE || "0.81");
+            console.log('Filter Score:', filterScore);
+
             const { sourceDocs, qaId, roomId  } = response;
             console.log('full response with qaId:', qaId)
     
             const filteredSourceDocs: MyDocument[] = sourceDocs ? sourceDocs.filter((doc: MyDocument) => {
                 const score = parseFloat(doc.metadata.score);
+                console.log(`Doc Score: ${doc.metadata.score}, Parsed Score: ${score}`); // Log each document's score
                 return !isNaN(score) && score >= filterScore;
             }) : [];
             
