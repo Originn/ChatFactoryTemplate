@@ -13,10 +13,16 @@ import { AIMessage, HumanMessage } from 'langchain/schema';
 import { insertQA } from '../../db';
 import { v4 as uuidv4 } from 'uuid';
 
+type SearchResult = [MyDocument, number];
+async function filteredSimilaritySearch(vectorStore: any, queryText: string, type: string, limit: number, minScore: number): Promise<SearchResult[]> {
+  const results: SearchResult[] = await vectorStore.similaritySearchWithScore(queryText, limit, { type: type });
 
-async function filteredSimilaritySearch(vectorStore:any, queryText:any, type:any, limit:any) {
-  return vectorStore.similaritySearchWithScore(queryText, limit, { type: type });
+  // Explicitly type the destructured elements in the filter method
+  const filteredResults = results.filter(([document, score]: SearchResult) => score >= minScore);
+
+  return filteredResults;
 }
+
 
 
 
@@ -55,43 +61,41 @@ export default async function handler(
     
 
 
-// Perform similarity search on sanitized question and limit the results to 4
-let results = await vectorStore.similaritySearchWithScore(sanitizedQuestion, 4);
-console.log('results:', results);
-//await waitForUserInput();
+  // Perform similarity search on sanitized question and limit the results to 4
+  let results = await vectorStore.similaritySearchWithScore(sanitizedQuestion, 4);
+  console.log('results:', results);
+  //await waitForUserInput();
 
-// Map the returned results to MyDocument[] format, storing the score in the metadata
-let Documents: MyDocument[] = results.map(([document, score]) => {
-  return {
-    ...document,
-    metadata: {
-      ...document.metadata,
-      score: score
+  // Map the returned results to MyDocument[] format, storing the score in the metadata
+  let Documents: MyDocument[] = results.map(([document, score]) => {
+    return {
+      ...document,
+      metadata: {
+        ...document.metadata,
+        score: score
+      }
+    };
+  });
+
+
+  // Initialize chain for API calls, also define token handling through io instance
+  const chain = makeChain(vectorStore, (token) => {
+    // If a room ID exists, emit the new token to the specific room. Otherwise, emit to all.
+    if (roomId) {
+      io.to(roomId).emit("newToken", token);
+    } else {
+      roomIdError = true;
     }
-  };
-});
+  });
 
+  // Make the API call using the chain, passing in the sanitized question, scored documents, and room ID
+  await chain.call(sanitizedQuestion, Documents, roomId);
 
-// Initialize chain for API calls, also define token handling through io instance
-const chain = makeChain(vectorStore, (token) => {
-  // If a room ID exists, emit the new token to the specific room. Otherwise, emit to all.
-  if (roomId) {
-    io.to(roomId).emit("newToken", token);
-  } else {
-    roomIdError = true;
-  }
-});
+  const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.86;
 
-// Make the API call using the chain, passing in the sanitized question, scored documents, and room ID
-await chain.call(sanitizedQuestion, Documents, roomId);
+  const pdfResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'pdf', 2, minScoreSourcesThreshold);
+  const webinarResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'youtube', 2, minScoreSourcesThreshold);
 
-  //console.log('answer caught:', (Documents[0] as any).responseText);
-  const pdfResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'pdf', 2);
-  //console.log("Debug: pdfResults: ",pdfResults);
-
-  const webinarResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'youtube', 2);
-  //console.log("Debug: webinarResults: ",webinarResults);
-  
   const combinedResults = [...pdfResults, ...webinarResults];
 
   combinedResults.sort((a, b) => b[1] - a[1]);
@@ -103,8 +107,8 @@ await chain.call(sanitizedQuestion, Documents, roomId);
   
   const qaId = generateUniqueId();
   await insertQA(question, (Documents[0] as any).responseText, results, combinedResults, qaId, roomId);
+      
     
-  
   console.log("Debug: Results with Metadata: ", JSON.stringify(results, null, 3));
   Documents = combinedResults.map(([document, score]) => {
     return {
@@ -138,11 +142,11 @@ await chain.call(sanitizedQuestion, Documents, roomId);
     res.status(400).json({ error: 'roomId was not found' });  // Return 400 Bad Request
     return;
   }
-  
+
   res.status(200).json({ sourceDocs: Documents});
 
   } catch (error: any) {
     console.log('error', error);
     res.status(500).json({ error: error.message || 'Something went wrong' });
   }
-  }
+}
