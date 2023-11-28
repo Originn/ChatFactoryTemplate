@@ -230,7 +230,9 @@ export default function Home() {
     };
 
     // Effects
+    const roomIdRef = useRef(roomId);
     useEffect(() => {
+      roomIdRef.current = roomId;
       const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : LOCAL_URL;
       const socket = io(serverUrl);
     
