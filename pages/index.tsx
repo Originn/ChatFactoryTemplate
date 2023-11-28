@@ -11,6 +11,18 @@ import styles from '@/styles/Home.module.css';
 import { Message } from '@/types/chat';
 import { MyDocument } from 'utils/GCSLoader';
 
+type RequestsInProgressType = {
+  [key: string]: boolean;
+};
+
+interface DocumentWithMetadata {
+  metadata: {
+    source: string;
+    // Add other properties of metadata here if needed
+  };
+  // Add other properties of the document here if needed
+}
+
 // Constants
 const DEFAULT_THEME = 'light';
 const PRODUCTION_ENV = 'production';
@@ -40,7 +52,7 @@ export default function Home() {
     // State Hooks
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [query, setQuery] = useState<string>('');
-    const [isRequestInProgress, setIsRequestInProgress] = useState(false);
+    const [requestsInProgress, setRequestsInProgress] = useState<RequestsInProgressType>({});
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [roomId, setRoomId] = useState<string | null>(null);
@@ -155,17 +167,23 @@ export default function Home() {
     const handleSubmit = async (e: any) => {
         e.preventDefault();
 
-        if (isRequestInProgress || !query.trim()) {
-          return;
-        }
-        setIsRequestInProgress(true);
-
         setError(null);
 
         if (!query) {
         alert('Please input a question');
         return;
         }
+        
+        if (roomId === null) {
+          console.error('No roomId available');
+          return;
+        }
+
+        if (requestsInProgress[roomId]) {
+          return;
+        }
+
+        setRequestsInProgress(prev => ({ ...prev, [roomId]: true }));
 
         const question = query.trim();
 
@@ -201,115 +219,107 @@ export default function Home() {
 
         // Scroll to bottom
         messageListRef.current?.scrollTo(0, messageListRef.current.scrollHeight);
-    } catch (error) {
+      } catch (error) {
         setLoading(false);
         setError('An error occurred while fetching the data. Please try again.');
         console.log('error', error);
       } finally {
-        setIsRequestInProgress(false);
+        // Reset the request state for the current room
+        setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
     }
     };
 
-  // Effects
+    // Effects
     useEffect(() => {
-        const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : LOCAL_URL;
-        const socket = io(serverUrl);
+      const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : LOCAL_URL;
+      const socket = io(serverUrl);
     
-        // Event handler for 'assignedRoom'
-        const handleAssignedRoom = (assignedRoomId: any) => {
+      // Event handler for 'assignedRoom'
+      const handleAssignedRoom = (assignedRoomId : any) => {
         setRoomId(assignedRoomId);
-        socket.on(`fullResponse-${assignedRoomId}`, (response) => {
-            setMessageState((state) => {
-            const filterScore = parseFloat(process.env.NEXT_PUBLIC_FILTER_SCORE || "0.81");
-            console.log('Filter Score:', filterScore);
-
-            const { sourceDocs, qaId, roomId  } = response;
-            console.log('full response with qaId:', qaId)
+        setRequestsInProgress(prev => ({ ...prev, [assignedRoomId]: false }));
     
-            const filteredSourceDocs: MyDocument[] = sourceDocs ? sourceDocs.filter((doc: MyDocument) => {
-                const score = parseFloat(doc.metadata.score);
-                console.log(`Doc Score: ${doc.metadata.score}, Parsed Score: ${score}`); // Log each document's score
-                return !isNaN(score) && score >= filterScore;
+        // Listener for 'fullResponse' event specific to the assigned room
+        const responseEventName = `fullResponse-${assignedRoomId}`;
+        const handleFullResponse = (response : any) => {
+          setMessageState((state) => {
+            const filterScore = parseFloat(process.env.NEXT_PUBLIC_FILTER_SCORE || "0.81");
+            const { sourceDocs, qaId } = response;
+    
+            const filteredSourceDocs = sourceDocs ? sourceDocs.filter((doc : any) => {
+              const score = parseFloat(doc.metadata.score);
+              return !isNaN(score) && score >= filterScore;
             }) : [];
+    
+            const deduplicatedDocs = filteredSourceDocs.reduce((acc: DocumentWithMetadata[], doc: DocumentWithMetadata) => {
+              const sourceURL = doc.metadata.source;
+              const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
             
-            const deduplicatedDocs = filteredSourceDocs.reduce((acc: MyDocument[], doc: MyDocument) => {
-                const sourceURL = doc.metadata.source as string;  // Assuming source is a string
-                // Extract timestamp value from URL
-                const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
-                
-                if (timestamp) {
-                // If the document has a timestamp, push it only if it's unique
-                if (!acc.some(d => (d.metadata.source as string).includes(`t=${timestamp}s`))) {
-                    acc.push(doc);
-                }
-                } else {
-                // If the document does not have a timestamp, push it unconditionally
+              if (timestamp && !acc.some((d: DocumentWithMetadata) => d.metadata.source.includes(`t=${timestamp}s`))) {
                 acc.push(doc);
-                }
-                return acc;
-            }, []);
-            
-            
-                    // Create a new array for messages and update the last message with a new object
-                const updatedMessages = state.messages.map((message, index, arr) => {
-                if (index === arr.length - 1 && message.type === 'apiMessage') {
-                    // Spread the existing message and append the new properties
-                    return { ...message, sourceDocs: deduplicatedDocs, qaId: qaId };
-                }
-                return message; // Return unmodified messages
-                });
-                console.log("Updated messages with qaId:", updatedMessages);
-                return {
-                ...state,
-                messages: updatedMessages,
-                };
+              } else if (!timestamp) {
+                acc.push(doc);
+              }
+              return acc;
+            }, []);            
+    
+            const updatedMessages = state.messages.map((message, index, arr) => {
+              if (index === arr.length - 1 && message.type === 'apiMessage') {
+                return { ...message, sourceDocs: deduplicatedDocs, qaId: qaId };
+              }
+              return message;
             });
-            });
+    
+            return { ...state, messages: updatedMessages };
+          });
         };
     
-        socket.on('connect_error', (error) => {
-        console.log('Connection Error:', error);
-        });
-
-        socket.on("newToken", (token) => {
+        // Attach the event listener for 'fullResponse'
+        socket.on(responseEventName, handleFullResponse);
+    
+        // Return a cleanup function for this dynamic listener
+        return () => socket.off(responseEventName, handleFullResponse);
+      };
+    
+      socket.on('assignedRoom', handleAssignedRoom);
+      socket.on('connect_error', (error) => console.log('Connection Error:', error));
+    
+      // Listener for 'newToken'
+      socket.on("newToken", (token) => {
         setMessageState((state) => {
-            // Check if the last message is an apiMessage
-            const lastMessage = state.messages[state.messages.length - 1];
-            if (lastMessage && lastMessage.type === 'apiMessage') {
-            // Concatenate token to the last message
+          const lastMessage = state.messages[state.messages.length - 1];
+          if (lastMessage && lastMessage.type === 'apiMessage') {
             return {
-                ...state,
-                messages: [
+              ...state,
+              messages: [
                 ...state.messages.slice(0, -1),
-                {
-                    ...lastMessage,
-                    message: lastMessage.message + token,
-                },
-                ],
+                { ...lastMessage, message: lastMessage.message + token },
+              ],
             };
-            } else {
-            // If the last message is not an apiMessage, create a new one
-            return {
-                ...state,
-                messages: [
-                ...state.messages,
-                {
-                    type: 'apiMessage',
-                    message: token,
-                },
-                ],
-            };
-            }
+          }
+          return {
+            ...state,
+            messages: [...state.messages, { type: 'apiMessage', message: token }],
+          };
         });
-        });
-
-        socket.on('assignedRoom', handleAssignedRoom); // <-- Moved this out from handleAssignedRoom
-
-    return () => {
+      });
+    
+      // Cleanup function for when the component unmounts
+      return () => {
         socket.off('assignedRoom', handleAssignedRoom);
+        socket.off('connect_error');
+        socket.off('newToken');
+        if (roomId) {
+          setRequestsInProgress(prev => {
+            const updated = { ...prev };
+            delete updated[roomId];
+            return updated;
+          });
+        }
         socket.disconnect();
-    };
-    }, []);
+      };
+    }, []); // Empty dependency array to ensure this runs only on mount and unmount
+    
 
     useEffect(() => {
         textAreaRef.current?.focus();
