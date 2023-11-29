@@ -56,6 +56,7 @@ export default function Home() {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [roomId, setRoomId] = useState<string | null>(null);
+    const [userHasScrolled, setUserHasScrolled] = useState(false);
     const [messageState, setMessageState] = useState<{
         messages: Message[];
         history: [string, string][];
@@ -166,9 +167,7 @@ export default function Home() {
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
-
         setError(null);
-
         if (!query) {
         alert('Please input a question');
         return;
@@ -184,6 +183,7 @@ export default function Home() {
         }
 
         setRequestsInProgress(prev => ({ ...prev, [roomId]: true }));
+        setUserHasScrolled(false);
         setLoading(true);
         const question = query.trim();
 
@@ -226,12 +226,6 @@ export default function Home() {
     };
 
     // Effects
-    useEffect(() => {
-      if (messageListRef.current) {
-          messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
-      }
-    }, [messages]);
-
     const roomIdRef = useRef(roomId);
     useEffect(() => {
       roomIdRef.current = roomId; //to avoid heroku warning
@@ -333,6 +327,28 @@ export default function Home() {
         window.localStorage.setItem('theme', theme);
         document.body.className = theme;
     }, [theme]);
+
+    useEffect(() => {
+      if (messageListRef.current && !userHasScrolled) {
+          messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+      }
+    }, [messages, userHasScrolled]);
+
+    useEffect(() => {
+      const handleScroll = () => {
+          if (messageListRef.current) {
+              const isAtBottom = messageListRef.current.scrollHeight - messageListRef.current.scrollTop === messageListRef.current.clientHeight;
+              if (!isAtBottom) {
+                  setUserHasScrolled(true);
+              }
+          }
+      };
+  
+      const messageListElement = messageListRef.current;
+      messageListElement?.addEventListener('scroll', handleScroll);
+  
+      return () => messageListElement?.removeEventListener('scroll', handleScroll);
+    }, []);
 
     useEffect(() => {
         const savedTheme = window.localStorage.getItem('theme') as 'light' | 'dark' | null;
