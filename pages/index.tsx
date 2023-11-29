@@ -184,7 +184,7 @@ export default function Home() {
         }
 
         setRequestsInProgress(prev => ({ ...prev, [roomId]: true }));
-
+        setLoading(true);
         const question = query.trim();
 
         setMessageState((state) => ({
@@ -199,7 +199,6 @@ export default function Home() {
         history: [...state.history, [question, ""]],
         }));
 
-        setLoading(true);
         setQuery('');
 
         try {
@@ -215,10 +214,6 @@ export default function Home() {
             }),
         });
 
-        setLoading(false);
-
-        // Scroll to bottom
-        messageListRef.current?.scrollTo(0, messageListRef.current.scrollHeight);
       } catch (error) {
         setLoading(false);
         setError('An error occurred while fetching the data. Please try again.');
@@ -226,13 +221,20 @@ export default function Home() {
       } finally {
         // Reset the request state for the current room
         setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
+        setLoading(false);
     }
     };
 
     // Effects
+    useEffect(() => {
+      if (messageListRef.current) {
+          messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+      }
+    }, [messages]);
+
     const roomIdRef = useRef(roomId);
     useEffect(() => {
-      roomIdRef.current = roomId;
+      roomIdRef.current = roomId; //to avoid heroku warning
       const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : LOCAL_URL;
       const socket = io(serverUrl);
     
@@ -331,12 +333,6 @@ export default function Home() {
         window.localStorage.setItem('theme', theme);
         document.body.className = theme;
     }, [theme]);
-
-    useEffect(() => {
-        if (answerStartRef.current) {
-            answerStartRef.current.scrollIntoView();
-        }
-    }, [messages]);
 
     useEffect(() => {
         const savedTheme = window.localStorage.getItem('theme') as 'light' | 'dark' | null;
