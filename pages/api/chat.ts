@@ -31,7 +31,7 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   let roomIdError = false;
-  console.log("req.body", req.body);
+  //console.log("req.body", req.body);
   const { question, history, roomId } = req.body;
   
 
@@ -63,7 +63,7 @@ export default async function handler(
 
   // Perform similarity search on sanitized question and limit the results to 4
   let results = await vectorStore.similaritySearchWithScore(sanitizedQuestion, 4);
-  console.log('results:', results);
+  //console.log('results:', results);
   //await waitForUserInput();
 
   // Map the returned results to MyDocument[] format, storing the score in the metadata
@@ -103,13 +103,30 @@ export default async function handler(
   function generateUniqueId(): string {
     return uuidv4();
   }
+
+  const sanitizedResults = results.map(([document, value]) => {
+    // Check if document.pageContent is a string and replace null character
+    if (typeof document.pageContent === 'string') {
+      // This will remove all instances of the null character
+      document.pageContent = document.pageContent.replace(/\x00/g, '');
+    }
+    return [document, value];
+  });
   
+  const sanitizedCombinedResults = combinedResults.map(([document, value]) => { 
+
+    // Check if document.pageContent is a string and replace '\x00ng'
+    if (typeof document.pageContent === 'string') {
+      document.pageContent = document.pageContent.replace(/\x00/g, '');
+    }
+    return [document, value];
+  });
   
   const qaId = generateUniqueId();
-  await insertQA(question, (Documents[0] as any).responseText, results, combinedResults, qaId, roomId);
+  await insertQA(question, (Documents[0] as any).responseText, sanitizedResults, sanitizedCombinedResults, qaId, roomId);
       
     
-  console.log("Debug: Results with Metadata: ", JSON.stringify(results, null, 3));
+  //console.log("Debug: Results with Metadata: ", JSON.stringify(results, null, 3));
   Documents = combinedResults.map(([document, score]) => {
     return {
       ...document,
@@ -120,7 +137,7 @@ export default async function handler(
     };
   });
 
-  console.log("Debug: Documents with Metadata: ", JSON.stringify(Documents, null, 3));
+  //console.log("Debug: Documents with Metadata: ", JSON.stringify(Documents, null, 3));
 
   //If room ID is specified, emit the response to that room. Otherwise, emit to all.
   if (roomId) {
