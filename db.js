@@ -20,6 +20,8 @@ const poolConfig = isProduction ? {
 const pool = new Pool(poolConfig);
 
 const insertQA = async (question, answer, embeddings, sources, qaId, roomId) => {
+  // Remove the Unicode escape sequence from the answerRaw string
+
   const query = `
     INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, "qaId", "roomId")
     VALUES ($1, $2, $3, $4, $5, $6)
@@ -39,6 +41,7 @@ const insertQA = async (question, answer, embeddings, sources, qaId, roomId) => 
     throw err;
   }
 };
+
 
 
 // Assuming `pool` is your database connection pool

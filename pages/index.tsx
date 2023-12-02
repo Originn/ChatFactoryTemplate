@@ -323,10 +323,7 @@ export default function Home() {
         textAreaRef.current?.focus();
     }, []);
 
-    useEffect(() => {
-        window.localStorage.setItem('theme', theme);
-        document.body.className = theme;
-    }, [theme]);
+
 
     useEffect(() => {
       if (messageListRef.current && !userHasScrolled) {
@@ -348,15 +345,6 @@ export default function Home() {
       messageListElement?.addEventListener('scroll', handleScroll);
   
       return () => messageListElement?.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    useEffect(() => {
-        const savedTheme = window.localStorage.getItem('theme') as 'light' | 'dark' | null;
-        if (savedTheme) {
-            setTheme(savedTheme);
-        } else {
-            window.localStorage.setItem('theme', DEFAULT_THEME);
-        }
     }, []);
 
     // Component: FeedbackComponent
@@ -482,7 +470,6 @@ export default function Home() {
                     </div>
                     {message.sourceDocs && (
                       <div
-                        className="p-5"
                         key={`sourceDocsAccordion-${index}`}
                       >
                         <Accordion
