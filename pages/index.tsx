@@ -263,7 +263,8 @@ export default function Home() {
     
             const updatedMessages = state.messages.map((message, index, arr) => {
               if (index === arr.length - 1 && message.type === 'apiMessage') {
-                return { ...message, sourceDocs: deduplicatedDocs, qaId: qaId };
+                const updatedMessage = message.message + "\n\n**Don't forget to rate the response and leave comments to help us debug the application!**";
+                return { ...message, message: updatedMessage, sourceDocs: deduplicatedDocs, qaId: qaId };
               }
               return message;
             });
