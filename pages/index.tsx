@@ -420,7 +420,6 @@ export default function Home() {
   if (user) {
     return (
       <>
-      {/* {user && ( */}
         <Layout theme={theme} toggleTheme={toggleTheme}>
           <div className="mx-auto flex flex-col gap-4">
             <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
@@ -595,7 +594,6 @@ export default function Home() {
           <footer className="m-auto p-4">
           </footer>
         </Layout>
-        {/* )} */}
         <RemarksModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
