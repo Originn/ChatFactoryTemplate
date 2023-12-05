@@ -98,75 +98,78 @@ export default function Home() {
         setFeedback(prev => ({ ...prev, [messageIndex]: { ...prev[messageIndex], type } }));
     };
 
-    const handleSubmitRemark = async (messageIndex : any, remark : any) => {
-        console.log(`Attempting to submit feedback for messageIndex: ${messageIndex}`);
-        console.log("Message at this index:", messages[messageIndex]);
-        console.log("Feedback state at messageIndex:", feedback[messageIndex]);
-        // Retrieve the feedback type ('up' or 'down') and the qaId from the message
-        const feedbackType = feedback[messageIndex]?.type;
-        const qaId = messages[messageIndex]?.qaId;
+    const handleSubmitRemark = (messageIndex: any, remark: any) => {
+      console.log(`Attempting to submit feedback for messageIndex: ${messageIndex}`);
+      console.log("Message at this index:", messages[messageIndex]);
+      console.log("Feedback state at messageIndex:", feedback[messageIndex]);
+      // Retrieve the feedback type ('up' or 'down') and the qaId from the message
+      const feedbackType = feedback[messageIndex]?.type;
+      const qaId = messages[messageIndex]?.qaId;
     
-        // Ensure qaId is present
-        if (!qaId) {
+      // Ensure qaId is present
+      if (!qaId) {
         console.error("No qaId found for message index " + messageIndex);
         return;
-        }
+      }
     
-        // Send this information to the server
-        try {
-        const response = await fetch('/api/submit-feedback', {
-            method: 'POST',
-            headers: {
-            'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-            qaId: qaId,
-            thumb: feedbackType,
-            comment: remark,
-            roomId: roomId,
-            }),
-        });
-    
-        if (response.ok) {
+      // Send this information to the server without using 'await'
+      fetch('/api/submit-feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          qaId: qaId,
+          thumb: feedbackType,
+          comment: remark,
+          roomId: roomId,
+        }),
+      })
+        .then((response) => {
+          if (response.ok) {
             // Handle successful feedback submission
             setFeedback((prev) => ({
-            ...prev,
-            [messageIndex]: {
+              ...prev,
+              [messageIndex]: {
                 ...prev[messageIndex],
                 remark: '',
                 type: undefined,
-            },
+              },
             }));
             setIsModalOpen(false);
-        } else {
-            // Check if the response is empty
-            const text = await response.text();
-            if (text.trim() === "") {
-            console.error('Failed to submit feedback: Empty response');
-            } else {
-            try {
-                // Attempt to parse response as JSON
-                const data = JSON.parse(text);
-                if (data && data.message) {
-                console.error('Failed to submit feedback:', data.message);
-                } else {
-                console.error('Failed to submit feedback: Invalid response');
+          } else {
+            // Handle error responses here
+            response.text().then((text) => {
+              if (text.trim() === "") {
+                console.error('Failed to submit feedback: Empty response');
+              } else {
+                try {
+                  const data = JSON.parse(text);
+                  if (data && data.message) {
+                    console.error('Failed to submit feedback:', data.message);
+                  } else {
+                    console.error('Failed to submit feedback: Invalid response');
+                  }
+                } catch (jsonError) {
+                  console.error('Failed to parse server response as JSON:', (jsonError as Error).message);
                 }
-            } catch (jsonError) {
-                console.error('Failed to parse server response as JSON:', (jsonError as Error).message);
-            }
-            }
-        }
-        } catch (error) {
-        if (error instanceof TypeError) {
-            console.error('Network error when submitting feedback:', (error as Error).message);
-        } else {
-            console.error('Error when submitting feedback:', (error as Error).message);
-        }
-        }
+              }
+            }).catch((error) => {
+              if (error instanceof TypeError) {
+                console.error('Network error when submitting feedback:', (error as Error).message);
+              } else {
+                console.error('Error when submitting feedback:', (error as Error).message);
+              }
+            });
+          }
+        })
+        .catch((error) => {
+          console.error('Error when sending feedback:', error);
+        });
     };
+    
 
-    const handleSubmit = async (e: any) => {
+    const handleSubmit = (e: any) => {
         e.preventDefault();
         setError(null);
         if (!query) {
@@ -203,7 +206,7 @@ export default function Home() {
         setQuery('');
 
         try {
-        await fetch('/api/chat', {
+        fetch('/api/chat', {
             method: 'POST',
             headers: {
             'Content-Type': 'application/json',
