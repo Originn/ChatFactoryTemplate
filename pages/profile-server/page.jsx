@@ -1,6 +1,8 @@
+'use server';
+
 import { getSession } from '@auth0/nextjs-auth0';
 import Image from 'next/image';
-'use server'
+
 export default function ProfileServer() {
   const { user } = getSession();
 
