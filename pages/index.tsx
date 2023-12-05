@@ -1,7 +1,6 @@
 //index.tsx
 import React, { useRef, useState, useEffect } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
-import { useRouter } from 'next/router';
 import { io } from "socket.io-client";
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
@@ -20,9 +19,7 @@ type RequestsInProgressType = {
 interface DocumentWithMetadata {
   metadata: {
     source: string;
-    // Add other properties of metadata here if needed
   };
-  // Add other properties of the document here if needed
 }
 
 // Constants
@@ -289,7 +286,7 @@ export default function Home() {
       };
     
       socket.on('assignedRoom', handleAssignedRoom);
-      socket.on('connect_error', (error) => console.log('Connection Error:', error));
+      socket.on('connect_error', (errorreact) => console.log('Connection Error:', errorreact));
     
       // Listener for 'newToken'
       socket.on("newToken", (token) => {
@@ -586,9 +583,9 @@ export default function Home() {
                   </form>
                 </div>
               </div>
-              {error && (
+              {errorreact && (
                 <div className="border border-red-400 rounded-md p-4">
-                  <p className="text-red-500">{error}</p>
+                  <p className="text-red-500">{errorreact}</p>
                 </div>
               )}
             </main>
