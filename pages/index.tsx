@@ -81,8 +81,6 @@ export default function Home() {
     const messageListRef = useRef<HTMLDivElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
-    //if (isLoading) return <div>Loading...</div>;
-    //if (error) return <div>{error.message}</div>;
     // Event Handlers
     const toggleTheme = () => {
         setTheme(prevTheme => prevTheme === DEFAULT_THEME ? 'dark' : DEFAULT_THEME);
@@ -414,6 +412,9 @@ export default function Home() {
       </div>
     );
   };
+
+  if (isLoading) return <div></div>;
+  if (error) return <div>{error.message}</div>;
 
   // Main Render
   if (user) {
