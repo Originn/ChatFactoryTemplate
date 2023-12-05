@@ -76,6 +76,7 @@ export default function Home() {
     const [activeMessageIndex, setActiveMessageIndex] = useState<number | null>(null);
 
     // Refs
+    const roomIdRef = useRef(roomId);
     const answerStartRef = useRef<HTMLDivElement>(null);
     const messageListRef = useRef<HTMLDivElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -228,7 +229,7 @@ export default function Home() {
     };
 
     // Effects
-    const roomIdRef = useRef(roomId);
+    
     useEffect(() => {
       roomIdRef.current = roomId; //to avoid heroku warning
       const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : LOCAL_URL;
