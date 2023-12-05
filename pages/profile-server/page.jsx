@@ -1,8 +1,8 @@
 import { getSession } from '@auth0/nextjs-auth0';
 import Image from 'next/image';
 
-export default async function ProfileServer() {
-  const { user } = await getSession();
+export default function ProfileServer() {
+  const { user } = getSession();
 
   return (
       user && (
