@@ -1,5 +1,6 @@
 //layout.tsx
 import { useUser } from '@auth0/nextjs-auth0/client';
+import Link from 'next/link';
 
 interface LayoutProps {
   children?: React.ReactNode;
@@ -29,9 +30,9 @@ export default function Layout({ children, theme, toggleTheme }: LayoutProps) {
               {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
             </button>
             {user && (
-              <a href="/api/auth/logout" className="ml-4 hover:text-slate-600 cursor-pointer">
+              <Link href="/api/auth/logout" className="ml-4 hover:text-slate-600 cursor-pointer">
                 Logout
-              </a>
+              </Link>
             )}
           </nav>
         </div>
