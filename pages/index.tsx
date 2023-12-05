@@ -263,11 +263,14 @@ export default function Home() {
     
             const updatedMessages = state.messages.map((message, index, arr) => {
               if (index === arr.length - 1 && message.type === 'apiMessage') {
-                const updatedMessage = `${message.message}<br/><br/><span style="color: red;"><strong>Don't forget to rate the response and leave comments to help debug the application!</strong></span>`;
+                const updatedMessage = `${message.message}<br/><br/>
+                <span style="color: red;"><strong>Don't forget to rate the response and leave comments to help debug the application!</strong></span>
+                <br/><br/><span style="color: blue;">If the answer is wrong and you know the answer to the question, feel free to add it!</span>`;
                 return { ...message, message: updatedMessage, sourceDocs: deduplicatedDocs, qaId: qaId };
               }
               return message;
             });
+            
     
             return { ...state, messages: updatedMessages };
           });
