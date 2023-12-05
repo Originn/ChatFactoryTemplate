@@ -1,4 +1,6 @@
 //layout.tsx
+import { useUser } from '@auth0/nextjs-auth0/client';
+
 interface LayoutProps {
   children?: React.ReactNode;
   theme: 'light' | 'dark';
@@ -6,6 +8,8 @@ interface LayoutProps {
 }
 
 export default function Layout({ children, theme, toggleTheme }: LayoutProps) {
+  const { user } = useUser(); // Add this line to get user information
+
   return (
     <div className={`mx-auto flex flex-col space-y-4 ${theme === 'dark' ? 'dark' : ''}`}>
       <header className={`w-full sticky top-0 z-40 ${theme === 'light' ? 'bg-white' : 'bg-dark-header'}`}>
@@ -24,6 +28,11 @@ export default function Layout({ children, theme, toggleTheme }: LayoutProps) {
             >
               {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
             </button>
+            {user && (
+              <a href="/api/auth/logout" className="ml-4 hover:text-slate-600 cursor-pointer">
+                Logout
+              </a>
+            )}
           </nav>
         </div>
       </header>

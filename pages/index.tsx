@@ -1,5 +1,7 @@
 //index.tsx
 import React, { useRef, useState, useEffect } from 'react';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import { useRouter } from 'next/router';
 import { io } from "socket.io-client";
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
@@ -50,11 +52,14 @@ function addHyperlinksToPageNumbers(content: string, source: string): string {
 // Component: Home
 export default function Home() {
     // State Hooks
+    const { user, error, isLoading } = useUser();
+    if (isLoading) return <div>Loading...</div>;
+    if (error) return <div>{error.message}</div>;
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [query, setQuery] = useState<string>('');
     const [requestsInProgress, setRequestsInProgress] = useState<RequestsInProgressType>({});
     const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
+    const [errorreact, setError] = useState<string | null>(null);
     const [roomId, setRoomId] = useState<string | null>(null);
     const [userHasScrolled, setUserHasScrolled] = useState(false);
     const [messageState, setMessageState] = useState<{
@@ -214,10 +219,10 @@ export default function Home() {
             }),
         });
 
-      } catch (error) {
+      } catch (errorreact) {
         setLoading(false);
         setError('An error occurred while fetching the data. Please try again.');
-        console.log('error', error);
+        console.log('error', errorreact);
       } finally {
         // Reset the request state for the current room
         setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
@@ -327,7 +332,7 @@ export default function Home() {
         textAreaRef.current?.focus();
     }, []);
 
-
+    
 
     useEffect(() => {
       if (messageListRef.current && !userHasScrolled) {
@@ -413,190 +418,195 @@ export default function Home() {
   };
 
   // Main Render
-  return (
-    <>
-      <Layout theme={theme} toggleTheme={toggleTheme}>
-        <div className="mx-auto flex flex-col gap-4">
-          <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
-            Chat With SolidCAM Docs
-          </h1>
-          <main className={styles.main}>
-            <div className={styles.cloud}>
-              <div ref={messageListRef} className={styles.messagelist}>
-              {messages.map((message, index) => {
-                let icon;
-                let className;
-                if (message.type === 'apiMessage') {
-                  icon = (
-                    <Image
-                      key={index}
-                      src={botimageIcon}
-                      alt="AI"
-                      width="40"
-                      height="40"
-                      className={styles.boticon}
-                      priority
-                    />
-                  );
-                  className = styles.apimessage;
-                } else {
-                  icon = (
-                    <Image
-                      key={index}
-                      src={imageUrlUserIcon}
-                      alt="Me"
-                      width="30"
-                      height="30"
-                      className={styles.usericon}
-                      priority
-                    />
-                  );
-                  className =
-                    loading && index === messages.length - 1
-                      ? styles.usermessagewaiting
-                      : styles.usermessage;
-                }
-                const hasSources = message.sourceDocs && message.sourceDocs.length > 0;
-                return (
-                  <React.Fragment key={`chatMessageFragment-${index}`}>
-                    <div className={className}>
-                      {icon}
-                      <div className={styles.markdownanswer} ref={answerStartRef}>
-                      <ReactMarkdown
-                        rehypePlugins={[rehypeRaw as any]}
-                        components={{
-                          a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
-                        }}
-                      >
-                        {message.message}
-                      </ReactMarkdown>
-                      </div>
-                    </div>
-                    {message.sourceDocs && (
-                      <div
-                        key={`sourceDocsAccordion-${index}`}
-                      >
-                        <Accordion
-                          type="single"
-                          collapsible
-                          className="flex-col"
+  if (user) {
+    return (
+      <>
+      {/* {user && ( */}
+        <Layout theme={theme} toggleTheme={toggleTheme}>
+          <div className="mx-auto flex flex-col gap-4">
+            <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
+              Chat With SolidCAM Docs
+            </h1>
+            <main className={styles.main}>
+              <div className={styles.cloud}>
+                <div ref={messageListRef} className={styles.messagelist}>
+                {messages.map((message, index) => {
+                  let icon;
+                  let className;
+                  if (message.type === 'apiMessage') {
+                    icon = (
+                      <Image
+                        key={index}
+                        src={botimageIcon}
+                        alt="AI"
+                        width="40"
+                        height="40"
+                        className={styles.boticon}
+                        priority
+                      />
+                    );
+                    className = styles.apimessage;
+                  } else {
+                    icon = (
+                      <Image
+                        key={index}
+                        src={imageUrlUserIcon}
+                        alt="Me"
+                        width="30"
+                        height="30"
+                        className={styles.usericon}
+                        priority
+                      />
+                    );
+                    className =
+                      loading && index === messages.length - 1
+                        ? styles.usermessagewaiting
+                        : styles.usermessage;
+                  }
+                  const hasSources = message.sourceDocs && message.sourceDocs.length > 0;
+                  return (
+                    <React.Fragment key={`chatMessageFragment-${index}`}>
+                      <div className={className}>
+                        {icon}
+                        <div className={styles.markdownanswer} ref={answerStartRef}>
+                        <ReactMarkdown
+                          rehypePlugins={[rehypeRaw as any]}
+                          components={{
+                            a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                          }}
                         >
-                          {message.sourceDocs.map((doc, docIndex) => (
-                            <div key={`messageSourceDocs-${docIndex}`}>
-                              <AccordionItem value={`item-${docIndex}`}>
-                                <AccordionTrigger>
-                                  <h3>{doc.metadata.type === 'youtube' ? 'Webinar' : 'Help Document'}</h3>
-                                </AccordionTrigger>
-                                <AccordionContent>
-                                  {
-                                    // Add your logic to determine if the content is from a webinar
-                                    doc.metadata.source.includes("youtube")
-                                    ? (
-                                      <p>
-                                        <b>Source:</b>
-                                        {
-                                          doc.metadata && doc.metadata.source
-                                          ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View Webinar</a>
-                                          : 'Unavailable'
-                                        }
-                                      </p>
-                                    )
-                                    : (
-                                      <>
-                                        <ReactMarkdown
-                                          rehypePlugins={[rehypeRaw as any]}
-                                          components={{
-                                            a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
-                                          }}
-                                        >
-                                          {addHyperlinksToPageNumbers(doc.pageContent, doc.metadata.source)}
-                                        </ReactMarkdown>
-                                        <p className="mt-2">
+                          {message.message}
+                        </ReactMarkdown>
+                        </div>
+                      </div>
+                      {message.sourceDocs && (
+                        <div
+                          key={`sourceDocsAccordion-${index}`}
+                        >
+                          <Accordion
+                            type="single"
+                            collapsible
+                            className="flex-col"
+                          >
+                            {message.sourceDocs.map((doc, docIndex) => (
+                              <div key={`messageSourceDocs-${docIndex}`}>
+                                <AccordionItem value={`item-${docIndex}`}>
+                                  <AccordionTrigger>
+                                    <h3>{doc.metadata.type === 'youtube' ? 'Webinar' : 'Help Document'}</h3>
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    {
+                                      // Add your logic to determine if the content is from a webinar
+                                      doc.metadata.source.includes("youtube")
+                                      ? (
+                                        <p>
                                           <b>Source:</b>
                                           {
                                             doc.metadata && doc.metadata.source
-                                            ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View</a>
+                                            ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View Webinar</a>
                                             : 'Unavailable'
                                           }
                                         </p>
-                                      </>
-                                    )
-                                  }
-                                </AccordionContent>
-                              </AccordionItem>
-                            </div>
-                          ))}
-                        </Accordion>
-                      </div>
-                    )}
-                    {hasSources && <FeedbackComponent messageIndex={index} />}
-                  </React.Fragment>
-                );
-              })}
+                                      )
+                                      : (
+                                        <>
+                                          <ReactMarkdown
+                                            rehypePlugins={[rehypeRaw as any]}
+                                            components={{
+                                              a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                                            }}
+                                          >
+                                            {addHyperlinksToPageNumbers(doc.pageContent, doc.metadata.source)}
+                                          </ReactMarkdown>
+                                          <p className="mt-2">
+                                            <b>Source:</b>
+                                            {
+                                              doc.metadata && doc.metadata.source
+                                              ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View</a>
+                                              : 'Unavailable'
+                                            }
+                                          </p>
+                                        </>
+                                      )
+                                    }
+                                  </AccordionContent>
+                                </AccordionItem>
+                              </div>
+                            ))}
+                          </Accordion>
+                        </div>
+                      )}
+                      {hasSources && <FeedbackComponent messageIndex={index} />}
+                    </React.Fragment>
+                  );
+                })}
 
+                </div>
               </div>
-            </div>
-            <div className={styles.center}>
-              <div className={styles.cloudform}>
-                <form onSubmit={handleSubmit}>
-                  <textarea
-                    disabled={loading}
-                    onKeyDown={handleEnter}
-                    ref={textAreaRef}
-                    autoFocus={false}
-                    rows={1}
-                    maxLength={512}
-                    id="userInput"
-                    name="userInput"
-                    placeholder={
-                      loading
-                        ? 'Waiting for response...'
-                        : 'What SolidCAM can do?'
-                    }
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className={styles.textarea}
-                  />
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className={styles.generatebutton}
-                  >
-                    {loading ? (
-                      <div className={styles.loadingwheel}>
-                        <LoadingDots color="#000" />
-                      </div>
-                    ) : (
-                      <svg
-                        viewBox="0 0 20 20"
-                        className={styles.svgicon}
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
-                      </svg>
-                    )}
-                  </button>
-                </form>
+              <div className={styles.center}>
+                <div className={styles.cloudform}>
+                  <form onSubmit={handleSubmit}>
+                    <textarea
+                      disabled={loading}
+                      onKeyDown={handleEnter}
+                      ref={textAreaRef}
+                      autoFocus={false}
+                      rows={1}
+                      maxLength={512}
+                      id="userInput"
+                      name="userInput"
+                      placeholder={
+                        loading
+                          ? 'Waiting for response...'
+                          : 'What SolidCAM can do?'
+                      }
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      className={styles.textarea}
+                    />
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className={styles.generatebutton}
+                    >
+                      {loading ? (
+                        <div className={styles.loadingwheel}>
+                          <LoadingDots color="#000" />
+                        </div>
+                      ) : (
+                        <svg
+                          viewBox="0 0 20 20"
+                          className={styles.svgicon}
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+                        </svg>
+                      )}
+                    </button>
+                  </form>
+                </div>
               </div>
-            </div>
-            {error && (
-              <div className="border border-red-400 rounded-md p-4">
-                <p className="text-red-500">{error}</p>
-              </div>
-            )}
-          </main>
-        </div>
-        <footer className="m-auto p-4">
-        </footer>
-      </Layout>
-      <RemarksModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        messageIndex={activeMessageIndex}
-        onSubmit={handleSubmitRemark}
-      />
-    </>
-  )
+              {error && (
+                <div className="border border-red-400 rounded-md p-4">
+                  <p className="text-red-500">{error}</p>
+                </div>
+              )}
+            </main>
+          </div>
+          <footer className="m-auto p-4">
+          </footer>
+        </Layout>
+        {/* )} */}
+        <RemarksModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          messageIndex={activeMessageIndex}
+          onSubmit={handleSubmitRemark}
+        />
+      </>
+    )
+  }
+  return window.location.href = "/api/auth/login";
 };
 
 // Supporting Interfaces
