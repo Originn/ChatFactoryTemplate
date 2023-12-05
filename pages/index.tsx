@@ -50,8 +50,6 @@ function addHyperlinksToPageNumbers(content: string, source: string): string {
 export default function Home() {
     // State Hooks
     const { user, error, isLoading } = useUser();
-    if (isLoading) return <div>Loading...</div>;
-    if (error) return <div>{error.message}</div>;
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [query, setQuery] = useState<string>('');
     const [requestsInProgress, setRequestsInProgress] = useState<RequestsInProgressType>({});
@@ -82,6 +80,8 @@ export default function Home() {
     const messageListRef = useRef<HTMLDivElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
+    if (isLoading) return <div>Loading...</div>;
+    if (error) return <div>{error.message}</div>;
     // Event Handlers
     const toggleTheme = () => {
         setTheme(prevTheme => prevTheme === DEFAULT_THEME ? 'dark' : DEFAULT_THEME);
