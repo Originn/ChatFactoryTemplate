@@ -1,3 +1,3 @@
 export default function Logout() {
-    return <a href="/api/auth/logout">Logout</a>;
+    return <Link href="/api/auth/logout">Logout</Link>;
   }
