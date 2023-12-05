@@ -14,8 +14,9 @@ import { insertQA } from '../../db';
 import { v4 as uuidv4 } from 'uuid';
 
 type SearchResult = [MyDocument, number];
-async function filteredSimilaritySearch(vectorStore: any, queryText: string, type: string, limit: number, minScore: number): Promise<SearchResult[]> {
-  const results: SearchResult[] = await vectorStore.similaritySearchWithScore(queryText, limit, { type: type });
+
+function filteredSimilaritySearch(vectorStore: any, queryText: string, type: string, limit: number, minScore: number): SearchResult[] {
+  const results: SearchResult[] = vectorStore.similaritySearchWithScore(queryText, limit, { type: type });
 
   // Explicitly type the destructured elements in the filter method
   const filteredResults = results.filter(([document, score]: SearchResult) => score >= minScore);
