@@ -12,6 +12,7 @@ import {waitForUserInput} from 'utils/textsplitter';
 import { AIMessage, HumanMessage } from 'langchain/schema';
 import { insertQA } from '../../db';
 import { v4 as uuidv4 } from 'uuid';
+import { getSession } from '@auth0/nextjs-auth0';
 
 type SearchResult = [MyDocument, number];
 
@@ -54,6 +55,8 @@ export default async function handler(
   const sanitizedQuestion = question.trim().replaceAll('\n', ' ');
 
   try {
+    const session = await getSession(req, res); // Use 'await' to resolve the promise
+  const userEmail = session?.user?.email || 'unknown';
     const io = getIO();
     const pinecone = await getPinecone();
     const index = pinecone.Index(PINECONE_INDEX_NAME);
@@ -130,7 +133,7 @@ export default async function handler(
   });
   
   const qaId = generateUniqueId();
-  await insertQA(question, (Documents[0] as any).responseText, sanitizedResults, sanitizedCombinedResults, qaId, roomId);
+  await insertQA(question, (Documents[0] as any).responseText, sanitizedResults, sanitizedCombinedResults, qaId, roomId, userEmail);
       
     
   //console.log("Debug: Results with Metadata: ", JSON.stringify(results, null, 3));

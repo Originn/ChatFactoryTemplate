@@ -19,12 +19,12 @@ const poolConfig = isProduction ? {
 
 const pool = new Pool(poolConfig);
 
-const insertQA = async (question, answer, embeddings, sources, qaId, roomId) => {
+const insertQA = async (question, answer, embeddings, sources, qaId, roomId, userEmail) => {
   // Remove the Unicode escape sequence from the answerRaw string
 
   const query = `
-    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, "qaId", "roomId")
-    VALUES ($1, $2, $3, $4, $5, $6)
+    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, "qaId", "roomId", userEmail)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING *;
   `;
 
@@ -33,7 +33,7 @@ const insertQA = async (question, answer, embeddings, sources, qaId, roomId) => 
     const embeddingsJson = JSON.stringify(embeddings);
     const sourcesJson = JSON.stringify(sources);
 
-    const res = await pool.query(query, [question, answer, embeddingsJson, sourcesJson, qaId, roomId]);
+    const res = await pool.query(query, [question, answer, embeddingsJson, sourcesJson, qaId, roomId, userEmail]);
     console.log(res.rows[0]); // Output the inserted row to the console
     return res.rows[0]; // Return the inserted row
   } catch (err) {
