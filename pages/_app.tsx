@@ -1,4 +1,4 @@
-//_app.tsx
+//pages/_app.tsx
 
 import '@/styles/base.css';
 import '@/styles/globals.css';
