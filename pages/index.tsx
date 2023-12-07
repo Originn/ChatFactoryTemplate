@@ -227,6 +227,21 @@ export default function Home() {
     };
 
     // Effects
+
+    useEffect(() => {
+      const savedTheme = window.localStorage.getItem('theme') as 'light' | 'dark' | null;
+      if (savedTheme) {
+          setTheme(savedTheme);
+      } else {
+          window.localStorage.setItem('theme', 'light');
+      }
+    }, []);
+    
+    useEffect(() => {
+      window.localStorage.setItem('theme', theme);
+      document.body.className = theme;
+    }, [theme]);
+    
     
     useEffect(() => {
       roomIdRef.current = roomId; //to avoid heroku warning
@@ -478,9 +493,7 @@ export default function Home() {
                         </div>
                       </div>
                       {message.sourceDocs && (
-                        <div
-                          key={`sourceDocsAccordion-${index}`}
-                        >
+                        <div key={`sourceDocsAccordion-${index}`}>
                           <Accordion
                             type="single"
                             collapsible
