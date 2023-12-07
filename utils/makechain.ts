@@ -16,12 +16,13 @@ const roomChatHistories: Record<string, ChatEntry[]> = {};
 
 const MODEL_NAME = process.env.MODEL_NAME;
 const nonStreamingModel = new OpenAI({});
-const CONDENSE_PROMPT = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
+const CONDENSE_PROMPT = `Given the history of the conversation and a follow-up technical question, generate a detailed, standalone technical question.
 
 Chat History:
 {chat_history}
 Follow Up Input: {question}
-Helpful answer in markdown:`;
+Detailed, technical standalone question:`;
+
 
 const QA_PROMPT = `${process.env.QA_PROMPT || ""}
 
@@ -63,7 +64,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       }
       let chatHistory = roomChatHistories[roomId];
 
-      const actualChatHistoryText = chatHistory.map(entry => `User: ${entry.question} Bot: ${entry.answer}`).join(' ');
+      const actualChatHistoryText = chatHistory.map(entry => entry.question).join('\n');
 
       const responseText = (await (async () => {
         const response = await chain.call({
