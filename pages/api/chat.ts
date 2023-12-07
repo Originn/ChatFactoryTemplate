@@ -14,23 +14,23 @@ import { insertQA } from '../../db';
 import { v4 as uuidv4 } from 'uuid';
 import { getSession } from '@auth0/nextjs-auth0';
 
+
 type SearchResult = [MyDocument, number];
+async function filteredSimilaritySearch(vectorStore: any, queryText: string, type: string, limit: number, minScore: number): Promise<SearchResult[]> {
+  try {
+    const results: SearchResult[] = await vectorStore.similaritySearchWithScore(queryText, limit, { type: type });
 
-function filteredSimilaritySearch(vectorStore: any, queryText: string, type: string, limit: number, minScore: number): SearchResult[] {
-  // Ensure that vectorStore.similaritySearchWithScore returns an array
-  const results = vectorStore.similaritySearchWithScore(queryText, limit, { type: type });
+    // Explicitly type the destructured elements in the filter method
+    const filteredResults = results.filter(([document, score]: SearchResult) => score >= minScore);
 
-  if (!Array.isArray(results)) {
-    // Handle the case where results is not an array
-    console.error("vectorStore.similaritySearchWithScore did not return an array");
-    return [];
+    return filteredResults;
+  } catch (error) {
+    console.error("Error in filteredSimilaritySearch:", error);
+    return [];  // Return an empty array in case of error
   }
-
-  // Explicitly type the destructured elements in the filter method
-  const filteredResults = results.filter(([document, score]: SearchResult) => score >= minScore);
-
-  return filteredResults;
 }
+
+
 
 
 
@@ -103,8 +103,8 @@ export default async function handler(
 
   const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.86;
 
-  const pdfResults = filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'pdf', 2, minScoreSourcesThreshold);
-  const webinarResults = filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'youtube', 2, minScoreSourcesThreshold);
+  const pdfResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'pdf', 2, minScoreSourcesThreshold);
+  const webinarResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'youtube', 2, minScoreSourcesThreshold);
 
   const combinedResults = [...pdfResults, ...webinarResults];
 
