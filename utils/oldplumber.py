@@ -3,7 +3,6 @@ import pdfplumber
 import re
 import sys
 import json
-import os
 
 def get_token_count(text):
     tokens = text.split()
@@ -141,121 +140,91 @@ def wrap_large_bold_sentences(text, chars):
 
     return text
 
-def wrap_bold_text(text, chars, folder_name):
+def wrap_bold_text(text, chars):
     # Extract bold text segments
-    size_thresholds = {
-    'SolidCAM Milling': {'large': 13, 'small': 8},
-    'SolidCAM GPPTool': {'large': 16, 'small': 10},
-    'SolidCAM Turning': {'large': 16, 'small': 10},
-    'SolidCAM Wire': {'large': 16, 'small': 10},
-    }
-    default_thresholds = {'large': 16, 'small': 10}
-
-    # Get custom thresholds for the file, or use defaults
-    thresholds = size_thresholds.get(folder_name, default_thresholds)
     bold_text_segments = []
     inside_bold_segment = False
     temp_bold_string = ''
     prev_doctop = None
     prev_char_was_bold = False
-    char_size = None
-
-    def add_segment():
-        nonlocal temp_bold_string, inside_bold_segment, char_size
-        # Trim the segment to remove extra spaces
-        trimmed_segment = temp_bold_string.strip()
-        if trimmed_segment:
-            bold_text_segments.append((trimmed_segment, prev_char_was_bold, char_size))
-            temp_bold_string = ''
-            inside_bold_segment = False
 
     for char in chars:
         # Check for new line based on doctop value
         new_line_detected = prev_doctop and abs(char["doctop"] - prev_doctop) > 10
 
         if is_bold(char):
-            if not inside_bold_segment or new_line_detected or (char_size and char.get("size", 0) != char_size):
-                add_segment()  # Close current segment and start a new one if there's a size change or new line
+            if not inside_bold_segment:  # Beginning of bold segment
                 inside_bold_segment = True
-                char_size = char.get("size", 0)
             temp_bold_string += char["text"]
         else:
-            add_segment()
+            if inside_bold_segment:  # End of bold segment
+                bold_text_segments.append((temp_bold_string, prev_char_was_bold))
+                temp_bold_string = ''
+                inside_bold_segment = False
 
         prev_doctop = char["doctop"]
         prev_char_was_bold = is_bold(char)
 
-    add_segment()  # Add any remaining segment
+    # If there's a remaining bold segment, add it
+    if temp_bold_string:
+        bold_text_segments.append((temp_bold_string, prev_char_was_bold))
 
-    def wrap_segment(segment, size):
-        if size >= thresholds['large']:
-            return "****" + segment + "****"
-        elif size > thresholds['small']:
-            return "**" + segment + "**"
-        else:
-            return segment
-
-    # Calculate start and end positions for each segment in the original text
-    segments_with_positions = []
-    for segment, prev_was_bold, size in bold_text_segments:
-        start_pos = text.find(segment)
-        end_pos = start_pos + len(segment)
-        segments_with_positions.append((segment, start_pos, end_pos, size))
-
-    # Sort segments by their start positions
-    segments_with_positions.sort(key=lambda x: x[1])
-
-    # Apply markdown, ensuring no overlaps
-    for i, (segment, start, end, size) in enumerate(segments_with_positions):
+    # Wrap bold segments with ** if the segment is alone on a line or if it's at the start of a line
+    for segment, prev_was_bold in bold_text_segments:
         if segment != "Related Topics":
-            wrapped_segment = wrap_segment(segment, size)
-            # Check for overlapping with previous segments
-            if i > 0 and start < segments_with_positions[i-1][2]:
-                continue  # Skip segment if it overlaps
-            text = text.replace(segment, wrapped_segment, 1)
+            if ('\n' + segment + '\n') in text or text.startswith(segment + '\n') or text.endswith('\n' + segment) or (not prev_was_bold and segment in text.split('\n')[0]):
+                text = text.replace(segment, f"**{segment}**", 1)  # Only replace the first occurrence
 
     return text
 
 
 
 def find_pages_starting_with(pdf_path, start_string):
-    pages_content = []
+    headers_with_PageContent = []
+
     with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
+        last_header = None
+        last_header_page_number = None
+        PageContent_accumulator = []
+        for i , page in enumerate(pdf.pages, start=1):
             text = page.extract_text()
-            if text and start_string in text:
-                # Extract and clean the header
-                header_extracted = extract_header(text)
-                header = clean_text(header_extracted)
-                header = combine_multiline_header(header)
 
-                header_end_index = text.find(header_extracted) + len(header_extracted)
-                page_content = text[header_end_index:].strip()
-                chars = page.chars
-                folder_name = os.path.basename(os.path.dirname(pdf_path))
-                wrapped_text = wrap_bold_text(text, chars, folder_name)
-                wrapped_text = wrap_large_bold_sentences(wrapped_text, chars)
-                page_content = remove_home_header(wrapped_text)
-
-                pages_content.append({
-                    'page_number': page.page_number,
-                    'header': header,
-                    'pageContent': page_content
-                })
-                
+            if text and text.startswith(start_string):
+                # If we had previously found a header, save its associated PageContent
+                if last_header:
+                    headers_with_PageContent.append({
+                        'page_number': last_header_page_number + 1,  # +1 to make it 1-indexed
+                        'header': last_header,
+                        'PageContent': PageContent_accumulator
+                    })
+                    PageContent_accumulator = []  # Reset the accumulator for the next header
+                if 'scmill' in pdf_path:
+                    header_extracted = extract_header(text)
+                    last_header = clean_text(header_extracted)
+                    chars = page.chars
+                    wrapped_text = wrap_bold_text(text, chars)
+                    wrapped_text = wrap_large_bold_sentences(wrapped_text, chars)
+                    wrapped_text = remove_home_header(wrapped_text)
+                    PageContent_accumulator.append((i, wrapped_text))
+                else:
+                    last_header = clean_text(text)
+                last_header_page_number = i
             else:
+                # Accumulate PageContent
                 chars = page.chars
-                folder_name = os.path.basename(os.path.dirname(pdf_path))
-                wrapped_text = wrap_bold_text(text, chars, folder_name)
+                wrapped_text = wrap_bold_text(text, chars)
                 wrapped_text = wrap_large_bold_sentences(wrapped_text, chars)
-                page_content = remove_home_header(wrapped_text)
-                pages_content.append({
-                    'page_number': page.page_number,
-                    'header': header,
-                    'pageContent': page_content
-                })
-    return pages_content
+                PageContent_accumulator.append((i, wrapped_text))
 
+        # If there's a last header without PageContent, add it too (though its PageContent will be empty)
+        if last_header:
+            headers_with_PageContent.append({
+                'page_number': last_header_page_number + 1,  # +1 to make it 1-indexed
+                'header': last_header,
+                'PageContent': PageContent_accumulator
+            })
+
+    return headers_with_PageContent
 
 
 #Removing Ralted Topics with hooks and link, avoiding removal of edge cases.
@@ -280,22 +249,60 @@ def has_special_character_in_last_three_lines(lines, current_index):
             
     return False
 
-def remove_related_topics_block(text):
+def remove_related_topics_sentences(text):
     lines = text.split('\n')
     
-    try:
-        # Find the indices of the first and last occurrence of "Related Topics"
-        start_index = lines.index("Related Topics")
-        end_index = len(lines) - 1 - lines[::-1].index("Related Topics")
+    i = 0
+    related_topics_count = 0
 
-        # Remove the block between these indices, inclusive
-        del lines[start_index:end_index + 1]
-    except ValueError:
-        # "Related Topics" not found, do nothing
-        pass
+    while i < len(lines):
+        line = lines[i]
+        split_line = line.split()
 
+        if "Related Topics" in line:
+            related_topics_count += 1
+            if related_topics_count > 1:
+                related_topics_count = 0  # Reset the count
+                i += 1
+                continue
+
+            # If the last three lines have a special character when concatenated, set a flag to skip the removal of lines above
+            skip_upward = has_special_character_in_last_three_lines(lines, i)
+
+            # Moving upwards and checking for short sentences
+            if not skip_upward:
+                prev_index = i - 1
+                while prev_index >= 0:
+                    prev_split_line = lines[prev_index].split()
+                    # Check if the line starts with a pattern like "1." or "2."
+                    line_starts_with_number_pattern = re.match(r'^\d+\.', ' '.join(prev_split_line))
+                    if line_starts_with_number_pattern:
+                        break
+                    elif not prev_split_line or (len(prev_split_line) <= 8 and not prev_split_line[-1][-1] in ['.', ',', '?', '!', ';', ':', '>', '/']):
+                        del lines[prev_index]
+                        prev_index -= 1
+                        i -= 1  # Adjust current index due to deletion
+                    else:
+                        break
+
+            # Moving downwards and checking for short sentences, lines ending with underscores, and lines longer than 8 words without special endings
+            next_index = i + 1
+            while next_index < len(lines):
+                next_split_line = lines[next_index].split()
+                if '>' in lines[next_index]:  # Break if '>' character is anywhere in the line
+                    break
+                elif (not next_split_line or len(next_split_line) > 8 or next_split_line[-1].endswith('_') or not next_split_line[-1][-1] in ['.', ',', '?', '!', ';', ':', '/']):
+                    del lines[next_index]
+                else:
+                    break
+
+        i += 1
+
+    # Remove any remaining "Related Topics" occurrences
+    while "Related Topics" in lines:
+        lines.remove("Related Topics")
+    
     return '\n'.join(lines)
-
 
 
 def append_related_topics(text):
@@ -373,7 +380,6 @@ def process_webinar_text(text_file_path):
 
 if __name__ == "__main__":
     pdf_path = sys.argv[1]  # Get the PDF path from the command line argument
-    folder_name = os.path.basename(os.path.dirname(pdf_path))
     # Check if 'webinar' is in the file name
     if pdf_path.endswith('.txt'):
         # Call the functions specific to webinar PDFs
@@ -381,45 +387,35 @@ if __name__ == "__main__":
         sys.stdout.write(json.dumps(results))
     else:
         pages_with_home = find_pages_starting_with(pdf_path, "Home >")
-        # print(pages_with_home)
-        # input()
+        print("pages_with_home", pages_with_home)
+        input()
 
         grouped_results = {}
 
         for page_info in pages_with_home:
-
+            # Clean the header PageContent
             header = combine_multiline_header(page_info['header'])
             
             if header not in grouped_results:
                 grouped_results[header] = []
 
-            # Access 'page_number' and 'pageContent' directly from the page_info dictionary
-            page_number = page_info['page_number']
-            PageContent_text = page_info['pageContent']  # Make sure this key matches the exact key in your dictionary
-
-            # Append "Related Topics" where necessary
-            PageContent_text = append_related_topics(PageContent_text)
-            # Clean the PageContent using the remove_related_topics_sentences function
-            PageContent_text = remove_related_topics_block(PageContent_text)
-            # print(PageContent_text)
-            # input()
-            # Store the cleaned PageContent with its page number
-            content_data = {
-                "page_number": page_number,
-                "PageContent": PageContent_text
-            }
-            grouped_results[header].append(content_data)
-
-
+            for (page_number, PageContent_text) in page_info['PageContent']:
+                # Append "Related Topics" where necessary
+                PageContent_text = append_related_topics(PageContent_text)
+                # Clean the PageContent using the remove_related_topics_sentences function
+                PageContent_text = remove_related_topics_sentences(PageContent_text)
+                
+                # Store the cleaned PageContent with its page number
+                content_data = {
+                    "page_number": page_number,
+                    "PageContent": PageContent_text
+                }
+                grouped_results[header].append(content_data)
 
         # Convert the dictionary to a list format
         results = [{"header": key, "contents": value} for key, value in grouped_results.items()]
-        for item in results:
-            item['header'] = item['header'].replace("Home", folder_name)
-        # if results:
-        #     results.pop()
-        # print('results:', results)
-        # input()
+        if results:
+            results.pop()
         sys.stdout.write(json.dumps(results))
 
 

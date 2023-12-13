@@ -8,14 +8,15 @@ import * as tmp from 'tmp-promise';
 import fs from 'fs';
 import path from 'path';
 
-export interface DocumentInput<Metadata extends Record<string, any> = Record<string, any>> {
+export interface DocumentInput<Metadata extends { videoLink?: string } = Record<string, any>> {
     pageNumber?: number;
     pageHeader?: string;
     pageContent: string;
     metadata?: Metadata;
+    score?: number;
 }
 
-export class MyDocument<Metadata extends Record<string, any> = Record<string, any>> implements DocumentInput<Metadata> {
+export class MyDocument<Metadata extends { videoLink?: string } = Record<string, any>> implements DocumentInput<Metadata> {
     pageNumber?: number;
     pageHeader?: string;
     pageContent: string;
@@ -23,19 +24,14 @@ export class MyDocument<Metadata extends Record<string, any> = Record<string, an
     score?: number;
 
     constructor(fields: DocumentInput<Metadata>) {
-        if ('pageNumber' in fields) {
-            this.pageNumber = fields.pageNumber;
-        }
-        if ('pageHeader' in fields) {
-            this.pageHeader = fields.pageHeader;
-        }
+        this.pageNumber = fields.pageNumber;
+        this.pageHeader = fields.pageHeader;
         this.pageContent = fields.pageContent;
         this.metadata = fields.metadata || {} as Metadata;
-        if ('score' in fields) {
-            this.score = fields['score'] as number | undefined;
-        }
+        this.score = fields.score;
     }
 }
+
 
 class GCSLoader {
     private storage: Storage;
@@ -96,72 +92,79 @@ class GCSLoader {
 
     async load(): Promise<MyDocument[]> {
         const localDirectoryPath = "C:\\Users\\ori.somekh\\Desktop\\SolidcamChat_uploads";
-        const fileNames = fs.readdirSync(localDirectoryPath);
+        const items = fs.readdirSync(localDirectoryPath, { withFileTypes: true });
     
         const documents: MyDocument[] = [];
     
-        for (const fileName of fileNames) {
-            const filePath = path.join(localDirectoryPath, fileName);
+        for (const item of items) {
+            if (item.isDirectory()) {
+                const folderName = item.name;
+                const folderPath = path.join(localDirectoryPath, folderName);
+                const fileNames = fs.readdirSync(folderPath);
     
-            if (!fileName.endsWith('.pdf') && !fileName.endsWith('.txt')) {
-                console.log(`Skipping unsupported file: ${fileName}`);
-                continue;
-            }
+                for (const fileName of fileNames) {
+                    const filePath = path.join(folderPath, fileName);
+                    console.log("filePath:", filePath);
+                    if (!fileName.endsWith('.pdf') && !fileName.endsWith('.txt')) {
+                        console.log(`Skipping unsupported file: ${fileName}`);
+                        continue;
+                    }
     
-            let contentString: string;
-            if (fileName.endsWith('.pdf')) {
-                contentString = await this.parse(filePath);
-            } else if (fileName.endsWith('.txt')) {
-                contentString = await this.parse(filePath);
-            } else {
-                console.log(`Unsupported file type for ${fileName}`);
-                continue;
-            }
-    
-            let existingSource = extractYouTubeLink(contentString);
-            if (!existingSource) { // If there's no YouTube link, use the GCS link
-                existingSource = this.generatePublicUrl(fileName);
-            }
-
-            //console.log('contentString:', contentString)
-            const contentData = JSON.parse(contentString);
-            //await waitForUserInput();
-            
-    
-            // Temporary dictionary to group content by header
-            const groupedContent: Record<string, { contents: string[], source: string }> = {};
-
-            for (let pageInfoGroup of contentData) {
-                for (let content of pageInfoGroup.contents) {
-                    const pageNumber = content.page_number;
-                    const pageContent = content.PageContent + ` (${pageNumber})`; // append page number
-
-                    if (pageInfoGroup.header in groupedContent) {
-                        groupedContent[pageInfoGroup.header].contents.push(pageContent);
+                    let contentString: string;
+                    if (fileName.endsWith('.pdf') || fileName.endsWith('.txt')) {
+                        contentString = await this.parse(filePath);
                     } else {
-                        groupedContent[pageInfoGroup.header] = {
-                            contents: [pageContent],
-                            source: existingSource
-                        };
+                        console.log(`Unsupported file type for ${fileName}`);
+                        continue;
+                    }
+    
+                    let existingSource = extractYouTubeLink(contentString);
+                    if (!existingSource) { // If there's no YouTube link, use the GCS link
+                        existingSource = this.generatePublicUrl(fileName);
+                    }
+    
+                    //console.log('contentString:', contentString);
+                    //await waitForUserInput();
+                    const contentData = JSON.parse(contentString);
+                    //await waitForUserInput();
+    
+                    // Temporary dictionary to group content by header
+                    const groupedContent: Record<string, { contents: string[], source: string }> = {};
+    
+                    for (let pageInfoGroup of contentData) {
+                        for (let content of pageInfoGroup.contents) {
+                            const pageNumber = content.page_number;
+                            const pageContent = content.PageContent + ` (${pageNumber})`; // append page number
+    
+                            if (pageInfoGroup.header in groupedContent) {
+                                groupedContent[pageInfoGroup.header].contents.push(pageContent);
+                            } else {
+                                groupedContent[pageInfoGroup.header] = {
+                                    contents: [pageContent],
+                                    source: existingSource
+                                };
+                            }
+                        }
+                    }
+    
+                    // Flatten the grouped content into the documents array
+                    for (let [header, data] of Object.entries(groupedContent)) {
+                        const concatenatedContent = data.contents.join(' '); // Concatenate all content for this header
+                        documents.push({
+                            pageHeader: header,
+                            pageContent: concatenatedContent,
+                            metadata: {
+                                source: data.source,
+                                videoLink: data.source.includes('youtube') ? data.source : null,
+                            },
+                        });
                     }
                 }
             }
-
-            // Flatten the grouped content into the documents array
-            for (let [header, data] of Object.entries(groupedContent)) {
-                const concatenatedContent = data.contents.join(' '); // Concatenate all content for this header
-                documents.push({
-                    pageHeader: header,
-                    pageContent: concatenatedContent,
-                    metadata: {
-                        source: data.source,
-                    },
-                });
-            }
         }
-    return documents;
+        return documents;
     }
 }
 
 export default GCSLoader;
-
+    

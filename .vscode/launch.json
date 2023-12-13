@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/utils/plumber.py",
-            "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/scmill.pdf"],
+            "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/Automating Edge Breaking with SolidCAM Webinar.txt"],
             "console": "integratedTerminal"
         }
     ]

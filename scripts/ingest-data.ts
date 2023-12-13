@@ -37,6 +37,7 @@ function removeDuplicateContent(text: string, compareLength: number = 100): stri
     let cleanProcessedDocs: any[] = [];
   
     for (const doc of processedDocs) {
+      //console.log("doc:", doc);
       let tokens = encoding.encode(doc.pageContent);
   
       if (tokens.length > 1200) {
@@ -65,10 +66,36 @@ function removeDuplicateContent(text: string, compareLength: number = 100): stri
         cleanProcessedDocs.push(doc);
       }
     }
-  
+    cleanProcessedDocs = appendMissingNumbers(cleanProcessedDocs)
     return cleanProcessedDocs;
   }
   
+  function appendMissingNumbers(cleanProcessedDocs : any) {
+    let lastNumberFound = null;
+
+    // Iterate through the documents in reverse order
+    for (let i = cleanProcessedDocs.length - 1; i >= 0; i--) {
+        const doc = cleanProcessedDocs[i];
+        const content = doc.pageContent;
+        const numberMatch = content.match(/\((\d+)\)/g);
+
+        if (numberMatch) {
+            // Found a number at the end of this document
+            const currentNumber = numberMatch;
+
+            if (lastNumberFound === null || currentNumber < lastNumberFound) {
+                // Update lastNumberFound if it's null or current number is smaller
+                lastNumberFound = currentNumber;
+            }
+        } else if (lastNumberFound !== null && i !== cleanProcessedDocs.length - 1) {
+            // Append the last found number to the previous document if this one doesn't end with a number
+            // and it's not the last document in the array
+            cleanProcessedDocs[i].pageContent += ` ${lastNumberFound}`;
+        }
+    }
+
+    return cleanProcessedDocs;
+}
 
 
 export const run = async () => {
@@ -79,25 +106,57 @@ export const run = async () => {
         const rawDocs = await gcsLoader.load();
         //console.log('Number of raw documents:', rawDocs.length);
 
-        /* Split text into chunks */
-        const textSplitter = new CharacterTextSplitter({
+        /* Split PDF into chunks */
+        const pdfTextSplitter = new RecursiveCharacterTextSplitter({
             chunkSize: 1000,
             chunkOverlap: 200,
+            //separators: ["\n****"],
         });
+
+        /* Split webinar into chunks */
+        const webinarTextSplitter = new CharacterTextSplitter({
+          chunkSize: 1000,
+          chunkOverlap: 200,
+          //separators: ["\n****"],
+      });
       
       // Associate each chunk with its first timestamp
-      const processedDocs: any[] = [];
+      let processedDocs: any[] = [];
 
       for (const doc of rawDocs) {
-        //console.log('Doc', doc);
-        // Modify the source metadata to append the page number
-        const Timestamp = extractFirstTimestampInSeconds(doc.pageContent);
-        //const initialHeader = (doc.pageHeader || "");
-        const chunk = await textSplitter.createDocuments([doc.pageContent],[doc.metadata]
-        );  
+        // Initialize common variables
+    const Timestamp = extractFirstTimestampInSeconds(doc.pageContent);
+    const lines = doc.pageContent.split('\n');
+    let initialHeader;
+    let chunk;
+
+    if (doc.pageHeader) {
+      // Process as webinar document
+      let initialHeader = '';
+      if (doc.pageHeader.includes('|')) {
+          const parts = doc.pageHeader.split('|');
+          initialHeader = `**${parts[0].trim()}** ${parts.slice(1).join('|').trim()}\n\n---\n\n`;
+      } else {
+          initialHeader = `**${doc.pageHeader.trim()}**\n\n---\n\n`;
+      }
+
+      chunk = await webinarTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
+          chunkHeader: initialHeader,
+          appendChunkOverlapHeader: true
+      });
+    } else {
+        // Process as PDF document
+        initialHeader = doc.pageHeader ? 
+            doc.pageHeader.split('|')[0].trim() + ' ' + lines.find(line => line.startsWith('****') && line.endsWith('****')) + '\n\n---\n\n' : 
+            'Default Header\n\n---\n\n';
+        chunk = await pdfTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
+            chunkHeader: initialHeader,
+            appendChunkOverlapHeader: true
+        });
+    }
         //console.log('Chunck log', chunk);
+        //await waitForUserInput();
                             
-                                
           let processedChunks: any[] = chunk;
 
             processedChunks = chunk.map(document => {
@@ -119,9 +178,11 @@ export const run = async () => {
         processedDocs.push(...processedChunks);        
         }
 
-        console.log('Processed docs with timestamps', processedDocs);
-
-        const cleanProcessedDocs = await checkDocumentsTokenLength(processedDocs);
+        processedDocs = appendMissingNumbers(processedDocs)
+        console.log('processedDocs', processedDocs);
+        //await waitForUserInput();
+        //const cleanProcessedDocs = await checkDocumentsTokenLength(processedDocs);
+        //console.log('cleanProcessedDocs', cleanProcessedDocs);
         //await waitForUserInput();
 
         
@@ -133,7 +194,7 @@ export const run = async () => {
       console.log('ARE YOU READY TO EMBED???')
       await waitForUserInput();
       //embed the documents
-      await PineconeStore.fromDocuments(cleanProcessedDocs, embeddings, {
+      await PineconeStore.fromDocuments(processedDocs, embeddings, {
           pineconeIndex: index,
           namespace: PINECONE_NAME_SPACE,
           textKey: 'text',
