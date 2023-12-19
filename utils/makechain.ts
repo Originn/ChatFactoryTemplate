@@ -15,13 +15,14 @@ type ChatEntry = {
   score: number;
 };
 
-let bufferMemory = new BufferMemory({
-  memoryKey: "chat_history",
-  inputKey: "question",
-  outputKey: "text",
-  returnMessages: true,
-});
+// let bufferMemory = new BufferMemory({
+//   memoryKey: "chat_history",
+//   inputKey: "question",
+//   outputKey: "text",
+//   returnMessages: true,
+// });
 
+const roomMemories: Record<string, BufferMemory> = {};
 const roomChatHistories: Record<string, ChatEntry[]> = {};
 
 const MODEL_NAME = process.env.MODEL_NAME;
@@ -123,28 +124,52 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
   // Non-streaming model setup
   const nonStreamingModel = new ChatOpenAI({});
 
-  // Chain setup with BufferMemory for managing conversation history
-  const chain = ConversationalRetrievalQAChain.fromLLM(
-    streamingModel,
-    vectorstore.asRetriever(),
-    {
-      memory: bufferMemory,
-      questionGeneratorChainOptions: {
-        llm: nonStreamingModel,
-        template: questionGeneratorTemplate,
-      },
-      //verbose: true
+  // // Chain setup with BufferMemory for managing conversation history
+  // const chain = ConversationalRetrievalQAChain.fromLLM(
+  //   streamingModel,
+  //   vectorstore.asRetriever(),
+  //   {
+  //     memory: bufferMemory,
+  //     questionGeneratorChainOptions: {
+  //       llm: nonStreamingModel,
+  //       template: questionGeneratorTemplate,
+  //     },
+  //     //verbose: true
     
-    }
-  );
+  //   }
+  // );
   return {
     call: async (question: string, Documents: MyDocument[], roomId: string) => {
+      if (!roomMemories[roomId]) {
+        roomMemories[roomId] = new BufferMemory({
+          memoryKey: "chat_history",
+          inputKey: "question",
+          outputKey: "text",
+          returnMessages: true,
+        });
+      }
+
       if (!roomChatHistories[roomId]) {
         roomChatHistories[roomId] = [];
       }
-      let chatHistory = roomChatHistories[roomId];
+      let chat_history = roomMemories[roomId];
+
+      // Use the specific room memory for the chain
+      const chain = ConversationalRetrievalQAChain.fromLLM(
+        streamingModel,
+        vectorstore.asRetriever(),
+        {
+          memory: chat_history,
+          questionGeneratorChainOptions: {
+            llm: nonStreamingModel,
+            template: questionGeneratorTemplate,
+          },
+        }
+      );
+
+      //let chatHistory = roomChatHistories[roomId];
       
-      const actualChatHistoryText = chatHistory.map(entry => `Human: ${entry.question}\nAI: ${entry.answer}`).join('\n\n');
+      //const actualChatHistoryText = chatHistory.map(entry => `Human: ${entry.question}\nAI: ${entry.answer}`).join('\n\n');
 
       const responseText = (await (async () => {
         const response = await chain.call({
@@ -154,7 +179,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         return response.text;
       })());
 
-      console.log("Debug: chat_history used in API call:", actualChatHistoryText);
+      //console.log("Debug: chat_history used in API call:", actualChatHistoryText);
 
       Documents.unshift({ responseText } as any);
 
@@ -175,24 +200,24 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
   
 
         // Update the chat history with the new question, answer, and average score
-        chatHistory.push({
-          question: question,
-          answer: (Documents[0] as any).responseText,
-          score: totalScore,
-        });
+        // chatHistory.push({
+        //   question: question,
+        //   answer: (Documents[0] as any).responseText,
+        //   score: totalScore,
+        // });
         
         // Filter the chat history by score
         const SCORE_THRESHOLD = 0.02;
-        chatHistory = chatHistory.filter(entry => entry.score >= SCORE_THRESHOLD);
+        //chatHistory = chatHistory.filter(entry => entry.score >= SCORE_THRESHOLD);
   
         // Manage chat history size
         const MAX_HISTORY_LENGTH = 10;
-        if (chatHistory.length > MAX_HISTORY_LENGTH) {
-          chatHistory = chatHistory.slice(-MAX_HISTORY_LENGTH);
-        }
+        // if (chatHistory.length > MAX_HISTORY_LENGTH) {
+        //   chatHistory = chatHistory.slice(-MAX_HISTORY_LENGTH);
+        // }
   
         // Update roomChatHistories with the filtered and truncated chatHistory
-        roomChatHistories[roomId] = chatHistory;
+        //roomChatHistories[roomId] = chatHistory;
   
         return Documents;
       },
