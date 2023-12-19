@@ -32,16 +32,45 @@ function removeDuplicateContent(text: string, compareLength: number = 100): stri
       return text.substring(0, secondOccurrenceIndex).trim();
     }
   }
+
+  function ensureNewlineBeforeHeaders(content : string) {
+    const lines = content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].startsWith('**') && i > 0 && lines[i - 1] !== '') {
+            lines[i] = '\n' + lines[i];
+        }
+    }
+    return lines.join('\n');
+}
+
+function removeDuplicatedSections(content: string, header: string): string {
+  // Check if content even starts with the header
+  if (!content.startsWith(header)) {
+    return content; // Nothing to remove if header isn't present
+  }
+
+  // Find the end position of the header (including delimiter)
+  const headerEndIndex = header.length + 2; // Account for `\n\n` after header
+
+  // Check if content has additional sections after the header
+  if (content.length > headerEndIndex) {
+    // Slice the content to remove the first header and delimiter
+    return content.slice(headerEndIndex);
+  } else {
+    // Content only contains the header, return empty string
+    return '';
+  }
+}
   
   async function checkDocumentsTokenLength(processedDocs: any[]): Promise<any[]> {
     let cleanProcessedDocs: any[] = [];
   
     for (const doc of processedDocs) {
-      //console.log("doc:", doc);
       let tokens = encoding.encode(doc.pageContent);
+      console.log('tokens:', tokens.length);
   
-      if (tokens.length > 1200) {
-        const cleanedContent = removeDuplicateContent(doc.pageContent, 100);
+      if (tokens.length > 1000) {
+        let cleanedContent = removeDuplicateContent(doc.pageContent, 100);
         tokens = encoding.encode(cleanedContent);
   
         const splitter = new RecursiveCharacterTextSplitter({
@@ -49,16 +78,20 @@ function removeDuplicateContent(text: string, compareLength: number = 100): stri
           chunkOverlap: 200,
           separators: ["\n**"],
         });
-  
-        const lines = cleanedContent.split('\n');
-        const firstHeaderLine = lines.find(line => line.startsWith('**') && line.endsWith('**'));
-        const header = firstHeaderLine ? firstHeaderLine + '\n\n---\n\n' : 'Default Header\n\n---\n\n';
-  
-        const cleanedChunks = await splitter.createDocuments([cleanedContent], [doc.metadata], {
+        cleanedContent = ensureNewlineBeforeHeaders(cleanedContent);
+        const headerRegex = /^((?:[^\|]+\|)*)([^\|]+)\s*---/;
+        const match = cleanedContent.match(headerRegex);
+        const firstHeaderLine = match ? match[0] : null;
+
+        const header = firstHeaderLine ? firstHeaderLine  + '\n\n' : 'Default Header\n\n---\n\n';
+        let cleanedChunks = await splitter.createDocuments([cleanedContent], [doc.metadata], {
           chunkHeader: header,
           appendChunkOverlapHeader: true,
         });
-  
+
+        if (cleanedChunks.length > 0 && cleanedChunks[0].pageContent) {
+          cleanedChunks[0].pageContent = removeDuplicatedSections(cleanedChunks[0].pageContent, header);
+      }
         // Add the new smaller chunks to cleanProcessedDocs
         cleanProcessedDocs.push(...cleanedChunks);
       } else {
@@ -67,6 +100,7 @@ function removeDuplicateContent(text: string, compareLength: number = 100): stri
       }
     }
     cleanProcessedDocs = appendMissingNumbers(cleanProcessedDocs)
+    
     return cleanProcessedDocs;
   }
   
@@ -179,10 +213,11 @@ export const run = async () => {
         }
 
         processedDocs = appendMissingNumbers(processedDocs)
-        console.log('processedDocs', processedDocs);
+        //console.log('processedDocs', processedDocs);
         //await waitForUserInput();
-        //const cleanProcessedDocs = await checkDocumentsTokenLength(processedDocs);
-        //console.log('cleanProcessedDocs', cleanProcessedDocs);
+        const cleanProcessedDocs = await checkDocumentsTokenLength(processedDocs);
+        //await waitForUserInput();
+        console.log('cleanProcessedDocs', cleanProcessedDocs);
         //await waitForUserInput();
 
         
@@ -194,7 +229,7 @@ export const run = async () => {
       console.log('ARE YOU READY TO EMBED???')
       await waitForUserInput();
       //embed the documents
-      await PineconeStore.fromDocuments(processedDocs, embeddings, {
+      await PineconeStore.fromDocuments(cleanProcessedDocs, embeddings, {
           pineconeIndex: index,
           namespace: PINECONE_NAME_SPACE,
           textKey: 'text',
