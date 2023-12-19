@@ -6,4 +6,5 @@ export type Message = {
   isStreaming?: boolean;
   sourceDocs?: Document[];
   qaId?: string;
+  isComplete: boolean;
 };

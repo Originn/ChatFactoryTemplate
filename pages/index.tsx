@@ -66,6 +66,7 @@ export default function Home() {
         {
             message: 'Hi, what would you like to learn about SolidCAM?',
             type: 'apiMessage',
+            isComplete:false,
         },
         ],
         history: [],
@@ -195,6 +196,7 @@ export default function Home() {
             {
             type: 'userMessage',
             message: question,
+            isComplete:false,
             },
         ],
         history: [...state.history, [question, ""]],
@@ -282,7 +284,7 @@ export default function Home() {
                 const updatedMessage = `${message.message}<br/><br/>
                 <span style="color: red;"><strong>Don't forget to rate the response and leave comments to help debug the application!</strong></span>
                 <br/><br/><span style="color: blue;">If the answer is wrong and you know the answer to the question, feel free to add it!</span>`;
-                return { ...message, message: updatedMessage, sourceDocs: deduplicatedDocs, qaId: qaId };
+                return { ...message, message: updatedMessage, sourceDocs: deduplicatedDocs, qaId: qaId, isComplete:true };
               }
               return message;
             });
@@ -311,16 +313,17 @@ export default function Home() {
               ...state,
               messages: [
                 ...state.messages.slice(0, -1),
-                { ...lastMessage, message: lastMessage.message + token },
+                { ...lastMessage, message: lastMessage.message + token, isComplete: false },
               ],
             };
           }
           return {
             ...state,
-            messages: [...state.messages, { type: 'apiMessage', message: token }],
+            messages: [...state.messages, { type: 'apiMessage', message: token, isComplete: false }],
           };
         });
       });
+      
     
       // Cleanup function for when the component unmounts
       return () => {
@@ -547,7 +550,7 @@ export default function Home() {
                           </Accordion>
                         </div>
                       )}
-                      {hasSources && <FeedbackComponent messageIndex={index} />}
+                      {message.isComplete && <FeedbackComponent messageIndex={index} />}
                     </React.Fragment>
                   );
                 })}
