@@ -105,8 +105,9 @@ export default async function handler(
 
   const pdfResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'pdf', 2, minScoreSourcesThreshold);
   const webinarResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'youtube', 2, minScoreSourcesThreshold);
+  const sentinelResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'sentinel', 2, minScoreSourcesThreshold);
 
-  const combinedResults = [...pdfResults, ...webinarResults];
+  const combinedResults = [...pdfResults, ...webinarResults,...sentinelResults];
 
   combinedResults.sort((a, b) => b[1] - a[1]);
 

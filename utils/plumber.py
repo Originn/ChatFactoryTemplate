@@ -315,6 +315,42 @@ def append_related_topics(text):
 
     return '\n'.join(lines)
 
+def process_solidcam_licence_text(text_file_path):
+    results = []
+    try:
+        with open(text_file_path, 'r', encoding='utf-8') as text_file:
+            lines = text_file.readlines()
+            
+            # Extract the first line as the link
+            link = lines[0].strip()
+
+            # Find the second line of text to use as the main header
+            text_lines = [line.strip() for line in lines[1:] if line.strip()]  # Start from second line
+            main_header = text_lines[0] if text_lines else None  # First non-empty line after the link
+
+            # Join all lines for the page content, starting from the line after the main header
+            page_content = " ".join(text_lines[1:]) if len(text_lines) > 1 else ""
+
+            results.append({
+                "header": f"{main_header} | {link}",
+                "contents": [
+                    {
+                        "page_number": 0,
+                        "PageContent": page_content
+                    }
+                ]
+            })
+
+    except FileNotFoundError:
+        print(f"Text file {text_file_path} not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    return results
+
+
+
+
 def process_webinar_text(text_file_path):
     results = []
     try:
@@ -376,9 +412,13 @@ if __name__ == "__main__":
     folder_name = os.path.basename(os.path.dirname(pdf_path))
     # Check if 'webinar' is in the file name
     if pdf_path.endswith('.txt'):
-        # Call the functions specific to webinar PDFs
-        results = process_webinar_text(pdf_path)
-        sys.stdout.write(json.dumps(results))
+        if 'Webinar' in pdf_path:
+            results = process_webinar_text(pdf_path)
+            sys.stdout.write(json.dumps(results))
+        elif 'SolidCAM licencing' in pdf_path:
+            results = process_solidcam_licence_text(pdf_path)
+            sys.stdout.write(json.dumps(results))
+            pass
     else:
         pages_with_home = find_pages_starting_with(pdf_path, "Home >")
         # print(pages_with_home)

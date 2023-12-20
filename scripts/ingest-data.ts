@@ -5,7 +5,7 @@ import { PineconeStore } from 'langchain/vectorstores/pinecone';
 import { getPinecone } from '@/utils/pinecone-client';
 import GCSLoader from '@/utils/GCSLoader';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
-import { waitForUserInput, extractFirstTimestampInSeconds, extractPotentialSubHeader } from '@/utils/textsplitter'
+import { waitForUserInput, extractFirstTimestampInSeconds, extractPotentialSubHeader, extractYouTubeLink, extractSentinalLink } from '@/utils/textsplitter'
 
 import { get_encoding, encoding_for_model } from 'tiktoken';
 
@@ -15,6 +15,7 @@ let encoding =  get_encoding("cl100k_base")
 function determineSourceType(url: string): string {
     if (url.includes('youtube')) return 'youtube';
     if (url.includes('.pdf')) return 'pdf';
+    if (url.includes('sentinel')) return 'sentinel';
     return 'other';  // Default if neither match
 }
 
@@ -153,6 +154,13 @@ export const run = async () => {
           chunkOverlap: 200,
           //separators: ["\n****"],
       });
+
+      /* Split webinar into chunks */
+      const sentinalTextSplitter = new CharacterTextSplitter({
+        chunkSize: 1000,
+        chunkOverlap: 200,
+        //separators: ["\n****"],
+    });
       
       // Associate each chunk with its first timestamp
       let processedDocs: any[] = [];
@@ -166,18 +174,35 @@ export const run = async () => {
 
     if (doc.pageHeader) {
       // Process as webinar document
-      let initialHeader = '';
-      if (doc.pageHeader.includes('|')) {
-          const parts = doc.pageHeader.split('|');
-          initialHeader = `**${parts[0].trim()}** ${parts.slice(1).join('|').trim()}\n\n---\n\n`;
-      } else {
-          initialHeader = `**${doc.pageHeader.trim()}**\n\n---\n\n`;
-      }
+      const youtubeLink = extractYouTubeLink(doc.pageHeader);
+      const sentinalLink = extractSentinalLink(doc.pageHeader);
+      if (youtubeLink) {
+        let initialHeader = '';
+        if (doc.pageHeader.includes('|')) {
+            const parts = doc.pageHeader.split('|');
+            initialHeader = `**${parts[0].trim()}** ${parts.slice(1).join('|').trim()}\n\n---\n\n`;
+        } else {
+            initialHeader = `**${doc.pageHeader.trim()}**\n\n---\n\n`;
+        }
 
-      chunk = await webinarTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
+        chunk = await webinarTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
+            chunkHeader: initialHeader,
+            appendChunkOverlapHeader: true
+        });
+
+      } if(sentinalLink) {
+        let initialHeader = '';
+        if (doc.pageHeader.includes('|')) {
+            const parts = doc.pageHeader.split('|');
+            initialHeader = `${parts[0]}\n\n---\n\n`;
+        } else {
+            initialHeader = `${doc.pageHeader.trim()}\n\n---\n\n`;
+        }
+        chunk = await sentinalTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
           chunkHeader: initialHeader,
           appendChunkOverlapHeader: true
-      });
+        });
+      }
     } else {
         // Process as PDF document
         initialHeader = doc.pageHeader ? 
@@ -191,23 +216,20 @@ export const run = async () => {
         //console.log('Chunck log', chunk);
         //await waitForUserInput();
                             
-          let processedChunks: any[] = chunk;
+        let processedChunks: any[] = chunk ? chunk.map(document => {
+          const updatedSource = Timestamp !== null
+              ? `${document.metadata.source}&t=${Timestamp}s`
+              : document.metadata.source;
 
-            processedChunks = chunk.map(document => {
+          // Update the source property of the current document's metadata
+          document.metadata.source = updatedSource;
 
-                const updatedSource = Timestamp !== null
-                    ? `${document.metadata.source}&t=${Timestamp}s`
-                    : document.metadata.source;
+          document.metadata.type = determineSourceType(updatedSource);
 
-                // Update the source property of the current document's metadata
-                document.metadata.source = updatedSource;
+          //console.log('Document:', document)
 
-                document.metadata.type = determineSourceType(updatedSource);
-
-                //console.log('Document:', document)
-
-                return document; // Return the updated Document object
-            });
+          return document; // Return the updated Document object
+        }): [];
 
         processedDocs.push(...processedChunks);        
         }

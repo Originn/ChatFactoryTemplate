@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/utils/plumber.py",
-            "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/Automating Edge Breaking with SolidCAM Webinar.txt"],
+            "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/SolidCAM licence Docs/Activate V2C license file @ SolidCAM SolidCAM licencing.txt"],
             "console": "integratedTerminal"
         }
     ]

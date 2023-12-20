@@ -38,13 +38,28 @@ if (process.env.NODE_ENV === PRODUCTION_ENV) {
 }
 
 // Utility Functions
+function getTitleByDocType(docType: string): string {
+  switch (docType) {
+      case 'youtube':
+          return 'Webinar';
+      case 'sentinel':
+          return 'Help Document';
+      default:
+          return 'Help Document';
+  }
+}
+
 function addHyperlinksToPageNumbers(content: string, source: string): string {
   const regex = /\((\d+)\)/g;
   return content.replace(regex, (match, pageNumber) => {
-    const link = `${source}#page=${pageNumber}`;
+    let link = `${source}#page=${pageNumber}`;
+    if (link.includes('&')) {
+      link = link.replace(/&/g, 'and');
+    }
     return `<a href="${link}" target="_blank" rel="noopener noreferrer" style="color: blue;">${match}</a>`;
   });
 }
+
 
 // Component: Home
 export default function Home() {
@@ -100,9 +115,9 @@ export default function Home() {
     };
 
     const handleSubmitRemark = async (messageIndex : any, remark : any) => {
-        console.log(`Attempting to submit feedback for messageIndex: ${messageIndex}`);
-        console.log("Message at this index:", messages[messageIndex]);
-        console.log("Feedback state at messageIndex:", feedback[messageIndex]);
+        //console.log(`Attempting to submit feedback for messageIndex: ${messageIndex}`);
+        //console.log("Message at this index:", messages[messageIndex]);
+        //console.log("Feedback state at messageIndex:", feedback[messageIndex]);
         // Retrieve the feedback type ('up' or 'down') and the qaId from the message
         const feedbackType = feedback[messageIndex]?.type;
         const qaId = messages[messageIndex]?.qaId;
@@ -373,7 +388,7 @@ export default function Home() {
     // Component: FeedbackComponent
     const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ messageIndex }) => {
         const handleOpenModal = (type: string) => {
-        console.log("Opening modal for message index", messageIndex);
+        //console.log("Opening modal for message index", messageIndex);
         setActiveMessageIndex(messageIndex);
     
         handleFeedback(messageIndex, type);
@@ -398,7 +413,7 @@ export default function Home() {
     const [remark, setRemark] = useState('');
   
     const submitRemark = () => {
-      console.log("Submitting remark for activeMessageIndex", activeMessageIndex);
+      //console.log("Submitting remark for activeMessageIndex", activeMessageIndex);
       if (activeMessageIndex != null) {
         handleSubmitRemark(activeMessageIndex, remark);
         setRemark('');  // Clear the remark
@@ -506,23 +521,25 @@ export default function Home() {
                               <div key={`messageSourceDocs-${docIndex}`}>
                                 <AccordionItem value={`item-${docIndex}`}>
                                   <AccordionTrigger>
-                                    <h3>{doc.metadata.type === 'youtube' ? 'Webinar' : 'Help Document'}</h3>
+                                    <h3>{getTitleByDocType(doc.metadata.type)}</h3>
                                   </AccordionTrigger>
                                   <AccordionContent>
-                                    {
-                                      // Add your logic to determine if the content is from a webinar
-                                      doc.metadata.source.includes("youtube")
-                                      ? (
+                                  {
+                                    doc.metadata.type === 'youtube' ? (
+                                        // YouTube link handling
                                         <p>
-                                          <b>Source:</b>
-                                          {
-                                            doc.metadata && doc.metadata.source
-                                            ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View Webinar</a>
-                                            : 'Unavailable'
-                                          }
+                                            <b>Source:</b>
+                                            {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View Webinar</a> : 'Unavailable'}
                                         </p>
-                                      )
-                                      : (
+                                    ) : doc.metadata.type === 'sentinel' ? (
+                                        // Sentinel link handling
+                                        <p>
+                                            <b>Source:</b>
+                                            {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View</a> : 'Unavailable'}
+                                        </p>
+                                        
+                                    ) : (
+                                        // Default handling
                                         <>
                                           <ReactMarkdown
                                             rehypePlugins={[rehypeRaw as any]}

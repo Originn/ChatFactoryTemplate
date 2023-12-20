@@ -156,6 +156,12 @@ export function extractYouTubeLink(content: string): string | null {
     return youtubeMatch ? youtubeMatch[0] : null;
   }
   
+  export function extractSentinalLink(content: string): string | null {
+    const solidcamMatch = content.match(/https:\/\/sentinel\.solidcam\.com\/[a-zA-Z0-9\/_.-]+\.html/);
+    return solidcamMatch ? solidcamMatch[0] : null;
+}
+
+
   export function extractFirstTimestampInSeconds(content: string): number | null {
       const timestampMatch = content.match(/\((?:(\d{1,2}):)?(\d{1,2}):(\d{1,2})\)/);
       if (!timestampMatch) {
