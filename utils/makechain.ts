@@ -58,7 +58,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           memoryKey: "chat_history",
           inputKey: "question",
           outputKey: "text",
-          returnMessages: true,
         });
       }
 
