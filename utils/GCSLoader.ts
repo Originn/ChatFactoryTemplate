@@ -2,7 +2,7 @@
 
 import { Storage, GetSignedUrlConfig } from '@google-cloud/storage';
 //import { default as pdfParse } from 'pdf-parse/lib/pdf-parse.js';
-import { waitForUserInput, extractYouTubeLink } from 'utils/textsplitter';
+import { waitForUserInput, extractYouTubeLink, extractSentinalLink } from 'utils/textsplitter';
 import { spawn } from 'child_process';
 import * as tmp from 'tmp-promise';
 import fs from 'fs';
@@ -117,10 +117,12 @@ class GCSLoader {
                         console.log(`Unsupported file type for ${fileName}`);
                         continue;
                     }
-    
-                    let existingSource = extractYouTubeLink(contentString);
-                    if (!existingSource) { // If there's no YouTube link, use the GCS link
-                        existingSource = this.generatePublicUrl(fileName);
+                    
+                    let DocCloudUrl;
+                    let existingYouTubeSource = extractYouTubeLink(contentString);
+                    let existingSentinalSource = extractSentinalLink(contentString);
+                    if (!existingYouTubeSource && !existingSentinalSource) { // If there's no YouTube link, use the GCS link
+                        DocCloudUrl = this.generatePublicUrl(fileName);
                     }
     
                     //console.log('contentString:', contentString);
@@ -141,7 +143,7 @@ class GCSLoader {
                             } else {
                                 groupedContent[pageInfoGroup.header] = {
                                     contents: [pageContent],
-                                    source: existingSource
+                                    source: existingYouTubeSource || existingSentinalSource || DocCloudUrl || ""
                                 };
                             }
                         }
