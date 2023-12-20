@@ -202,7 +202,16 @@ export const run = async () => {
           chunkHeader: initialHeader,
           appendChunkOverlapHeader: true
         });
-      }
+      } else {
+        // Process as PDF document
+        initialHeader = doc.pageHeader ? 
+            doc.pageHeader.split('|')[0].trim() + ' ' + lines.find(line => line.startsWith('****') && line.endsWith('****')) + '\n\n---\n\n' : 
+            'Default Header\n\n---\n\n';
+        chunk = await pdfTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
+            chunkHeader: initialHeader,
+            appendChunkOverlapHeader: true
+        });
+    }
     } else {
         // Process as PDF document
         initialHeader = doc.pageHeader ? 
