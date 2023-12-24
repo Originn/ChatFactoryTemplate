@@ -110,7 +110,7 @@ export default async function handler(
   const combinedResults = [...pdfResults, ...webinarResults,...sentinelResults];
 
   combinedResults.sort((a, b) => b[1] - a[1]);
-
+  //await waitForUserInput();
   function generateUniqueId(): string {
     return uuidv4();
   }
