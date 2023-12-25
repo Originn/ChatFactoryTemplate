@@ -3,26 +3,108 @@
 import { OpenAI } from 'langchain/llms/openai';
 import { PineconeStore } from 'langchain/vectorstores/pinecone';
 import { ConversationalRetrievalQAChain } from 'langchain/chains';
-import { CallbackManager } from "langchain/callbacks";
+//import { CallbackManager } from "langchain/callbacks";
 import { MyDocument } from 'utils/GCSLoader';
 import { BufferMemory } from "langchain/memory";
-import { PromptTemplate } from "langchain/prompts";
-import { waitForUserInput } from './textsplitter';
+//import { PromptTemplate } from "langchain/prompts";
+import { BaseRetriever } from "langchain/schema/retriever";
+//import { waitForUserInput } from './textsplitter';
+import { getIO } from "@/socketServer.cjs";
+import { v4 as uuidv4 } from 'uuid';
+import { insertQA } from '../db';
 
+// Type Definitions
+type SearchResult = [MyDocument, number];
 
-// type ChatEntry = {
-//   question: string;
-//   answer: string;
-//   score: number;
-// };
+// Utility Functions
+async function detectLanguageWithOpenAI(text: string, nonStreamingModel: OpenAI): Promise<string> {
+  const prompt = LANGUAGE_DETECTION_PROMPT.replace('{text}', text);
+  const response = await nonStreamingModel.generate([prompt]);
 
+  if (response.generations.length > 0 && response.generations[0].length > 0) {
+    const firstGeneration = response.generations[0][0];
+    return firstGeneration.text.trim();
+  }
 
+  return 'English';
+}
+
+async function filteredSimilaritySearch(vectorStore: any, queryText: string, type: string, limit: number, minScore: number): Promise<SearchResult[]> {
+  try {
+    const results: SearchResult[] = await vectorStore.similaritySearchWithScore(queryText, limit, { type: type });
+
+    // Explicitly type the destructured elements in the filter method
+    const filteredResults = results.filter(([document, score]: SearchResult) => score >= minScore);
+
+    return filteredResults;
+  } catch (error) {
+    console.error("Error in filteredSimilaritySearch:", error);
+    return [];
+  }
+}
+
+async function translateToEnglish(question: string, nonStreamingModel: OpenAI): Promise<string> {
+  const response = await nonStreamingModel.generate([TRANSLATION_PROMPT.replace('{question}', question)]);
+
+  // Extract the translated text from the response
+  if (response.generations.length > 0 && response.generations[0].length > 0) {
+    const firstGeneration = response.generations[0][0];
+    const translatedText = firstGeneration.text.trim();
+    return translatedText;
+  }
+
+  // Return an empty string or a default message if no translation is found
+  return 'Translation not available.';
+}
+
+// Class Definitions
+class CustomRetriever extends BaseRetriever {
+  lc_namespace = [];
+
+  constructor(private vectorStore: PineconeStore) {
+    super();
+  }
+
+  async getRelevantDocuments(query: string): Promise<MyDocument<Record<string, any>>[]> {
+    const results = await this.vectorStore.similaritySearchWithScore(query, 6);
+    // Map each result to include the document and its score inside metadata
+    return results.map(([doc, score]) => {
+      // Create a new 'metadata' object, preserving existing properties
+      const newMetadata = {
+        ...doc.metadata,
+        score: score // Set the score property inside metadata
+      };
+
+      return new MyDocument({
+        ...doc,
+        metadata: newMetadata
+      });
+    });
+  }
+  async storeEmbeddings(query: string, minScoreSourcesThreshold: number) {
+    const pdfResults = await filteredSimilaritySearch(
+      this.vectorStore, query, 'pdf', 2, minScoreSourcesThreshold
+    );
+    const webinarResults = await filteredSimilaritySearch(
+      this.vectorStore, query, 'youtube', 2, minScoreSourcesThreshold
+    );
+    const sentinelResults = await filteredSimilaritySearch(
+      this.vectorStore, query, 'sentinel', 2, minScoreSourcesThreshold
+    );
+
+    const combinedResults = [...pdfResults, ...webinarResults,...sentinelResults];
+
+    combinedResults.sort((a, b) => b[1] - a[1]);
+
+    return combinedResults;
+  }
+  // Implement any other abstract methods or properties required by BaseRetriever
+}
+
+// Constants and Variables
+const io = getIO();
 const roomMemories: Record<string, BufferMemory> = {};
-//const roomChatHistories: Record<string, ChatEntry[]> = {};
-
 const MODEL_NAME = process.env.MODEL_NAME;
-
-//CONDENSE_PROMPT is reliable for generating new question which is ied with the chat history 
 const CONDENSE_PROMPT = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
 If the follow up question does not need context, return the exact same text back.
 Never rephrase the follow up question given the chat history unless the follow up question needs context.
@@ -47,52 +129,7 @@ Question: {question}
 Answer in the {language} language :`;
 
 const TRANSLATION_PROMPT = `Translate the following text to English:\nText: "{question}"`;
-
-// Function to translate text to English using OpenAI
-async function translateToEnglish(question: string, nonStreamingModel: OpenAI): Promise<string> {
-  const response = await nonStreamingModel.generate([TRANSLATION_PROMPT.replace('{question}', question)]);
-
-  // Extract the translated text from the response
-  if (response.generations.length > 0 && response.generations[0].length > 0) {
-    const firstGeneration = response.generations[0][0];
-    const translatedText = firstGeneration.text.trim();
-    console.log('translatedText:', translatedText);
-    //await waitForUserInput();
-    return translatedText;
-  }
-
-  // Return an empty string or a default message if no translation is found
-  return 'Translation not available.';
-}
-
 const LANGUAGE_DETECTION_PROMPT = `Detect the language of the following text and respond with the language name only, nothing else:\n\nText: "{text}"`;
-
-async function detectLanguageWithOpenAI(text: string, nonStreamingModel: OpenAI): Promise<string> {
-  const prompt = LANGUAGE_DETECTION_PROMPT.replace('{text}', text);
-  const response = await nonStreamingModel.generate([prompt]);
-
-  if (response.generations.length > 0 && response.generations[0].length > 0) {
-    const firstGeneration = response.generations[0][0];
-    return firstGeneration.text.trim();
-  }
-
-  return 'unknown'; // or any default language code
-}
-// A function to detect language using `franc`
-// function detectLanguage(text: string): string {
-//   // Use the 'detect' method of the lngDetector instance
-//   //const detectedLanguages = lngDetector.detect(text, 1); // Detects the top 1 language
-
-//   if (detectedLanguages.length > 0) {
-//     const [language, confidence] = detectedLanguages[0];
-//     // You might want to check the confidence level here
-//     return language;
-//   }
-
-//   // Return 'en' or any other default language if detection is not successful
-//   return 'en';
-// }
-
 const TEMPRATURE = parseFloat(process.env.TEMPRATURE || "0");
 
 export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void) => {
@@ -115,8 +152,14 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     temperature: TEMPRATURE
   });
 
+  function generateUniqueId(): string {
+    return uuidv4();
+  }
   return {
-    call: async (question: string, Documents: MyDocument[], roomId: string) => {
+    call: async (question: string, Documents: MyDocument[], roomId: string, session: any) => {
+      const userEmail = session?.user?.email || 'unknown';
+      const qaId = generateUniqueId();
+
       if (!roomMemories[roomId]) {
         roomMemories[roomId] = new BufferMemory({
           memoryKey: "chat_history",
@@ -124,27 +167,21 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           outputKey: "text",
         });
       }
-
-      // if (!roomChatHistories[roomId]) {
-      //   roomChatHistories[roomId] = [];
-      // }
       let chat_history = roomMemories[roomId];
-      console.log('question:', question);
       const language = await detectLanguageWithOpenAI(question, nonStreamingModel);
-      console.log('language:', language);
 
       if (language !== 'English') {
         question = await translateToEnglish(question, nonStreamingModel);
       }
 
       const formattedPrompt = QA_PROMPT
-        //.replace('{question}', question)
         .replace('{language}', language);
 
+      const customRetriever = new CustomRetriever(vectorstore);
       // Use the specific room memory for the chain
       const chain = ConversationalRetrievalQAChain.fromLLM(
         streamingModel,
-        vectorstore.asRetriever(6),
+        customRetriever,
         {
           memory: chat_history,
           questionGeneratorChainOptions: {
@@ -157,17 +194,48 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         }
       );
 
-      
-
       const responseText = (await (async () => {
         const response = await chain.call({
             question: question,
         });
-        return response.text;
+        return {
+          text: response.text,
+          sourceDocuments: response.sourceDocuments
+        };
       })());
+      const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.7;
+      let embeddingsStore = await customRetriever.storeEmbeddings(responseText.text, minScoreSourcesThreshold);
 
-      Documents.unshift({ responseText } as any);
+      for (const [doc, score] of embeddingsStore) {
+        const myDoc = new MyDocument({
+          pageContent: doc.pageContent,
+          metadata: {
+            source: doc.metadata.source,     
+            type: doc.metadata.type,         
+            videoLink: doc.metadata.videoLink,
+            score: score                     
+          }
+        });
+      
+        Documents.push(myDoc);
+      }
 
+      if (roomId) {
+        console.log("INSIDE ROOM_ID", roomId);     
+        io.to(roomId).emit(`fullResponse-${roomId}`, {
+          roomId: roomId,
+          sourceDocs: Documents,
+          qaId: qaId
+        });
+      } else {
+        io.emit("fullResponse", {
+          sourceDocs: Documents,
+          qaId: qaId
+        });
+      }
+
+      await insertQA(question, responseText.text, responseText.sourceDocuments, Documents, qaId, roomId, userEmail);
+    
       let totalScore = 0;
       let count = 0;
       if (Documents && Documents.length > 0) {
@@ -180,8 +248,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         totalScore = count > 0 ? totalScore / count : 0;
       }
 
-      console.log('totalScore', totalScore);
-      console.log('Documents', Documents);
       //await waitForUserInput();
   
 

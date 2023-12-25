@@ -8,29 +8,32 @@ import * as tmp from 'tmp-promise';
 import fs from 'fs';
 import path from 'path';
 
-export interface DocumentInput<Metadata extends { videoLink?: string } = Record<string, any>> {
+export interface DocumentInput<Metadata extends { videoLink?: string; score?: number } = Record<string, any>> {
     pageNumber?: number;
     pageHeader?: string;
     pageContent: string;
     metadata?: Metadata;
-    score?: number;
 }
 
-export class MyDocument<Metadata extends { videoLink?: string } = Record<string, any>> implements DocumentInput<Metadata> {
+export class MyDocument<Metadata extends { videoLink?: string; score?: number } = Record<string, any>> implements DocumentInput<Metadata> {
     pageNumber?: number;
     pageHeader?: string;
     pageContent: string;
     metadata: Metadata;
-    score?: number;
 
     constructor(fields: DocumentInput<Metadata>) {
         this.pageNumber = fields.pageNumber;
         this.pageHeader = fields.pageHeader;
         this.pageContent = fields.pageContent;
+        // Ensure metadata is initialized properly
         this.metadata = fields.metadata || {} as Metadata;
-        this.score = fields.score;
+        // If score is provided, add it to metadata
+        if (fields.metadata?.score !== undefined) {
+            this.metadata.score = fields.metadata.score;
+        }
     }
 }
+
 
 
 class GCSLoader {
