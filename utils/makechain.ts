@@ -12,6 +12,7 @@ import { waitForUserInput } from './textsplitter';
 import { getIO } from "@/socketServer.cjs";
 import { v4 as uuidv4 } from 'uuid';
 import { insertQA } from '../db';
+import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 
 // Type Definitions
 type SearchResult = [MyDocument, number];
@@ -29,9 +30,10 @@ async function detectLanguageWithOpenAI(text: string, nonStreamingModel: OpenAI)
   return 'English';
 }
 
-async function filteredSimilaritySearch(vectorStore: any, queryText: string, type: string, limit: number, minScore: number): Promise<SearchResult[]> {
+async function filteredSimilaritySearch(vectorStore: any, queryVector: number[], type: string, limit: number, minScore: number): Promise<SearchResult[]> {
   try {
-    const results: SearchResult[] = await vectorStore.similaritySearchWithScore(queryText, limit, { type: type });
+    
+    const results: SearchResult[] = await vectorStore.similaritySearchVectorWithScore(queryVector, limit, { type: type });
 
     // Explicitly type the destructured elements in the filter method
     const filteredResults = results.filter(([document, score]: SearchResult) => score >= minScore);
@@ -59,6 +61,7 @@ async function translateToEnglish(question: string, nonStreamingModel: OpenAI): 
 
 // Class Definitions
 class CustomRetriever extends BaseRetriever {
+  
   lc_namespace = [];
 
   constructor(private vectorStore: PineconeStore) {
@@ -82,14 +85,16 @@ class CustomRetriever extends BaseRetriever {
     });
   }
   async storeEmbeddings(query: string, minScoreSourcesThreshold: number) {
+    const embedder = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
+    const embeddingsResponse = await embedder.embedQuery(query);
     const pdfResults = await filteredSimilaritySearch(
-      this.vectorStore, query, 'pdf', 2, minScoreSourcesThreshold
+      this.vectorStore, embeddingsResponse, 'pdf', 2, minScoreSourcesThreshold
     );
     const webinarResults = await filteredSimilaritySearch(
-      this.vectorStore, query, 'youtube', 2, minScoreSourcesThreshold
+      this.vectorStore, embeddingsResponse, 'youtube', 2, minScoreSourcesThreshold
     );
     const sentinelResults = await filteredSimilaritySearch(
-      this.vectorStore, query, 'sentinel', 2, minScoreSourcesThreshold
+      this.vectorStore, embeddingsResponse, 'sentinel', 2, minScoreSourcesThreshold
     );
 
     const combinedResults = [...pdfResults, ...webinarResults,...sentinelResults];
@@ -239,6 +244,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           qaId: qaId
         });
       }
+      
 
       await insertQA(question, responseText.text, responseText.sourceDocuments, Documents, qaId, roomId, userEmail);
     
