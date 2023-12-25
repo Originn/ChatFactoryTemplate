@@ -14,34 +14,13 @@ import { insertQA } from '../../db';
 import { v4 as uuidv4 } from 'uuid';
 import { getSession } from '@auth0/nextjs-auth0';
 
-
-type SearchResult = [MyDocument, number];
-async function filteredSimilaritySearch(vectorStore: any, queryText: string, type: string, limit: number, minScore: number): Promise<SearchResult[]> {
-  try {
-    const results: SearchResult[] = await vectorStore.similaritySearchWithScore(queryText, limit, { type: type });
-
-    // Explicitly type the destructured elements in the filter method
-    const filteredResults = results.filter(([document, score]: SearchResult) => score >= minScore);
-
-    return filteredResults;
-  } catch (error) {
-    console.error("Error in filteredSimilaritySearch:", error);
-    return [];  // Return an empty array in case of error
-  }
-}
-
-
-
-
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
   let roomIdError = false;
-  //console.log("req.body", req.body);
-  const { question, history, roomId } = req.body;
-  
+
+  const { question, roomId } = req.body;
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -55,8 +34,7 @@ export default async function handler(
   const sanitizedQuestion = question.trim().replaceAll('\n', ' ');
 
   try {
-    const session = await getSession(req, res); // Use 'await' to resolve the promise
-  const userEmail = session?.user?.email || 'unknown';
+    const session = await getSession(req, res);
     const io = getIO();
     const pinecone = await getPinecone();
     const index = pinecone.Index(PINECONE_INDEX_NAME);
@@ -68,24 +46,7 @@ export default async function handler(
         namespace: PINECONE_NAME_SPACE,
       },
     );
-    
-
-
-  // Perform similarity search on sanitized question and limit the results to 4
-  let results = await vectorStore.similaritySearchWithScore(sanitizedQuestion, 4);
-  //console.log('results:', results);
-  //await waitForUserInput();
-
-  // Map the returned results to MyDocument[] format, storing the score in the metadata
-  let Documents: MyDocument[] = results.map(([document, score]) => {
-    return {
-      ...document,
-      metadata: {
-        ...document.metadata,
-        score: score
-      }
-    };
-  });
+  
 
 
   // Initialize chain for API calls, also define token handling through io instance
@@ -99,80 +60,15 @@ export default async function handler(
   });
 
   // Make the API call using the chain, passing in the sanitized question, scored documents, and room ID
-  await chain.call(sanitizedQuestion, Documents, roomId);
-
-  const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.86;
-
-  const pdfResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'pdf', 2, minScoreSourcesThreshold);
-  const webinarResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'youtube', 2, minScoreSourcesThreshold);
-  const sentinelResults = await filteredSimilaritySearch(vectorStore, (Documents[0] as any).responseText, 'sentinel', 2, minScoreSourcesThreshold);
-
-  const combinedResults = [...pdfResults, ...webinarResults,...sentinelResults];
-
-  combinedResults.sort((a, b) => b[1] - a[1]);
-  //await waitForUserInput();
-  function generateUniqueId(): string {
-    return uuidv4();
-  }
-
-  const sanitizedResults = results.map(([document, value]) => {
-    // Check if document.pageContent is a string and replace null character
-    if (typeof document.pageContent === 'string') {
-      // This will remove all instances of the null character
-      document.pageContent = document.pageContent.replace(/\x00/g, '');
-    }
-    return [document, value];
-  });
-  
-  const sanitizedCombinedResults = combinedResults.map(([document, value]) => { 
-
-    // Check if document.pageContent is a string and replace '\x00ng'
-    if (typeof document.pageContent === 'string') {
-      document.pageContent = document.pageContent.replace(/\x00/g, '');
-    }
-    return [document, value];
-  });
-  
-  const qaId = generateUniqueId();
-  await insertQA(question, (Documents[0] as any).responseText, sanitizedResults, sanitizedCombinedResults, qaId, roomId, userEmail);
-      
-    
-  //console.log("Debug: Results with Metadata: ", JSON.stringify(results, null, 3));
-  Documents = combinedResults.map(([document, score]) => {
-    return {
-      ...document,
-      metadata: {
-        ...document.metadata,
-        score: score 
-      }
-    };
-  });
-
-  //console.log("Debug: Documents with Metadata: ", JSON.stringify(Documents, null, 3));
+  let Documents = await chain.call(sanitizedQuestion, [], roomId, session);
 
   //If room ID is specified, emit the response to that room. Otherwise, emit to all.
-  if (roomId) {
-    console.log("INSIDE ROOM_ID", roomId);     
-    io.to(roomId).emit(`fullResponse-${roomId}`, {
-      roomId: roomId,
-      sourceDocs: Documents,
-      qaId: qaId
-    });
-  } else {
-    io.emit("fullResponse", {
-      sourceDocs: Documents,
-      qaId: qaId
-    });
-  }
-
-
   if (roomIdError) {
     res.status(400).json({ error: 'roomId was not found' });  // Return 400 Bad Request
     return;
   }
 
   res.status(200).json({ sourceDocs: Documents});
-
   } catch (error: any) {
     console.log('error', error);
     res.status(500).json({ error: error.message || 'Something went wrong' });
