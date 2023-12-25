@@ -8,7 +8,7 @@ import { MyDocument } from 'utils/GCSLoader';
 import { BufferMemory } from "langchain/memory";
 //import { PromptTemplate } from "langchain/prompts";
 import { BaseRetriever } from "langchain/schema/retriever";
-//import { waitForUserInput } from './textsplitter';
+import { waitForUserInput } from './textsplitter';
 import { getIO } from "@/socketServer.cjs";
 import { v4 as uuidv4 } from 'uuid';
 import { insertQA } from '../db';
@@ -204,7 +204,13 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         };
       })());
       const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.7;
-      let embeddingsStore = await customRetriever.storeEmbeddings(responseText.text, minScoreSourcesThreshold);
+      let embeddingsStore
+      if (language !== 'English') {
+        embeddingsStore = await customRetriever.storeEmbeddings(question, minScoreSourcesThreshold);
+      }
+      else{
+        embeddingsStore = await customRetriever.storeEmbeddings(responseText.text, minScoreSourcesThreshold);
+      }
 
       for (const [doc, score] of embeddingsStore) {
         const myDoc = new MyDocument({
