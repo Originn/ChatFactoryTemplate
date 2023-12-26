@@ -547,7 +547,7 @@ export default function Home() {
                                               a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
                                             }}
                                           >
-                                            {addHyperlinksToPageNumbers(doc.pageContent, doc.metadata.source)}
+                                            {doc.pageContent.split('\n')[0]}
                                           </ReactMarkdown>
                                           <p className="mt-2">
                                             <b>Source:</b>
