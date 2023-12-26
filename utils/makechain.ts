@@ -225,7 +225,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           sourceDocuments: response.sourceDocuments
         };
       })());
-      const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.7;
+      const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
       let embeddingsStore
       if (language !== 'English') {
         const minScoreSourcesThreshold = 0.78;

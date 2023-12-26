@@ -270,19 +270,12 @@ export default function Home() {
         setRoomId(assignedRoomId);
         setRequestsInProgress(prev => ({ ...prev, [assignedRoomId]: false }));
     
-        // Listener for 'fullResponse' event specific to the assigned room
         const responseEventName = `fullResponse-${assignedRoomId}`;
         const handleFullResponse = (response : any) => {
           setMessageState((state) => {
-            const filterScore = parseFloat(process.env.NEXT_PUBLIC_FILTER_SCORE || "0.81");
             const { sourceDocs, qaId } = response;
     
-            const filteredSourceDocs = sourceDocs ? sourceDocs.filter((doc : any) => {
-              const score = parseFloat(doc.metadata.score);
-              return !isNaN(score) && score >= filterScore;
-            }) : [];
-    
-            const deduplicatedDocs = filteredSourceDocs.reduce((acc: DocumentWithMetadata[], doc: DocumentWithMetadata) => {
+            const deduplicatedDocs = sourceDocs.reduce((acc: DocumentWithMetadata[], doc: DocumentWithMetadata) => {
               const sourceURL = doc.metadata.source;
               const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
             
@@ -292,7 +285,7 @@ export default function Home() {
                 acc.push(doc);
               }
               return acc;
-            }, []);            
+            }, []);
     
             const updatedMessages = state.messages.map((message, index, arr) => {
               if (index === arr.length - 1 && message.type === 'apiMessage') {
@@ -303,16 +296,13 @@ export default function Home() {
               }
               return message;
             });
-            
     
             return { ...state, messages: updatedMessages };
           });
         };
     
-        // Attach the event listener for 'fullResponse'
         socket.on(responseEventName, handleFullResponse);
     
-        // Return a cleanup function for this dynamic listener
         return () => socket.off(responseEventName, handleFullResponse);
       };
     
