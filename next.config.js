@@ -4,15 +4,11 @@ const nextConfig = {
   swcMinify: true,
   images: {
     domains: ['solidcam.herokuapp.com', 'localhost'],
-},
-webpack(config) {
-config.experiments = { ...config.experiments, topLevelAwait: true };
-return config;
-},
-};
-module.exports = {
-  env: {
-    NEXT_PUBLIC_FILTER_SCORE: process.env.NEXT_PUBLIC_FILTER_SCORE,
+  },
+  webpack(config) {
+    config.experiments = { ...config.experiments, topLevelAwait: true };
+    return config;
   },
 };
+
 module.exports = nextConfig;
