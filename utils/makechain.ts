@@ -228,6 +228,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.7;
       let embeddingsStore
       if (language !== 'English') {
+        const minScoreSourcesThreshold = 0.78;
         embeddingsStore = await customRetriever.storeEmbeddings(question, minScoreSourcesThreshold);
       }
       else{
