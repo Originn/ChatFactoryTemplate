@@ -117,7 +117,9 @@ If the follow up question does not need context, return the exact same text back
 Never rephrase the follow up question given the chat history unless the follow up question needs context.
 Always rephrase the Standalone question replacing abbriviations to full strings.
 abbriviations:
-HSS - High Speed Surface Machining.
+HSS - High Speed Surface Machining
+HSM - High Speed Machining
+HSR - High Speed Roughing
 
 Chat History:
 {chat_history}
