@@ -190,7 +190,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       const formattedPrompt = QA_PROMPT
         .replace('{language}', language);
       
-      // Since the first user question in not going through the CONDENSE_PROMPT and there for abbriviations cannot be changed, i have added a generic user question.
+      // Since the first user question in not going through the CONDENSE_PROMPT and therefor abbriviations cannot be changed, i have added a generic user message.
       if ((chat_history.chatHistory as any).messages.length === 0) {
         const initialHumanMessage = new HumanMessage({
           content: "Hi",
