@@ -157,7 +157,7 @@ export function extractYouTubeLink(content: string): string | null {
   }
   
   export function extractSentinalLink(content: string): string | null {
-    const solidcamMatch = content.match(/https:\/\/sentinel\.solidcam\.com\/[a-zA-Z0-9\/_.-]+\.(html|pdf)/);
+    const solidcamMatch = content.match(/https:\/\/(sentinel|forms)\.solidcam\.com\/[a-zA-Z0-9\/_.-]+\.(html|pdf)/);
     return solidcamMatch ? solidcamMatch[0] : null;
 }
 

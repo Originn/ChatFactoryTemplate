@@ -13,6 +13,7 @@ import { getIO } from "@/socketServer.cjs";
 import { v4 as uuidv4 } from 'uuid';
 import { insertQA } from '../db';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
+import { HumanMessage } from "langchain/schema";
 
 // Type Definitions
 type SearchResult = [MyDocument, number];
@@ -84,6 +85,7 @@ class CustomRetriever extends BaseRetriever {
       });
     });
   }
+
   async storeEmbeddings(query: string, minScoreSourcesThreshold: number) {
     const embedder = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
     const embeddingsResponse = await embedder.embedQuery(query);
@@ -113,6 +115,9 @@ const MODEL_NAME = process.env.MODEL_NAME;
 const CONDENSE_PROMPT = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
 If the follow up question does not need context, return the exact same text back.
 Never rephrase the follow up question given the chat history unless the follow up question needs context.
+Always rephrase the Standalone question replacing abbriviations to full strings.
+abbriviations:
+HSS - High Speed Surface Machining.
 
 Chat History:
 {chat_history}
@@ -125,6 +130,7 @@ In instances where the question diverges from the SolidCAM context, indicate tha
 to address queries exclusively related to SolidCAM.
 Don't answer questions about iMachining only if SPECIFICALLY REQUESTED! If a solution or answer is beyond your knowledge scope, 
 simply admit you don't know. Avoid creating fabricated answers.
+
 
 Answer in a concise or elaborate format as per the intent of the question. Use formating ** to bold, __ to italic & ~~ to cut wherever required. Format the answer using headings, paragraphs or points wherever applicable. 
 =========
@@ -181,6 +187,15 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       const formattedPrompt = QA_PROMPT
         .replace('{language}', language);
+      
+      // Since the first user question in not going through the CONDENSE_PROMPT and there for abbriviations cannot be changed, i have added a generic user question.
+      if ((chat_history.chatHistory as any).messages.length === 0) {
+        const initialHumanMessage = new HumanMessage({
+          content: "Hi",
+          name: "Human",
+      });
+      chat_history.chatHistory.addMessage(initialHumanMessage); // Hypothetical method to add message
+      }
 
       const customRetriever = new CustomRetriever(vectorstore);
       // Use the specific room memory for the chain
@@ -260,15 +275,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         totalScore = count > 0 ? totalScore / count : 0;
       }
 
-      //await waitForUserInput();
-  
-
-        // Update the chat history with the new question, answer, and average score
-        // chatHistory.push({
-        //   question: question,
-        //   answer: (Documents[0] as any).responseText,
-        //   score: totalScore,
-        // });
         
         // Filter the chat history by score
         const SCORE_THRESHOLD = 0.02;
