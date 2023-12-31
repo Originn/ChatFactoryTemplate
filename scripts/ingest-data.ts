@@ -68,11 +68,46 @@ function removeDuplicatedSections(content: string, header: string): string {
   
     for (const doc of processedDocs) {
       let tokens = encoding.encode(doc.pageContent);
-      console.log('tokens:', tokens.length);
-  
+      if (tokens.length > 800){
+        console.log('tokens:', tokens.length, 'in file:', doc.metadata.file);
+      }
       if (tokens.length > 1000) {
+        if (doc.metadata.videoLink){
+          const splitter = new RecursiveCharacterTextSplitter({
+            chunkSize: 1000,
+            chunkOverlap: 200,
+            //separators: ["\n**"],
+          });
+          const headerRegex = /^((?:[^\|]+\|)*)([^\|]+)\s*---/;
+          const match = doc.pageContent.match(headerRegex);
+          const firstHeaderLine = match ? match[0] : null;
+
+          const header = firstHeaderLine ? firstHeaderLine  + '\n\n' : 'Default Header\n\n---\n\n';
+          let cleanedChunks = await splitter.createDocuments([doc.pageContent], [doc.metadata], {
+          chunkHeader: header,
+          appendChunkOverlapHeader: true,
+          });
+
+          cleanedChunks.shift();
+          if (cleanedChunks.length > 0) {
+            // Extract the timestamp from the first document's pageContent
+            const timestampRegex = /\(cont'd\) \((\d+:\d+)\)/;
+            const firstDoc = cleanedChunks[0];
+            const timestampMatch = firstDoc.pageContent.match(timestampRegex);
+            const timestamp = timestampMatch ? timestampMatch[1] : '';
+        
+            // Insert the timestamp after (cont'd) in the headers of the rest of the documents
+            cleanedChunks.forEach((doc, index) => {
+                if (index > 0) {
+                    doc.pageContent = doc.pageContent.replace(/\(cont'd\)/, `(cont'd) (${timestamp})`);
+                }
+            });
+        }
+          cleanProcessedDocs.push(...cleanedChunks);
+        }
+      else if (!doc.metadata.videoLink){
         let cleanedContent = removeDuplicateContent(doc.pageContent, 100);
-        tokens = encoding.encode(cleanedContent);
+        //tokens = encoding.encode(cleanedContent);
   
         const splitter = new RecursiveCharacterTextSplitter({
           chunkSize: 1000,
@@ -95,6 +130,7 @@ function removeDuplicatedSections(content: string, header: string): string {
       }
         // Add the new smaller chunks to cleanProcessedDocs
         cleanProcessedDocs.push(...cleanedChunks);
+    }
       } else {
         // Add the original document to cleanProcessedDocs
         cleanProcessedDocs.push(doc);
@@ -147,12 +183,13 @@ export const run = async () => {
             chunkOverlap: 200,
             //separators: ["\n****"],
         });
+        
 
         /* Split webinar into chunks */
         const webinarTextSplitter = new CharacterTextSplitter({
           chunkSize: 1000,
           chunkOverlap: 200,
-          //separators: ["\n****"],
+          separator: "\n",
       });
 
       /* Split webinar into chunks */
@@ -164,107 +201,126 @@ export const run = async () => {
       
       // Associate each chunk with its first timestamp
       let processedDocs: any[] = [];
-
+      let uploadDate = '';
       for (const doc of rawDocs) {
         // Initialize common variables
-    const Timestamp = extractFirstTimestampInSeconds(doc.pageContent);
-    const lines = doc.pageContent.split('\n');
-    let initialHeader;
-    let chunk;
-
-    if (doc.pageHeader) {
-      // Process as webinar document
-      const youtubeLink = extractYouTubeLink(doc.pageHeader);
-      const sentinalLink = extractSentinalLink(doc.pageHeader);
-      if (youtubeLink) {
-        let initialHeader = '';
-        if (doc.pageHeader.includes('|')) {
-            const parts = doc.pageHeader.split('|');
-            initialHeader = `**${parts[0].trim()}** ${parts.slice(1).join('|').trim()}\n\n---\n\n`;
-        } else {
-            initialHeader = `**${doc.pageHeader.trim()}**\n\n---\n\n`;
-        }
-
-        chunk = await webinarTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
-            chunkHeader: initialHeader,
-            appendChunkOverlapHeader: true
-        });
-
-      } if(sentinalLink) {
-        let initialHeader = '';
-        if (doc.pageHeader.includes('|')) {
-            const parts = doc.pageHeader.split('|');
-            initialHeader = `${parts[0]}\n\n---\n\n`;
-        } else {
-            initialHeader = `${doc.pageHeader.trim()}\n\n---\n\n`;
-        }
-        chunk = await sentinalTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
-          chunkHeader: initialHeader,
-          appendChunkOverlapHeader: true
-        });
-      } else {
-        // Process as PDF document
-        initialHeader = doc.pageHeader ? 
-          doc.pageHeader.split('|')[0].trim() + ' ****' + doc.pageHeader.split('|').slice(1).join(' ').trim() + '****\n\n---\n\n' : 
-          'Default Header\n\n---\n\n';
-        chunk = await pdfTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
-            chunkHeader: initialHeader,
-            appendChunkOverlapHeader: true
-        });
-    }
-    } else {
-        // Process as PDF document
-        initialHeader = doc.pageHeader ? 
-            doc.pageHeader.split('|')[0].trim() + ' ' + lines.find(line => line.startsWith('****') && line.endsWith('****')) + '\n\n---\n\n' : 
-            'Default Header\n\n---\n\n';
-        chunk = await pdfTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
-            chunkHeader: initialHeader,
-            appendChunkOverlapHeader: true
-        });
-    }
-        //console.log('Chunck log', chunk);
-        //await waitForUserInput();
-                            
-        let processedChunks: any[] = chunk ? chunk.map(document => {
-          const updatedSource = Timestamp !== null
-              ? `${document.metadata.source}&t=${Timestamp}s`
-              : document.metadata.source;
-
-          // Update the source property of the current document's metadata
-          document.metadata.source = updatedSource;
-
-          document.metadata.type = determineSourceType(updatedSource);
-
-          //console.log('Document:', document)
-
-          return document; // Return the updated Document object
-        }): [];
-
-        processedDocs.push(...processedChunks);        
-        }
-
-        processedDocs = appendMissingNumbers(processedDocs)
-        //console.log('processedDocs', processedDocs);
-        //await waitForUserInput();
-        const cleanProcessedDocs = await checkDocumentsTokenLength(processedDocs);
-        //await waitForUserInput();
-        console.log('cleanProcessedDocs', cleanProcessedDocs);
-        //await waitForUserInput();
-
+        const Timestamp = extractFirstTimestampInSeconds(doc.pageContent);
+        const lines = doc.pageContent.split('\n');
+        let initialHeader;
+        let chunk;
         
-      /*create and store the embeddings in the vectorStore*/
-      const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
-      const pinecone = await getPinecone();
-      const index = pinecone.Index(PINECONE_INDEX_NAME);
+
+        if (doc.pageHeader) {
+          // Process as webinar document
+          const youtubeLink = extractYouTubeLink(doc.metadata.source);
+          const sentinalLink = extractSentinalLink(doc.metadata.source);
+          if (youtubeLink) {
+            let initialHeader = '';
+            if (doc.pageHeader && doc.pageHeader.includes('|')) {
+                const parts = doc.pageHeader.split('|').map(part => part.trim());
+        
+                // Extract 'Upload Date' from current document's header
+                const datePartIndex = parts.findIndex(part => part.includes('Upload Date:'));
+                if (datePartIndex !== -1) {
+                  const currentUploadDate = parts[datePartIndex].split('Upload Date: ')[1].trim();
+                  // Update uploadDate if it's different
+                  if (currentUploadDate !== uploadDate) {
+                    uploadDate = currentUploadDate;
+                  }
+                }
+                
+                if (parts.length > 0) {
+                    initialHeader = `**${parts[0]}** ${parts.slice(1).join(' | ')}\n\n---\n\n`;
+                }
+            } else {
+                initialHeader = `**${doc.pageHeader.trim()}**\n\n---\n\n`;
+            }
+            
+            // Set the upload date in the metadata if it's available
+            if (uploadDate) {
+                doc.metadata.uploadDate = uploadDate;
+            }
+
+            chunk = await webinarTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
+                chunkHeader: initialHeader,
+                appendChunkOverlapHeader: true
+            });
+
+          } else if(sentinalLink) {
+            let initialHeader = '';
+            if (doc.pageHeader.includes('|')) {
+                const parts = doc.pageHeader.split('|');
+                initialHeader = `${parts[0]}\n\n---\n\n`;
+            } else {
+                initialHeader = `${doc.pageHeader.trim()}\n\n---\n\n`;
+            }
+            chunk = await sentinalTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
+              chunkHeader: initialHeader,
+              appendChunkOverlapHeader: true
+            });
+          } else {
+            // Process as PDF document
+            initialHeader = doc.pageHeader ? 
+              doc.pageHeader.split('|')[0].trim() + ' ****' + doc.pageHeader.split('|').slice(1).join(' ').trim() + '****\n\n---\n\n' : 
+              'Default Header\n\n---\n\n';
+            chunk = await pdfTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
+                chunkHeader: initialHeader,
+                appendChunkOverlapHeader: true
+            });
+        }
+        } else {
+            // Process as PDF document
+            initialHeader = doc.pageHeader ? 
+                doc.pageHeader.split('|')[0].trim() + ' ' + lines.find(line => line.startsWith('****') && line.endsWith('****')) + '\n\n---\n\n' : 
+                'Default Header\n\n---\n\n';
+            chunk = await pdfTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
+                chunkHeader: initialHeader,
+                appendChunkOverlapHeader: true
+            });
+        }
+            //console.log('Chunck log', chunk);
+            //await waitForUserInput();
+                                
+            let processedChunks: any[] = chunk ? chunk.map(document => {
+              const updatedSource = Timestamp !== null
+                  ? `${document.metadata.source}&t=${Timestamp}s`
+                  : document.metadata.source;
+
+              // Update the source property of the current document's metadata
+              document.metadata.source = updatedSource;
+
+              document.metadata.type = determineSourceType(updatedSource);
+
+
+              //console.log('Document:', document)
+
+              return document; // Return the updated Document object
+            }): [];
+            
+            processedDocs.push(...processedChunks); 
+      }
+
+    processedDocs = appendMissingNumbers(processedDocs)
+    //console.log('processedDocs', processedDocs);
+    //await waitForUserInput();
+    const cleanProcessedDocs = await checkDocumentsTokenLength(processedDocs);
+    //await waitForUserInput();
+    console.log('cleanProcessedDocs', cleanProcessedDocs);
+
       
-      console.log('ARE YOU READY TO EMBED???')
-      await waitForUserInput();
-      //embed the documents
-      await PineconeStore.fromDocuments(cleanProcessedDocs, embeddings, {
-          pineconeIndex: index,
-          namespace: PINECONE_NAME_SPACE,
-          textKey: 'text',
-      });
+    /*create and store the embeddings in the vectorStore*/
+    const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
+    const pinecone = await getPinecone();
+    const index = pinecone.Index(PINECONE_INDEX_NAME);
+    
+    console.log('ARE YOU READY TO EMBED???')
+    await waitForUserInput();
+    //embed the documents
+    await PineconeStore.fromDocuments(cleanProcessedDocs, embeddings, {
+        pineconeIndex: index,
+        namespace: PINECONE_NAME_SPACE,
+        textKey: 'text',
+    });
   } catch (error) {
       console.error('Error in run function:', error);
       throw new Error('Failed to ingest your data');
