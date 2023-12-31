@@ -157,9 +157,13 @@ export function extractYouTubeLink(content: string): string | null {
   }
   
   export function extractSentinalLink(content: string): string | null {
-    const solidcamMatch = content.match(/https:\/\/(sentinel|forms)\.solidcam\.com\/[a-zA-Z0-9\/_.-]+\.(html|pdf)/);
+    // Match URLs starting with 'https://sentinel.solidcam.com' or 'https://forms.solidcam.com'
+    // Followed by any character sequence (or none), ending with .html, .pdf, .com, or the domain itself
+    const solidcamMatch = content.match(/https:\/\/(sentinel|forms)\.solidcam\.com(\/[a-zA-Z0-9\/_.-]*)(\.html|\.pdf|\.com)?/);
     return solidcamMatch ? solidcamMatch[0] : null;
 }
+
+
 
 
   export function extractFirstTimestampInSeconds(content: string): number | null {

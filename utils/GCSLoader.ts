@@ -8,14 +8,14 @@ import * as tmp from 'tmp-promise';
 import fs from 'fs';
 import path from 'path';
 
-export interface DocumentInput<Metadata extends { videoLink?: string; score?: number } = Record<string, any>> {
+export interface DocumentInput<Metadata extends { videoLink?: string; score?: number; file?: string; uploadDate?: Date } = Record<string, any>> {
     pageNumber?: number;
     pageHeader?: string;
     pageContent: string;
     metadata?: Metadata;
 }
 
-export class MyDocument<Metadata extends { videoLink?: string; score?: number } = Record<string, any>> implements DocumentInput<Metadata> {
+export class MyDocument<Metadata extends { videoLink?: string; score?: number; file?: string; uploadDate?: Date } = Record<string, any>> implements DocumentInput<Metadata> {
     pageNumber?: number;
     pageHeader?: string;
     pageContent: string;
@@ -120,7 +120,8 @@ class GCSLoader {
                         console.log(`Unsupported file type for ${fileName}`);
                         continue;
                     }
-                    
+                    const headerMatch = contentString.match(/"header":\s*"(.*?)\s*\|/);
+                    const file = headerMatch ? headerMatch[1] : "null";
                     let DocCloudUrl;
                     let existingYouTubeSource = extractYouTubeLink(contentString);
                     let existingSentinalSource = extractSentinalLink(contentString);
@@ -134,7 +135,7 @@ class GCSLoader {
                     //await waitForUserInput();
     
                     // Temporary dictionary to group content by header
-                    const groupedContent: Record<string, { contents: string[], source: string }> = {};
+                    const groupedContent: Record<string, { contents: string[], source: string, file: string, uploadDate?: Date }> = {};
     
                     for (let pageInfoGroup of contentData) {
                         for (let content of pageInfoGroup.contents) {
@@ -146,7 +147,8 @@ class GCSLoader {
                             } else {
                                 groupedContent[pageInfoGroup.header] = {
                                     contents: [pageContent],
-                                    source: existingYouTubeSource || existingSentinalSource || DocCloudUrl || ""
+                                    source: existingYouTubeSource || existingSentinalSource || DocCloudUrl || "",
+                                    file: file
                                 };
                             }
                         }
@@ -161,6 +163,8 @@ class GCSLoader {
                             metadata: {
                                 source: data.source,
                                 videoLink: data.source.includes('youtube') ? data.source : null,
+                                uploadDate: data.source.includes('youtube') ? data.uploadDate : null,
+                                file: file
                             },
                         });
                     }

@@ -386,7 +386,8 @@ def process_webinar_text(text_file_path):
                     first_line = paragraph
                     rest_of_paragraph = ''
                 
-                header_and_first_line = f"{main_header} | {first_line}"
+                # Add an additional '|' after 'first_line'
+                header_and_first_line = f"{main_header} | {first_line} |"
                 
                 paragraph_data = {
                     "header": header_and_first_line,
@@ -398,6 +399,7 @@ def process_webinar_text(text_file_path):
                     ]
                 }
                 results.append(paragraph_data)
+
             
     except FileNotFoundError:
         print(f"Text file {text_file_path} not found.")
@@ -415,7 +417,7 @@ if __name__ == "__main__":
         if 'Webinar' in pdf_path:
             results = process_webinar_text(pdf_path)
             sys.stdout.write(json.dumps(results))
-        elif 'SolidCAM licencing' in pdf_path:
+        elif 'SolidCAM_licensing' in pdf_path:
             results = process_solidcam_licence_text(pdf_path)
             sys.stdout.write(json.dumps(results))
             pass
