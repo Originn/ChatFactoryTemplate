@@ -16,6 +16,14 @@ body.dark {
     background-color: #000000;
 }
 
+body.dark ol {
+    color: #ffffff;
+}
+
+body.dark ol li {
+    color: #ffffff;
+}
+
 body.dark h1 {
     color: #ffffff;
 }
