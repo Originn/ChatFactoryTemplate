@@ -212,7 +212,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           qaTemplate: formattedPrompt,
           questionGeneratorTemplate: CONDENSE_PROMPT,
           returnSourceDocuments: true,
-          verbose: true
+          verbose: false
         }
       );
 
