@@ -14,8 +14,8 @@ let encoding =  get_encoding("cl100k_base")
 
 function determineSourceType(url: string): string {
     if (url.includes('youtube')) return 'youtube';
-    if (url.includes('.pdf')) return 'pdf';
     if (url.includes('sentinel')) return 'sentinel';
+    if (url.includes('.pdf')) return 'pdf';
     return 'other';  // Default if neither match
 }
 

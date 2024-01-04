@@ -226,29 +226,42 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         };
       })());
       const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
-      let embeddingsStore
-      if (language !== 'English') {
-        const minScoreSourcesThreshold = 0.78;
-        embeddingsStore = await customRetriever.storeEmbeddings(question, minScoreSourcesThreshold);
+      let embeddingsStore;
+      if (language == 'English') {
+        embeddingsStore = await customRetriever.storeEmbeddings(responseText.text, minScoreSourcesThreshold);
+        for (const [doc, score] of embeddingsStore) {
+          const myDoc = new MyDocument({
+            pageContent: doc.pageContent,
+            metadata: {
+              source: doc.metadata.source,     
+              type: doc.metadata.type,         
+              videoLink: doc.metadata.videoLink,
+              file: doc.metadata.file,
+              score: score                     
+            }
+          });
+        
+          Documents.push(myDoc);
+        }
       }
       else{
-        embeddingsStore = await customRetriever.storeEmbeddings(responseText.text, minScoreSourcesThreshold);
+        embeddingsStore = await responseText.sourceDocuments;
+        for (const doc of embeddingsStore) {
+          const myDoc = new MyDocument({
+              pageContent: doc.pageContent,
+              metadata: {
+                  source: doc.metadata.source,
+                  type: doc.metadata.type,
+                  videoLink: doc.metadata.videoLink,
+                  file: doc.metadata.file,
+                  score: doc.metadata.score
+              }
+          });
+      
+          Documents.push(myDoc);
+        }      
       }
 
-      for (const [doc, score] of embeddingsStore) {
-        const myDoc = new MyDocument({
-          pageContent: doc.pageContent,
-          metadata: {
-            source: doc.metadata.source,     
-            type: doc.metadata.type,         
-            videoLink: doc.metadata.videoLink,
-            file: doc.metadata.file,
-            score: score                     
-          }
-        });
-      
-        Documents.push(myDoc);
-      }
 
       if (roomId) {
         console.log("INSIDE ROOM_ID", roomId);     
