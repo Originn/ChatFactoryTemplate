@@ -165,6 +165,11 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     temperature: TEMPRATURE
   });
 
+  const translationModel = new OpenAI({
+    modelName: 'gpt-4',
+    temperature: TEMPRATURE
+  });
+
   function generateUniqueId(): string {
     return uuidv4();
   }
@@ -184,7 +189,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       const language = await detectLanguageWithOpenAI(question, nonStreamingModel);
 
       if (language !== 'English') {
-        question = await translateToEnglish(question, nonStreamingModel);
+        question = await translateToEnglish(question, translationModel);
       }
 
       const formattedPrompt = QA_PROMPT
