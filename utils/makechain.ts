@@ -141,7 +141,7 @@ Answer in a concise or elaborate format as per the intent of the question. Use f
 Question: {question}
 Answer in the {language} language :`;
 
-const TRANSLATION_PROMPT = `Translate the following text to English:\nText: "{question}"`;
+const TRANSLATION_PROMPT = `Translate the following text to English and return the translated question only:\nText: "{question}"`;
 const LANGUAGE_DETECTION_PROMPT = `Detect the language of the following text and respond with the language name only, nothing else:\n\nText: "{text}"`;
 const TEMPRATURE = parseFloat(process.env.TEMPRATURE || "0");
 
