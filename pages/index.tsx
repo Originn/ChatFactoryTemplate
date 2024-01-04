@@ -102,13 +102,20 @@ export default function Home() {
         setTheme(prevTheme => prevTheme === DEFAULT_THEME ? 'dark' : DEFAULT_THEME);
     };
 
-    const handleEnter = (e: any) => {
-        if (e.key === 'Enter' && query) {
-        handleSubmit(e);
-        } else if (e.key == 'Enter') {
-        e.preventDefault();
-        }
-    };
+    const handleEnter = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+          if (e.shiftKey) {
+              // Allow the shift+enter key to create a new line
+              // By not calling e.preventDefault(), we allow the default behavior of adding a new line
+          } else if (query) {
+              // Prevent the default enter key behavior
+              e.preventDefault();
+              // Submit the form
+              handleSubmit(e);
+          }
+      }
+  };
+  
 
     const handleFeedback = (messageIndex: number, type: string) => {
         setFeedback(prev => ({ ...prev, [messageIndex]: { ...prev[messageIndex], type } }));
