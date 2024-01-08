@@ -46,8 +46,8 @@ async function filteredSimilaritySearch(vectorStore: any, queryVector: number[],
   }
 }
 
-async function translateToEnglish(question: string, nonStreamingModel: OpenAI): Promise<string> {
-  const response = await nonStreamingModel.generate([TRANSLATION_PROMPT.replace('{question}', question)]);
+async function translateToEnglish(question: string, translationModel: OpenAI): Promise<string> {
+  const response = await translationModel.generate([TRANSLATION_PROMPT.replace('{question}', question)]);
 
   // Extract the translated text from the response
   if (response.generations.length > 0 && response.generations[0].length > 0) {
@@ -141,7 +141,7 @@ Answer in a concise or elaborate format as per the intent of the question. Use f
 Question: {question}
 Answer in the {language} language :`;
 
-const TRANSLATION_PROMPT = `Translate the following text to English and return the translated question only:\nText: "{question}"`;
+const TRANSLATION_PROMPT = `Translate the following text to English. Try to translate it taking into account that it's about SolidCAM. Return the translated question only:\nText: {question}`;
 const LANGUAGE_DETECTION_PROMPT = `Detect the language of the following text and respond with the language name only, nothing else:\n\nText: "{text}"`;
 const TEMPRATURE = parseFloat(process.env.TEMPRATURE || "0");
 
