@@ -408,7 +408,192 @@ def process_webinar_text(text_file_path):
 
     return results
 
+def format_header(header_text):
+    # Add a space between a digit and an alphabetic character
+    formatted_header = re.sub(r'(\d)([A-Za-z])', r'\1 \2', header_text)
 
+    # Replace "Solid CAM" with "SolidCAM"
+    formatted_header = formatted_header.replace("Solid CAM", "SolidCAM")
+
+    # Remove digits followed immediately by a letter
+    formatted_header = re.sub(r'^\d+(?=[A-Za-z])', '', formatted_header)
+
+    # Remove one or two-digit numbers followed by space(s)
+    formatted_header = re.sub(r'\b\d{1,2}\s+', '', formatted_header)
+
+    return formatted_header
+
+def extract_and_format_pdf_content_for_operators(pdf_path):
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            pages_content = []
+            main_header_found = False  # Flag to track if the main header has been found
+
+            for page in pdf.pages:  # Process only the first 10 pages
+                chars = page.chars
+                header_text = ""
+                in_header = False
+
+                # Extract and format header
+                for char in chars:
+                    if char['size'] > 16:
+                        header_text += char['text']
+                        in_header = True
+                    elif in_header:
+                        break
+
+                formatted_header = ""
+                if header_text:
+                    if not main_header_found:
+                        formatted_header = f'**** {header_text.strip()} ****\n'
+                        main_header_found = True
+                    else:
+                        formatted_header = f'*** {header_text.strip()} ***\n'
+
+                # Extract the rest of the page content
+                rest_of_page = page.extract_text() or ""
+                page_content = formatted_header + rest_of_page
+
+                pages_content.append({
+                    'page_number': page.page_number,
+                    'header': header_text,
+                    'pageContent': page_content
+                })
+
+        return pages_content
+
+    except Exception as e:
+        print(f"An error occurred while extracting and formatting content: {e}")
+        return []
+    
+def extract_and_format_pdf_solidcam_silent_install(pdf_path):
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            pages_content = []
+            last_header_text = ""  # Variable to store the last header text
+
+            for page in pdf.pages:
+                chars = page.chars
+                header_text = ""
+                in_header = False
+
+                # Extract and format header
+                for char in chars:
+                    if char['size'] > 16:
+                        header_text += char['text']
+                        in_header = True
+                    elif in_header:
+                        break
+
+                # If the current header text is empty, use the last header text
+                if not header_text and last_header_text:
+                    header_text = last_header_text
+                elif header_text:
+                    last_header_text = header_text  # Update last header text
+
+                # Extract the rest of the page content
+                rest_of_page = page.extract_text() or ""
+                page_content = rest_of_page
+
+                pages_content.append({
+                    'page_number': page.page_number,
+                    'header': header_text,
+                    'pageContent': page_content
+                })
+
+        return pages_content
+
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        return []
+
+def extract_and_format_pdf_training_course(pdf_path):
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            pages_content = []
+            first_header_part = ""
+            second_header_part = ""
+            third_header_part = ""  # Variable to store the current NimbusSan header text
+            formatted_third_header = ""  # Formatted third header to use across pages
+            combined_header = ""
+            combined_header_found = False
+            header_to_use = ""
+
+            for page_number, page in enumerate(pdf.pages, start=1):
+                chars = page.chars
+                current_page_third_header_part = ""  # Variable to accumulate third header on the current page
+
+                for char in chars:
+                    if not combined_header_found:
+                        if char['size'] > 35 and "DIN2014" in char['fontname']:
+                            first_header_part += char['text']
+                        elif char['size'] > 29 and "NimbusSan" in char['fontname']:
+                            second_header_part += char['text']
+
+                    # After the combined header is found, look for additional NimbusSan headers
+                    elif char['size'] > 29 and "NimbusSan" in char['fontname']:
+                        current_page_third_header_part += char['text']
+
+                # Set the combined header if it has not been set yet
+                if first_header_part and second_header_part and not combined_header_found:
+                    formatted_second_header = format_header(second_header_part)
+                    combined_header = f'{first_header_part} | {formatted_second_header}'
+                    combined_header_found = True
+
+                # If new text for the third header part is found on this page, update the third header
+                if current_page_third_header_part != "":
+                    # Replace third_header_part with the new text and format it
+                    third_header_part = current_page_third_header_part
+                    formatted_third_header = format_header(third_header_part)
+
+                # The header for the current page includes the combined header and the third header if present
+                header_text = f'{combined_header} | {formatted_third_header}' if formatted_third_header else combined_header
+
+                header_text = ' | '.join(part.strip() for part in header_text.split('|'))
+                
+
+                #because header is empty on the first 2 pages, I want to replace it with the true header which is on page 3
+                if page_number == 3:
+                    header_to_use = header_text
+
+                rest_of_page = page.extract_text() or ""
+                page_content = rest_of_page
+
+                pages_content.append({
+                    'page_number': page.page_number,
+                    'header': header_text,
+                    'pageContent': page_content
+                })
+
+            # Replace empty headers with the header from page 003
+            if header_to_use:
+                for page in pages_content:
+                    if not page['header']:
+                        page['header'] = header_to_use
+
+            return pages_content
+
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        return []
+
+def extract_font_details_first_page(pdf_path):
+    font_details_list = []
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            first_page = pdf.pages[0]
+            for char in first_page.chars:
+                font_details = {
+                    'text': char['text'],
+                    'font_name': char['fontname'],
+                    'font_size': char['size']
+                }
+                font_details_list.append(font_details)
+    except Exception as e:
+        print(f"Error processing the PDF: {e}")
+
+    return font_details_list
+    
 if __name__ == "__main__":
     pdf_path = sys.argv[1]  # Get the PDF path from the command line argument
     folder_name = os.path.basename(os.path.dirname(pdf_path))
@@ -422,18 +607,32 @@ if __name__ == "__main__":
             sys.stdout.write(json.dumps(results))
             pass
     else:
-        pages_with_home = find_pages_starting_with(pdf_path, "Home >")
+        try:
+            pages_ = find_pages_starting_with(pdf_path, "Home >")
+        except:
+            if 'solidcam for operator' in pdf_path.lower():
+                pages_ = extract_and_format_pdf_content_for_operators(pdf_path)
+            elif 'solidcam_silent_install' in pdf_path.lower():
+                pages_ = extract_and_format_pdf_solidcam_silent_install(pdf_path)
+            elif 'training_course' in pdf_path.lower():
+                #first_page = extract_font_details_first_page(pdf_path)
+                pages_ = extract_and_format_pdf_training_course(pdf_path)
         # print(pages_with_home)
         # input()
 
         grouped_results = {}
 
-        for page_info in pages_with_home:
-
-            header = combine_multiline_header(page_info['header'])
+        for page_info in pages_:
             
-            if header not in grouped_results:
-                grouped_results[header] = []
+            try:
+                header = combine_multiline_header(page_info['header'])
+            except:
+                pass
+            try:
+                if header not in grouped_results:
+                    grouped_results[header] = []
+            except:
+                pass
 
             # Access 'page_number' and 'pageContent' directly from the page_info dictionary
             page_number = page_info['page_number']
@@ -450,14 +649,20 @@ if __name__ == "__main__":
                 "page_number": page_number,
                 "PageContent": PageContent_text
             }
-            grouped_results[header].append(content_data)
+            try:
+                grouped_results[header].append(content_data)
+            except:
+                grouped_results.append(content_data)
 
 
 
         # Convert the dictionary to a list format
-        results = [{"header": key, "contents": value} for key, value in grouped_results.items()]
-        for item in results:
-            item['header'] = item['header'].replace("Home", folder_name)
+        try:
+            results = [{"header": key, "contents": value} for key, value in grouped_results.items()]
+            for item in results:
+                item['header'] = item['header'].replace("Home", folder_name)
+        except:
+            pass
         # if results:
         #     results.pop()
         # print('results:', results)

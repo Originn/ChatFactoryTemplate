@@ -141,18 +141,20 @@ class GCSLoader {
                         for (let content of pageInfoGroup.contents) {
                             const pageNumber = content.page_number;
                             const pageContent = content.PageContent + ` (${pageNumber})`; // append page number
-    
+                    
                             if (pageInfoGroup.header in groupedContent) {
                                 groupedContent[pageInfoGroup.header].contents.push(pageContent);
                             } else {
+                                let cleanedFile = file.replace(/\*+/g, '').replace(/^\s+|\s+$/g, '');
                                 groupedContent[pageInfoGroup.header] = {
                                     contents: [pageContent],
                                     source: existingYouTubeSource || existingSentinalSource || DocCloudUrl || "",
-                                    file: file
+                                    file: cleanedFile
                                 };
                             }
                         }
                     }
+                    
     
                     // Flatten the grouped content into the documents array
                     for (let [header, data] of Object.entries(groupedContent)) {
@@ -164,7 +166,7 @@ class GCSLoader {
                                 source: data.source,
                                 videoLink: data.source.includes('youtube') ? data.source : null,
                                 uploadDate: data.source.includes('youtube') ? data.uploadDate : null,
-                                file: file
+                                file: data.file
                             },
                         });
                     }

@@ -164,8 +164,6 @@ export function extractYouTubeLink(content: string): string | null {
 }
 
 
-
-
   export function extractFirstTimestampInSeconds(content: string): number | null {
       const timestampMatch = content.match(/\((?:(\d{1,2}):)?(\d{1,2}):(\d{1,2})\)/);
       if (!timestampMatch) {

@@ -550,7 +550,13 @@ export default function Home() {
                                             <b>Source:</b>
                                             {
                                               doc.metadata && doc.metadata.source
-                                              ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View</a>
+                                              ? (() => {
+                                                  // Extract the first page number from the content
+                                                  const match = doc.pageContent.match(/\((\d+)\)/);
+                                                  const pageNumber = match ? match[1] : null;
+                                                  const pageLink = pageNumber ? `${doc.metadata.source}#page=${pageNumber}` : doc.metadata.source;
+                                                  return <a href={pageLink} target="_blank" rel="noopener noreferrer">View Page</a>;
+                                                })()
                                               : 'Unavailable'
                                             }
                                           </p>
