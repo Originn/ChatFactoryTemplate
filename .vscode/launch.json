@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/utils/plumber.py",
-            "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/Post Processor Wizard Webinar.txt"],
+            "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/Training_courses_milling_2023/SolidCAM_2023_Multiblade_Machining_User_Guide.pdf"],
             "console": "integratedTerminal"
         }
     ]
