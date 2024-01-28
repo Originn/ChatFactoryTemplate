@@ -1,15 +1,14 @@
 //chat.ts
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
-import { PineconeStore } from 'langchain/vectorstores/pinecone';
+import { OpenAIEmbeddings } from '@langchain/openai';
+import { PineconeStore } from '@langchain/pinecone';
 import { makeChain } from '@/utils/makechain';
 import { getPinecone } from '@/utils/pinecone-client';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { getIO } from "@/socketServer.cjs";
 import { MyDocument } from 'utils/GCSLoader';
 import {waitForUserInput} from 'utils/textsplitter';
-import { AIMessage, HumanMessage } from 'langchain/schema';
 import { insertQA } from '../../db';
 import { v4 as uuidv4 } from 'uuid';
 import { getSession } from '@auth0/nextjs-auth0';
@@ -37,11 +36,11 @@ export default async function handler(
     const session = await getSession(req, res);
     const io = getIO();
     const pinecone = await getPinecone();
-    const index = pinecone.Index(PINECONE_INDEX_NAME);
+    //const index = pinecone.Index(PINECONE_INDEX_NAME);
     const vectorStore = await PineconeStore.fromExistingIndex(
       new OpenAIEmbeddings({ modelName: "text-embedding-3-large", dimensions: 1024 }),
       {
-        pineconeIndex: index,
+        pineconeIndex: pinecone,
         textKey: 'text',
         namespace: PINECONE_NAME_SPACE,
       },

@@ -1,19 +1,19 @@
 //makechain.ts
 
-import { OpenAI } from 'langchain/llms/openai';
-import { PineconeStore } from 'langchain/vectorstores/pinecone';
+import { OpenAI } from '@langchain/openai';
+import { PineconeStore } from '@langchain/pinecone';
 import { ConversationalRetrievalQAChain } from 'langchain/chains';
 //import { CallbackManager } from "langchain/callbacks";
 import { MyDocument } from 'utils/GCSLoader';
 import { BufferMemory } from "langchain/memory";
 //import { PromptTemplate } from "langchain/prompts";
-import { BaseRetriever } from "langchain/schema/retriever";
+import { BaseRetriever } from "@langchain/core/retrievers";
 import { waitForUserInput } from './textsplitter';
 import { getIO } from "@/socketServer.cjs";
 import { v4 as uuidv4 } from 'uuid';
 import { insertQA } from '../db';
-import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
-import { HumanMessage } from "langchain/schema";
+import { OpenAIEmbeddings } from '@langchain/openai';
+import { HumanMessage } from "@langchain/core/messages";
 
 // Type Definitions
 type SearchResult = [MyDocument, number];
