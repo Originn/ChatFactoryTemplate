@@ -412,14 +412,29 @@ def format_header(header_text):
     # Add a space between a digit and an alphabetic character
     formatted_header = re.sub(r'(\d)([A-Za-z])', r'\1 \2', header_text)
 
-    # Replace "Solid CAM" with "SolidCAM"
-    formatted_header = formatted_header.replace("Solid CAM", "SolidCAM")
-
     # Remove digits followed immediately by a letter
     formatted_header = re.sub(r'^\d+(?=[A-Za-z])', '', formatted_header)
 
     # Remove one or two-digit numbers followed by space(s)
     formatted_header = re.sub(r'\b\d{1,2}\s+', '', formatted_header)
+
+    # Add a space between a lowercase letter and a following uppercase letter
+    formatted_header = re.sub(r'([a-z])([A-Z])', r'\1 \2', formatted_header)
+
+    #remove previous letter if there is 53-axis to 3-axis
+    formatted_header = re.sub(r'\b\d*(\d-)', r'\1', formatted_header)
+
+    #remove numbers at the end of the string 
+    formatted_header = re.sub(r'\d+$', '', formatted_header)
+
+    # Replace multiple spaces with a single space
+    formatted_header = re.sub(r'\s{2,}', ' ', formatted_header)
+
+    # Replace "i Machining" with "iMachining"
+    formatted_header = formatted_header.replace("i Machining", "iMachining")
+
+    # Replace "Solid CAM" with "SolidCAM"
+    formatted_header = formatted_header.replace("Solid CAM", "SolidCAM")
 
     return formatted_header
 
@@ -577,11 +592,232 @@ def extract_and_format_pdf_training_course(pdf_path):
         print(f"Error processing PDF: {e}")
         return []
 
-def extract_font_details_first_page(pdf_path):
+def extract_and_format_pdf_solidcam_2023_application(pdf_path):
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            pages_content = []
+            first_header_part = ""
+            second_header_part = ""
+            combined_header = ""
+            header_found = False
+            header_to_use = ""
+
+            for page_number, page in enumerate(pdf.pages, start=1):
+                chars = page.chars
+
+                for char in chars:
+                    if not header_found:
+                        if char['size'] > 35 and "DIN2014" in char['fontname']:
+                            first_header_part += char['text']
+                        
+                    if char['size'] > 29 and "NimbusSan" in char['fontname']:
+                            second_header_part += char['text']
+
+                # Set the combined header if it has not been set yet
+                if first_header_part and second_header_part:
+                    formatted_second_header = format_header(second_header_part)
+                    combined_header = f'{first_header_part} | {formatted_second_header}'
+                    header_found = True
+                    second_header_part = ""
+
+                # The header for the current page includes the combined header and the third header if present
+                header_text = f'{combined_header}'
+
+                header_text = ' | '.join(part.strip() for part in header_text.split('|'))
+                
+
+                #because header is empty on the first 3 pages, I want to replace it with the true header which is on page 4
+                if page_number == 4:
+                    header_to_use = header_text
+
+                rest_of_page = page.extract_text() or ""
+                page_content = rest_of_page
+
+                pages_content.append({
+                    'page_number': page.page_number,
+                    'header': header_text,
+                    'pageContent': page_content
+                })
+
+            # Replace empty headers with the header from page 003
+            if header_to_use:
+                for page in pages_content:
+                    if not page['header']:
+                        page['header'] = header_to_use
+
+            return pages_content
+
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        return []
+
+def extract_and_format_pdf_faq_imachining(pdf_path):
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            pages_content = []
+            first_header_part = ""
+            second_header_part = ""
+            combined_header = ""
+            header_found = False
+            header_to_use = ""
+
+            for page_number, page in enumerate(pdf.pages, start=1):
+                chars = page.chars
+
+                for char in chars:
+                    if not header_found:
+                        if char['size'] > 35 and "DIN2014" in char['fontname']:
+                            first_header_part += char['text']
+                        
+                    if char['size'] > 17 and "Calibri" in char['fontname']:
+                            second_header_part += char['text']
+
+                # Set the combined header if it has not been set yet
+                if first_header_part and second_header_part:
+                    formatted_second_header = format_header(second_header_part)
+                    combined_header = f'{first_header_part} | {formatted_second_header}'
+                    header_found = True
+                    second_header_part = ""
+
+                # The header for the current page includes the combined header and the third header if present
+                header_text = f'{combined_header}'
+
+                header_text = ' | '.join(part.strip() for part in header_text.split('|'))
+                
+
+                #because header is empty on the first 3 pages, I want to replace it with the true header which is on page 4
+                if page_number == 4:
+                    header_to_use = header_text
+
+                rest_of_page = page.extract_text() or ""
+                page_content = rest_of_page
+
+                pages_content.append({
+                    'page_number': page.page_number,
+                    'header': header_text,
+                    'pageContent': page_content
+                })
+
+            # Replace empty headers with the header from page 003
+            if header_to_use:
+                for page in pages_content:
+                    if not page['header']:
+                        page['header'] = header_to_use
+
+            return pages_content
+
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        return []
+    
+def extract_and_format_pdf_Toolkit_reference(pdf_path):
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            pages_content = []
+            first_header_part = ""
+            second_header_part = ""
+            combined_header = ""
+            header_found = False
+            header_to_use = ""
+
+            for page_number, page in enumerate(pdf.pages, start=1):
+                chars = page.chars
+
+                for char in chars:
+                    if not header_found:
+                        if char['size'] > 29 and "HelveticaNeue" in char['fontname']:
+                            first_header_part += char['text']
+                        
+                    if char['size'] >= 24 and "Helvetica-Black" in char['fontname']:
+                            second_header_part += char['text']
+
+                # Set the combined header if it has not been set yet
+                if first_header_part and second_header_part:
+                    formatted_second_header = format_header(second_header_part)
+                    combined_header = f'{first_header_part} | {formatted_second_header}'
+                    header_found = True
+                    second_header_part = ""
+
+                # The header for the current page includes the combined header and the third header if present
+                header_text = f'{combined_header}'
+
+                header_text = ' | '.join(part.strip() for part in header_text.split('|'))
+                
+
+                #because header is empty on the first 4 pages, I want to replace it with the true header which is on page 4
+                if page_number == 5:
+                    header_to_use = header_text
+
+                rest_of_page = page.extract_text() or ""
+                page_content = rest_of_page
+
+                pages_content.append({
+                    'page_number': page.page_number,
+                    'header': header_text,
+                    'pageContent': page_content
+                })
+
+            # Replace empty headers with the header from page 003
+            if header_to_use:
+                for page in pages_content:
+                    if not page['header']:
+                        page['header'] = header_to_use
+
+            return pages_content
+
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        return []
+    
+def extract_and_format_pdf_solidcam_forum(pdf_path):
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            pages_content = []
+            first_header_part = ""
+            second_header_part = ""
+            combined_header = ""
+            header_found = False
+            header_to_use = ""
+
+            for page_number, page in enumerate(pdf.pages, start=1):
+                chars = page.chars
+
+                for char in chars:
+                    if not header_found:
+                        if char['size'] > 35 and "DIN2014" in char['fontname']:
+                            first_header_part += char['text']
+
+                # Set the combined header if it has not been set yet
+                if first_header_part:
+                    first_header_part = format_header(first_header_part)
+                    header_found = True
+
+
+                # The header for the current page includes the combined header and the third header if present
+                header_text = f'{first_header_part}'
+
+                header_text = ' | '.join(part.strip() for part in header_text.split('|'))               
+
+                rest_of_page = page.extract_text() or ""
+                page_content = rest_of_page
+
+                pages_content.append({
+                    'page_number': page.page_number,
+                    'header': header_text,
+                    'pageContent': page_content
+                })
+
+            return pages_content
+
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        return []
+    
+def extract_font_details_first_page(pdf_path, page_number):
     font_details_list = []
     try:
         with pdfplumber.open(pdf_path) as pdf:
-            first_page = pdf.pages[0]
+            first_page = pdf.pages[page_number]
             for char in first_page.chars:
                 font_details = {
                     'text': char['text'],
@@ -614,9 +850,20 @@ if __name__ == "__main__":
                 pages_ = extract_and_format_pdf_content_for_operators(pdf_path)
             elif 'solidcam_silent_install' in pdf_path.lower():
                 pages_ = extract_and_format_pdf_solidcam_silent_install(pdf_path)
-            elif 'training_course' in pdf_path.lower():
+            elif 'solidcam_2023_milling' in pdf_path.lower():
                 #first_page = extract_font_details_first_page(pdf_path)
                 pages_ = extract_and_format_pdf_training_course(pdf_path)
+            elif 'solidcam_2023_application' in pdf_path.lower():
+                pages_ = extract_and_format_pdf_solidcam_2023_application(pdf_path)
+            elif 'solidcam_forum' in pdf_path.lower():
+                pages_ = extract_and_format_pdf_solidcam_forum(pdf_path)
+            elif 'faq_imachining' in pdf_path.lower():
+                pages_ = extract_and_format_pdf_faq_imachining(pdf_path)
+            elif 'toolkit_reference' in pdf_path.lower():
+                # font_details_list = extract_font_details_first_page(pdf_path, 50)
+                # print(font_details_list)
+                # input()
+                pages_ = extract_and_format_pdf_Toolkit_reference(pdf_path)
         # print(pages_with_home)
         # input()
 

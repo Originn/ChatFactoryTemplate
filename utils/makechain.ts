@@ -87,7 +87,7 @@ class CustomRetriever extends BaseRetriever {
   }
 
   async storeEmbeddings(query: string, minScoreSourcesThreshold: number) {
-    const embedder = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
+    const embedder = new OpenAIEmbeddings({ modelName: "text-embedding-3-large", dimensions: 1024 });
     const embeddingsResponse = await embedder.embedQuery(query);
     const pdfResults = await filteredSimilaritySearch(
       this.vectorStore, embeddingsResponse, 'pdf', 2, minScoreSourcesThreshold

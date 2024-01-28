@@ -18,13 +18,14 @@
     "@auth0/auth0-react": "^2.2.3",
     "@auth0/nextjs-auth0": "^3.4.0",
     "@google-cloud/storage": "^6.12.0",
+    "@langchain/pinecone": "^0.0.1",
     "@microsoft/fetch-event-source": "^2.0.1",
-    "@pinecone-database/pinecone": "0.0.12",
+    "@pinecone-database/pinecone": "^2.0.1",
     "@radix-ui/react-accordion": "^1.1.1",
     "clsx": "^1.2.1",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "langchain": "^0.0.151",
+    "langchain": "^0.1.9",
     "lucide-react": "^0.125.0",
     "natural": "^6.7.2",
     "next": "^13.5.4",
@@ -57,7 +58,7 @@
     "typescript": "^4.9.5"
   },
   "engines": {
-    "node": "18.15.0",
+    "node": ">=18",
     "npm": "9.8.0"
   },
   "browser": {

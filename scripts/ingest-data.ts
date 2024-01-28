@@ -1,11 +1,12 @@
 //ingest-data.ts
 import { CharacterTextSplitter, RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
-import { PineconeStore } from 'langchain/vectorstores/pinecone';
+import { OpenAIEmbeddings } from '@langchain/openai';
+import { PineconeStore } from '@langchain/pinecone';
 import { getPinecone } from '@/utils/pinecone-client';
 import GCSLoader from '@/utils/GCSLoader';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { waitForUserInput, extractFirstTimestampInSeconds, extractPotentialSubHeader, extractYouTubeLink, extractSentinalLink } from '@/utils/textsplitter'
+import { Pinecone } from '@pinecone-database/pinecone';
 
 import { get_encoding, encoding_for_model } from 'tiktoken';
 
@@ -260,9 +261,29 @@ export const run = async () => {
             });
           } else {
             // Process as PDF document
-            initialHeader = doc.pageHeader ? 
-              doc.pageHeader.split(' | ')[0].trim() + ' ****' + doc.pageHeader.split(' | ').slice(1).join(' ').trim() + '****\n\n---\n\n' : 
-              'Default Header\n\n---\n\n';
+            if (doc.pageHeader.includes('|')) {
+              // If the page header contains '|', split it at ' | ', 
+              // trim the parts, and reformat it with ' ****' and '****' added
+              if (doc.pageHeader) {
+                  const parts = doc.pageHeader.split(' | ');
+                  const firstPart = parts[0].trim();
+                  const remainingParts = parts.slice(1).join(' ').trim();
+                  initialHeader = firstPart + ' ****' + remainingParts + '****\n\n---\n\n';
+              } else {
+                  // If the page header is not defined, use the default header
+                  initialHeader = 'Default Header\n\n---\n\n';
+              }
+          } else {
+              // If the page header does not contain '|', 
+              // check if the page header is defined
+              if (doc.pageHeader) {
+                   // Trim the header and wrap it with ' ****' and '****'
+                  initialHeader = '****' + doc.pageHeader.trim() + '****\n\n---\n\n';
+              } else {
+                  // If the page header is not defined, use the default header
+                  initialHeader = 'Default Header\n\n---\n\n';
+              }
+          }
             chunk = await pdfTextSplitter.createDocuments([doc.pageContent], [doc.metadata], {
                 chunkHeader: initialHeader,
                 appendChunkOverlapHeader: true
@@ -309,15 +330,14 @@ export const run = async () => {
 
       
     /*create and store the embeddings in the vectorStore*/
-    const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-ada-002" });
+    const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-3-large", dimensions: 1024 });
     const pinecone = await getPinecone();
-    const index = pinecone.Index(PINECONE_INDEX_NAME);
     
     console.log('ARE YOU READY TO EMBED???')
     await waitForUserInput();
     //embed the documents
     await PineconeStore.fromDocuments(cleanProcessedDocs, embeddings, {
-        pineconeIndex: index,
+        pineconeIndex: pinecone,
         namespace: PINECONE_NAME_SPACE,
         textKey: 'text',
     });

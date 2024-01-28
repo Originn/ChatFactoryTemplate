@@ -39,7 +39,7 @@ export default async function handler(
     const pinecone = await getPinecone();
     const index = pinecone.Index(PINECONE_INDEX_NAME);
     const vectorStore = await PineconeStore.fromExistingIndex(
-      new OpenAIEmbeddings({}),
+      new OpenAIEmbeddings({ modelName: "text-embedding-3-large", dimensions: 1024 }),
       {
         pineconeIndex: index,
         textKey: 'text',
