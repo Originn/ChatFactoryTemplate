@@ -120,8 +120,19 @@ class GCSLoader {
                         console.log(`Unsupported file type for ${fileName}`);
                         continue;
                     }
-                    const headerMatch = contentString.match(/"header":\s*"(.*?)\s*\|/);
-                    const file = headerMatch ? headerMatch[1] : "null";
+                    
+                    let headerMatch, headerContentMatch;
+
+                    if (/\"header\":\s*\"[^\"]*\|/.test(contentString)) {
+                        // If "header" contains a "|", use this pattern
+                        headerMatch = contentString.match(/"header":\s*"([^"]*?)\s*\|/);
+                    } else {
+                        // If "header" does not contain a "|", use this pattern
+                        headerContentMatch = contentString.match(/"header":\s*"([^"]*?)"/);
+                    }
+
+                    // Use the entire header content if headerMatch is not found
+                    const file = headerMatch ? headerMatch[1] : (headerContentMatch ? headerContentMatch[1] : "null");
                     let DocCloudUrl;
                     let existingYouTubeSource = extractYouTubeLink(contentString);
                     let existingSentinalSource = extractSentinalLink(contentString);
