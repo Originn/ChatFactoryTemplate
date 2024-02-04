@@ -4,9 +4,8 @@ import { OpenAIEmbeddings } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
 import { getPinecone } from '@/utils/pinecone-client';
 import GCSLoader from '@/utils/GCSLoader';
-import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
-import { waitForUserInput, extractFirstTimestampInSeconds, extractPotentialSubHeader, extractYouTubeLink, extractSentinalLink } from '@/utils/textsplitter'
-import { Pinecone } from '@pinecone-database/pinecone';
+import { PINECONE_NAME_SPACE } from '@/config/pinecone';
+import { waitForUserInput, extractFirstTimestampInSeconds, extractYouTubeLink, extractSentinalLink } from '@/utils/textsplitter'
 
 import { get_encoding, encoding_for_model } from 'tiktoken';
 

@@ -5,12 +5,8 @@ import { OpenAIEmbeddings } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
 import { makeChain } from '@/utils/makechain';
 import { getPinecone } from '@/utils/pinecone-client';
-import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
+import { PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { getIO } from "@/socketServer.cjs";
-import { MyDocument } from 'utils/GCSLoader';
-import {waitForUserInput} from 'utils/textsplitter';
-import { insertQA } from '../../db';
-import { v4 as uuidv4 } from 'uuid';
 import { getSession } from '@auth0/nextjs-auth0';
 
 export default async function handler(
