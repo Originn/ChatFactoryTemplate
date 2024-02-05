@@ -8,6 +8,25 @@
     --header-background-dark: #000000;
 }
 
+body.dark ul,
+body.dark ul li,
+body.dark p,
+body.dark h1,
+body.dark h2,
+body.dark h3,
+body.dark a,
+body.dark .markdownanswer,
+body.dark .markdownanswer ol,
+body.dark .markdownanswer ul,
+body.dark .markdownanswer li {
+    color: #ffffff; /* This should be a light color suitable for dark mode */
+}
+
+
+body.dark .inline-text {
+    color: #ffffff; /* Ensures inline text is visible in dark mode */
+}
+
 body.light {
     background-color: #ffffff;
 }

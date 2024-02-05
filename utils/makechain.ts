@@ -130,7 +130,7 @@ const QA_PROMPT = `As an AI assistant, your goal is to provide accurate guidance
 - Discuss iMachining only if the user specifically asks for it.
 - If you do not have the information to answer a question, admit it openly without fabricating responses.
 - If the question includes keywords like "option", "checkbox", "button", or "click", indicating it's about a specific interface element, and the context does not confirm the existence of this element and your knowledge does not either, your response should be:
-    "Based on the provided information and my knowledge, I cannot confirm the existence of the specified option, checkbox or button within SolidCAM. Please check the element's name for accuracy or provide additional details for further assistance."
+    "I cannot confirm the existence of the specified option, checkbox or button within SolidCAM. Please check the element's name for accuracy or provide additional details for further assistance."
 Your responses should be tailored to the question's intent, using text formatting (bold with **, italic with __, strikethrough with ~~) to enhance clarity, and organized with headings, paragraphs, or lists as appropriate.
 
 =========
@@ -138,12 +138,6 @@ context: {context}
 =========
 Question: {question}
 Answer in the {language} language:`;
-
-
-
-
-
-
 
 
 const TRANSLATION_PROMPT = `Translate the following text to English. Try to translate it taking into account that it's about SolidCAM. Return the translated question only:\nText: {question}`;
