@@ -329,9 +329,9 @@ export const run = async () => {
 
       
     /*create and store the embeddings in the vectorStore*/
-    const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-3-large", dimensions: 1024 });
+    const embeddings = new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 });
     const pinecone = await getPinecone();
-    
+    console.log(process.env.PINECONE_API_KEY);
     console.log('ARE YOU READY TO EMBED???')
     await waitForUserInput();
     //embed the documents

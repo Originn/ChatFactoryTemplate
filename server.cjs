@@ -1,4 +1,5 @@
 //server.cjs
+require('dotenv').config();
 const express = require('express');
 const { parse } = require('url');
 const next = require('next');
