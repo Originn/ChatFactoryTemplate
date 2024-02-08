@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/utils/plumber.py",
-            "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/ToolKit_Reference/SolidCAM_2022_ToolKit_Reference_Guide.pdf"],
+            "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/SolidCAM_2023_Milling/SolidCAM_2022_VMID_Reference_Guide.pdf"],
             "console": "integratedTerminal"
         }
     ]
