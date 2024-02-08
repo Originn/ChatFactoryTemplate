@@ -784,7 +784,7 @@ def extract_and_format_pdf_solidcam_forum(pdf_path):
 
                 for char in chars:
                     if not header_found:
-                        if char['size'] > 35 and "DIN2014" in char['fontname']:
+                        if char['size'] > 35 and ("DIN2014" in char['fontname'] or "Oranienbaum" in char['fontname']):
                             first_header_part += char['text']
 
                 # Set the combined header if it has not been set yet
@@ -851,7 +851,8 @@ if __name__ == "__main__":
             elif 'solidcam_silent_install' in pdf_path.lower():
                 pages_ = extract_and_format_pdf_solidcam_silent_install(pdf_path)
             elif 'solidcam_2023_milling' in pdf_path.lower():
-                #first_page = extract_font_details_first_page(pdf_path)
+                first_page = extract_font_details_first_page(pdf_path, 1)
+                print(first_page)
                 pages_ = extract_and_format_pdf_training_course(pdf_path)
             elif 'solidcam_2023_application' in pdf_path.lower():
                 pages_ = extract_and_format_pdf_solidcam_2023_application(pdf_path)
