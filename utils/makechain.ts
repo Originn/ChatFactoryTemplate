@@ -117,6 +117,7 @@ abbriviations:
 HSS - High Speed Surface
 HSM - High Speed Machining
 HSR - High Speed Roughing
+gpp - general post processor
 
 Chat History:
 {chat_history}
