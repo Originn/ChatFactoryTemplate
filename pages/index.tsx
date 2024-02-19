@@ -640,7 +640,7 @@ export default function Home() {
               )}
             </main>
           </div>
-        <footer className="m-auto p-4 text-center">
+        <footer className="footer m-auto p-4 text-center">
           © 2024 SolidCAM™. All rights reserved.
         </footer>
         </Layout>
