@@ -2,7 +2,7 @@
   "name": "solidcam-chat",
   "version": "0.1.0",
   "private": true,
-  "license": "MIT",
+  "license": "UNLICENSED",
   "author": "orisomekh<orisomekh.solidcam.com>",
   "scripts": {
     "dev": "node server.cjs",

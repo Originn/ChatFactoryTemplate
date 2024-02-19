@@ -278,35 +278,48 @@ export default function Home() {
         setRequestsInProgress(prev => ({ ...prev, [assignedRoomId]: false }));
     
         const responseEventName = `fullResponse-${assignedRoomId}`;
-        const handleFullResponse = (response : any) => {
+        const handleFullResponse = (response: any) => {
           setMessageState((state) => {
-            const { sourceDocs, qaId } = response;
-    
-            const deduplicatedDocs = sourceDocs.reduce((acc: DocumentWithMetadata[], doc: DocumentWithMetadata) => {
-              const sourceURL = doc.metadata.source;
-              const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
-            
-              if (timestamp && !acc.some((d: DocumentWithMetadata) => d.metadata.source.includes(`t=${timestamp}s`))) {
-                acc.push(doc);
-              } else if (!timestamp) {
-                acc.push(doc);
-              }
-              return acc;
-            }, []);
-    
-            const updatedMessages = state.messages.map((message, index, arr) => {
-              if (index === arr.length - 1 && message.type === 'apiMessage') {
-                const updatedMessage = `${message.message}<br/><br/>
-                <span style="color: red;"><strong>Don't forget to rate the response and leave comments to help debug the application!</strong></span>
-                <br/><br/><span style="color: red;">If the answer is wrong and you know the answer to the question, feel free to add it!</span>`;
-                return { ...message, message: updatedMessage, sourceDocs: deduplicatedDocs, qaId: qaId, isComplete:true };
-              }
-              return message;
-            });
-    
-            return { ...state, messages: updatedMessages };
+              const { sourceDocs, qaId } = response;
+      
+              const deduplicatedDocs = sourceDocs.reduce((acc: DocumentWithMetadata[], doc: DocumentWithMetadata) => {
+                  const sourceURL = doc.metadata.source;
+                  const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
+      
+                  // Check if the source URL contains "SolidWorks SolidCAM"
+                  const isSolidWorksSolidCAM = sourceURL.includes("SolidWorks SolidCAM");
+      
+                  if (isSolidWorksSolidCAM) {
+                      // For "SolidWorks SolidCAM" sources, check if the acc array already contains an item with the same source URL
+                      if (!acc.some((d: DocumentWithMetadata) => d.metadata.source === sourceURL)) {
+                          acc.push(doc);
+                      }
+                  } else {
+                      // For other documents, use the original deduplication logic
+                      if (timestamp && !acc.some((d: DocumentWithMetadata) => d.metadata.source.includes(`t=${timestamp}s`))) {
+                          acc.push(doc);
+                      } else if (!timestamp) {
+                          acc.push(doc);
+                      }
+                  }
+      
+                  return acc;
+              }, []);
+      
+              const updatedMessages = state.messages.map((message, index, arr) => {
+                  if (index === arr.length - 1 && message.type === 'apiMessage') {
+                      const updatedMessage = `${message.message}<br/><br/>
+                      <span style="color: red;"><strong>Don't forget to rate the response and leave comments to help debug the application!</strong></span>
+                      <br/><br/><span style="color: red;">If the answer is wrong and you know the answer to the question, feel free to add it!</span>`;
+                      return { ...message, message: updatedMessage, sourceDocs: deduplicatedDocs, qaId: qaId, isComplete:true };
+                  }
+                  return message;
+              });
+      
+              return { ...state, messages: updatedMessages };
           });
-        };
+      };
+      
     
         socket.on(responseEventName, handleFullResponse);
     
@@ -627,8 +640,9 @@ export default function Home() {
               )}
             </main>
           </div>
-          <footer className="m-auto p-4">
-          </footer>
+        <footer className="m-auto p-4 text-center">
+          © 2024 SolidCAM™. All rights reserved.
+        </footer>
         </Layout>
         <RemarksModal
           isOpen={isModalOpen}
