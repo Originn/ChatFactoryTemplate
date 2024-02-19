@@ -128,6 +128,11 @@ body.dark .Home_textarea__k243o{
 body.dark .h-4 w-4 transition-transform duration-200{
     color: #ffffff;
 }
+
+body.dark .footer {
+    color: #ffffff;
+}
+
 body.dark .Home_messagelist__wIt78::placeholder {
     color: black;
 }
