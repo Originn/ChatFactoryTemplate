@@ -10,7 +10,6 @@ import LoadingDots from '@/components/ui/LoadingDots';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import styles from '@/styles/Home.module.css';
 import { Message } from '@/types/chat';
-import { MyDocument } from 'utils/GCSLoader';
 
 type RequestsInProgressType = {
   [key: string]: boolean;
