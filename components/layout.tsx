@@ -11,16 +11,11 @@ interface LayoutProps {
 
 export default function Layout({ children, theme, toggleTheme }: LayoutProps) {
   const { user } = useUser(); // Add this line to get user information
-  let sunIcon = '/icons8-sun.svg';
-  let moonIcon = '/icons8-moon-50.png';
   return (
     <div className={`mx-auto flex flex-col space-y-4 ${theme === 'dark' ? 'dark' : ''}`}>
       <header className={`w-full sticky top-0 z-40 ${theme === 'light' ? 'bg-white' : 'bg-dark-header'}`}>
         <div className="h-16 border-b border-b-slate-200 py-4">
           <nav className="ml-4 pl-6 flex items-center justify-start">
-            <a href="/" className="hover:text-slate-600 cursor-pointer">
-              Home
-            </a>
             <button onClick={toggleTheme} className="bg-gray-200 dark:bg-gray-600 p-2 rounded-full ml-4">
               {theme === 'dark' ? (
                 // Use Image component for Moon icon
