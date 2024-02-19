@@ -9,6 +9,14 @@ interface LayoutProps {
   toggleTheme: () => void;
 }
 
+const PRODUCTION_ENV = 'production';
+const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
+let moonIcon = '/icons8-moon-50.png';
+
+if (process.env.NODE_ENV === PRODUCTION_ENV) {
+  moonIcon = `${PRODUCTION_URL}icons8-moon-50.png`;
+}
+
 export default function Layout({ children, theme, toggleTheme }: LayoutProps) {
   const { user } = useUser(); // Add this line to get user information
   return (
@@ -22,7 +30,7 @@ export default function Layout({ children, theme, toggleTheme }: LayoutProps) {
                 <Image src="icons8-sun.svg" alt="Sun Icon" width={24} height={24} />
               ) : (
                 // Use Image component for Sun icon
-                <Image src="/icons8-moon-50.png" alt="Moon Icon" width={24} height={24} />
+                <Image src={moonIcon} alt="Moon Icon" width={24} height={24} />
               )}
             </button>
             {user && (
