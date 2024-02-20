@@ -96,6 +96,7 @@ export default function Home() {
     const [errorreact, setError] = useState<string | null>(null);
     const [roomId, setRoomId] = useState<string | null>(null);
     const [userHasScrolled, setUserHasScrolled] = useState(false);
+    const [feedbackType, setFeedbackType] = useState('');
     const [messageState, setMessageState] = useState<{
         messages: Message[];
         history: [string, string][];
@@ -420,10 +421,12 @@ export default function Home() {
     // Component: FeedbackComponent
     const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ messageIndex }) => {
       const handleOpenModal = (type: string) => {
-          setActiveMessageIndex(messageIndex);
-          handleFeedback(messageIndex, type);
-          setIsModalOpen(true);
+        setActiveMessageIndex(messageIndex);
+        setFeedback(prev => ({ ...prev, [messageIndex]: { ...prev[messageIndex], type } }));
+        setFeedbackType(type); // Set the feedback type
+        setIsModalOpen(true);
       };
+      
   
       return (
         <div className="feedback-container">
@@ -457,35 +460,67 @@ export default function Home() {
 
   // Component: RemarksModal
   const RemarksModal: React.FC<{
-    isOpen: boolean;
-    onClose: () => void;
-    messageIndex: number | null;
-    onSubmit: (messageIndex: number | null, remark: string) => void;
-  }> = ({ isOpen, onClose, messageIndex, onSubmit }) => {
+    isOpen: boolean,
+    onClose: () => void,
+    messageIndex: number | null,
+    onSubmit: (messageIndex: number | null, remark: string) => void,
+    feedbackType: string, // Add this prop
+  }> = ({ isOpen, onClose, messageIndex, onSubmit, feedbackType }) => {
     const [remark, setRemark] = useState('');
   
+    // Conditional text based on feedback type
+    let modalText = "What do you like about the response?";
+    if (feedbackType === 'down') {
+      modalText = "What didn't you like about the response?";
+    } else if (feedbackType === 'comment') {
+      modalText = "Please leave your comment:";
+    }
+  
+    // Choose the appropriate icon based on the feedback type
+    let iconSrc;
+    switch (feedbackType) {
+      case 'up':
+        iconSrc = thumbUpIcon;
+        break;
+      case 'down':
+        iconSrc = thumbDownIcon;
+        break;
+      case 'comment':
+        iconSrc = commentIcon;
+        break;
+      default:
+        iconSrc = ''; // default case, no icon
+    }
+  
     const submitRemark = () => {
-      //console.log("Submitting remark for activeMessageIndex", activeMessageIndex);
-      if (activeMessageIndex != null) {
-        handleSubmitRemark(activeMessageIndex, remark);
+      if (messageIndex != null) {
+        onSubmit(messageIndex, remark);
         setRemark('');  // Clear the remark
       }
       onClose(); // Close the modal after submission
     };
   
     if (!isOpen) return null;
-  
+    const iconStyle = {
+      filter: 'brightness(0) invert(1)', // Makes black icons white
+    };
     return (
       <div className="modal-backdrop">
         <div className="modal">
           <div className="modal-header">
+            {/* Conditionally render the icon if iconSrc is set */}
+            {iconSrc && (
+              <span style={{ marginRight: '10px' }}>
+                <Image src={iconSrc} alt="Feedback Icon" width={24} height={24} style={iconStyle}/>
+              </span>
+            )}
             <h2>Provide additional feedback</h2>
             <span className="close" onClick={onClose}>&times;</span>
           </div>
           <div className="modal-body">
-            <p>What do you like about the response?</p>
-            <textarea 
-              placeholder="Your remarks..." 
+            <p>{modalText}</p>
+            <textarea
+              placeholder="Your remarks..."
               value={remark}
               onChange={(e) => setRemark(e.target.value)}
             ></textarea>
@@ -497,6 +532,8 @@ export default function Home() {
       </div>
     );
   };
+  
+  
 
   if (isLoading) return <div></div>;
   if (error) return <div>{error.message}</div>;
@@ -691,6 +728,7 @@ export default function Home() {
           onClose={() => setIsModalOpen(false)}
           messageIndex={activeMessageIndex}
           onSubmit={handleSubmitRemark}
+          feedbackType={feedbackType} // Pass the feedback type
         />
       </>
     )
