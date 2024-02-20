@@ -33,12 +33,14 @@ let imageUrlUserIcon = '/usericon.png';
 let botimageIcon = '/bot-image.png';
 let thumbUpIcon = '/icons8-thumb-up-50.png'
 let thumbDownIcon = '/icons8-thumbs-down-50.png'
+let commentIcon = '/icons8-message-50.png';
 
 if (process.env.NODE_ENV === PRODUCTION_ENV) {
   imageUrlUserIcon = `${PRODUCTION_URL}usericon.png`;
   botimageIcon = `${PRODUCTION_URL}bot-image.png`;
   thumbUpIcon = `${PRODUCTION_URL}icons8-thumb-up-50.png`
   thumbDownIcon = `${PRODUCTION_URL}icons8-thumbs-down-50.png`
+  commentIcon = `${PRODUCTION_URL}icons8-message-50.png`
 }
 
 // Utility Functions
@@ -63,6 +65,24 @@ function addHyperlinksToPageNumbers(content: string, source: string): string {
     return `<a href="${link}" target="_blank" rel="noopener noreferrer" style="color: blue;">${match}</a>`;
   });
 }
+
+// Tooltip component definition
+interface TooltipProps {
+  message: string;
+  children: React.ReactNode;
+}
+
+// Tooltip component definition
+const Tooltip: React.FC<TooltipProps> = ({ message, children }) => {
+  return (
+      <div className="tooltip-container" style={{ position: 'relative', display: 'inline-block' }}>
+          {children}
+          <div className="tooltip-content">
+              {message}
+          </div>
+      </div>
+  );
+};
 
 
 // Component: Home
@@ -406,14 +426,31 @@ export default function Home() {
       };
   
       return (
-          <div className="feedback-container">
-              <button onClick={() => handleOpenModal('up')}>
-                  <Image src={thumbUpIcon} alt="Thumb Up" width={24} height={24} />
-              </button>
-              <button onClick={() => handleOpenModal('down')}>
-                  <Image src={thumbDownIcon} alt="Thumb Down" width={24} height={24} />
-              </button>
-          </div>
+        <div className="feedback-container">
+        <div className="tooltip-container up"> {/* Add 'up' class for Thumb Up button */}
+          <Tooltip message="Give positive feedback">
+            <button onClick={() => handleOpenModal('up')}>
+              <Image src={thumbUpIcon} alt="Thumb Up" width={20} height={20} />
+            </button>
+          </Tooltip>
+        </div>
+      
+        <div className="tooltip-container down"> {/* Add 'down' class for Thumb Down button */}
+          <Tooltip message="Give negative feedback">
+            <button onClick={() => handleOpenModal('down')}>
+              <Image src={thumbDownIcon} alt="Thumb Down" width={20} height={20} />
+            </button>
+          </Tooltip>
+        </div>
+      
+        <div className="tooltip-container comment"> {/* Add 'comment' class for Comment button */}
+          <Tooltip message="Add a comment">
+            <button onClick={() => handleOpenModal('comment')}>
+              <Image src={commentIcon} alt="Comment" width={20} height={20} />
+            </button>
+          </Tooltip>
+        </div>
+      </div>      
       );
   };
   
