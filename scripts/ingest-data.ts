@@ -5,7 +5,7 @@ import { PineconeStore } from '@langchain/pinecone';
 import { getPinecone } from '@/utils/pinecone-client';
 import GCSLoader from '@/utils/GCSLoader';
 import { PINECONE_NAME_SPACE } from '@/config/pinecone';
-import { waitForUserInput, extractFirstTimestampInSeconds, extractYouTubeLink, extractSentinalLink } from '@/utils/textsplitter'
+import { waitForUserInput, extractFirstTimestampInSeconds, extractYouTubeLink, extractSentinalLinkFromMetaDataSource } from '@/utils/textsplitter'
 
 import { get_encoding, encoding_for_model } from 'tiktoken';
 
@@ -213,7 +213,7 @@ export const run = async () => {
         if (doc.pageHeader) {
           // Process as webinar document
           const youtubeLink = extractYouTubeLink(doc.metadata.source);
-          const sentinalLink = extractSentinalLink(doc.metadata.source);
+          const sentinalLink = extractSentinalLinkFromMetaDataSource(doc.metadata.source);
           if (youtubeLink) {
             let initialHeader = '';
             if (doc.pageHeader && doc.pageHeader.includes('|')) {
