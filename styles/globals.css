@@ -288,6 +288,7 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
 .tooltip-container {
     display: inline-block; /* or 'inline-flex' if you need flex properties */
     position: relative; /* This establishes the nearest positioned ancestor for absolute positioning */
+    margin: 0 2px;
   }
   
   .tooltip-container:hover .tooltip-content {
