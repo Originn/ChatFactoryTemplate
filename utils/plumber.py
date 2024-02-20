@@ -784,7 +784,7 @@ def extract_and_format_pdf_solidcam_forum(pdf_path):
 
                 for char in chars:
                     if not header_found:
-                        if char['size'] > 35 and ("DIN2014" in char['fontname'] or "Oranienbaum" in char['fontname']):
+                        if char['size'] > 35 and ("DIN2014" in char['fontname'] or "Oranienbaum" in char['fontname'] or 'CenturyGothic' in char['fontname']):
                             first_header_part += char['text']
 
                 # Set the combined header if it has not been set yet
@@ -857,13 +857,15 @@ if __name__ == "__main__":
             elif 'solidcam_2023_application' in pdf_path.lower():
                 pages_ = extract_and_format_pdf_solidcam_2023_application(pdf_path)
             elif 'solidcam_forum' in pdf_path.lower():
+                # font_details_list = extract_font_details_first_page(pdf_path, 0)
+                # print(font_details_list)
+                # input()
                 pages_ = extract_and_format_pdf_solidcam_forum(pdf_path)
             elif 'faq_imachining' in pdf_path.lower():
                 pages_ = extract_and_format_pdf_faq_imachining(pdf_path)
             elif 'toolkit_reference' in pdf_path.lower():
-                # font_details_list = extract_font_details_first_page(pdf_path, 50)
-                # print(font_details_list)
-                # input()
+                
+                
                 pages_ = extract_and_format_pdf_Toolkit_reference(pdf_path)
         # print(pages_with_home)
         # input()

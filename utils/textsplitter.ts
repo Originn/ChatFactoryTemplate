@@ -156,12 +156,36 @@ export function extractYouTubeLink(content: string): string | null {
     return youtubeMatch ? youtubeMatch[0] : null;
   }
   
-  export function extractSentinalLink(content: string): string | null {
+  export function extractSentinalLinkFromMetaDataSource(content: string): string | null {
     // Match URLs starting with 'https://sentinel.solidcam.com' or 'https://forms.solidcam.com'
     // Followed by any character sequence (or none), ending with .html, .pdf, .com, or the domain itself
     const solidcamMatch = content.match(/https:\/\/(sentinel|forms)\.solidcam\.com(\/[a-zA-Z0-9\/_.-]*)(\.html|\.pdf|\.com)?/);
     return solidcamMatch ? solidcamMatch[0] : null;
 }
+  export function extractSentinalLink(jsonContent: string): string | null {
+    // Parse the JSON content
+    const documents = JSON.parse(jsonContent);
+  
+    // Find the content for page_number 1
+    const pageOneContent = documents.find((doc: any) => doc.contents.some((content: any) => content.page_number === 1));
+  
+    if (!pageOneContent) {
+      return null; // Page number 1 not found
+    }
+  
+    // Extract the PageContent for page_number 1
+    const pageContent = pageOneContent.contents.find((content: any) => content.page_number === 1).PageContent;
+  
+    // Split the PageContent into lines and take the first two lines
+    const firstTwoLines = pageContent.split('\n').slice(0, 2).join('\n');
+  
+    // Match URLs starting with 'https://sentinel.solidcam.com' or 'https://forms.solidcam.com'
+    const solidcamMatch = firstTwoLines.match(/https:\/\/(sentinel|forms)\.solidcam\.com(\/[a-zA-Z0-9\/_.-]*)(\.html|\.pdf|\.com)?/);
+  
+    return solidcamMatch ? solidcamMatch[0] : null;
+  }
+  
+  
 
 
   export function extractFirstTimestampInSeconds(content: string): number | null {

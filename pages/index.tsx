@@ -11,6 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import styles from '@/styles/Home.module.css';
 import { Message } from '@/types/chat';
 
+
 type RequestsInProgressType = {
   [key: string]: boolean;
 };
@@ -30,10 +31,14 @@ const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
 // Image URLs
 let imageUrlUserIcon = '/usericon.png';
 let botimageIcon = '/bot-image.png';
+let thumbUpIcon = '/icons8-thumb-up-50.png'
+let thumbDownIcon = '/icons8-thumbs-down-50.png'
 
 if (process.env.NODE_ENV === PRODUCTION_ENV) {
   imageUrlUserIcon = `${PRODUCTION_URL}usericon.png`;
   botimageIcon = `${PRODUCTION_URL}bot-image.png`;
+  thumbUpIcon = `${PRODUCTION_URL}icons8-thumb-up-50.png`
+  thumbDownIcon = `${PRODUCTION_URL}icons8-thumbs-down-50.png`
 }
 
 // Utility Functions
@@ -307,10 +312,8 @@ export default function Home() {
       
               const updatedMessages = state.messages.map((message, index, arr) => {
                   if (index === arr.length - 1 && message.type === 'apiMessage') {
-                      const updatedMessage = `${message.message}<br/><br/>
-                      <span style="color: red;"><strong>Don't forget to rate the response and leave comments to help debug the application!</strong></span>
-                      <br/><br/><span style="color: red;">If the answer is wrong and you know the answer to the question, feel free to add it!</span>`;
-                      return { ...message, message: updatedMessage, sourceDocs: deduplicatedDocs, qaId: qaId, isComplete:true };
+                      
+                      return { ...message, sourceDocs: deduplicatedDocs, qaId: qaId, isComplete:true };
                   }
                   return message;
               });
@@ -396,21 +399,24 @@ export default function Home() {
 
     // Component: FeedbackComponent
     const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ messageIndex }) => {
-        const handleOpenModal = (type: string) => {
-        //console.log("Opening modal for message index", messageIndex);
-        setActiveMessageIndex(messageIndex);
-    
-        handleFeedback(messageIndex, type);
-        setIsModalOpen(true);
-        };
-    
-        return (
-        <div className="feedback-container">
-            <button onClick={() => handleOpenModal('up')}>👍</button>
-            <button onClick={() => handleOpenModal('down')}>👎</button>
-        </div>
-        );
-    };
+      const handleOpenModal = (type: string) => {
+          setActiveMessageIndex(messageIndex);
+          handleFeedback(messageIndex, type);
+          setIsModalOpen(true);
+      };
+  
+      return (
+          <div className="feedback-container">
+              <button onClick={() => handleOpenModal('up')}>
+                  <Image src={thumbUpIcon} alt="Thumb Up" width={24} height={24} />
+              </button>
+              <button onClick={() => handleOpenModal('down')}>
+                  <Image src={thumbDownIcon} alt="Thumb Down" width={24} height={24} />
+              </button>
+          </div>
+      );
+  };
+  
 
   // Component: RemarksModal
   const RemarksModal: React.FC<{
