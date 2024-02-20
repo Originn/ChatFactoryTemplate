@@ -277,3 +277,57 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
   .modal .btn:hover {
     opacity: 1;
   }
+
+
+
+
+.tooltip-container {
+    display: inline-block; /* or 'inline-flex' if you need flex properties */
+    position: relative; /* This establishes the nearest positioned ancestor for absolute positioning */
+  }
+  
+  .tooltip-container:hover .tooltip-content {
+      visibility: visible;
+      opacity: 1;
+      /* Adjust this to move the tooltip below the button */
+      transform: translateX(-50%) translateY(1px);
+      transition: visibility 0.2s, opacity 0.2s, transform 0.2s;
+  }
+  
+  .tooltip-content {
+      visibility: hidden;
+      opacity: 0;
+      width: auto; /* Auto width to fit content, adjust as needed */
+      background-color: rgb(116, 116, 116);
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px 10px;
+      position: absolute;
+      z-index: 1000; /* Ensure it's on top */
+      /* Position the tooltip below the button with a consistent gap */
+      top: 100%; /* Position at the bottom of the button */
+      left: 50%; /* Start from the center of the button */
+      /* Adjust this to center the tooltip below the button */
+      transform: translateX(-50%) translateY(1px);
+      white-space: nowrap; /* Prevent text wrapping */
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.2); /* Optional shadow for better visibility */
+  }
+  
+/* For Thumb Up button */
+.tooltip-container.up .tooltip-content {
+    /* Adjust positioning for Thumb Up tooltip */
+    left: 452%;
+  }
+  
+  /* For Thumb Down button */
+  .tooltip-container.down .tooltip-content {
+    /* Adjust positioning for Thumb Down tooltip */
+    left: 365%;
+  }
+  
+  /* For Comment button */
+  .tooltip-container.comment .tooltip-content {
+    /* Adjust positioning for Comment tooltip */
+    left: 140%;
+  }
