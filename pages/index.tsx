@@ -9,6 +9,7 @@ import LoadingDots from '@/components/ui/LoadingDots';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import styles from '@/styles/Home.module.css';
 import { Message } from '@/types/chat';
+import { auth } from "@/utils/firebase"
 
 
 
@@ -214,66 +215,80 @@ export default function Home() {
         }
     };
 
-    const handleSubmit = async (e: any) => {
-        e.preventDefault();
-        setError(null);
-        if (!query) {
+    const handleSubmit = async (e : any) => {
+      e.preventDefault();
+      setError(null);
+    
+      if (!query) {
         alert('Please input a question');
         return;
-        }
-        
-        if (roomId === null) {
-          console.error('No roomId available');
-          return;
-        }
-
-        if (requestsInProgress[roomId]) {
-          return;
-        }
-
-        setRequestsInProgress(prev => ({ ...prev, [roomId]: true }));
-        setUserHasScrolled(false);
-        setLoading(true);
-        const question = query.trim();
-
-        setMessageState((state) => ({
+      }
+    
+      if (roomId === null) {
+        console.error('No roomId available');
+        return;
+      }
+    
+      if (requestsInProgress[roomId]) {
+        return;
+      }
+    
+      setRequestsInProgress(prev => ({ ...prev, [roomId]: true }));
+      setUserHasScrolled(false);
+      setLoading(true);
+      const question = query.trim();
+    
+      setMessageState((state) => ({
         ...state,
         messages: [
-            ...state.messages,
-            {
+          ...state.messages,
+          {
             type: 'userMessage',
             message: question,
-            isComplete:false,
-            },
+            isComplete: false,
+          },
         ],
         history: [...state.history, [question, ""]],
-        }));
-
-        setQuery('');
-
-        try {
+      }));
+    
+      setQuery('');
+    
+      // Fetch the user ID from the auth object, ensure user is authenticated
+      const userEmail = auth.currentUser ? auth.currentUser.email : null;
+    
+      if (!userEmail) {
+        console.error('User not authenticated');
+        setLoading(false);
+        setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
+        return;
+      }
+    
+      try {
         await fetch('/api/chat', {
-            method: 'POST',
-            headers: {
+          method: 'POST',
+          headers: {
             'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+            // Optionally, include the userId in the Authorization header or within the body
+            'Authorization': userEmail,
+          },
+          body: JSON.stringify({
             question,
             history,
             roomId,
-            }),
+            userEmail, // Including the userId in the body if not using the Authorization header
+          }),
         });
-
-      } catch (errorreact) {
-        setLoading(false);
+    
+      } catch (error) {
         setError('An error occurred while fetching the data. Please try again.');
-        console.log('error', errorreact);
+        console.error('error', error);
       } finally {
         // Reset the request state for the current room
         setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
         setLoading(false);
-    }
+      }
     };
+    
 
     // Effects
 

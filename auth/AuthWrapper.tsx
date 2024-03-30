@@ -1,4 +1,5 @@
-import React, { ReactElement, useEffect, useState, ReactNode } from 'react';
+//auth/AuthWrapper.tsx
+import React, { useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User, applyActionCode } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 
@@ -14,17 +15,13 @@ interface UserState {
   isEmailVerified: boolean;
 }
 
-const AuthWrapper = ({
-  children,
-  showAuthUI = true,
-  bypassAuth = false,
-}: AuthWrapperProps): ReactElement | null => {
+const AuthWrapper: React.FC<AuthWrapperProps> = ({ children, showAuthUI = true, bypassAuth = false }) => {
   const [userState, setUserState] = useState<UserState>({
     isLoading: true,
     isSignedIn: false,
     isEmailVerified: false,
   });
-  const [FirebaseAuthUI, setFirebaseAuthUI] = useState<ReactElement | null>(null);
+  const [FirebaseAuthUI, setFirebaseAuthUI] = useState<ReactNode | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
