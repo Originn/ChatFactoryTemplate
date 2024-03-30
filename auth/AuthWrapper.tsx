@@ -1,6 +1,6 @@
 // auth/AuthWrapper.tsx
-import React, { useEffect, useState, ReactNode } from 'react';
-import { onAuthStateChanged, User, applyActionCode } from 'firebase/auth';
+import React, { ReactElement, useEffect, useState, ReactNode } from 'react';
+import { onAuthStateChanged, applyActionCode } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 
 interface AuthWrapperProps {
@@ -15,11 +15,11 @@ interface UserState {
   isEmailVerified: boolean;
 }
 
-const AuthWrapper: React.FC<AuthWrapperProps> = ({
+const AuthWrapper = ({
   children,
   showAuthUI = true,
   bypassAuth = false,
-}) => {
+}: AuthWrapperProps): ReactElement | null => {
   const [userState, setUserState] = useState<UserState>({
     isLoading: true,
     isSignedIn: false,
@@ -65,7 +65,7 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({
 
   if (userState.isLoading) return <div>Loading...</div>;
   if (bypassAuth) return <>{children}</>;
-  if (!userState.isSignedIn) return showAuthUI ? FirebaseAuthUI || <div>Loading...</div> : <div>Please sign in.</div>;
+  if (!userState.isSignedIn) return FirebaseAuthUI ? <>{FirebaseAuthUI}</> : <div>Please sign in.</div>;
   if (!userState.isEmailVerified) return <div>Please verify your email to access the content.</div>;
 
   return <>{children}</>;
