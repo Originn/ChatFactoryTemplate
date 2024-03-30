@@ -11,6 +11,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { insertQA } from '../db';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { HumanMessage } from "@langchain/core/messages";
+import { auth } from 'utils/firebase';
+
+
 
 // Type Definitions
 type SearchResult = [MyDocument, number];
@@ -143,7 +146,8 @@ const TRANSLATION_PROMPT = `Translate the following text to English. Try to tran
 const LANGUAGE_DETECTION_PROMPT = `Detect the language of the following text and respond with the language name only, nothing else:\n\nText: "{text}"`;
 const TEMPRATURE = parseFloat(process.env.TEMPRATURE || "0");
 
-export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void) => {
+export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void, userEmail: string) => {
+  
   const streamingModel = new OpenAI({
     streaming: true,
     modelName: MODEL_NAME,
@@ -172,7 +176,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     return uuidv4();
   }
   return {
-    call: async (question: string, Documents: MyDocument[], roomId: string) => {
+    call: async (question: string, Documents: MyDocument[], roomId: string, userEmail: string) => {
       const qaId = generateUniqueId();
 
       if (!roomMemories[roomId]) {
@@ -279,8 +283,10 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         });
       }
       
+      console.log('userEmail:', userEmail);
 
-      await insertQA(question, responseText.text, responseText.sourceDocuments, Documents, qaId, roomId, 'email');
+
+      await insertQA(question, responseText.text, responseText.sourceDocuments, Documents, qaId, roomId, userEmail);
     
       let totalScore = 0;
       let count = 0;

@@ -1,5 +1,6 @@
+// utils/firebase.ts
 import { initializeApp } from 'firebase/app';
-import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getAuth, setPersistence, browserSessionPersistence } from 'firebase/auth';
 
 // Your Firebase configuration object from your Firebase project settings
 const firebaseConfig = {
@@ -17,10 +18,10 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase Auth and set persistence
 const auth = getAuth(app);
 
-// Set the session persistence to Local
-setPersistence(auth, browserLocalPersistence)
+// Set the session persistence
+setPersistence(auth, browserSessionPersistence)
   .then(() => {
-    // Persistence is set to Local. Future sign-in requests will keep users logged in across sessions.
+    // Persistence is set. Future sign-in requests will use the session persistence.
   })
   .catch((error) => {
     // Handle errors

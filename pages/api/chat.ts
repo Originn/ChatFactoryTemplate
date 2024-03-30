@@ -1,3 +1,4 @@
+//pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
@@ -12,7 +13,7 @@ export default async function handler(
 ) {
   let roomIdError = false;
 
-  const { question, roomId } = req.body;
+  const { question, roomId, userEmail } = req.body;
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -39,6 +40,7 @@ export default async function handler(
     );
 
     // Initialize chain for API calls, also define token handling through io instance
+    
     const chain = makeChain(vectorStore, (token) => {
       // If a room ID exists, emit the new token to the specific room. Otherwise, emit to all.
       if (roomId) {
@@ -46,10 +48,10 @@ export default async function handler(
       } else {
         roomIdError = true;
       }
-    });
+    }, userEmail);
 
     // Make the API call using the chain, passing in the sanitized question, scored documents, and room ID
-    let Documents = await chain.call(sanitizedQuestion, [], roomId);
+    let Documents = await chain.call(sanitizedQuestion, [], roomId, userEmail);
 
     //If room ID is specified, emit the response to that room. Otherwise, emit to all.
     if (roomIdError) {
