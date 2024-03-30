@@ -1,4 +1,4 @@
-//auth/AuthWrapper.tsx
+// auth/AuthWrapper.tsx
 import React, { useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User, applyActionCode } from 'firebase/auth';
 import { auth } from 'utils/firebase';
@@ -15,7 +15,11 @@ interface UserState {
   isEmailVerified: boolean;
 }
 
-const AuthWrapper: React.FC<AuthWrapperProps> = ({ children, showAuthUI = true, bypassAuth = false }) => {
+const AuthWrapper: React.FC<AuthWrapperProps> = ({
+  children,
+  showAuthUI = true,
+  bypassAuth = false,
+}) => {
   const [userState, setUserState] = useState<UserState>({
     isLoading: true,
     isSignedIn: false,
@@ -25,19 +29,11 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children, showAuthUI = true, 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUserState({
-          isLoading: false,
-          isSignedIn: true,
-          isEmailVerified: user.emailVerified,
-        });
-      } else {
-        setUserState({
-          isLoading: false,
-          isSignedIn: false,
-          isEmailVerified: false,
-        });
-      }
+      setUserState({
+        isLoading: false,
+        isSignedIn: !!user,
+        isEmailVerified: user ? user.emailVerified : false,
+      });
     });
 
     if (showAuthUI) {
@@ -67,21 +63,10 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children, showAuthUI = true, 
     handleEmailVerification();
   }, []);
 
-  if (userState.isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (bypassAuth) {
-    return <>{children}</>;
-  }
-
-  if (!userState.isSignedIn) {
-    return showAuthUI ? FirebaseAuthUI || <div>Loading...</div> : <div>Please sign in.</div>;
-  }
-
-  if (!userState.isEmailVerified) {
-    return <div>Please verify your email to access the content.</div>;
-  }
+  if (userState.isLoading) return <div>Loading...</div>;
+  if (bypassAuth) return <>{children}</>;
+  if (!userState.isSignedIn) return showAuthUI ? FirebaseAuthUI || <div>Loading...</div> : <div>Please sign in.</div>;
+  if (!userState.isEmailVerified) return <div>Please verify your email to access the content.</div>;
 
   return <>{children}</>;
 };
