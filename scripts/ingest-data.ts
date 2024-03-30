@@ -159,7 +159,7 @@ function removeDuplicatedSections(content: string, header: string): string {
   
       if (numberMatches) {
           // Convert all matches to numbers and find the largest one
-          const numbers = numberMatches.map(match => parseInt(match.match(/\d+/)[0], 10));
+          const numbers = numberMatches.map((match : any) => parseInt(match.match(/\d+/)[0], 10));
           const largestNumber = Math.max(...numbers);
           lastNumberFound = largestNumber; // Update lastNumberFound with the largest number found
       } else {
