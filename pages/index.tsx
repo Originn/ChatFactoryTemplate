@@ -1,6 +1,5 @@
 //index.tsx
 import React, { useRef, useState, useEffect } from 'react';
-import { useUser } from '@auth0/nextjs-auth0/client';
 import { io } from "socket.io-client";
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
@@ -10,6 +9,8 @@ import LoadingDots from '@/components/ui/LoadingDots';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import styles from '@/styles/Home.module.css';
 import { Message } from '@/types/chat';
+
+
 
 
 type RequestsInProgressType = {
@@ -55,16 +56,16 @@ function getTitleByDocType(docType: string): string {
   }
 }
 
-function addHyperlinksToPageNumbers(content: string, source: string): string {
-  const regex = /\((\d+)\)/g;
-  return content.replace(regex, (match, pageNumber) => {
-    let link = `${source}#page=${pageNumber}`;
-    if (link.includes('&')) {
-      link = link.replace(/&/g, 'and');
-    }
-    return `<a href="${link}" target="_blank" rel="noopener noreferrer" style="color: blue;">${match}</a>`;
-  });
-}
+// function addHyperlinksToPageNumbers(content: string, source: string): string {
+//   const regex = /\((\d+)\)/g;
+//   return content.replace(regex, (match, pageNumber) => {
+//     let link = `${source}#page=${pageNumber}`;
+//     if (link.includes('&')) {
+//       link = link.replace(/&/g, 'and');
+//     }
+//     return `<a href="${link}" target="_blank" rel="noopener noreferrer" style="color: blue;">${match}</a>`;
+//   });
+// }
 
 // Tooltip component definition
 interface TooltipProps {
@@ -88,7 +89,6 @@ const Tooltip: React.FC<TooltipProps> = ({ message, children }) => {
 // Component: Home
 export default function Home() {
     // State Hooks
-    const { user, error, isLoading } = useUser();
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [query, setQuery] = useState<string>('');
     const [requestsInProgress, setRequestsInProgress] = useState<RequestsInProgressType>({});
@@ -533,13 +533,8 @@ export default function Home() {
     );
   };
   
-  
-
-  if (isLoading) return <div></div>;
-  if (error) return <div>{error.message}</div>;
 
   // Main Render
-  if (user) {
     return (
       <>
         <Layout theme={theme} toggleTheme={toggleTheme}>
@@ -589,14 +584,14 @@ export default function Home() {
                       <div className={className}>
                         {icon}
                         <div className={styles.markdownanswer} ref={answerStartRef}>
-                        <ReactMarkdown
-                          rehypePlugins={[rehypeRaw as any]}
-                          components={{
-                            a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
-                          }}
-                        >
-                          {message.message}
-                        </ReactMarkdown>
+                          <ReactMarkdown
+                            rehypePlugins={[rehypeRaw as any]}
+                            components={{
+                              a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                            }}
+                          >
+                            {message.message}
+                          </ReactMarkdown>
                         </div>
                       </div>
                       {message.sourceDocs && (
@@ -643,10 +638,28 @@ export default function Home() {
                                             {
                                               doc.metadata && doc.metadata.source
                                               ? (() => {
-                                                  // Extract the first page number from the content
-                                                  const match = doc.pageContent.match(/\((\d+)\)/);
-                                                  const pageNumber = match ? match[1] : null;
-                                                  const pageLink = pageNumber ? `${doc.metadata.source}#page=${pageNumber}` : doc.metadata.source;
+                                                // Extract all page numbers from the content
+                                                const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
+
+                                                // Find the largest page number mentioned
+                                                const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
+
+                                                // Filter for numbers within 2 pages of the largest number, if it exists
+                                                let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
+
+                                                // From the filtered numbers, find the smallest one to use in the link
+                                                let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
+
+                                                // If no suitable number is found within 2 pages of the largest, decide on fallback strategy
+                                                // For example, using the largest number or another logic
+                                                if (smallestPageNumberInRange === null && largestPageNumber !== null) {
+                                                    // Fallback strategy here
+                                                    // This example simply uses the largest number
+                                                    smallestPageNumberInRange = largestPageNumber;
+                                                }
+
+                                                const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
+
                                                   return <a href={pageLink} target="_blank" rel="noopener noreferrer">View Page</a>;
                                                 })()
                                               : 'Unavailable'
@@ -733,12 +746,6 @@ export default function Home() {
       </>
     )
   }
-  if (typeof window !== 'undefined') {
-    window.location.href = "/api/auth/login";
-    return null;
-  }
-  return null;
-};
 
 // Supporting Interfaces
 interface FeedbackState {

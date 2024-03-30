@@ -1,23 +1,24 @@
-//pages/_app.tsx
-
+// pages/_app.tsx
 import '@/styles/base.css';
 import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
-import { Inter } from 'next/font/google';
-import { UserProvider } from '@auth0/nextjs-auth0/client';
-
-const inter = Inter({
-  variable: '--font-inter',
-  subsets: ['latin'],
-});
+import AuthWrapper from '../auth/AuthWrapper'; 
+import { useRouter } from 'next/router';
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+
   return (
-    <UserProvider>
-      <main className={inter.variable}>
-        <Component {...pageProps} />
-      </main>
-    </UserProvider>
+    <>
+      {/* Only wrap protected pages in AuthWrapper */}
+      {router.pathname !== '/verify-email' ? ( 
+        <AuthWrapper>
+          <Component {...pageProps} />
+        </AuthWrapper>
+      ) : ( 
+        <Component {...pageProps} /> 
+      )}
+    </>
   );
 }
 

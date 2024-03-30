@@ -170,17 +170,34 @@ class GCSLoader {
                     // Flatten the grouped content into the documents array
                     for (let [header, data] of Object.entries(groupedContent)) {
                         const concatenatedContent = data.contents.join(' '); // Concatenate all content for this header
-                        documents.push({
-                            pageHeader: header,
-                            pageContent: concatenatedContent,
-                            metadata: {
+                        let metadata; // Declare metadata variable
+
+                        // Check if the header contains "General_FAQ"
+                        if (header.includes('General_FAQ')) {
+                            // If so, set videoLink, source, and uploadDate to null
+                            metadata = {
+                                source: null,
+                                videoLink: null,
+                                uploadDate: null,
+                                file: data.file
+                            };
+                        } else {
+                            // Otherwise, proceed as normal
+                            metadata = {
                                 source: data.source,
                                 videoLink: data.source.includes('youtube') ? data.source : null,
                                 uploadDate: data.source.includes('youtube') ? data.uploadDate : null,
                                 file: data.file
-                            },
+                            };
+                        }
+
+                        documents.push({
+                            pageHeader: header,
+                            pageContent: concatenatedContent,
+                            metadata: metadata,
                         });
                     }
+
                 }
             }
         }

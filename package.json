@@ -15,8 +15,6 @@
     "export": "next export"
   },
   "dependencies": {
-    "@auth0/auth0-react": "^2.2.3",
-    "@auth0/nextjs-auth0": "^3.4.0",
     "@google-cloud/storage": "^6.12.0",
     "@langchain/pinecone": "^0.0.1",
     "@microsoft/fetch-event-source": "^2.0.1",
@@ -25,6 +23,8 @@
     "clsx": "^1.2.1",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
+    "firebase": "^10.6.0",
+    "firebaseui": "^6.1.0",
     "langchain": "^0.1.9",
     "lucide-react": "^0.125.0",
     "natural": "^6.7.2",
@@ -59,7 +59,7 @@
   },
   "engines": {
     "node": ">=18",
-    "npm": "9.8.0"
+    "npm": "10.1.0"
   },
   "browser": {
     "fs": false,

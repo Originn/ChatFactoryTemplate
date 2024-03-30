@@ -12,12 +12,18 @@ import { get_encoding, encoding_for_model } from 'tiktoken';
 let encoding =  get_encoding("cl100k_base")
  encoding = encoding_for_model("gpt-3.5-turbo");
 
-function determineSourceType(url: string): string {
-    if (url.includes('youtube')) return 'youtube';
-    if (url.includes('sentinel')) return 'sentinel';
-    if (url.includes('.pdf')) return 'pdf';
-    return 'other';  // Default if neither match
+ function determineSourceType(url: string | null): string {
+  // Check if url is truthy (not null or undefined) before proceeding
+  if (!url) {
+      return 'txt'; // Return 'unknown' or another appropriate default value if url is null or undefined
+  }
+
+  if (url.includes('youtube')) return 'youtube';
+  if (url.includes('sentinel')) return 'sentinel';
+  if (url.includes('.pdf')) return 'pdf';
+  return 'other';  // Default if neither match
 }
+
 
 function removeDuplicateContent(text: string, compareLength: number = 100): string {
     // Use the first 'compareLength' characters of the text for comparison.
@@ -146,27 +152,29 @@ function removeDuplicatedSections(content: string, header: string): string {
 
     // Iterate through the documents in reverse order
     for (let i = cleanProcessedDocs.length - 1; i >= 0; i--) {
-        const doc = cleanProcessedDocs[i];
-        const content = doc.pageContent;
-        const numberMatch = content.match(/\((\d+)\)/g);
-
-        if (numberMatch) {
-            // Found a number at the end of this document
-            const currentNumber = numberMatch;
-
-            if (lastNumberFound === null || currentNumber < lastNumberFound) {
-                // Update lastNumberFound if it's null or current number is smaller
-                lastNumberFound = currentNumber;
-            }
-        } else if (lastNumberFound !== null && i !== cleanProcessedDocs.length - 1) {
-            // Append the last found number to the previous document if this one doesn't end with a number
-            // and it's not the last document in the array
-            cleanProcessedDocs[i].pageContent += ` ${lastNumberFound}`;
-        }
-    }
+      const doc = cleanProcessedDocs[i];
+      const content = doc.pageContent;
+      // Search for numbers surrounded by parentheses, capturing all occurrences
+      const numberMatches = content.match(/\((\d+)\)/g);
+  
+      if (numberMatches) {
+          // Convert all matches to numbers and find the largest one
+          const numbers = numberMatches.map(match => parseInt(match.match(/\d+/)[0], 10));
+          const largestNumber = Math.max(...numbers);
+          lastNumberFound = largestNumber; // Update lastNumberFound with the largest number found
+      } else {
+          // If no number is found in the current document's content and we have a lastNumberFound,
+          // append it to the pageContent of the current document
+          if (lastNumberFound !== null) {
+              cleanProcessedDocs[i].pageContent += ` (${lastNumberFound})`;
+          }
+      }
+  }
 
     return cleanProcessedDocs;
 }
+
+
 
 
 export const run = async () => {
@@ -263,15 +271,19 @@ export const run = async () => {
             if (doc.pageHeader.includes('|')) {
               // If the page header contains '|', split it at ' | ', 
               // trim the parts, and reformat it with ' ****' and '****' added
-              if (doc.pageHeader) {
-                  const parts = doc.pageHeader.split(' | ');
-                  const firstPart = parts[0].trim();
-                  const remainingParts = parts.slice(1).join(' ').trim();
-                  initialHeader = firstPart + ' ****' + remainingParts + '****\n\n---\n\n';
-              } else {
-                  // If the page header is not defined, use the default header
-                  initialHeader = 'Default Header\n\n---\n\n';
-              }
+              if (doc.pageHeader && doc.pageHeader.includes('|')) {
+                // If the page header contains '|', directly split at the first occurrence
+                // Find the index of the first '|' to split correctly
+                const index = doc.pageHeader.indexOf('|');
+                const firstPart = doc.pageHeader.substring(0, index).trim();
+                // Get everything after the first '|' including other '|' characters
+                const remainingParts = doc.pageHeader.substring(index + 1).trim().replace(/\|/g, '>');
+        
+                initialHeader = firstPart + ' ****' + remainingParts + '****\n\n---\n\n';
+            } else {
+                // If the page header does not contain '|', or if doc.pageHeader is undefined or empty
+                initialHeader = 'Default Header\n\n---\n\n';
+            }
           } else {
               // If the page header does not contain '|', 
               // check if the page header is defined
