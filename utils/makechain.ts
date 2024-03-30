@@ -282,9 +282,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           qaId: qaId
         });
       }
-      
-      console.log('userEmail:', userEmail);
-
 
       await insertQA(question, responseText.text, responseText.sourceDocuments, Documents, qaId, roomId, userEmail);
     
