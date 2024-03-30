@@ -2,15 +2,29 @@
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/utils/plumber.py",
-            "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/solidcam_forum/How to activate your SolidCAM USB Dongle Key.pdf"],
-            "console": "integratedTerminal"
-        }
-    ]
-}
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Python: Current File",
+                "type": "python",
+                "request": "launch",
+                "program": "${workspaceFolder}/utils/plumber.py",
+                "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/w/General_FAQ.txt"],
+                "console": "integratedTerminal"
+            },
+            {
+                "type": "pwa-chrome",
+                "request": "launch",
+                "name": "Launch Chrome against localhost",
+                "url": "http://localhost:3000",
+                "webRoot": "${workspaceFolder}",
+                "sourceMapPathOverrides": {
+                    "webpack://_N_E/./*": "${webRoot}/*",
+                    "webpack://_N_E/./src/*": "${webRoot}/*",
+                    "webpack://_N_E/*": "*",
+                    "webpack:///./~/*": "${webRoot}/node_modules/*"
+                }
+            }
+        ]
+    }
+    

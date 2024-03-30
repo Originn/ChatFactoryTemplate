@@ -172,8 +172,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     return uuidv4();
   }
   return {
-    call: async (question: string, Documents: MyDocument[], roomId: string, session: any) => {
-      const userEmail = session?.user?.email || 'unknown';
+    call: async (question: string, Documents: MyDocument[], roomId: string) => {
       const qaId = generateUniqueId();
 
       if (!roomMemories[roomId]) {
@@ -281,7 +280,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       }
       
 
-      await insertQA(question, responseText.text, responseText.sourceDocuments, Documents, qaId, roomId, userEmail);
+      await insertQA(question, responseText.text, responseText.sourceDocuments, Documents, qaId, roomId, 'email');
     
       let totalScore = 0;
       let count = 0;

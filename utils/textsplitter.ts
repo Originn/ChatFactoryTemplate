@@ -151,17 +151,27 @@ export function extractPotentialSubHeader(chunk: string): string | null {
     return null;
 }
 
-export function extractYouTubeLink(content: string): string | null {
+export function extractYouTubeLink(content: string | null): string | null {
+    // Check if content is truthy before proceeding
+    if (!content) {
+        return null; // Return null if content is null or undefined
+    }
     const youtubeMatch = content.match(/https:\/\/www\.youtube\.com\/watch\?v=[a-zA-Z0-9_-]+/);
     return youtubeMatch ? youtubeMatch[0] : null;
-  }
+}
+
   
-  export function extractSentinalLinkFromMetaDataSource(content: string): string | null {
+export function extractSentinalLinkFromMetaDataSource(content: string | null): string | null {
+    // Check if content is truthy (not null or undefined) before attempting to match
+    if (!content) {
+        return null; // Return null if content is null or undefined
+    }
     // Match URLs starting with 'https://sentinel.solidcam.com' or 'https://forms.solidcam.com'
     // Followed by any character sequence (or none), ending with .html, .pdf, .com, or the domain itself
     const solidcamMatch = content.match(/https:\/\/(sentinel|forms)\.solidcam\.com(\/[a-zA-Z0-9\/_.-]*)(\.html|\.pdf|\.com)?/);
     return solidcamMatch ? solidcamMatch[0] : null;
 }
+
   export function extractSentinalLink(jsonContent: string): string | null {
     // Parse the JSON content
     const documents = JSON.parse(jsonContent);

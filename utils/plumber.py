@@ -348,6 +348,54 @@ def process_solidcam_licence_text(text_file_path):
 
     return results
 
+def process_solidcam_general_faq(text_file_path):
+    results = []
+    try:
+        with open(text_file_path, 'r', encoding='utf-8') as text_file:
+            lines = text_file.readlines()
+
+            # Initialize a list to hold the current Q&A block
+            qa_block = []
+            for line in lines[1:]:  # Skip the "General_FAQ" header
+                line = line.strip()
+                if line:  # If the line is not empty, add it to the current Q&A block
+                    qa_block.append(line)
+                else:  # If the line is empty, it means the end of the current Q&A block
+                    if qa_block:  # Check if there's a Q&A block to process
+                        # Process the Q&A block to extract the question and answers
+                        question = qa_block[0]  # The first line of the block is the question
+                        answers = " ".join(qa_block[1:])  # Join the rest of the block as the answers
+                        results.append({
+                            "header": f"General_FAQ | {question}",
+                            "contents": [
+                                {
+                                    "page_number": 0,
+                                    "PageContent": answers
+                                }
+                            ]
+                        })
+                        qa_block = []  # Reset the Q&A block for the next one
+            
+            # Process any remaining Q&A block after the loop
+            if qa_block:
+                question = qa_block[0]
+                answers = " ".join(qa_block[1:])
+                results.append({
+                    "header": f"General_FAQ | {question}",
+                    "contents": [
+                        {
+                            "page_number": 0,
+                            "PageContent": answers
+                        }
+                    ]
+                })
+
+    except FileNotFoundError:
+        print(f"Text file {text_file_path} not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    return results
 
 
 
@@ -410,13 +458,15 @@ def process_webinar_text(text_file_path):
 
 def format_header(header_text):
     # Add a space between a digit and an alphabetic character
-    formatted_header = re.sub(r'(\d)([A-Za-z])', r'\1 \2', header_text)
+    # Only if the digit is not followed by 'D' (as in '3D')
+    formatted_header = re.sub(r'(\d)(?![Dd]\b)([A-Za-z])', r'\1 \2', header_text)
 
-    # Remove digits followed immediately by a letter
-    formatted_header = re.sub(r'^\d+(?=[A-Za-z])', '', formatted_header)
+    # Remove digits followed immediately by a letter (not including 'D' following a digit)
+    formatted_header = re.sub(r'^\d+(?![A-Za-z]|[Dd]\b)', '', formatted_header)
 
     # Remove one or two-digit numbers followed by space(s)
-    formatted_header = re.sub(r'\b\d{1,2}\s+', '', formatted_header)
+    # Exclude cases where a number is followed by 'D' or 'd' (as in '3D')
+    formatted_header = re.sub(r'\b\d{1,2}\s+(?![Dd]\b)', '', formatted_header)
 
     # Add a space between a lowercase letter and a following uppercase letter
     formatted_header = re.sub(r'([a-z])([A-Z])', r'\1 \2', formatted_header)
@@ -435,6 +485,9 @@ def format_header(header_text):
 
     # Replace "Solid CAM" with "SolidCAM"
     formatted_header = formatted_header.replace("Solid CAM", "SolidCAM")
+
+    # Add a space after "NX" if it's followed by an uppercase letter without a space
+    formatted_header = re.sub(r'(NX)([A-Z])', r'\1 \2', formatted_header)
 
     return formatted_header
 
@@ -666,7 +719,7 @@ def extract_and_format_pdf_faq_imachining(pdf_path):
 
                 for char in chars:
                     if not header_found:
-                        if char['size'] > 35 and "DIN2014" in char['fontname']:
+                        if (char['size'] > 35 and "DIN2014" in char['fontname']) or (char['size'] == 30 and ("JZNXXG+SourceSansPro-Regular" or "LCMJZC+SourceSansPro-Semibold" in char['fontname'])):
                             first_header_part += char['text']
                         
                     if char['size'] > 17 and "Calibri" in char['fontname']:
@@ -674,8 +727,9 @@ def extract_and_format_pdf_faq_imachining(pdf_path):
 
                 # Set the combined header if it has not been set yet
                 if first_header_part and second_header_part:
+                    formatted_first_header = format_header(first_header_part)
                     formatted_second_header = format_header(second_header_part)
-                    combined_header = f'{first_header_part} | {formatted_second_header}'
+                    combined_header = f'{formatted_first_header} | {formatted_second_header}'
                     header_found = True
                     second_header_part = ""
 
@@ -768,7 +822,7 @@ def extract_and_format_pdf_Toolkit_reference(pdf_path):
     except Exception as e:
         print(f"Error processing PDF: {e}")
         return []
-    
+
 def extract_and_format_pdf_solidcam_forum(pdf_path):
     try:
         with pdfplumber.open(pdf_path) as pdf:
@@ -812,7 +866,136 @@ def extract_and_format_pdf_solidcam_forum(pdf_path):
     except Exception as e:
         print(f"Error processing PDF: {e}")
         return []
-    
+
+def extract_and_format_pdf_faq_nx_imachining(pdf_path):
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            pages_content = []
+            first_header_part = ""
+            second_header_part = ""
+            combined_header = ""
+            header_found = False
+            header_to_use = ""
+
+            for page_number, page in enumerate(pdf.pages, start=1):
+                chars = page.chars
+
+                for char in chars:
+                    if not header_found:
+                        if char['size'] > 35 and "DIN2014" in char['fontname']:
+                            first_header_part += char['text']
+                        
+                    if char['size'] > 17 and "Calibri" in char['fontname']:
+                            second_header_part += char['text']
+
+                # Set the combined header if it has not been set yet
+                if first_header_part and second_header_part:
+                    formatted_second_header = format_header(second_header_part)
+                    combined_header = f'{first_header_part} | {formatted_second_header}'
+                    header_found = True
+                    second_header_part = ""
+
+                # The header for the current page includes the combined header and the third header if present
+                header_text = f'{combined_header}'
+
+                header_text = ' | '.join(part.strip() for part in header_text.split('|'))
+                
+
+                #because header is empty on the first 3 pages, I want to replace it with the true header which is on page 4
+                if page_number == 4:
+                    header_to_use = header_text
+
+                rest_of_page = page.extract_text() or ""
+                page_content = rest_of_page
+
+                pages_content.append({
+                    'page_number': page.page_number,
+                    'header': header_text,
+                    'pageContent': page_content
+                })
+
+            # Replace empty headers with the header from page 003
+            if header_to_use:
+                for page in pages_content:
+                    if not page['header']:
+                        page['header'] = header_to_use
+
+            return pages_content
+
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        return []
+
+def extract_and_format_pdf_nx_imachining(pdf_path):
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            pages_content = []
+            first_header_part = ""
+            second_header_part = ""
+            third_header_part = ""  # Variable to store the current NimbusSan header text
+            formatted_third_header = ""  # Formatted third header to use across pages
+            combined_header = ""
+            combined_header_found = False
+            header_to_use = ""
+
+            for page_number, page in enumerate(pdf.pages, start=1):
+                chars = page.chars
+                current_page_third_header_part = ""  # Variable to accumulate third header on the current page
+
+                for char in chars:
+                    if not combined_header_found:
+                        if char['size'] == 30 and "HelveticaNeue-MediumItalic" in char['fontname']:
+                            first_header_part += char['text']
+                        elif char['size'] ==25 and "HelveticaNeue-MediumItalic" in char['fontname']:
+                            second_header_part += char['text']
+
+                    # After the combined header is found, look for additional NimbusSan headers
+                    elif char['size'] == 14.5 and "Calibri-Bold" in char['fontname']:
+                        current_page_third_header_part += char['text']
+
+                # Set the combined header if it has not been set yet
+                if first_header_part and second_header_part and not combined_header_found:
+                    formatted_second_header = format_header(second_header_part)
+                    combined_header = f'{first_header_part} | {formatted_second_header}'
+                    combined_header_found = True
+
+                # If new text for the third header part is found on this page, update the third header
+                if current_page_third_header_part != "":
+                    # Replace third_header_part with the new text and format it
+                    third_header_part = current_page_third_header_part
+                    formatted_third_header = format_header(third_header_part)
+
+                # The header for the current page includes the combined header and the third header if present
+                header_text = f'{combined_header} | {formatted_third_header}' if formatted_third_header else combined_header
+
+                header_text = ' | '.join(part.strip() for part in header_text.split('|'))
+                
+
+                #because header is empty on the first 2 pages, I want to replace it with the true header which is on page 3
+                if page_number == 3:
+                    header_to_use = header_text
+
+                rest_of_page = page.extract_text() or ""
+                page_content = rest_of_page
+
+                pages_content.append({
+                    'page_number': page.page_number,
+                    'header': header_text,
+                    'pageContent': page_content
+                })
+
+            # Replace empty headers with the header from page 003
+            if header_to_use:
+                for page in pages_content:
+                    if not page['header']:
+                        page['header'] = header_to_use
+
+            return pages_content
+
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        return []
+
 def extract_font_details_first_page(pdf_path, page_number):
     font_details_list = []
     try:
@@ -841,6 +1024,9 @@ if __name__ == "__main__":
         elif 'SolidCAM_licensing' in pdf_path:
             results = process_solidcam_licence_text(pdf_path)
             sys.stdout.write(json.dumps(results))
+        elif 'General_FAQ' in pdf_path:
+            results = process_solidcam_general_faq(pdf_path)
+            sys.stdout.write(json.dumps(results))
             pass
     else:
         try:
@@ -851,22 +1037,19 @@ if __name__ == "__main__":
             elif 'solidcam_silent_install' in pdf_path.lower():
                 pages_ = extract_and_format_pdf_solidcam_silent_install(pdf_path)
             elif 'solidcam_2023_milling' in pdf_path.lower():
-                first_page = extract_font_details_first_page(pdf_path, 1)
-                print(first_page)
                 pages_ = extract_and_format_pdf_training_course(pdf_path)
             elif 'solidcam_2023_application' in pdf_path.lower():
                 pages_ = extract_and_format_pdf_solidcam_2023_application(pdf_path)
             elif 'solidcam_forum' in pdf_path.lower():
-                # font_details_list = extract_font_details_first_page(pdf_path, 0)
-                # print(font_details_list)
-                # input()
                 pages_ = extract_and_format_pdf_solidcam_forum(pdf_path)
             elif 'faq_imachining' in pdf_path.lower():
+                #first_page = extract_font_details_first_page(pdf_path, 0)
+                #print(first_page)
                 pages_ = extract_and_format_pdf_faq_imachining(pdf_path)
             elif 'toolkit_reference' in pdf_path.lower():
-                
-                
                 pages_ = extract_and_format_pdf_Toolkit_reference(pdf_path)
+            elif 'nx_imachining' in pdf_path.lower():
+                pages_ = extract_and_format_pdf_nx_imachining(pdf_path)
         # print(pages_with_home)
         # input()
 

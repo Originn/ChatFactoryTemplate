@@ -1,7 +1,6 @@
 //layout.tsx
-import { useUser } from '@auth0/nextjs-auth0/client';
-import Link from 'next/link';
 import Image from 'next/image';
+import { getAuth, signOut } from 'firebase/auth';
 
 interface LayoutProps {
   children?: React.ReactNode;
@@ -9,6 +8,18 @@ interface LayoutProps {
   toggleTheme: () => void;
 }
 
+const auth = getAuth();
+
+  const handleSignOut = () => {
+    signOut(auth).then(() => {
+      // Sign-out successful.
+      // Update the state of your application or redirect the user
+    }).catch((error) => {
+      // An error happened.
+      console.error("Sign out error:", error);
+    });
+  };
+  
 const PRODUCTION_ENV = 'production';
 const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
 let moonIcon = '/icons8-moon-50.png';
@@ -18,7 +29,6 @@ if (process.env.NODE_ENV === PRODUCTION_ENV) {
 }
 
 export default function Layout({ children, theme, toggleTheme }: LayoutProps) {
-  const { user } = useUser(); // Add this line to get user information
   return (
     <div className={`mx-auto flex flex-col space-y-4 ${theme === 'dark' ? 'dark' : ''}`}>
       <header className={`w-full sticky top-0 z-40 ${theme === 'light' ? 'bg-white' : 'bg-dark-header'}`}>
@@ -33,11 +43,10 @@ export default function Layout({ children, theme, toggleTheme }: LayoutProps) {
                 <Image src={moonIcon} alt="Moon Icon" width={24} height={24} />
               )}
             </button>
-            {user && (
-              <Link href="/api/auth/logout" className="ml-4 hover:text-slate-600 cursor-pointer">
-                Logout
-              </Link>
-            )}
+            {/* Logout button */}
+            <button onClick={handleSignOut} className="bg-gray-200 dark:bg-gray-600 p-2 rounded-full ml-4">
+              Logout
+            </button>
           </nav>
         </div>
       </header>
