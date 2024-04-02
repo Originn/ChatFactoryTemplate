@@ -8,15 +8,18 @@ import { useRouter } from 'next/router';
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
+
+  // Add the new verification sent page to the bypass list
+  const noAuthRequired = ['/verify-email', '/verification-sent'];
+
   return (
     <>
-      {/* Only wrap protected pages in AuthWrapper */}
-      {router.pathname !== '/verify-email' ? ( 
+      {noAuthRequired.includes(router.pathname) ? ( 
+        <Component {...pageProps} /> 
+      ) : (
         <AuthWrapper>
           <Component {...pageProps} />
         </AuthWrapper>
-      ) : ( 
-        <Component {...pageProps} /> 
       )}
     </>
   );

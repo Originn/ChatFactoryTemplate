@@ -92,9 +92,7 @@ const CustomLoginForm = () => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         // Send verification email after account creation
         await sendEmailVerification(userCredential.user);
-        setErrorMessage('An email has been sent to you. Please verify your email.');
-        // ... Handle successful account creation ...
-        // Optionally, redirect to a "check your email" page or show a message
+        router.push('/verification-sent');
     } catch (error : any) {
         if (error.code === 'auth/email-already-in-use') {
             setErrorMessage('The email address is already in use by another account.');
@@ -211,7 +209,7 @@ const toggleForm = () => {
   
   return (
     <div className="center-wrapper">
-    <img src="/bot-image.png" alt="SolidCAM Logo" style={{ position: 'absolute', top: '250px', left: '-30px', width: '400px' }}/>
+    <img src="/solidcam.png" alt="SolidCAM Logo" style={{ position: 'absolute', top: '250px', left: '-30px', width: '400px' }}/>
     <div className="firebaseui-container">
       <div className="firebaseui-card-content">
       <div className="heading">Let's Chat!</div>
