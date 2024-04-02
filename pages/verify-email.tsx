@@ -16,8 +16,7 @@ const VerifyEmailPage = () => {
       if (mode === 'verifyEmail' && oobCode && apiKey) {
         try {
           await applyActionCode(auth, oobCode);
-          alert('Your email has been verified. You are being redirected...');
-          router.push('/'); // Redirect to the root of your app
+          router.push('/');
         } catch (error) {
           console.error('Error verifying email:', error);
           // Handle error (e.g., display an error message)
