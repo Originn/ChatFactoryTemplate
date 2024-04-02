@@ -16,6 +16,7 @@ const VerifyEmailPage = () => {
       if (mode === 'verifyEmail' && oobCode && apiKey) {
         try {
           await applyActionCode(auth, oobCode);
+          sessionStorage.setItem('emailVerified', 'true');
           router.push('/');
         } catch (error) {
           console.error('Error verifying email:', error);
