@@ -1,14 +1,13 @@
 //layout.tsx
 import Image from 'next/image';
 import { getAuth, signOut } from 'firebase/auth';
+import { auth } from 'utils/firebase';
 
 interface LayoutProps {
   children?: React.ReactNode;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
 }
-
-const auth = getAuth();
 
   const handleSignOut = () => {
     signOut(auth).then(() => {
