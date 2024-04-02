@@ -1,4 +1,5 @@
 // pages/verification-sent.js
+import Image from 'next/image';
 
 export default function VerificationSent() {
     // Inline styles
@@ -27,9 +28,9 @@ export default function VerificationSent() {
   
     return (
       <div style={containerStyle}>
-        <img 
+        <Image 
           src="/solidcam.png" // Replace with the path to your image
-          alt="Check Your Email"
+          alt="solidcam"
           style={imageStyle}
         />
         <h1 style={headerStyle}>Check Your Email</h1>
