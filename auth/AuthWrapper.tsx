@@ -29,17 +29,15 @@ const AuthWrapper = ({
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      const emailVerifiedInSession = sessionStorage.getItem('emailVerified') === 'true';
       setUserState({
-        isAuthChecked: true, 
+        isAuthChecked: true,
         isLoading: false,
         isSignedIn: !!user,
-        // If 'emailVerified' in session is true, use it; otherwise, defer to Firebase Auth's emailVerified flag
-        isEmailVerified: emailVerifiedInSession || (user ? user.emailVerified : false),
+        isEmailVerified: user ? user.emailVerified : false,
       });
     });
     
-    return () => unsubscribe();
+    return () => unsubscribe(); // This function is called when the component unmounts
   }, []);
 
   if (userState.isLoading) return <div>Loading...</div>;
