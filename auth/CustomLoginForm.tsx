@@ -74,7 +74,7 @@ const CustomLoginForm = () => {
     }
   };
 
-  const createAccountWithEmail = async (e) => {
+  const createAccountWithEmail = async (e : any) => {
     e.preventDefault();
     setIsSubmitting(true); // Indicate that submission has started
     setErrorMessage(''); // Clear any existing error messages
@@ -138,7 +138,7 @@ const toggleForm = () => {
     return re.test(String(email).toLowerCase());
   };
 
-  const handleEmailChange = (e) => {
+  const handleEmailChange = (e : any) => {
     const inputEmail = e.target.value;
     setEmail(inputEmail);
     const isValid = validateEmail(inputEmail);
