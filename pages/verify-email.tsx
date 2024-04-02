@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { applyActionCode } from 'firebase/auth';
 import { auth } from 'utils/firebase';
@@ -6,8 +6,11 @@ import { auth } from 'utils/firebase';
 const VerifyEmailPage = () => {
   const router = useRouter();
   const [verificationStatus, setVerificationStatus] = useState({verifying: true, success: false});
+  const emailVerificationInitiated = useRef(false);
 
   useEffect(() => {
+    if (!emailVerificationInitiated.current) {
+      emailVerificationInitiated.current = true;
     const handleEmailVerification = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const mode = urlParams.get('mode');
@@ -35,7 +38,7 @@ const VerifyEmailPage = () => {
     };
 
     handleEmailVerification();
-  }, []);
+  }}, []);
 
   if (verificationStatus.verifying) {
     return <div className="custom-verify-container"><h1>Email Verification</h1><p>Verifying your email...</p></div>;
