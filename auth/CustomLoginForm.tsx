@@ -1,6 +1,6 @@
 // auth/CustomLoginForm.tsx
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, OAuthProvider, fetchSignInMethodsForEmail, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, OAuthProvider, signOut, fetchSignInMethodsForEmail, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 import { useRouter } from 'next/router';
 
@@ -87,26 +87,28 @@ const CustomLoginForm = () => {
     e.preventDefault();
     setIsSubmitting(true); // Indicate that submission has started
     setErrorMessage(''); // Clear any existing error messages
-
+  
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        // Send verification email after account creation
-        await sendEmailVerification(userCredential.user);
-        setErrorMessage('An email has been sent to you. Please verify your email.');
-        // ... Handle successful account creation ...
-        // Optionally, redirect to a "check your email" page or show a message
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Send verification email after account creation
+      await sendEmailVerification(userCredential.user);
+      // Sign out the user immediately after account creation
+      await signOut(auth);
+      // Set a success message or redirect to a "check your email" page
+      // This message must be rendered in the component
+      setErrorMessage('An email has been sent to you. Please verify your email before signing in.');
     } catch (error : any) {
-        if (error.code === 'auth/email-already-in-use') {
-            setErrorMessage('The email address is already in use by another account.');
-        } else {
-            // Error message formatting can be improved as needed
-            const formattedError = error.message.replace('Firebase: ', '');
-            setErrorMessage(formattedError);
-        }
+      if (error.code === 'auth/email-already-in-use') {
+        setErrorMessage('The email address is already in use by another account.');
+      } else {
+        // Error message formatting can be improved as needed
+        const formattedError = error.message.replace('Firebase: ', '');
+        setErrorMessage(formattedError);
+      }
     } finally {
-        setIsSubmitting(false); // Indicate that submission has ended
+      setIsSubmitting(false); // Indicate that submission has ended
     }
-};
+  };
 
 const isFormValid = () => {
     // Add your logic to check if the form is valid
