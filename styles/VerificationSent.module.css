@@ -1,0 +1,35 @@
+/* VerificationSent.module.css */
+
+.verificationSentContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    height: 100vh; /* Full height of the viewport */
+  }
+  
+  .header {
+    font-size: 2.5rem; /* Larger font size */
+    font-weight: bold; /* Bold font weight */
+    margin: 0;
+    margin-bottom: 1rem; /* Spacing between the header and paragraph */
+  }
+  
+  .paragraph {
+    font-size: 1.5rem; /* Slightly larger font size */
+    max-width: 600px; /* Max width for optimal reading length */
+    margin-bottom: 2rem; /* Spacing after the paragraph */
+  }
+  
+  .imageContainer {
+    margin-bottom: 2rem; /* Spacing between the image and header */
+  }
+  
+  /* You might need to adjust the width and height based on your actual image dimensions */
+  .image {
+    width: 100px; /* Example width, adjust as necessary */
+    height: 100px; /* Example height, adjust as necessary */
+  }
+  
