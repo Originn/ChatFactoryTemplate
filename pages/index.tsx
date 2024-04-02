@@ -32,14 +32,14 @@ const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
 
 // Image URLs
 let imageUrlUserIcon = '/usericon.png';
-let botimageIcon = '/bot-image.png';
+let botimageIcon = '/solidcam.png';
 let thumbUpIcon = '/icons8-thumb-up-50.png'
 let thumbDownIcon = '/icons8-thumbs-down-50.png'
 let commentIcon = '/icons8-message-50.png';
 
 if (process.env.NODE_ENV === PRODUCTION_ENV) {
   imageUrlUserIcon = `${PRODUCTION_URL}usericon.png`;
-  botimageIcon = `${PRODUCTION_URL}bot-image.png`;
+  botimageIcon = `${PRODUCTION_URL}solidcam.png`;
   thumbUpIcon = `${PRODUCTION_URL}icons8-thumb-up-50.png`
   thumbDownIcon = `${PRODUCTION_URL}icons8-thumbs-down-50.png`
   commentIcon = `${PRODUCTION_URL}icons8-message-50.png`
