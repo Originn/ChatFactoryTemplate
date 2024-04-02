@@ -25,37 +25,28 @@ const AuthWrapper = ({ children }: AuthWrapperProps): ReactElement | null => {
   const router = useRouter(); 
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const shouldReload = sessionStorage.getItem('emailVerified') === 'true';
-        if (shouldReload) {
-          await reload(user);
-          sessionStorage.removeItem('emailVerified'); // Remove the flag after reloading
-        }
-        setUserState({
-          isAuthChecked: true,
-          isLoading: false,
-          isSignedIn: true,
-          isEmailVerified: user.emailVerified,
-        });
-      } else {
-        setUserState({
-          isAuthChecked: true,
-          isLoading: false,
-          isSignedIn: false,
-          isEmailVerified: false,
-        });
-      }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUserState(prevState => ({
+        ...prevState,
+        isAuthChecked: true,
+        isLoading: false,
+        isSignedIn: !!user,
+        isEmailVerified: !!user && user.emailVerified,
+      }));
     });
-  
-    return () => unsubscribe(); // Cleanup the subscription
+    
+    return () => unsubscribe();
   }, []);
 
-  if (userState.isLoading) return <div>Loading...</div>;
-  if (!userState.isSignedIn) return <CustomLoginForm />;
-  if (!userState.isEmailVerified) return <div>Please verify your email to access the content.</div>;
-
-  return <>{children}</>;
+  // Render the login form if the user is not signed in or if the email isn't verified
+  if (userState.isLoading) {
+    return <div>Loading...</div>;
+  } else if (!userState.isSignedIn || !userState.isEmailVerified) {
+    return <CustomLoginForm />;
+  } else {
+    // If the user is signed in and the email is verified, render the children
+    return <>{children}</>;
+  }
 };
 
 export default AuthWrapper;
