@@ -1,5 +1,7 @@
+
 import Image from 'next/image';
 import styles from '@/styles/VerificationSent.module.css';
+import solidcamImage from '../public/solidcam.png';
 
 export default function VerificationSent() {
   return (
@@ -7,7 +9,7 @@ export default function VerificationSent() {
       <div className={styles.imageContainer}>
         {/* Next.js Image component for optimized image loading */}
         <Image 
-          src="/solidcam.png" // Replace with your actual image path
+          src={solidcamImage} // Replace with your actual image path
           alt="solidcam"
           width={100} // Adjust to the size of your actual image
           height={100} // Adjust to the size of your actual image
