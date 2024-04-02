@@ -22,8 +22,17 @@ const CustomLoginForm = () => {
     
     const handleSignInWithEmail = async () => {
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+          const userCredential = await signInWithEmailAndPassword(auth, email, password);
+          // Check if the user has verified their email
+          if (userCredential.user.emailVerified) {
+            // Email is verified, proceed to redirect
             router.push('/'); // Redirect to home page or dashboard
+          } else {
+            // Email is not verified, alert the user or handle accordingly
+            setErrorMessage('Please verify your email before signing in.');
+            // Consider signing out the user if they haven't verified their email
+            // await signOut(auth);
+          }
         } catch (error : any) {
             console.error('Error during email sign-in:', error);
             let errorMsg = '';
