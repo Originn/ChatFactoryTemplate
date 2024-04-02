@@ -19,7 +19,6 @@ const VerifyEmailPage = () => {
           sessionStorage.setItem('emailVerified', 'true');
           // Optionally, update other parts of your application state as needed
           router.push('/');
-          router.push('/');
         } catch (error) {
           console.error('Error verifying email:', error);
           // Handle error (e.g., display an error message)
