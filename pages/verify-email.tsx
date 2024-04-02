@@ -1,13 +1,37 @@
-// pages/verify-email.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { applyActionCode } from 'firebase/auth';
+import { auth } from 'utils/firebase';
 
 const VerifyEmailPage = () => {
-  // This page is purely informational and doesn't need to use authentication state or router.
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleEmailVerification = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const mode = urlParams.get('mode');
+      const oobCode = urlParams.get('oobCode');
+      const apiKey = urlParams.get('apiKey');
+
+      if (mode === 'verifyEmail' && oobCode && apiKey) {
+        try {
+          await applyActionCode(auth, oobCode);
+          alert('Your email has been verified. You are being redirected...');
+          router.push('/'); // Redirect to the root of your app
+        } catch (error) {
+          console.error('Error verifying email:', error);
+          // Handle error (e.g., display an error message)
+        }
+      }
+    };
+
+    handleEmailVerification();
+  }, [router]);
 
   return (
     <div className="custom-verify-container">
       <h1>Email Verification</h1>
-      <p>Please check your email to verify your account. Once verified, you may continue to use the application.</p>
+      <p>Verifying your email...</p> {/* Display a loading message or spinner */}
     </div>
   );
 };

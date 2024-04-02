@@ -6,7 +6,14 @@
     --apimessage-background-dark: #000000;  
     --header-background-light: #ffffff;
     --header-background-dark: #000000;
+    --google-blue: #4285F4;
+    --microsoft-blue: #2F2F2F;
 }
+
+html, body {
+    overflow-x: hidden; /* Prevent horizontal overflow */
+    overflow-y: hidden;
+  }
 
 body.dark ul,
 body.dark ul li,
@@ -337,37 +344,631 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     left: 140%;
   }
 
-/* This will style the FirebaseUI container to be centered and have a shadow */
-#firebaseui-auth-container {
+.firebaseui-idp-icon {
+    margin-right: 10px;
+    width: 18px; /* Adjust size as needed */
+    height: 18px; /* Adjust size as needed */
+}
+
+/* Style the divider text */
+.firebaseui-card-header {
+    text-align: center;
+    margin: 20px 0;
+    color: rgba(0, 0, 0, 0.54);
+}
+
+/* Adjust input field styles to match the Firebase UI look */
+.mdl-textfield__input {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.42);
+    padding: 10px;
+    font-size: 16px;
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+}
+
+/* Style the labels for floating effect */
+.mdl-textfield__label {
+    color: rgba(0, 0, 0, 0.54);
+    font-size: 16px;
+    font-weight: normal;
+    pointer-events: none;
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    transition: all 200ms;
+}
+
+.mdl-textfield__label::after {
+    background-color: #4285f4;
+    bottom: -1px;
+    content: '';
+    height: 2px;
+    left: 45%;
+    position: absolute;
+    transition: all 200ms;
+    width: 10px; /* starting width */
+    will-change: left, width;
+}
+
+/* React to input focus and input not empty */
+.mdl-textfield--floating-label.is-focused .mdl-textfield__label,
+.mdl-textfield--floating-label.is-dirty .mdl-textfield__label {
+    color: #4285f4;
+    font-size: 12px;
+    top: -20px;
+}
+
+.mdl-textfield--floating-label.is-focused .mdl-textfield__label::after,
+.mdl-textfield--floating-label.is-dirty .mdl-textfield__label::after {
+    left: 0;
+    width: 100%; /* full width on focus or when filled */
+}
+  
+
+  
+  /* Icon styles */
+  .firebaseui-idp-icon-wrapper {
+    background-color: transparent;
+    padding-right: 10px;
+  }
+  
+  
+  /* Hover effect */
+.firebaseui-idp-button:hover {
+    background-color: #f8f9fa;
+  }
+  
+  /* Focus effect */
+  .firebaseui-idp-button:focus {
+    background-color: #f1f3f4;
+    outline: none; /* Optional: removes the default focus outline */
+    border-color: #c6c6c6; /* Optional: changes the border color on focus */
+  }
+  
+  /* Text inside the button */
+  .firebaseui-idp-text {
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  
+  /* Additional global styles for elements like links */
+  .firebaseui-link {
+    color: #1a73e8; /* Match the link color with the design */
+  }
+  
+  
+  /* Adjustments for individual button icons and text */
+  .firebaseui-idp-microsoft .firebaseui-idp-icon,
+  .firebaseui-idp-google .firebaseui-idp-icon,
+  .firebaseui-idp-apple .firebaseui-idp-icon {
+    margin-right: 8px;
+  }
+  
+  
+  /* Add hover effects for interactive elements */
+  .firebaseui-idp-button:hover, .create-account-button:hover {
+    opacity: 0.8; /* Example hover effect */
+  }
+  
+  .center-wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-direction: column; /* Stack children elements vertically */
-    position: fixed; /* Fixed position to place it over everything */
+    min-height: 100vh; /* Use min-height instead of height to ensure it covers the full viewport */
+    transform: translate(400px, -10%); /* Moves the content left without causing overflow */
+    padding-top: 20px;
+  }
+  
+  .firebaseui-container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* this will make the child buttons stretch in flex container */
+    width: 100%; /* full width */
+    max-width: 500px; /* or however wide you want the buttons to be */
+    margin: auto; /* this will center your container */
+    padding: 20px; /* padding around the container */
+    box-shadow: none; /* removes box-shadow */
+    background-color: transparent; /* transparent background */
+  }
+
+  .firebaseui-idp-button,
+  .create-account-button,
+  .sign-in-button {
+    padding: 8px 16px; /* Reduced vertical padding */
+    border-radius: 20px; /* Adjusted for less roundness */
+    font-size: 11px; /* Your preference for font size */
+    width: calc(100% - 140px); /* Adjust for padding */
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgb(204, 204, 204);
+    font-weight: bold;
+    cursor: pointer;
+    outline: none;
+    background: white;
+    text-align: center;
+  }
+  
+  .firebaseui-idp-button:hover {
+    opacity: 0.8;
+  }
+  
+  /* Additional styles for specific buttons */
+  .firebaseui-idp-google {
+    background-color: #ffffff;
+    color: black;
+  }
+  
+  .firebaseui-idp-apple {
+    background-color: #ffffff;
+    color: black;
+  }
+  
+  .firebaseui-idp-microsoft {
+    background-color: #ffffff;
+    color: black;
+  }
+
+  .create-account-button {
+    padding: 8px 16px; /* Adjusted padding to match other buttons */
+    border-radius: 20px; /* Rounded corners like other buttons */
+    font-size: 14px; /* Same font size for consistency */
+    margin: 10px 0; /* Consistent margin with other buttons */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgb(204, 204, 204); /* Same border styling */
+    font-weight: bold;
+    cursor: pointer;
+    outline: none;
+    text-align: center;
+    box-shadow: 0 2px 4px 0 rgba(0,0,0,0.25); /* Optional: if you want shadow like other buttons */
+    color: black; /* Text color - make this white if you want it like the Google button */
+    background-color: #4285F4; /* Background color to match the Google button */
+}
+
+/* Container to wrap around the 'or' text and lines */
+.divider-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(100% - 140px); /* same width as the buttons */
+    margin: 10px 0; /* same margin as the buttons for consistent spacing */
+  }
+  
+  /* Style for the 'or' divider with lines */
+  .divider {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative; /* Set position relative to enable absolute positioning of children */
+    margin: 5px 0; /* Increase margin for spacing */
+  }
+  
+  .divider::before,
+  .divider::after {
+    content: ''; /* This is necessary to create the pseudo-elements */
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%); /* Center the lines vertically */
+    width: 45%; /* Adjust the width of the lines */
+    height: 1px;
+    background: rgba(0, 0, 0, 0.2); /* Lighter line color */
+  }
+  
+  .divider::before {
+    left: 0;
+  }
+  
+  .divider::after {
+    right: 0;
+  }
+  
+  .divider-text {
+    background: #FFF; /* Match your background */
+    padding: 0 10px;
+  }
+  
+  .heading {
+    font-size: 4em; /* Adjust the size as needed */
+    font-weight: bold;
+    margin-bottom: 20px; /* Space between heading and sign-up buttons */
+    text-align: left; /* Center the text */
+  }
+
+  .signup-popup-backdrop {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(-400px, 10%);
+}
+
+/* Popup Window */
+.signup-popup {
+    background: white;
+    border-radius: 16px; /* Adjusted for a larger radius */
+    padding: 40px; /* More padding for a bigger popup */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Adjusted for a softer shadow */
+    width: 600px; /* Adjust width for a bigger popup */
+    max-width: 600px; /* Ensure it doesn't get bigger than 600px */
+    position: relative; /* For absolute positioning of the close button */
+}
+
+/* Popup Header */
+.signup-popup-header h2 {
+    display: flex;
+    justify-content: flex-start; /* Align to the left */
+    margin-bottom: 20px; /* Space between header and inputs */
+    font-size: 32px; /* Larger font size */
+    font-weight: 700; /* Bolder text */
+    border-bottom: none; /* No border */
+}
+
+/* Close Button */
+.signup-popup-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    position: absolute; /* Positioned absolutely */
+    top: 20px; /* Distance from the top */
+    right: 20px; /* Distance from the right */
+}
+
+/* Input Fields */
+.signup-popup-body input {
+    width: 100%;
+    padding: 16px; /* Larger padding for bigger input fields */
+    margin-bottom: 20px; /* More space between inputs */
+    border: 2px solid #ccc; /* Thicker border */
+    border-radius: 8px; /* Rounded borders */
+    box-sizing: border-box;
+    font-size: 16px; /* Larger font size */
+}
+
+/* Label inside inputs when focused */
+.signup-popup-body input::placeholder {
+    font-size: 12px; /* Smaller font size for placeholder */
+    color: #999; /* Lighter color for placeholder text */
+}
+
+/* Input focus state */
+.signup-popup-body input:focus {
+    outline: none; /* Remove default focus outline */
+    border-color: #1DA1F2; /* Blue border when focused */
+}
+
+/* Footer with Create Account Button */
+.signup-popup-footer {
+    text-align: center; /* Center the button */
+}
+
+/* Button Styling */
+.signup-popup .btn {
+    width: 100%; /* Button should span the full width of the popup */
+    padding: 16px 0; /* Larger padding for a taller button */
+    border: none;
+    border-radius: 8px; /* Rounded borders */
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 20px; /* Space above the button */
+    font-size: 16px; /* Larger font size */
+    background-color: #ccc; /* Start with grey color */
+    color: black; /* Text color when button is disabled */
+}
+
+/* Button Hover Effect */
+.signup-popup .btn-enabled .btn:hover {
+    background-color: #333; /* Darker grey on hover for enabled button */
+}
+
+/* Button Enabled Style */
+.signup-popup .btn-enabled {
+    background-color: #000; /* Change to black when enabled */
+    color: white; /* Text color when button is enabled */
+}
+
+/* Cursor for disabled button */
+.signup-popup .btn:disabled {
+    cursor: default; /* Keep the default cursor for disabled state */
+}
+
+.error-message {
+    color: red;
+    margin: 10px 0;
+    text-align: center;
+    /* Add additional styling as needed */
+}
+
+.sign-in-button {
+    padding: 8px 16px; /* Adjusted padding to match other buttons */
+    border-radius: 20px; /* Rounded corners like other buttons */
+    font-size: 14px; /* Same font size for consistency */
+    margin: 10px 0; /* Consistent margin with other buttons */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgb(204, 204, 204); /* Same border styling */
+    font-weight: bold;
+    cursor: pointer;
+    outline: none;
+    text-align: center;
+    box-shadow: 0 2px 4px 0 rgba(0,0,0,0.25); /* Optional: if you want shadow like other buttons */
+    color: blue; /* Text color - make this white if you want it like the Google button */
+    background-color: #ffffff; /* Background color to match the Google button */
+    /* margin-top: 50px; */
+}
+
+/* Optionally, style for hover effect */
+.sign-in-button:hover {
+    background-color: #f2f2f2; /* Slightly darker on hover */
+}
+
+.account-exists-text {
+    font-size: 18px; /* Set the font size */
+    font-weight: bold; /* Make text bold */
+    margin-top: 80px; /* Space above the text */
+    margin-bottom: 20px; /* Space below the text, before the 'Sign in' button */
+    text-align: left; /* Align text to the left */
+    width: 100%; /* Make the div take full width */
+  }
+  
+  /* Style for Sign In Popup similar to the design provided */
+.signin-popup-backdrop {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(-400px, 10%);
+}
+
+.signin-popup {
+    background: white;
+    border-radius: 16px; /* Adjusted for a larger radius */
+    padding: 40px; /* More padding for a bigger popup */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Adjusted for a softer shadow */
+    width: 600px; /* Adjust width for a bigger popup */
+    max-width: 600px; /* Ensure it doesn't get bigger than 600px */
+    margin: auto;
+    position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 20px;
-    max-width: 300px; /* Adjust as necessary */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-    background: #fff;
-  }
-  
-  /* Style the buttons to have a uniform width */
-  .firebaseui-idp-button {
-    width: 100% !important; /* Full width */
-    margin-bottom: 10px !important; /* Space between buttons */
-  }
-  
-  .firebaseui-idp-button:last-child {
-    margin-bottom: 0 !important; /* Remove margin from the last button */
-  }
-  
-  .custom-verify-container {
-    display: block;
+    transform: translate(-50%, -50%); /* Center the popup */
+    box-shadow: 0px 4px 6px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+}
+
+.signin-popup-header h2 {
+    display: flex;
+    justify-content: flex-start; /* Align to the left */
+    margin-bottom: 20px; /* Space between header and inputs */
+    font-size: 32px; /* Larger font size */
+    font-weight: 700; /* Bolder text */
+    border-bottom: none; /* No border */
+}
+
+.signin-popup-header .signin-popup-close {
+    border: none;
+    background: none;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.signin-popup-body {
     width: 100%;
-    padding: 20px;
-    text-align: center; /* Center text within the container */
-    /* Add more styles as necessary */
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.signin-popup-body-input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.forgot-password-link {
+    background-color: #ffffff; /* White background */
+    color: #000000; /* Black text */
+    display: inline-block; /* Make it an inline block for padding */
+    padding: 10px 20px; /* Button padding */
+    text-align: center; /* Center text */
+    font-size: 16px; /* Font size */
+    margin: 10px 0; /* Margin for spacing */
+    border-radius: 20px; /* Rounded borders like other buttons */
+    border: 1px solid #ccc; /* Border to look like a button */
+    width: 80%; /* Match the width of the input fields */
+    text-decoration: none; /* No underline */
+}
+
+/* Center the 'Don't have an account? Sign up' text */
+.signin-popup-footer {
+    text-align: center; /* Center the text */
+    width: 100%; /* Full width */
+    padding: 10px 0; /* Padding for spacing */
+}
+
+/* Adjust the hover effect for the 'Forgot password?' link */
+.forgot-password-link:hover {
+    background-color: #f8f9fa; /* Slight background color change on hover */
+}
+
+.create-account-link {
+    cursor: pointer;
+    color: #007bff; /* Match the design color */
+    font-weight: bold; /* Bold text */
+    text-decoration: none; /* No underline */
+}
+
+
+/* Style the input fields to match the design */
+.signin-popup-body input[type="email"] {
+    width: 80%; /* Adjust width as needed */
+    padding: 15px; /* Adjust padding to match the design */
+    margin: 10px 0; /* Add space between elements */
+    border: 1px solid #ccc; /* Light grey border */
+    border-radius: 4px; /* Slight rounding of corners */
+    font-size: 16px; /* Larger font size for readability */
+}
+
+/* Style the 'Next' button */
+.btn.sign-in-next-button {
+    width: 80%; /* Match the width of the input fields */
+    background-color: #000; /* Black background */
+    color: #fff; /* White text */
+    border-radius: 20px; /* Rounded corners */
+    padding: 15px 20px; /* Padding to make the button taller and wider */
+    margin: 20px 0; /* Add space around the button */
+    border: none; /* Remove border */
+    font-size: 16px; /* Larger font size */
+    cursor: pointer; /* Pointer cursor on hover */
+}
+
+.signin-popup-body-input,
+.signin-popup-body-input:disabled {
+  width: 80%; /* Ensure full width */
+  padding: 15px; /* Adjust padding to match design */
+  border: 1px solid #ccc; /* Match border styling */
+  border-radius: 4px; /* Match border-radius */
+  font-size: 16px; /* Match font-size */
+  margin: 10px 0; /* Provide some space between fields */
+}
+
+/* Gray out the text in the disabled email input */
+.signin-popup-body-input:disabled {
+  color: #999; /* Gray color */
+  background: #f7f7f7; /* Slightly gray background */
+}
+
+.email-display {
+    margin-bottom: 10px; /* Add some space below the email display */
+    font-size: 16px; /* Match the font size to your design */
+    color: #666; /* A neutral color for the email text */
   }
+
+  /* Style for disabled email display */
+.signin-popup-body-input:disabled {
+    color: #999; /* Gray color */
+    background-color: #f7f7f7; /* Slightly gray background to indicate it's not editable */
+    pointer-events: none; /* Disable pointer events */
+}
+
+/* Backdrop for the Forgot Password popup */
+.forgot-password-popup-backdrop {
+    position: fixed;
+    z-index: 1010; /* Make sure this is above other modals */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5); /* Dim the background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(-400px, 10%);
+}
+
+/* Forgot Password Popup */
+.forgot-password-popup {
+    background: white;
+    border-radius: 16px; /* Adjusted for a larger radius */
+    padding: 40px; /* More padding for a bigger popup */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Adjusted for a softer shadow */
+    width: 600px; /* Adjust width for a bigger popup */
+    max-width: 600px; /* Ensure it doesn't get bigger than 600px */
+    margin: auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Center the popup */
+    box-shadow: 0px 4px 6px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+}
+
+/* Forgot Password Popup Header */
+.forgot-password-popup-header h2 {
+    display: flex;
+    justify-content: flex-start; /* Align to the left */
+    margin-bottom: 20px; /* Space between header and inputs */
+    font-size: 32px; /* Larger font size */
+    font-weight: 700; /* Bolder text */
+    border-bottom: none; /* No border */
+}
+
+/* Forgot Password Popup Close Button */
+.forgot-password-popup-close {
+    border: none;
+    background: none;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+/* Forgot Password Popup Body */
+.forgot-password-popup-body {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Input Styles */
+.forgot-password-popup-body input[type="email"] {
+    width: 80%; /* Adjust width as needed */
+    padding: 15px; /* Adjust padding to match the design */
+    margin: 10px 0; /* Add space between elements */
+    border: 1px solid #ccc; /* Light grey border */
+    border-radius: 4px; /* Slight rounding of corners */
+    font-size: 16px; /* Larger font size for readability */
+}
+
+/* Next Button Styles */
+.forgot-password-next-button {
+    width: 80%; /* Match the width of the input fields */
+    background-color: #000; /* Black background */
+    color: #fff; /* White text */
+    border-radius: 20px; /* Rounded corners */
+    padding: 15px 20px; /* Padding to make the button taller and wider */
+    margin: 20px 0; /* Add space around the button */
+    border: none; /* Remove border */
+    font-size: 16px; /* Larger font size */
+    cursor: pointer; /* Pointer cursor on hover */
+}
+
+/* Error Message */
+.error-message {
+    color: red;
+    text-align: center;
+    margin-top: 10px;
+}
