@@ -5,53 +5,44 @@ import { auth } from 'utils/firebase';
 
 const VerifyEmailPage = () => {
   const router = useRouter();
-  const [isVerifying, setIsVerifying] = useState(true); // Track verification process
+  const [verificationStatus, setVerificationStatus] = useState({verifying: true, success: false});
 
   useEffect(() => {
     const handleEmailVerification = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const mode = urlParams.get('mode');
       const oobCode = urlParams.get('oobCode');
-      const apiKey = urlParams.get('apiKey');
 
-      if (mode === 'verifyEmail' && oobCode && apiKey) {
-        console.log('Attempting to verify email...'); // Log attempt
+      // Check for the correct mode as per Firebase email verification URL parameter
+      if (mode === 'verifyEmail' && oobCode) {
+        console.log('Attempting to verify email...');
         try {
           await applyActionCode(auth, oobCode);
-          console.log('Email successfully verified.'); // Log success
+          console.log('Email successfully verified.');
           sessionStorage.setItem('emailVerified', 'true');
-          setIsVerifying(false); // Update state to reflect verification success
+          setVerificationStatus({verifying: false, success: true});
+          // Consider a slight delay or a confirmation message before redirection
           router.push('/');
         } catch (error) {
           console.error('Error verifying email:', error);
-          setIsVerifying(false); // Update state to reflect verification failure
-          // Optionally, set an error state here to display the error to the user
+          setVerificationStatus({verifying: false, success: false});
+          // Optionally, handle displaying the error to the user
         }
       } else {
-        // If we're missing any parameters, log an error or handle it as needed
         console.log('Verification parameters missing.');
-        setIsVerifying(false); // Update state to reflect missing parameters
+        setVerificationStatus({verifying: false, success: false});
       }
     };
 
     handleEmailVerification();
   }, [router]);
 
-  if (isVerifying) {
-    return (
-      <div className="custom-verify-container">
-        <h1>Email Verification</h1>
-        <p>Verifying your email...</p> {/* Display a loading message or spinner */}
-      </div>
-    );
+  if (verificationStatus.verifying) {
+    return <div className="custom-verify-container"><h1>Email Verification</h1><p>Verifying your email...</p></div>;
+  } else if (verificationStatus.success) {
+    return <div className="custom-verify-container"><h1>Verification Successful</h1><p>Your email has been successfully verified.</p></div>;
   } else {
-    // Optionally, show a different message or component upon verification success/failure
-    return (
-      <div className="custom-verify-container">
-        <h1>Verification Complete</h1>
-        <p>Your email has been successfully verified.</p>
-      </div>
-    );
+    return <div className="custom-verify-container"><h1>Verification Failed</h1><p>There was an issue verifying your email. Please try the verification link again or contact support if the problem persists.</p></div>;
   }
 };
 
