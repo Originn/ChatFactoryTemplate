@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import styles from './VerificationSent.module.css'; // Adjust the import path as needed
+import styles from '@/styles/VerificationSent.module.css';
 
 export default function VerificationSent() {
   return (
