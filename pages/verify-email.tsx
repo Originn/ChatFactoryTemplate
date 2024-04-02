@@ -11,9 +11,8 @@ const VerifyEmailPage = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const mode = urlParams.get('mode');
       const oobCode = urlParams.get('oobCode');
-      const apiKey = urlParams.get('apiKey');
 
-      if (mode === 'verifyEmail' && oobCode && apiKey) {
+      if (mode === 'verifyEmail' && oobCode) {
         try {
           await applyActionCode(auth, oobCode);
           sessionStorage.setItem('emailVerified', 'true');
