@@ -35,7 +35,7 @@ const VerifyEmailPage = () => {
     };
 
     handleEmailVerification();
-  }, [router]);
+  }, []);
 
   if (verificationStatus.verifying) {
     return <div className="custom-verify-container"><h1>Email Verification</h1><p>Verifying your email...</p></div>;
