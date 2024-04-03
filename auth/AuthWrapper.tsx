@@ -40,7 +40,7 @@ const AuthWrapper = ({ children }: AuthWrapperProps): ReactElement | null => {
 
   // Render the login form if the user is not signed in or if the email isn't verified
   if (userState.isLoading) {
-    return <div>Loading...</div>;
+    return <div></div>;
   } else if (!userState.isSignedIn || !userState.isEmailVerified) {
     return <CustomLoginForm />;
   } else {

@@ -61,7 +61,7 @@ const ActionHandlerPage = () => {
 
       // Redirect after 2 seconds
       setTimeout(() => {
-        router.push('/login'); // replace '/login' with your desired route
+        router.push('/'); // replace '/login' with your desired route
       }, 2000);
     } catch (error) {
       console.error('Error resetting password:', error);

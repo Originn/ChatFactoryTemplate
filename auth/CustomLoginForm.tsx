@@ -48,17 +48,25 @@ const CustomLoginForm = () => {
         }
     };
 
-  const signInWithMicrosoft = async () => {
-    try {
-      const provider = new OAuthProvider('microsoft.com');
-      await signInWithPopup(auth, provider);
-      // Redirect after sign in
-      router.push('/');
-    } catch (error) {
-      console.error('Error during Microsoft sign-in:', error);
-      // Handle the error here (e.g., show an error message)
-    }
-  };
+    const signInWithMicrosoft = async () => {
+        try {
+          const provider = new OAuthProvider('microsoft.com');
+          // Optional: Specify additional OAuth 2.0 scopes beyond 'openid', which is the default.
+          provider.addScope('User.Read');
+          // Optional: To request ID tokens with specific claims.
+          provider.setCustomParameters({
+            // Prompt user to select an account
+            prompt: 'select_account',
+          });
+      
+          const result = await signInWithPopup(auth, provider);
+          // Use result.user, result.credential.accessToken as needed.
+          router.push('/');
+        } catch (error) {
+          console.error('Error during Microsoft sign-in:', error);
+          // Handle the error here
+        }
+      };
 
   const signInWithGoogle = async () => {
     try {
