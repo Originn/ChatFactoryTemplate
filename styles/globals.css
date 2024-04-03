@@ -972,3 +972,65 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     text-align: center;
     margin-top: 10px;
 }
+
+.passw-reset-popup-backdrop {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* transform: translate(-400px, 10%); */
+  }
+  
+  .passw-reset-popup {
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    width: 600px;
+    max-width: 100%; /* Ensure it doesn't overflow on smaller screens */
+    margin: auto;
+    position: absolute; /* Changed from absolute for better responsiveness */
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+  }
+  
+  .passw-reset-popup-header h2 {
+    margin-bottom: 20px;
+    font-size: 32px;
+    font-weight: 700;
+  }
+  
+  .passw-reset-popup-body {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .passw-reset-popup-body-input {
+    width: 80%;
+    padding: 15px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .passw-reset-next-button {
+    width: 80%;
+    background-color: #000;
+    color: #fff;
+    border-radius: 20px;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
