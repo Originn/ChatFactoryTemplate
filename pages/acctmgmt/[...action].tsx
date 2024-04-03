@@ -9,17 +9,16 @@ const ActionHandlerPage = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const router = useRouter();
-  const { action, oobCode } = router.query; // Destructure oobCode directly if available
 
   useEffect(() => {
-    // Ensure that `oobCode` is defined and is a string before proceeding
-    const code = Array.isArray(oobCode) ? oobCode[0] : oobCode;
-    if (!code) return; // Early return if `code` is undefined
-  
     const handleEmailVerification = async () => {
-      if (action === 'verifyEmail') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const mode = urlParams.get('mode');
+      const oobCode = urlParams.get('oobCode');
+
+      if (mode === 'verifyEmail' && oobCode) {
         try {
-          await applyActionCode(auth, code);
+          await applyActionCode(auth, oobCode);
           if (auth.currentUser) {
             await reload(auth.currentUser);
             router.push('/'); // Navigate after reload to ensure user state is up to date
@@ -29,42 +28,47 @@ const ActionHandlerPage = () => {
             // For instance, you might want to prompt login or directly sign-in the user again.
             console.log('User not loaded immediately after email verification');
           }
-        } catch (error : any) {
+        } catch (error: any) {
           console.error('Error verifying email:', error);
           setError('Failed to verify email. ' + error.message);
         }
       }
     };
-  
-    handleEmailVerification();
-  }, [action, oobCode, router]);
 
-const handleResetPassword = async (e : any) => {
+    handleEmailVerification();
+  }, []);
+
+  const handleResetPassword = async (e: any) => {
     e.preventDefault();
-    // Ensure that `oobCode` is defined and is a string before proceeding
-    const code = Array.isArray(oobCode) ? oobCode[0] : oobCode;
-    if (!code) {
-        setError("Operation code is missing.");
-        return; // Stop execution if `code` is undefined
+    const urlParams = new URLSearchParams(window.location.search);
+    const oobCode = urlParams.get('oobCode');
+
+    if (!oobCode) {
+      setError("Operation code is missing.");
+      return; // Stop execution if `oobCode` is undefined
     }
 
     if (newPassword !== confirmPassword) {
-        setError("Passwords don't match.");
-        return;
+      setError("Passwords don't match.");
+      return;
     }
 
     try {
-        await confirmPasswordReset(auth, code, newPassword);
-        setMessage('Your password has been reset successfully. Please log in.');
-        router.push('/sign-in'); // Redirect user to sign-in page
-    } catch (error : any) {
-        setError('Failed to reset password. ' + error.message);
+      await confirmPasswordReset(auth, oobCode, newPassword);
+      setMessage('Your password has been reset successfully. Please log in.');
+      router.push('/sign-in'); // Redirect user to sign-in page
+    } catch (error: any) {
+      setError('Failed to reset password. ' + error.message);
     }
-};
+  };
 
   return (
     <div className="custom-action-container">
-      {action === 'resetPassword' && (
+      {/* Handle password reset */}
+      {(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('mode') === 'resetPassword';
+      })() && (
         <>
           <h1>Reset Your Password</h1>
           {error && <p className="error-message">{error}</p>}
@@ -93,7 +97,10 @@ const handleResetPassword = async (e : any) => {
         </>
       )}
       {/* Display a message for email verification */}
-      {action === 'verifyEmail' && (
+      {(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('mode') === 'verifyEmail';
+      })() && (
         <div>
           {message && <p className="success-message">{message}</p>}
           {error && <p className="error-message">{error}</p>}
