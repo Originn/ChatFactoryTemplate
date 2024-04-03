@@ -15,11 +15,15 @@ app.prepare().then(() => {
   // Redirect from Heroku domain to custom domain
   server.use((req, res, next) => {
     const host = req.header("Host");
-    // Check if the host includes your Heroku domain
+    
     if (host === "solidcam.herokuapp.com") {
-      // Perform a 301 redirect to your custom domain
+      // Redirect from Heroku domain to custom domain
+      return res.redirect(301, `https://www.solidcamchat.com${req.url}`);
+    } else if (host === "solidcamchat.com") {
+      // Redirect from apex domain to 'www' subdomain
       return res.redirect(301, `https://www.solidcamchat.com${req.url}`);
     }
+  
     next();
   });
 
