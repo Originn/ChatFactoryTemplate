@@ -1,40 +1,57 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { applyActionCode, reload } from 'firebase/auth';
+import { applyActionCode, reload, verifyPasswordResetCode, confirmPasswordReset } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 
-const VerifyEmailPage = () => {
+const ActionHandlerPage = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const handleEmailVerification = async () => {
+    const handleFirebaseActions = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const mode = urlParams.get('mode');
-      const oobCode = urlParams.get('oobCode');
+      const actionCode = urlParams.get('oobCode');
 
-      if (mode === 'verifyEmail' && oobCode) {
-        try {
-          await applyActionCode(auth, oobCode);
-          if (auth.currentUser) {
-            await reload(auth.currentUser);
-            router.push('/'); // Now it's safe to navigate after reload
-          }
-        } catch (error) {
-          console.error('Error verifying email:', error);
-          // Handle error (e.g., display an error message)
-        }
+      if (!mode || !actionCode) {
+        console.error('Error: Mode or code is missing from the URL');
+        return;
+      }
+
+      switch (mode) {
+        case 'verifyEmail':
+          await verifyEmail(actionCode);
+          break;
+        case 'resetPassword':
+          // Navigate to a custom password reset page, or handle it directly here
+          router.push(`/reset-password?oobCode=${actionCode}`);
+          break;
+        default:
+          console.error('Error: Unrecognized mode in URL');
       }
     };
 
-    handleEmailVerification();
+    const verifyEmail = async (actionCode : any) => {
+      try {
+        await applyActionCode(auth, actionCode);
+        if (auth.currentUser) {
+          await reload(auth.currentUser);
+          router.push('/'); // Navigate after successful email verification
+        }
+      } catch (error) {
+        console.error('Error verifying email:', error);
+        // Handle error
+      }
+    };
+
+    handleFirebaseActions();
   }, []);
 
   return (
-    <div className="custom-verify-container">
-      <h1>Email Verification</h1>
-      <p>Verifying your email...</p> {/* Display a loading message or spinner */}
+    <div className="custom-action-handler-container">
+      <h1>Processing your request...</h1>
+      <p>Please wait...</p> {/* Display a loading message or spinner */}
     </div>
   );
 };
 
-export default VerifyEmailPage;
+export default ActionHandlerPage;
