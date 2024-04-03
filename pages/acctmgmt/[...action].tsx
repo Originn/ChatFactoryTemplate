@@ -15,22 +15,29 @@ const ActionHandlerPage = () => {
     // Ensure that `oobCode` is defined and is a string before proceeding
     const code = Array.isArray(oobCode) ? oobCode[0] : oobCode;
     if (!code) return; // Early return if `code` is undefined
-
-    if (action === 'verifyEmail') {
-        applyActionCode(auth, code)
-            .then(() => {
-                setMessage('Email verified successfully. Please log in.');
-                if (auth.currentUser) {
-                    reload(auth.currentUser);
-                }
-                // Optionally redirect the user after a delay
-                // setTimeout(() => router.push('/sign-in'), 3000);
-            })
-            .catch((error) => {
-                setError('Failed to verify email. ' + error.message);
-            });
-    }
-}, [action, oobCode, router]);
+  
+    const handleEmailVerification = async () => {
+      if (action === 'verifyEmail') {
+        try {
+          await applyActionCode(auth, code);
+          if (auth.currentUser) {
+            await reload(auth.currentUser);
+            router.push('/'); // Navigate after reload to ensure user state is up to date
+          } else {
+            // If currentUser is not available right after email verification,
+            // you might need to handle this scenario depending on your app's flow.
+            // For instance, you might want to prompt login or directly sign-in the user again.
+            console.log('User not loaded immediately after email verification');
+          }
+        } catch (error : any) {
+          console.error('Error verifying email:', error);
+          setError('Failed to verify email. ' + error.message);
+        }
+      }
+    };
+  
+    handleEmailVerification();
+  }, [action, oobCode, router]);
 
 const handleResetPassword = async (e : any) => {
     e.preventDefault();

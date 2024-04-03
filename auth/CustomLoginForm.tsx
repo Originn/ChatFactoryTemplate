@@ -16,6 +16,7 @@ const CustomLoginForm = () => {
     const [emailSubmitted, setEmailSubmitted] = useState(false);
     const [isEmailValid, setIsEmailValid] = useState(false);
     const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+    const [recoveryEmail, setRecoveryEmail] = useState('');
 
     const router = useRouter();
 
@@ -208,6 +209,24 @@ const toggleForm = () => {
   const closeAllPopups = () => {
     closeSignInPopup();
     closeForgotPasswordPopup();
+  };
+
+  const handleSendPasswordResetEmail = async (e : any) => {
+    e.preventDefault(); // Prevent default form submission behavior
+    if (!recoveryEmail) {
+      // Optionally, validate the email before attempting to send a reset email
+      setErrorMessage("Please enter a valid email address.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, recoveryEmail);
+      setErrorMessage(""); // Clear any existing error messages
+      postMessage("A password reset link has been sent to your email address. Please check your inbox."); // Inform the user
+      closeForgotPasswordPopup(); // Close the popup
+    } catch (error) {
+      console.error("Failed to send password reset email:", error);
+      setErrorMessage("Failed to send password reset email. Please try again later.");
+    }
   };
 
   
@@ -409,6 +428,31 @@ const toggleForm = () => {
                 <button onClick={sendPasswordReset} className="btn forgot-password-next-button">
                 Send reset email
                 </button>
+            </div>
+            </div>
+        </div>
+        )}
+        {showForgotPasswordModal && (
+        <div className="forgot-password-popup-backdrop">
+            <div className="forgot-password-popup">
+            <div className="forgot-password-popup-header">
+                <h2>Reset Your Password</h2>
+                <button onClick={closeForgotPasswordPopup} className="forgot-password-popup-close">×</button>
+            </div>
+            <div className="forgot-password-popup-body">
+                <form onSubmit={handleSendPasswordResetEmail}>
+                <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={recoveryEmail}
+                    onChange={(e) => setRecoveryEmail(e.target.value)}
+                    required
+                />
+                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                <button type="submit" className="btn forgot-password-next-button">
+                    Send reset email
+                </button>
+                </form>
             </div>
             </div>
         </div>
