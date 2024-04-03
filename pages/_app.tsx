@@ -9,17 +9,17 @@ function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
 
-  // Add the new verification sent page to the bypass list
-  const noAuthRequired = ['/verify-email', '/verification-sent'];
+  const noAuthRequired = ['/verify-email', '/verification-sent', '/acctmgmt'];
+  const isAuthRequired = !noAuthRequired.some(path => router.pathname.startsWith(path));
 
   return (
     <>
-      {noAuthRequired.includes(router.pathname) ? ( 
-        <Component {...pageProps} /> 
-      ) : (
+      {isAuthRequired ? ( 
         <AuthWrapper>
           <Component {...pageProps} />
         </AuthWrapper>
+      ) : (
+        <Component {...pageProps} /> 
       )}
     </>
   );
