@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, OAuthProvider, fetchSignInMethodsForEmail, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 
 const CustomLoginForm = () => {
     // Removed the name state since it's not needed anymore
@@ -255,8 +256,15 @@ const toggleForm = () => {
   
   
   return (
+    <>
+    <Head>
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      {/* other head elements */}
+    </Head>
     <div className="center-wrapper">
-    <img src="/solidcam.png" alt="SolidCAM Logo" style={{ position: 'absolute', top: '250px', left: '-30px', width: '400px' }}/>
+    <div className="image-container">
+    <img src="/solidcam.png" alt="SolidCAM Logo"/>
+  </div>
     <div className="firebaseui-container">
       <div className="firebaseui-card-content">
       <div className="heading">Let's Chat!</div>
@@ -483,6 +491,7 @@ const toggleForm = () => {
       </div>
      </div>
     </div>
+    </>
     );
    };
 
