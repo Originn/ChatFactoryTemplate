@@ -67,24 +67,42 @@ const ActionHandlerPage = () => {
   };
 
   return (
-    <div className="custom-action-handler-container">
-      {isResettingPassword ? (
-        <div>
-          <h1>Reset Your Password</h1>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Enter new password"
-          />
-          <button onClick={resetPassword}>Reset Password</button>
-        </div>
-      ) : (
-        <>
-          <h1>Processing your request...</h1>
-          <p>Please wait...</p> {/* Display a loading message or spinner */}
-        </>
-      )}
+    <div className="passw-reset-popup-backdrop">
+      <div className="passw-reset-popup">
+        {isResettingPassword ? (
+          <>
+            <div className="passw-reset-popup-header">
+              <h2>Reset Your Password</h2>
+              <button
+                className="passw-reset-popup-close"
+                onClick={() => setIsResettingPassword(false)}
+              >
+                &times;
+              </button>
+            </div>
+            <div className="passw-reset-popup-body">
+              <input
+                type="password"
+                className="passw-reset-popup-body-input"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+              />
+              <button
+                className="forgot-password-next-button"
+                onClick={resetPassword}
+              >
+                Reset Password
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="passw-reset-popup-body">
+            <h1>Processing your request...</h1>
+            <p>Please wait...</p> {/* Display a loading message or spinner */}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
