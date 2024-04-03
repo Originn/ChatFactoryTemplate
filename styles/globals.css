@@ -11,8 +11,8 @@
 }
 
 html, body {
-    overflow-x: hidden; /* Prevent horizontal overflow */
-    overflow-y: hidden;
+    overflow-x: auto; /* Prevent horizontal overflow */
+    overflow-y: auto;
   }
 
 body.dark ul,
@@ -456,9 +456,90 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh; /* Use min-height instead of height to ensure it covers the full viewport */
-    transform: translate(400px, -10%); /* Moves the content left without causing overflow */
-    padding-top: 20px;
+    min-height: 100vh; /* Full height of the viewport */
+    flex-direction: row;
+  }
+
+  .image-container {
+    flex: 1; /* Takes up 1 portion of the space */
+    display: flex;
+    justify-content: center; /* Center image horizontally */
+    align-items: center; /* Center image vertically */
+    max-width: 50%; /* Limits the width to half of the container */
+  }
+
+  .center-wrapper img {
+    max-width: 90%; /* Allow some padding */
+    height: auto; /* Maintain aspect ratio */
+  }
+
+  @media (max-width: 600px) {
+    .firebaseui-idp-button,
+    .create-account-button,
+    .sign-in-button,
+    .signin-popup-body-input,
+    .signup-popup-body input {
+      width: 100%;
+    }
+  }
+  
+  /* Example media query for larger screens */
+  @media (min-width: 601px) {
+    .center-wrapper {
+      flex-direction: row; /* Align items in a row for larger screens */
+      justify-content: center;
+    }
+    
+    .firebaseui-container {
+      max-width: 400px; /* Adjust width of the container */
+    }
+    
+    .divider-container {
+      justify-content: space-between;
+    }
+
+    .heading {
+        font-size: 4rem; /* Larger font size for larger screens */
+    }
+  }
+
+  @media (max-width: 768px) {
+    .center-wrapper {
+        transform: none; /* Removes the transform property */
+        justify-content: center; /* Centers children horizontally */
+        align-items: center; /* Centers children vertically */
+        flex-direction: column; /* Stacks children vertically */
+        text-align: center; /* Centers text */
+      } /* Stack items vertically, image at the top */
+
+    .image-container img {
+        width: 200px; /* Or whatever size you prefer */
+        height: auto; /* To maintain the aspect ratio */
+        display: block; /* To prevent inline behaviors */
+        margin: 0 auto; /* Center the image */
+    }
+  
+    .button-container {
+      width: 100%; /* Take the full width of the container */
+      max-width: 100%; /* Ensure it doesn't exceed the container width */
+      margin: 0 auto; /* Center align the contents */
+    }
+  
+    .heading {
+        font-size: 2em; /* Smaller font size for small screens */
+        margin-bottom: 1em; /* Adjusts the space below the heading */
+    }
+
+    .firebaseui-idp-button,
+    .create-account-button,
+    .sign-in-button {
+        width: auto; /* Auto width based on content */
+        padding: 10px 20px; /* Adjust padding */
+    }
+  
+    .firebaseui-container {
+      margin-top: 20px; /* Provide some space between the text and buttons */
+    }
   }
   
   .firebaseui-container {
@@ -476,11 +557,9 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
   .firebaseui-idp-button,
   .create-account-button,
   .sign-in-button {
-    padding: 8px 16px; /* Reduced vertical padding */
     border-radius: 20px; /* Adjusted for less roundness */
     font-size: 11px; /* Your preference for font size */
-    width: calc(100% - 140px); /* Adjust for padding */
-    margin: 10px 0;
+    width: 80%; /* Adjust for padding */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -490,6 +569,8 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     outline: none;
     background: white;
     text-align: center;
+    margin: 0.7rem 0;
+    padding: 0.5rem 1.6rem;
   }
   
   .firebaseui-idp-button:hover {
@@ -574,11 +655,12 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
   }
   
   .heading {
-    font-size: 4em; /* Adjust the size as needed */
     font-weight: bold;
-    margin-bottom: 20px; /* Space between heading and sign-up buttons */
     text-align: left; /* Center the text */
+    font-size: 2.5rem; /* Adjust for smaller screens */
+    margin-bottom: 1rem;
   }
+
 
   .signup-popup-backdrop {
     position: fixed;
