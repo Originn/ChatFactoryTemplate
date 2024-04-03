@@ -75,11 +75,10 @@ const CustomLoginForm = () => {
     try {
       const provider = new OAuthProvider('apple.com');
       await signInWithPopup(auth, provider);
-      // Redirect after sign in
       router.push('/');
-    } catch (error) {
+    } catch (error : any) {
       console.error('Error during Apple sign-in:', error);
-      // Handle the error here
+      setErrorMessage(error.message); // Display the error message to the user
     }
   };
 
@@ -145,13 +144,19 @@ const toggleForm = () => {
     return re.test(String(email).toLowerCase());
   };
 
-  const handleEmailChange = (e : any) => {
+  const handleEmailChange = (e: any) => {
     const inputEmail = e.target.value;
     setEmail(inputEmail);
     const isValid = validateEmail(inputEmail);
     setIsEmailValid(isValid);
     if (errorMessage && isValid) {
       setErrorMessage('');
+    }
+  
+    // Check if Enter key is pressed
+    if (e.key === 'Enter' && isValid && !errorMessage) {
+      e.preventDefault(); // Prevent the default form submit
+      handleNextClick(); // Programmatically trigger the next button click
     }
   };
 
@@ -362,7 +367,8 @@ const toggleForm = () => {
                     placeholder="Email"
                     required
                     value={email}
-                    onChange={handleEmailChange} // Update to use handleEmailChange
+                    onChange={handleEmailChange} // Attach the handleEmailChange here
+                    onKeyDown={handleEmailChange} // Also attach to the onKeyDown event
                     className="signin-popup-body-input"
                     />
                     {errorMessage && <div className="error-message">{errorMessage}</div>}
