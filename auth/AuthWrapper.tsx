@@ -1,5 +1,5 @@
 import React, { ReactElement, useEffect, useState, ReactNode } from 'react';
-import { onAuthStateChanged, reload } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 import CustomLoginForm from './CustomLoginForm'; 
 import { useRouter } from 'next/router';

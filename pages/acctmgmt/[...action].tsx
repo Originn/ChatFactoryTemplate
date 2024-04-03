@@ -24,17 +24,34 @@ const ActionHandlerPage = () => {
     setActionCode(code);
 
     const verifyEmail = async () => {
-      try {
-        await applyActionCode(auth, code);
-        if (auth.currentUser) {
-          await reload(auth.currentUser);
-          router.push('/'); // Navigate after successful email verification
+        try {
+          await applyActionCode(auth, code);
+          // Firebase auth may not immediately update the currentUser after applying the action code,
+          // so we should wait for the state to be confirmed before routing.
+          auth.onAuthStateChanged((user) => {
+            if (user) {
+              // User is signed in, proceed to reload and redirect.
+              reload(user)
+                .then(() => {
+                  // Email has been verified and user reloaded, proceed to redirect.
+                  router.push('/');
+                })
+                .catch((error) => {
+                  console.error('Error reloading user:', error);
+                  // Handle error, possibly update UI to inform the user.
+                  setConfirmationMessage('Error reloading user information. Please sign in again.');
+                });
+            } else {
+              // No user is signed in, might need to handle this scenario.
+              setConfirmationMessage('No user is currently signed in. Please sign in to verify your email.');
+            }
+          });
+        } catch (error : any) {
+          console.error('Error verifying email:', error);
+          // Handle error, possibly update UI to inform the user.
+          setConfirmationMessage(error.message);
         }
-      } catch (error) {
-        console.error('Error verifying email:', error);
-        // Handle error
-      }
-    };
+      };
 
     const handleAction = async () => {
       switch (mode) {
