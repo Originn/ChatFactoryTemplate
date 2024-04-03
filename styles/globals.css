@@ -685,12 +685,11 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     cursor: default; /* Keep the default cursor for disabled state */
 }
 
-.error-message {
+/* .error-message {
     color: red;
     margin: 10px 0;
     text-align: center;
-    /* Add additional styling as needed */
-}
+} */
 
 .sign-in-button {
     padding: 8px 16px; /* Adjusted padding to match other buttons */
@@ -967,11 +966,11 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
 }
 
 /* Error Message */
-.error-message {
+/* .error-message {
     color: red;
     text-align: center;
     margin-top: 10px;
-}
+} */
 
 .passw-reset-popup-backdrop {
     position: fixed;
@@ -1034,3 +1033,35 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     cursor: pointer;
   }
   
+  /* Forgot Password Popup Close Button */
+.passw-reset-popup-close {
+    border: none;
+    background: none;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.confirmation-message {
+    color: #4BB543; /* A green color for success messages */
+    background-color: #D4EDDA;
+    border-color: #C3E6CB;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 20px 0;
+    text-align: center;
+    font-size: 16px;
+  }
+  
+  .error-message {
+    color: #FF0000; /* Red color for error messages */
+    background-color: #F8D7DA;
+    border-color: #F5C6CB;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 20px 0;
+    text-align: center;
+    font-size: 16px;
+  }
