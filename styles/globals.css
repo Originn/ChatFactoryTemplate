@@ -1045,14 +1045,14 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
 }
 
 .confirmation-message {
-    color: #4BB543; /* A green color for success messages */
+    color: #ffffff; /* A green color for success messages */
     background-color: #D4EDDA;
     border-color: #C3E6CB;
     padding: 10px;
     border-radius: 5px;
     margin: 20px 0;
     text-align: center;
-    font-size: 16px;
+    font-size: 24px;
   }
   
   .error-message {

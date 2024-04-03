@@ -49,22 +49,37 @@ const CustomLoginForm = () => {
     };
 
     const signInWithMicrosoft = async () => {
+        // Pre-attempt log: you might want to log the current state before attempting to sign in.
+        console.log(`Attempting to sign in with Microsoft. Current email: ${email}`);
+      
         try {
           const provider = new OAuthProvider('microsoft.com');
-          // Optional: Specify additional OAuth 2.0 scopes beyond 'openid', which is the default.
           provider.addScope('User.Read');
-          // Optional: To request ID tokens with specific claims.
           provider.setCustomParameters({
-            // Prompt user to select an account
             prompt: 'select_account',
           });
       
+          // Logging the custom parameters to verify if they are set correctly.
+          console.log('Custom Parameters set for Microsoft provider:', provider.setCustomParameters);
+      
           const result = await signInWithPopup(auth, provider);
-          // Use result.user, result.credential.accessToken as needed.
-          router.push('/');
-        } catch (error) {
+          // Success log
+          console.log('Successfully signed in with Microsoft:', result);
+      
+          router.push('/'); // Redirect on successful sign in
+        } catch (error : any) {
+          // Error log: capture and log the complete error object
           console.error('Error during Microsoft sign-in:', error);
-          // Handle the error here
+          
+          // Depending on the error, it could be related to the company mail configuration
+          if (error.email && error.email === email) {
+            console.error(`Sign-in failed for company email ${email}.`, error);
+          } else {
+            console.error('Sign-in failed for an unknown reason.', error);
+          }
+      
+          // Set error message for UI. You might want to handle sensitive error info differently.
+          setErrorMessage(`Error during sign-in with Microsoft: ${error.message}`);
         }
       };
 
