@@ -616,7 +616,7 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: calc(100% - 140px); /* same width as the buttons */
+    width: 80%; /* same width as the buttons */
     margin: 10px 0; /* same margin as the buttons for consistent spacing */
   }
   
