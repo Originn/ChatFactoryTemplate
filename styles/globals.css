@@ -456,8 +456,8 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh; /* Full height of the viewport */
-    flex-direction: row;
+    min-height: 100vh;
+    width: 100%;
   }
 
   .image-container {
@@ -504,8 +504,9 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
   }
 
   @media (max-width: 768px) {
+
     .center-wrapper {
-        transform: none; /* Removes the transform property */
+        display: flex;
         justify-content: center; /* Centers children horizontally */
         align-items: center; /* Centers children vertically */
         flex-direction: column; /* Stacks children vertically */
@@ -513,10 +514,11 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
       } /* Stack items vertically, image at the top */
 
     .image-container img {
-        width: 200px; /* Or whatever size you prefer */
-        height: auto; /* To maintain the aspect ratio */
-        display: block; /* To prevent inline behaviors */
-        margin: 0 auto; /* Center the image */
+    width: 100%; /* Allows the image to resize within its container */
+    max-width: 200px; /* Limits the size of the image */
+    height: auto; /* Maintain aspect ratio */
+    display: block; /* To prevent inline behaviors */
+    margin: 0 auto; /* Center the image */
     }
   
     .button-container {
@@ -537,21 +539,34 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
         padding: 10px 20px; /* Adjust padding */
     }
   
-    .firebaseui-container {
-      margin-top: 20px; /* Provide some space between the text and buttons */
+    .firebaseui-container,
+    .signin-popup,
+    .signup-popup,
+    .forgot-password-popup {
+        width: 90%; /* Allows some margin on the sides */
+        max-width: 400px; /* Caps the maximum width to ensure it doesn't get too large */
+        margin: auto; /* Centers the container horizontally */
+        padding: 20px; /* Adequate padding */
+    }
+
+    .signin-popup-body-input,
+    .signup-popup-body input,
+    .forgot-password-popup-body input {
+      width: calc(100% - 30px); /* Adjusts the width to account for padding and prevents overflow */
+      margin: 10px 0; /* Maintain consistent margin for inputs */
     }
   }
   
   .firebaseui-container {
     display: flex;
     flex-direction: column;
-    align-items: stretch; /* this will make the child buttons stretch in flex container */
-    width: 100%; /* full width */
-    max-width: 500px; /* or however wide you want the buttons to be */
-    margin: auto; /* this will center your container */
-    padding: 20px; /* padding around the container */
-    box-shadow: none; /* removes box-shadow */
-    background-color: transparent; /* transparent background */
+    align-items: stretch; /* Stretch the children */
+    width: 100%;
+    max-width: 500px; /* Maximum width of the container */
+    margin: 0 auto; /* Centering the container */
+    padding: 20px; /* Padding inside the container */
+    box-shadow: none;
+    background-color: transparent;
   }
 
   .firebaseui-idp-button,
@@ -571,6 +586,8 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     text-align: center;
     margin: 0.7rem 0;
     padding: 0.5rem 1.6rem;
+    margin-left: auto;
+    margin-right: auto;
   }
   
   .firebaseui-idp-button:hover {
@@ -609,6 +626,8 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     box-shadow: 0 2px 4px 0 rgba(0,0,0,0.25); /* Optional: if you want shadow like other buttons */
     color: black; /* Text color - make this white if you want it like the Google button */
     background-color: #4285F4; /* Background color to match the Google button */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Container to wrap around the 'or' text and lines */
@@ -618,6 +637,8 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     justify-content: center;
     width: 80%; /* same width as the buttons */
     margin: 10px 0; /* same margin as the buttons for consistent spacing */
+    margin-left: auto;
+    margin-right: auto;
   }
   
   /* Style for the 'or' divider with lines */
@@ -656,13 +677,14 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
   
   .heading {
     font-weight: bold;
-    text-align: left; /* Center the text */
+    text-align: center; /* Center the text */
     font-size: 2.5rem; /* Adjust for smaller screens */
     margin-bottom: 1rem;
   }
 
 
-  .signup-popup-backdrop {
+  .signup-popup-backdrop,
+  .signin-popup-backdrop{
     position: fixed;
     z-index: 1000;
     left: 0;
@@ -789,7 +811,8 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     box-shadow: 0 2px 4px 0 rgba(0,0,0,0.25); /* Optional: if you want shadow like other buttons */
     color: blue; /* Text color - make this white if you want it like the Google button */
     background-color: #ffffff; /* Background color to match the Google button */
-    /* margin-top: 50px; */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Optionally, style for hover effect */
@@ -798,28 +821,13 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
 }
 
 .account-exists-text {
-    font-size: 18px; /* Set the font size */
-    font-weight: bold; /* Make text bold */
-    margin-top: 80px; /* Space above the text */
-    margin-bottom: 20px; /* Space below the text, before the 'Sign in' button */
-    text-align: left; /* Align text to the left */
-    width: 100%; /* Make the div take full width */
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 80px;
+    margin-bottom: 20px;
+    text-align: center; /* Center align the text */
+    width: 100%; /* Full width is fine for text elements */
   }
-  
-  /* Style for Sign In Popup similar to the design provided */
-.signin-popup-backdrop {
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    /* transform: translate(-400px, 10%); */
-}
 
 .signin-popup {
     background: white;
