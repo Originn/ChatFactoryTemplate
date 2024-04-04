@@ -798,6 +798,16 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     border-radius: 4px;
 }
 
+.signin-popup-body-input[type="password"] {
+    width: 80%; /* Adjust based on your design */
+    padding: 10px; /* Adjust padding to control height */
+    margin: 10px auto; /* Center align */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px; /* Consistent font size */
+    /* Other styling as necessary */
+}
+
 .forgot-password-link {
     background-color: #ffffff; /* White background */
     color: #000000; /* Black text */
@@ -1093,13 +1103,6 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
       .signin-popup .btn {
         width: calc(100% - 2rem); /* Adjust width taking padding into account */
         margin: 0.5rem 0; /* Adjust margin for inputs and buttons */
-      }
-    
-      /* Adjust the text size and margins for the footer links */
-      .signin-popup-footer,
-      .signin-popup-footer a {
-        font-size: 14px;
-        margin: 1rem 0;
       }
     
       /* Adjust styles for any links in the body of the popup */
