@@ -673,7 +673,7 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     display: flex;
     justify-content: center;
     align-items: center;
-    transform: translate(-400px, 10%);
+    /* transform: translate(-400px, 10%); */
 }
 
 /* Popup Window */
@@ -818,7 +818,7 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     display: flex;
     justify-content: center;
     align-items: center;
-    transform: translate(-400px, 10%);
+    /* transform: translate(-400px, 10%); */
 }
 
 .signin-popup {
