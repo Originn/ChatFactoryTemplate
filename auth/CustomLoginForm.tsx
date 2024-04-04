@@ -280,12 +280,12 @@ const toggleForm = () => {
           </span>
           <span className="firebaseui-idp-text">Sign up with Apple</span>
         </button>
-        <button onClick={signInWithMicrosoft} className="firebaseui-idp-button firebaseui-idp-microsoft">
+        {/* <button onClick={signInWithMicrosoft} className="firebaseui-idp-button firebaseui-idp-microsoft">
           <span className="firebaseui-idp-icon-wrapper">
             <img className="firebaseui-idp-icon" src="/microsoft.svg" alt="Microsoft" />
           </span>
           <span className="firebaseui-idp-text">Sign up with Microsoft</span>
-        </button>
+        </button> */}
         <div className="divider-container">
           <div className="divider">or</div>
         </div>
