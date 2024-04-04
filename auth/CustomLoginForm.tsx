@@ -1,6 +1,6 @@
 // auth/CustomLoginForm.tsx
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, OAuthProvider, fetchSignInMethodsForEmail, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, OAuthProvider, fetchSignInMethodsForEmail, sendEmailVerification, sendPasswordResetEmail, linkWithCredential, getAuth, EmailAuthProvider } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -18,6 +18,7 @@ const CustomLoginForm = () => {
     const [isEmailValid, setIsEmailValid] = useState(false);
     const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
     const [recoveryEmail, setRecoveryEmail] = useState('');
+    const [linkingError, setLinkingError] = useState('');
 
     const router = useRouter();
 
@@ -50,39 +51,45 @@ const CustomLoginForm = () => {
     };
 
     const signInWithMicrosoft = async () => {
-        // Pre-attempt log: you might want to log the current state before attempting to sign in.
-        console.log(`Attempting to sign in with Microsoft. Current email: ${email}`);
-      
+        const provider = new OAuthProvider('microsoft.com');
+        provider.addScope('User.Read');
+        provider.setCustomParameters({
+          prompt: 'select_account',
+        });
+        await signInWithProvider(provider);
+    };
+
+    // Modify the signInWith* methods to handle account linking
+    const signInWithProvider = async (provider : any) => {
         try {
-          const provider = new OAuthProvider('microsoft.com');
-          provider.addScope('User.Read');
-          provider.setCustomParameters({
-            prompt: 'select_account',
-          });
-      
-          // Logging the custom parameters to verify if they are set correctly.
-          console.log('Custom Parameters set for Microsoft provider:', provider.setCustomParameters);
-      
-          const result = await signInWithPopup(auth, provider);
-          // Success log
-          console.log('Successfully signed in with Microsoft:', result);
-      
-          router.push('/'); // Redirect on successful sign in
+        const result = await signInWithPopup(auth, provider);
+        router.push('/'); // Redirect on successful sign in
         } catch (error : any) {
-          // Error log: capture and log the complete error object
-          console.error('Error during Microsoft sign-in:', error);
-          
-          // Depending on the error, it could be related to the company mail configuration
-          if (error.email && error.email === email) {
-            console.error(`Sign-in failed for company email ${email}.`, error);
-          } else {
-            console.error('Sign-in failed for an unknown reason.', error);
-          }
-      
-          // Set error message for UI. You might want to handle sensitive error info differently.
-          setErrorMessage(`Error during sign-in with Microsoft: ${error.message}`);
+        if (error.code === 'auth/account-exists-with-different-credential') {
+            // Handle the case where the user tries to sign in with an email that is already in use
+            handleAccountLinking(error);
+        } else {
+            console.error('Error during sign-in:', error);
+            setErrorMessage(error.message);
         }
-      };
+        }
+    };    
+
+    const handleAccountLinking = async (error : any) => {
+        const email = error.email; // The email of the user's account
+        const pendingCredential = error.credential; // The credential of the provider the user tried to sign in with
+    
+        // Fetch the sign-in methods for the email
+        const methods = await fetchSignInMethodsForEmail(auth, email);
+        if (methods.length > 0) {
+          // Prompt the user to sign in using one of the existing methods
+          setErrorMessage(`An account already exists with the same email address but different sign-in credentials. Please sign in using: ${methods.join(', ')}`);
+          // Optionally, link the new auth provider to the existing account after the user signs in with one of the existing methods
+          // For example, if the user then signs in using email and password, you can link the new provider like this:
+          // const userCredential = await signInWithEmailAndPassword(auth, email, password);
+          // await linkWithCredential(userCredential.user, pendingCredential);
+        }
+    };
 
   const signInWithGoogle = async () => {
     try {
@@ -97,15 +104,9 @@ const CustomLoginForm = () => {
   };
 
   const signInWithApple = async () => {
-    try {
-      const provider = new OAuthProvider('apple.com');
-      await signInWithPopup(auth, provider);
-      router.push('/');
-    } catch (error : any) {
-      console.error('Error during Apple sign-in:', error);
-      setErrorMessage(error.message); // Display the error message to the user
-    }
-  };
+    const provider = new OAuthProvider('apple.com');
+    await signInWithProvider(provider);
+};
 
   const createAccountWithEmail = async (e : any) => {
     e.preventDefault();
