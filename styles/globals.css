@@ -214,6 +214,50 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     background-color: #999999;
 }
 
+/* Adjustments for .Home_messagelist__wIt78 in light mode */
+body.light .Home_cloud__16v52 {
+  background-color: var(--background-light); /* Use the light mode background variable or a specific color */
+  color: #000000; /* Dark text color for contrast */
+  border: 2px solid #cccccc; /* Make border more visible with a darker color */
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* Optional: add a shadow for depth */
+  padding: 10px; /* Padding inside the message list */
+  margin-bottom: 10px; /* Margin below the message list for separation */
+  border-radius: 8px; /* Rounded corners */
+  font-size: 1rem; /* Text size */
+}
+
+/* Enhance scrollbar visibility in .Home_messagelist__wIt78 for light mode */
+body.light .Home_messagelist__wIt78::-webkit-scrollbar {
+  width: 8px; /* Adjust scrollbar width */
+}
+
+body.light .Home_messagelist__wIt78::-webkit-scrollbar-thumb {
+  background-color: #cccccc; /* Darker scrollbar thumb for better visibility */
+  border-radius: 4px; /* Rounded corners for the scrollbar thumb */
+}
+
+body.light .Home_messagelist__wIt78::-webkit-scrollbar-track {
+  background-color: #f0f0f0; /* Lighter track */
+}
+
+body.light .Home_textarea__k243o {
+  border: 2px solid #bfbfbf; /* A slightly darker border for better visibility, as suggested previously */
+}
+
+.submit-feedback-label {
+  text-align: left;
+  margin-bottom: 10px; /* Adjust spacing as needed */
+  /* font-weight: bold; */
+  /* Further styling options like font-size, color, etc., based on your design */
+}
+
+body.dark .submit-feedback-label {
+  text-align: left;
+  margin-bottom: 10px; /* Adjust spacing as needed */
+  /* font-weight: bold; */
+  color: white;
+}
+
 .modal-backdrop {
     position: fixed;
     z-index: 1;
