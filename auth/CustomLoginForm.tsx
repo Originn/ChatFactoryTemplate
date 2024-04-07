@@ -1,9 +1,10 @@
 // auth/CustomLoginForm.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, OAuthProvider, fetchSignInMethodsForEmail, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import Image from 'next/image';
 
 const CustomLoginForm = () => {
     // Removed the name state since it's not needed anymore
@@ -18,10 +19,24 @@ const CustomLoginForm = () => {
     const [isEmailValid, setIsEmailValid] = useState(false);
     const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
     const [recoveryEmail, setRecoveryEmail] = useState('');
+    const [theme, setTheme] = useState('light');
 
     const router = useRouter();
 
-    
+    useEffect(() => {
+        document.body.className = theme;
+    }, [theme]);
+
+    const toggleTheme = () => {
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
+        localStorage.setItem('theme', newTheme); // Save theme preference
+    };
+
+    // Determine which icon to show based on the current theme
+    const iconPath = theme === 'light' ? "/icons8-moon-50.png" : "/icons8-sun.svg";
+    const buttonBgClass = theme === 'dark' ? "bg-white" : "bg-gray-600";
+
     const handleSignInWithEmail = async () => {
         try {
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -271,6 +286,13 @@ const toggleForm = () => {
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       {/* other head elements */}
     </Head>
+    <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
+                <button onClick={toggleTheme} style={{ border: 'none', background: 'none' }}>
+                    <div className={`${buttonBgClass} p-2 rounded-full`}>
+                        <Image src={iconPath} alt={theme === 'dark' ? 'Light mode icon' : 'Dark mode icon'} width={24} height={24} />
+                    </div>
+                </button>
+            </div>
     <div className="center-wrapper">
     <div className="image-container">
     <img src="/solidcam.png" alt="SolidCAM Logo"/>
