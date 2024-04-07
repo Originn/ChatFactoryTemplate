@@ -85,13 +85,7 @@ export default function Home() {
         history: [string, string][];
         pendingSourceDocs?: Document[];
     }>({
-        messages: [
-        {
-            message: 'Ask a question about SolidCAM below.',
-            type: 'apiMessage',
-            isComplete:false,
-        },
-        ],
+        messages: [],
         history: [],
     });
     const { messages, history } = messageState;
@@ -443,6 +437,9 @@ export default function Home() {
   
       return (
         <div className="feedback-container">
+        <div className="submit-feedback-label">
+            Submit Feedback
+        </div>
         <div className="tooltip-container up"> {/* Add 'up' class for Thumb Up button */}
           <Tooltip message="Give positive feedback">
             <button onClick={() => handleOpenModal('up')}>
@@ -553,7 +550,7 @@ export default function Home() {
         <Layout theme={theme} toggleTheme={toggleTheme}>
           <div className="mx-auto flex flex-col gap-4">
             <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
-              Chat With SolidCAM Docs
+              SolidCAM ChatBot
             </h1>
             <main className={styles.main}>
               <div className={styles.cloud}>
@@ -721,7 +718,7 @@ export default function Home() {
                       placeholder={
                         loading
                           ? 'Waiting for response...'
-                          : 'Ask a question about SolidCAM'
+                          : 'Message SolidCAM ChatBot...'
                       }
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
