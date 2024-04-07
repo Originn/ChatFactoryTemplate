@@ -33,8 +33,13 @@ const CustomLoginForm = () => {
         localStorage.setItem('theme', newTheme); // Save theme preference
     };
 
+    const baseURL = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : '/';
+
+    // Use the base URL with your image path
+    const moonIcon = `${baseURL}icons8-moon-50.png`;
+
     // Determine which icon to show based on the current theme
-    const iconPath = theme === 'light' ? "/icons8-moon-50.png" : "/icons8-sun.svg";
+    const iconPath = theme === 'light' ? moonIcon : "/icons8-sun.svg";
     const buttonBgClass = theme === 'dark' ? "bg-white" : "bg-gray-600";
 
     const handleSignInWithEmail = async () => {
