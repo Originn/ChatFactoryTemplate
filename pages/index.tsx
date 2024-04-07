@@ -46,27 +46,6 @@ if (process.env.NODE_ENV === PRODUCTION_ENV) {
 }
 
 // Utility Functions
-function getTitleByDocType(docType: string): string {
-  switch (docType) {
-      case 'youtube':
-          return 'Webinar';
-      case 'sentinel':
-          return 'Help Document';
-      default:
-          return 'Help Document';
-  }
-}
-
-// function addHyperlinksToPageNumbers(content: string, source: string): string {
-//   const regex = /\((\d+)\)/g;
-//   return content.replace(regex, (match, pageNumber) => {
-//     let link = `${source}#page=${pageNumber}`;
-//     if (link.includes('&')) {
-//       link = link.replace(/&/g, 'and');
-//     }
-//     return `<a href="${link}" target="_blank" rel="noopener noreferrer" style="color: blue;">${match}</a>`;
-//   });
-// }
 
 // Tooltip component definition
 interface TooltipProps {
@@ -90,7 +69,10 @@ const Tooltip: React.FC<TooltipProps> = ({ message, children }) => {
 // Component: Home
 export default function Home() {
     // State Hooks
-    const [theme, setTheme] = useState<'light' | 'dark'>('light');
+    const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+      // Try to get the saved theme from localStorage or default to 'light'
+      return localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+  });
     const [query, setQuery] = useState<string>('');
     const [requestsInProgress, setRequestsInProgress] = useState<RequestsInProgressType>({});
     const [loading, setLoading] = useState<boolean>(false);
@@ -105,7 +87,7 @@ export default function Home() {
     }>({
         messages: [
         {
-            message: 'Hi, what would you like to learn about SolidCAM?',
+            message: 'Ask a question about SolidCAM below.',
             type: 'apiMessage',
             isComplete:false,
         },
@@ -125,9 +107,11 @@ export default function Home() {
 
     // Event Handlers
     const toggleTheme = () => {
-        setTheme(prevTheme => prevTheme === DEFAULT_THEME ? 'dark' : DEFAULT_THEME);
-    };
-
+      // Update the theme in state and also save the new theme preference in localStorage
+      const newTheme = theme === 'light' ? 'dark' : 'light';
+      setTheme(newTheme);
+      localStorage.setItem('theme', newTheme);
+  };
     const handleEnter = (e: React.KeyboardEvent) => {
       if (e.key === 'Enter') {
           if (e.shiftKey) {
@@ -291,6 +275,20 @@ export default function Home() {
     
 
     // Effects
+
+    useEffect(() => {
+      const handleStorageChange = () => {
+          // Update theme based on localStorage value if it changes
+          const updatedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+          setTheme(updatedTheme);
+      };
+
+      window.addEventListener('storage', handleStorageChange);
+
+      return () => {
+          window.removeEventListener('storage', handleStorageChange);
+      };
+  }, []);
 
     useEffect(() => {
       const savedTheme = window.localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -561,6 +559,8 @@ export default function Home() {
               <div className={styles.cloud}>
                 <div ref={messageListRef} className={styles.messagelist}>
                 {messages.map((message, index) => {
+                let webinarCount = 1;
+                let documentCount = 1;
                   let icon;
                   let className;
                   if (message.type === 'apiMessage') {
@@ -594,6 +594,9 @@ export default function Home() {
                         : styles.usermessage;
                   }
                   const hasSources = message.sourceDocs && message.sourceDocs.length > 0;
+                        // Preprocess documents to update counts based on type
+                  const totalWebinars = message.sourceDocs?.filter(doc => doc.metadata.type === 'youtube').length ?? 0;
+                  const totalDocuments = message.sourceDocs?.length ?? 0 - totalWebinars; // Assuming other types are documents
                   return (
                     <React.Fragment key={`chatMessageFragment-${index}`}>
                       <div className={className}>
@@ -610,18 +613,24 @@ export default function Home() {
                         </div>
                       </div>
                       {message.sourceDocs && (
-                        <div key={`sourceDocsAccordion-${index}`}>
-                          <Accordion
-                            type="single"
-                            collapsible
-                            className="flex-col"
-                          >
-                            {message.sourceDocs.map((doc, docIndex) => (
-                              <div key={`messageSourceDocs-${docIndex}`}>
-                                <AccordionItem value={`item-${docIndex}`}>
-                                  <AccordionTrigger>
-                                    <h3>{getTitleByDocType(doc.metadata.type)}</h3>
-                                  </AccordionTrigger>
+                      <div key={`sourceDocsAccordion-${index}`}>
+                      <Accordion type="single" collapsible className="flex-col">
+                        {message.sourceDocs.map((doc, docIndex) => {
+                          let title;
+                          let currentCount;
+                          if (doc.metadata.type === 'youtube') {
+                            title = 'Webinar';
+                            currentCount = webinarCount++; // Increment count for webinar
+                          } else { // 'PDF' and 'sentinel' are treated as documents
+                            title = 'Document';
+                            currentCount = documentCount++; // Increment count for document
+                          }
+
+                          return (
+                            <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
+                              <AccordionTrigger>
+                                <h3>{`${title} ${currentCount}`}</h3>
+                              </AccordionTrigger>
                                   <AccordionContent>
                                   {
                                     doc.metadata.type === 'youtube' ? (
@@ -685,8 +694,8 @@ export default function Home() {
                                     }
                                   </AccordionContent>
                                 </AccordionItem>
-                              </div>
-                            ))}
+                                );
+                              })}
                           </Accordion>
                         </div>
                       )}
@@ -712,7 +721,7 @@ export default function Home() {
                       placeholder={
                         loading
                           ? 'Waiting for response...'
-                          : 'What SolidCAM can do?'
+                          : 'Ask a question about SolidCAM'
                       }
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}

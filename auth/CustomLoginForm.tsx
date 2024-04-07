@@ -19,7 +19,7 @@ const CustomLoginForm = () => {
     const [isEmailValid, setIsEmailValid] = useState(false);
     const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
     const [recoveryEmail, setRecoveryEmail] = useState('');
-    const [theme, setTheme] = useState('light');
+    const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
     const router = useRouter();
 
