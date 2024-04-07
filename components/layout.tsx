@@ -1,4 +1,4 @@
-//layout.tsx
+//components\layout.tsx
 import Image from 'next/image';
 import { getAuth, signOut } from 'firebase/auth';
 import { auth } from 'utils/firebase';
