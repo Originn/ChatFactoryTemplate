@@ -114,8 +114,7 @@ const roomMemories: Record<string, BufferMemory> = {};
 const MODEL_NAME = process.env.MODEL_NAME;
 const CONDENSE_PROMPT = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
 If the follow up question does not need context like when the follow up question is a remark like: excellent, thanks, thank you etc., return the exact same text back.
-Never rephrase the follow up question given the chat history unless the follow up question needs context.
-Rephrase the Standalone question only if replacing abbriviations to full strings.
+Rephrase the Standalone question also if replacing abbriviations to full strings.
 abbriviations:
 HSS - High Speed Surface
 HSM - High Speed Machining
@@ -153,6 +152,9 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     streaming: true,
     modelName: MODEL_NAME,
     temperature: TEMPRATURE,
+    modelKwargs: {
+      seed: 1
+    },
     callbacks: [
       {
         handleLLMNewToken: (token) => {
@@ -224,7 +226,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       );
 
       const responseText = (await (async () => {
-        const response = await chain.call({
+        const response = await chain.invoke({
             question: question,
         });
         return {

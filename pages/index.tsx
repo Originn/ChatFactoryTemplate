@@ -317,24 +317,14 @@ export default function Home() {
               const deduplicatedDocs = sourceDocs.reduce((acc: DocumentWithMetadata[], doc: DocumentWithMetadata) => {
                   const sourceURL = doc.metadata.source;
                   const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
-      
-                  // Check if the source URL contains "SolidWorks SolidCAM"
-                  const isSolidWorksSolidCAM = sourceURL.includes("SolidWorks SolidCAM");
-      
-                  if (isSolidWorksSolidCAM) {
-                      // For "SolidWorks SolidCAM" sources, check if the acc array already contains an item with the same source URL
-                      if (!acc.some((d: DocumentWithMetadata) => d.metadata.source === sourceURL)) {
-                          acc.push(doc);
-                      }
-                  } else {
-                      // For other documents, use the original deduplication logic
-                      if (timestamp && !acc.some((d: DocumentWithMetadata) => d.metadata.source.includes(`t=${timestamp}s`))) {
-                          acc.push(doc);
-                      } else if (!timestamp) {
-                          acc.push(doc);
-                      }
+                  // For other documents, use the original deduplication logic
+                  if (timestamp && !acc.some((d: DocumentWithMetadata) => d.metadata.source.includes(`t=${timestamp}s`))) {
+                      acc.push(doc);
+                  } else if (!timestamp) {
+                      acc.push(doc);
                   }
-      
+
+  
                   return acc;
               }, []);
       
