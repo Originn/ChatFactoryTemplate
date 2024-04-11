@@ -43,31 +43,41 @@ const CustomLoginForm = () => {
     const buttonBgClass = theme === 'dark' ? "bg-white" : "bg-gray-600";
 
     const handleSignInWithEmail = async () => {
-        try {
+      try {
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          // Check if the user has verified their email
           if (userCredential.user.emailVerified) {
-            // Email is verified, proceed to redirect
-            router.push('/'); // Redirect to home page or dashboard
+              router.push('/'); // Redirect to home page or dashboard
           } else {
-            // Email is not verified, alert the user or handle accordingly
-            setErrorMessage('Please verify your email before signing in.');
-            // Consider signing out the user if they haven't verified their email
-            // await signOut(auth);
+              // Email is not verified, prompt the user to verify
+              setErrorMessage('Please verify your email. Click "here" to resend the verification email.');
           }
-        } catch (error : any) {
-            console.error('Error during email sign-in:', error);
-            let errorMsg = '';
-            if (error.code === 'auth/wrong-password') {
-                errorMsg = 'The password you entered is incorrect. Please try again.';
-            } else if (error.code === 'auth/user-not-found') {
-                errorMsg = 'No account found with this email. Please sign up.';
-            } else {
-                errorMsg = 'An error occurred during sign in. Please try again later.';
-            }
-            setErrorMessage(errorMsg);
-        }
-    };
+      } catch (error : any) {
+          console.error('Error during email sign-in:', error);
+          let errorMsg = '';
+          if (error.code === 'auth/wrong-password') {
+              errorMsg = 'The password you entered is incorrect. Please try again.';
+          } else if (error.code === 'auth/user-not-found') {
+              errorMsg = 'No account found with this email. Please sign up.';
+          } else {
+              errorMsg = 'An error occurred during sign in. Please try again later.';
+          }
+          setErrorMessage(errorMsg);
+      }
+  };
+  
+    const resendVerificationEmail = async () => {
+      if (auth.currentUser) {  // Check if currentUser is not null
+          try {
+              await sendEmailVerification(auth.currentUser);
+              router.push('/verification-sent'); // Redirect to the verification sent page
+          } catch (error) {
+              console.error('Error resending verification email:', error);
+              setErrorMessage('Failed to resend verification email. Please try again later.');
+          }
+      } else {
+          setErrorMessage('No user is signed in to resend verification to.'); // Handle case where no user is logged in
+      }
+  };
 
     const signInWithMicrosoft = async () => {
         // Pre-attempt log: you might want to log the current state before attempting to sign in.
@@ -379,127 +389,90 @@ const toggleForm = () => {
                         </div>
                     )}
                     {showSignInModal && (
-                        <div className="signin-popup-backdrop">
-                            <div className="signin-popup">
-                                <div className="signin-popup-header">
-                                    <button onClick={closeSignInPopup} className="signin-popup-close">&times;</button>
-                                    <h2>{emailSubmitted ? "Enter your password" : "Sign In"}</h2>
-                                </div>
-                                <div className="signin-popup-body">
-                                    {emailSubmitted ? (
-                                        // When email is submitted, ask for the password
-                                        <>
-                                            <input
-                                                type="text"
-                                                value={email}
-                                                className="signin-popup-body-input"
-                                                disabled
-                                                style={{ background: '#f7f7f7', color: '#999' }} // Inline style for gray text and background
-                                            />
-                                            <input
-                                                type="password"
-                                                placeholder="Password"
-                                                required
-                                                value={password}
-                                                onChange={(e) => {
-                                                    setPassword(e.target.value);
-                                                    setErrorMessage(''); // Clear the error when the user starts typing
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault(); // Prevent the default action to avoid submitting the form if inside one
-                                                        // Trigger the login function directly or click the Log in button programmatically
-                                                        handleSignInWithEmail();
-                                                    }
-                                                }}
-                                                className="signin-popup-body-input"
-                                            />
-                                            {errorMessage && (
-                                                <div className="error-message">{errorMessage}</div>
-                                            )}
-                                            <button
-                                                onClick={handleSignInWithEmail} // Call the function to handle email and password submission
-                                                className="btn sign-in-next-button"
-                                                disabled={!password.trim()} // Disable the button until a valid password is entered
-                                            >
-                                                Log in
-                                            </button>
-                                        </>
-                                    ) : (
-                                        // Initially, ask for the email
-                                        <>
-                                            <button onClick={signInWithGoogle} className="firebaseui-idp-button firebaseui-idp-google">
-                                                <span className="firebaseui-idp-icon-wrapper">
-                                                    <img className="firebaseui-idp-icon" src="/google.svg" alt="Google" />
-                                                </span>
-                                                <span className="firebaseui-idp-text">Sign in with Google</span>
-                                            </button>
-                                            <button onClick={signInWithApple} className="firebaseui-idp-button firebaseui-idp-apple">
-                                                <span className="firebaseui-idp-icon-wrapper">
-                                                    <img className="firebaseui-idp-icon" src="/apple.svg" alt="Apple" />
-                                                </span>
-                                                <span className="firebaseui-idp-text">Sign in with Apple</span>
-                                            </button>
-                                            <button onClick={signInWithMicrosoft} className="firebaseui-idp-button firebaseui-idp-microsoft">
-                                                <span className="firebaseui-idp-icon-wrapper">
-                                                    <img className="firebaseui-idp-icon" src="/microsoft.svg" alt="Microsoft" />
-                                                </span>
-                                                <span className="firebaseui-idp-text">Sign in with Microsoft</span>
-                                            </button>
-                                            <div className="divider-container">
-                                                <div className="divider">or</div>
+                    <div className="signin-popup-backdrop">
+                        <div className="signin-popup">
+                            <div className="signin-popup-header">
+                                <button onClick={closeSignInPopup} className="signin-popup-close">&times;</button>
+                                <h2>{emailSubmitted ? "Enter your password" : "Sign In"}</h2>
+                            </div>
+                            <div className="signin-popup-body">
+                                {emailSubmitted ? (
+                                    <>
+                                        <input
+                                            type="text"
+                                            value={email}
+                                            className="signin-popup-body-input"
+                                            disabled
+                                            style={{ background: '#f7f7f7', color: '#999' }}
+                                        />
+                                        <input
+                                            type="password"
+                                            placeholder="Password"
+                                            required
+                                            value={password}
+                                            onChange={(e) => {
+                                                setPassword(e.target.value);
+                                                setErrorMessage(''); // Clear the error when the user starts typing
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault(); // Prevent the default action to avoid submitting the form
+                                                    handleSignInWithEmail();
+                                                }
+                                            }}
+                                            className="signin-popup-body-input"
+                                        />
+                                        {errorMessage && (
+                                            <div className="error-message">
+                                                {errorMessage.includes('Click "here"') ? (
+                                                    <>
+                                                        {errorMessage.split('Click "here"')[0]}
+                                                        <a href="#" onClick={resendVerificationEmail} style={{ color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}>
+                                                          Click here
+                                                        </a>
+                                                        {errorMessage.split('Click "here"')[1]}
+                                                    </>
+                                                ) : (
+                                                    errorMessage
+                                                )}
                                             </div>
-                                            <input
-                                                type="email"
-                                                placeholder="Email"
-                                                required
-                                                value={email}
-                                                onChange={handleEmailChange} // Attach the handleEmailChange here
-                                                onKeyDown={handleEmailChange} // Also attach to the onKeyDown event
-                                                className="signin-popup-body-input"
-                                            />
-                                            {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                            <button
-                                                onClick={handleNextClick}
-                                                className="btn sign-in-next-button"
-                                                disabled={!isEmailValid || !!errorMessage}
-                                            >
-                                                Next
-                                            </button>
-                                        </>
-                                    )}
-                                    <a href="#" className="forgot-password-link" onClick={openForgotPasswordPopup}>
-                                        Forgot password?
-                                    </a>
-                                </div>
-                                <div className="signin-popup-footer">
-                                    Don't have an account? <a href="#" className="create-account-link" onClick={toggleForm}>Sign up</a>
-                                </div>
+                                        )}
+                                        <button
+                                            onClick={handleSignInWithEmail}
+                                            className="btn sign-in-next-button"
+                                            disabled={!password.trim()}
+                                        >
+                                            Log in
+                                        </button>
+                                    </>
+                                ) : (
+                                    // Logic for the initial email input should go here if emailSubmitted is false
+                                    <>
+                                        <input
+                                            type="email"
+                                            placeholder="Email"
+                                            required
+                                            value={email}
+                                            onChange={handleEmailChange}
+                                            onKeyDown={handleEmailChange}
+                                            className="signin-popup-body-input"
+                                        />
+                                        <button
+                                            onClick={handleNextClick}
+                                            className="btn sign-in-next-button"
+                                            disabled={!isEmailValid || !!errorMessage}
+                                        >
+                                            Next
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                            <div className="signin-popup-footer">
+                                Don't have an account? <a href="#" className="create-account-link" onClick={toggleForm}>Sign up</a>
                             </div>
                         </div>
-                    )}
-                    {showForgotPasswordModal && (
-                        <div className="forgot-password-popup-backdrop">
-                            <div className="forgot-password-popup">
-                                <div className="forgot-password-popup-header">
-                                    <h2>Reset Your Password</h2>
-                                    <button onClick={closeForgotPasswordPopup} className="forgot-password-popup-close">&times;</button>
-                                </div>
-                                <div className="forgot-password-popup-body">
-                                    <input
-                                        type="email"
-                                        placeholder="Enter your email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                    />
-                                    {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                    <button onClick={sendPasswordReset} className="btn forgot-password-next-button">
-                                        Send reset email
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    </div>
+                )}
                     {showForgotPasswordModal && (
                         <div className="forgot-password-popup-backdrop">
                             <div className="forgot-password-popup">
