@@ -453,6 +453,7 @@ export default function Home() {
             </button>
           </Tooltip>
         </div>
+        <div className={styles.lineSeparator}></div> {/* Line Separator */}
       </div>      
       );
   };

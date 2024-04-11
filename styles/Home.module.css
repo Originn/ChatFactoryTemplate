@@ -283,4 +283,9 @@
   width: 90%;
 }
 
- 
+.lineSeparator {
+  border-bottom: 1px solid #1f1e1e;
+  width: 99.2%;
+  margin-top: 20px; /* Adjust spacing above the line as needed */
+  margin-bottom: 20px; /* Adjust spacing below the line as needed */
+}
