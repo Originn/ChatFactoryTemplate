@@ -44,26 +44,25 @@ const CustomLoginForm = () => {
 
     const handleSignInWithEmail = async () => {
       try {
-          const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          if (userCredential.user.emailVerified) {
-              router.push('/'); // Redirect to home page or dashboard
-          } else {
-              // Email is not verified, prompt the user to verify
-              setErrorMessage('Please verify your email. Click "here" to resend the verification email.');
-          }
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        if (userCredential.user.emailVerified) {
+          router.push('/'); // Redirect to home page or dashboard
+        } else {
+          // User is signed in but the email is not verified
+          setErrorMessage('Your email is not verified. Please check your inbox or click here to resend the verification email.');
+        }
       } catch (error : any) {
-          console.error('Error during email sign-in:', error);
-          let errorMsg = '';
-          if (error.code === 'auth/wrong-password') {
-              errorMsg = 'The password you entered is incorrect. Please try again.';
-          } else if (error.code === 'auth/user-not-found') {
-              errorMsg = 'No account found with this email. Please sign up.';
-          } else {
-              errorMsg = 'An error occurred during sign in. Please try again later.';
-          }
-          setErrorMessage(errorMsg);
+        console.error('Error during email sign-in:', error);
+        if (error.code === 'auth/wrong-password') {
+          // Incorrect password error
+          setErrorMessage('The password you entered is incorrect. Click here to reset your password.');
+        } else if (error.code === 'auth/user-not-found') {
+          setErrorMessage('No account found with this email. Please sign up.');
+        } else {
+          setErrorMessage('An error occurred during sign in. Please try again later.');
+        }
       }
-  };
+    };
   
     const resendVerificationEmail = async () => {
       if (auth.currentUser) {  // Check if currentUser is not null
@@ -422,21 +421,29 @@ const toggleForm = () => {
                                             }}
                                             className="signin-popup-body-input"
                                         />
-                                        {errorMessage && (
-                                            <div className="error-message">
-                                                {errorMessage.includes('Click "here"') ? (
-                                                    <>
-                                                        {errorMessage.split('Click "here"')[0]}
-                                                        <a href="#" onClick={resendVerificationEmail} style={{ color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}>
-                                                          Click here
-                                                        </a>
-                                                        {errorMessage.split('Click "here"')[1]}
-                                                    </>
-                                                ) : (
-                                                    errorMessage
-                                                )}
-                                            </div>
-                                        )}
+                                      {errorMessage && (
+                                        <div className="error-message">
+                                          {errorMessage.includes('to resend the verification email') ? (
+                                            <>
+                                              Please verify your email.{' '}
+                                              <span onClick={resendVerificationEmail} style={{ color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}>
+                                                Click here
+                                              </span>
+                                              {' '}to resend the verification email.
+                                            </>
+                                          ) : errorMessage.includes('to reset your password') ? (
+                                            <>
+                                              The password you entered is incorrect.{' '}
+                                              <span onClick={openForgotPasswordPopup} style={{ color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}>
+                                                Click here
+                                              </span>
+                                              {' '}to reset your password.
+                                            </>
+                                          ) : (
+                                            errorMessage
+                                          )}
+                                        </div>
+                                      )}
                                         <button
                                             onClick={handleSignInWithEmail}
                                             className="btn sign-in-next-button"
