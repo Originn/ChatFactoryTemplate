@@ -986,12 +986,12 @@ body.dark .submit-feedback-label {
 
 /* Forgot Password Popup Header */
 .forgot-password-popup-header h2 {
-    display: flex;
-    justify-content: flex-start; /* Align to the left */
-    margin-bottom: 20px; /* Space between header and inputs */
-    font-size: 32px; /* Larger font size */
-    font-weight: 700; /* Bolder text */
-    border-bottom: none; /* No border */
+  display: flex;
+  justify-content: flex-start; /* Align to the left */
+  margin-bottom: 20px; /* Space between header and inputs */
+  font-size: 32px; /* Larger font size */
+  font-weight: 700; /* Bolder text */
+  border-bottom: none; /* No border */
 }
 
 /* Forgot Password Popup Close Button */
@@ -1007,37 +1007,36 @@ body.dark .submit-feedback-label {
 
 /* Forgot Password Popup Body */
 .forgot-password-popup-body {
-    width: 100%;
-    padding: 10px;
-    margin: 5px 0;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centers items horizontally */
+  justify-content: center; /* Centers items vertically */
+  padding: 10px;
+  margin: 5px 0;
+  width: 100%; /* Takes the full width of the parent container */
 }
 
 /* Input Styles */
 .forgot-password-popup-body input[type="email"] {
-    width: 80%; /* Adjust width as needed */
-    padding: 15px; /* Adjust padding to match the design */
-    margin: 10px 0; /* Add space between elements */
-    border: 1px solid #ccc; /* Light grey border */
-    border-radius: 4px; /* Slight rounding of corners */
-    font-size: 16px; /* Larger font size for readability */
+  width: 100%; /* Takes the full width of the flex container */
+  padding: 15px; /* Padding for spacing inside the input */
+  margin-bottom: 20px; /* Margin to separate input from the button */
+  border: 1px solid #ccc; /* Border color */
+  border-radius: 4px; /* Rounded corners for the input */
+  font-size: 16px; /* Font size for the text inside the input */
 }
 
 /* Next Button Styles */
 .forgot-password-next-button {
-    width: 80%; /* Match the width of the input fields */
-    background-color: #000; /* Black background */
-    color: #fff; /* White text */
-    border-radius: 20px; /* Rounded corners */
-    padding: 15px 20px; /* Padding to make the button taller and wider */
-    margin: 20px 0; /* Add space around the button */
-    border: none; /* Remove border */
-    font-size: 16px; /* Larger font size */
-    cursor: pointer; /* Pointer cursor on hover */
+  width: 100%; /* Match the width of the input fields */
+  padding: 15px; /* Padding for height and width */
+  margin-top: 20px; /* Margin to separate button from the input */
+  background-color: #000; /* Black background */
+  color: #fff; /* White text */
+  border-radius: 20px; /* Rounded corners for the button */
+  border: none; /* No border for the button */
+  font-size: 16px; /* Font size for the text inside the button */
+  cursor: pointer; /* Pointer cursor on hover */
 }
 
 /* Error Message */
