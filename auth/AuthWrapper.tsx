@@ -2,7 +2,6 @@ import React, { ReactElement, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 import CustomLoginForm from './CustomLoginForm'; 
-import { useRouter } from 'next/router';
 
 interface AuthWrapperProps {
   children: ReactNode;
@@ -22,7 +21,6 @@ const AuthWrapper = ({ children }: AuthWrapperProps): ReactElement | null => {
     isEmailVerified: false,
     isAuthChecked: false
   });
-  const router = useRouter(); 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
