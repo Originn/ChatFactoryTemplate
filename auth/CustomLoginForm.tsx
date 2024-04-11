@@ -300,7 +300,7 @@ const toggleForm = () => {
         </div>
         <div className="center-wrapper">
             <div className="image-container">
-                <img src="/solidcam.png" alt="SolidCAM Logo" />
+                <img src="/solidcam.png" alt="SolidCAM Logo"/>
             </div>
             <div className="firebaseui-container">
                 <div className="firebaseui-card-content">
