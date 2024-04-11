@@ -686,7 +686,8 @@ body.dark .submit-feedback-label {
 }
 
 body.dark .signup-popup,
-body.dark .signin-popup {
+body.dark .signin-popup,
+body.dark .forgot-password-popup {
   background: black;
   color: white;
   border: 2px solid white;
@@ -926,6 +927,7 @@ body.dark .signup-popup .btn-enabled {
 }
 
 body.dark .signin-popup-body input[type="email"],
+body.dark .forgot-password-popup-body input[type="email"],
 body.dark .signin-popup-body input[type="password"],
 body.dark .signup-popup-body-input {
     color: #fff; /* White text */
@@ -947,7 +949,8 @@ body.dark .signup-popup-body-input {
     cursor: pointer; /* Pointer cursor on hover */
 }
 
-body.dark .btn.sign-in-next-button{
+body.dark .btn.sign-in-next-button,
+body.dark .btn.forgot-password-next-button{
     color:#1DA1F2; 
     background-color:#000000;
     border:1px solid #1DA1F2;

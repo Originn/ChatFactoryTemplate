@@ -53,17 +53,24 @@ const CustomLoginForm = () => {
         }
       } catch (error : any) {
         console.error('Error during email sign-in:', error);
-        if (error.code === 'auth/wrong-password') {
-          // Incorrect password error
-          setErrorMessage('The password you entered is incorrect. Click here to reset your password.');
-        } else if (error.code === 'auth/user-not-found') {
-          setErrorMessage('No account found with this email. Please sign up.');
-        } else {
-          setErrorMessage('An error occurred during sign in. Please try again later.');
+        switch (error.code) {
+          case 'auth/wrong-password':
+            // Incorrect password error
+            setErrorMessage('The password you entered is incorrect. Click here to reset your password.');
+            break;
+          case 'auth/user-not-found':
+            setErrorMessage('No account found with this email. Please sign up.');
+            break;
+          case 'auth/too-many-requests':
+            // Handle the too many requests error specifically, suggest resetting password
+            setErrorMessage('We have detected too many requests from your device. It seems you might have forgotten your password. Click here to reset your password, or please wait a while then try again.');
+            break;
+          default:
+            setErrorMessage('An error occurred during sign in. Please try again later.');
         }
       }
     };
-  
+    
     const resendVerificationEmail = async () => {
       if (auth.currentUser) {  // Check if currentUser is not null
           try {
@@ -169,6 +176,12 @@ const CustomLoginForm = () => {
     }
 };
 
+const backToSignInPopup = () => {
+  setShowForgotPasswordModal(false); // Close the Forgot Password popup
+  // No need to change emailSubmitted here since it's already true if they were on the password entry step
+  setShowSignInModal(true); // Re-open the Sign In popup
+};
+
 const isFormValid = () => {
     // Add your logic to check if the form is valid
     return email.trim() && password.trim();
@@ -245,10 +258,11 @@ const toggleForm = () => {
   };
 
   const openForgotPasswordPopup = () => {
-    closeAllPopups(); // Close sign-in and forgot password pop-ups
-    setErrorMessage(''); // Clear any error messages
-    setShowForgotPasswordModal(true); // Open the forgot password popup
-  };
+    closeAllPopups(); // Close all other popups first
+    setErrorMessage(''); // Clear any existing error messages
+    setRecoveryEmail(email); // Set the recovery email to the currently entered email
+    setShowForgotPasswordModal(true); // Open the Forgot Password popup
+};
   
   const closeForgotPasswordPopup = () => {
     setShowForgotPasswordModal(false); // Close the forgot password popup
@@ -483,30 +497,33 @@ const toggleForm = () => {
                     </div>
                 )}
                     {showForgotPasswordModal && (
-                        <div className="forgot-password-popup-backdrop">
-                            <div className="forgot-password-popup">
-                                <div className="forgot-password-popup-header">
-                                    <h2>Reset Your Password</h2>
-                                    <button onClick={closeForgotPasswordPopup} className="forgot-password-popup-close">×</button>
-                                </div>
-                                <div className="forgot-password-popup-body">
-                                    <form onSubmit={handleSendPasswordResetEmail}>
-                                        <input
-                                            type="email"
-                                            placeholder="Enter your email"
-                                            value={recoveryEmail}
-                                            onChange={(e) => setRecoveryEmail(e.target.value)}
-                                            required
-                                        />
-                                        {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                        <button type="submit" className="btn forgot-password-next-button">
-                                            Send reset email
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                      <div className="forgot-password-popup-backdrop">
+                          <div className="forgot-password-popup">
+                              <div className="forgot-password-popup-header">
+                                  <h2>Reset Your Password</h2>
+                                  <button onClick={closeForgotPasswordPopup} className="forgot-password-popup-close">×</button>
+                                  <button onClick={backToSignInPopup} className="back-to-sign-in-button" style={{ position: 'absolute', left: '10px', top: '10px' }}>
+                                      ← Back
+                                  </button>
+                              </div>
+                              <div className="forgot-password-popup-body">
+                                  <form onSubmit={handleSendPasswordResetEmail}>
+                                      <input
+                                          type="email"
+                                          placeholder="Enter your email"
+                                          value={recoveryEmail} // Use recoveryEmail state here
+                                          onChange={(e) => setRecoveryEmail(e.target.value)}
+                                          required
+                                      />
+                                      {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                      <button type="submit" className="btn forgot-password-next-button">
+                                          Send reset email
+                                      </button>
+                                  </form>
+                              </div>
+                          </div>
+                      </div>
+                  )}
                 </div>
             </div>
         </div>
