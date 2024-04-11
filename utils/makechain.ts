@@ -11,7 +11,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { insertQA } from '../db';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { HumanMessage } from "@langchain/core/messages";
-import { auth } from 'utils/firebase';
 
 
 
@@ -192,7 +191,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       let chat_history = roomMemories[roomId];
       const language = await detectLanguageWithOpenAI(question, nonStreamingModel);
 
-      if (language !== 'English') {
+      if (language !== 'English' && language !== 'German') {
         question = await translateToEnglish(question, translationModel);
       }
 
@@ -236,7 +235,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       })());
       const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
       let embeddingsStore;
-      if (language == 'English') {
+      if (language == 'English' || language == 'German') {
         embeddingsStore = await customRetriever.storeEmbeddings(responseText.text, minScoreSourcesThreshold);
         for (const [doc, score] of embeddingsStore) {
           const myDoc = new MyDocument({

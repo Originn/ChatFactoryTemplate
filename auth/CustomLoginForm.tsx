@@ -287,249 +287,250 @@ const toggleForm = () => {
   
   return (
     <>
-    <Head>
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      {/* other head elements */}
-    </Head>
-    <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
-                <button onClick={toggleTheme} style={{ border: 'none', background: 'none' }}>
-                    <div className={`${buttonBgClass} p-2 rounded-full`}>
-                        <Image src={iconPath} alt={theme === 'dark' ? 'Light mode icon' : 'Dark mode icon'} width={24} height={24} />
-                    </div>
-                </button>
-            </div>
-    <div className="center-wrapper">
-    <div className="image-container">
-    <img src="/solidcam.png" alt="SolidCAM Logo"/>
-  </div>
-    <div className="firebaseui-container">
-      <div className="firebaseui-card-content">
-      <div className="heading">Let's Chat!</div>
-        <button onClick={signInWithGoogle} className="firebaseui-idp-button firebaseui-idp-google">
-          <span className="firebaseui-idp-icon-wrapper">
-            <img className="firebaseui-idp-icon" src="/google.svg" alt="Google" />
-          </span>
-          <span className="firebaseui-idp-text">Sign up with Google</span>
-        </button>
-        <button onClick={signInWithApple} className="firebaseui-idp-button firebaseui-idp-apple">
-          <span className="firebaseui-idp-icon-wrapper">
-            <img className="firebaseui-idp-icon" src="/apple.svg" alt="Apple" />
-          </span>
-          <span className="firebaseui-idp-text">Sign up with Apple</span>
-        </button>
-        {/* <button onClick={signInWithMicrosoft} className="firebaseui-idp-button firebaseui-idp-microsoft">
-          <span className="firebaseui-idp-icon-wrapper">
-            <img className="firebaseui-idp-icon" src="/microsoft.svg" alt="Microsoft" />
-          </span>
-          <span className="firebaseui-idp-text">Sign up with Microsoft</span>
-        </button> */}
-        <div className="divider-container">
-          <div className="divider">or</div>
-        </div>
-        <button onClick={openPopup} className="create-account-button">Create account</button>
-        <div className="account-exists-text">Already have an account?</div>
-        <button
-            onClick={openSignInPopup} // Update this line
-            className="btn sign-in-button"
-        >
-            Sign in
-        </button>
-        {showModal && (
-        <div className="signup-popup-backdrop">
-        <div className="signup-popup">
-            <div className="signup-popup-header">
-                <button onClick={closePopup} className="signup-popup-close">&times;</button>
-                <h2>Create Your Account</h2>
-            </div>
-            <form onSubmit={createAccountWithEmail} className="signup-popup-body">
-                <input
-                    type="email"
-                    placeholder="Email"
-                    required
-                    value={email}
-                    onChange={(e) => {
-                        setEmail(e.target.value);
-                        setErrorMessage(''); // Clear the error when the user starts typing
-                    }}
-                    className="signup-popup-body-input"
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    required
-                    value={password}
-                    onChange={(e) => {
-                        setPassword(e.target.value);
-                        setErrorMessage(''); // Clear the error when the user starts typing
-                    }}
-                    className="signup-popup-body-input"
-                />
-                <div className="signup-popup-footer">
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
-                <button
-                    type="submit"
-                    className={`btn ${!isFormValid() || isSubmitting ? '' : 'btn-enabled'}`}
-                    disabled={!isFormValid() || isSubmitting}
-                >
-                    Create account
-                </button>
+        <Head>
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            {/* other head elements */}
+        </Head>
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
+            <button onClick={toggleTheme} style={{ border: 'none', background: 'none' }}>
+                <div className={`${buttonBgClass} p-2 rounded-full`}>
+                    <Image src={iconPath} alt={theme === 'dark' ? 'Light mode icon' : 'Dark mode icon'} width={24} height={24} />
                 </div>
-            </form>
-            </div>
+            </button>
         </div>
-        )}
-        {showSignInModal && (
-        <div className="signin-popup-backdrop">
-            <div className="signin-popup">
-            <div className="signin-popup-header">
-                <button onClick={closeSignInPopup} className="signin-popup-close">&times;</button>
-                <h2>{emailSubmitted ? "Enter your password" : "Sign In"}</h2>
+        <div className="center-wrapper">
+            <div className="image-container">
+                <img src="/solidcam.png" alt="SolidCAM Logo" />
             </div>
-            <div className="signin-popup-body">
-                {emailSubmitted ? (
-                // When email is submitted, ask for the password
-                <>
-                <input
-                type="text"
-                value={email}
-                className="signin-popup-body-input"
-                disabled
-                style={{ background: '#f7f7f7', color: '#999' }} // Inline style for gray text and background
-                />
-                <input
-                type="password"
-                placeholder="Password"
-                required
-                value={password}
-                onChange={(e) => {
-                    setPassword(e.target.value);
-                    setErrorMessage(''); // Clear the error when the user starts typing
-                }}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                    e.preventDefault(); // Prevent the default action to avoid submitting the form if inside one
-                    // Trigger the login function directly or click the Log in button programmatically
-                    handleSignInWithEmail();
-                    }
-                }}
-                className="signin-popup-body-input"
-                />
-                {errorMessage && (
-                    <div className="error-message">{errorMessage}</div>
-                )}
-                    <button
-                    onClick={handleSignInWithEmail} // Call the function to handle email and password submission
-                    className="btn sign-in-next-button"
-                    disabled={!password.trim()} // Disable the button until a valid password is entered
-                    >
-                    Log in
-                    </button>
-                </>
-                ) : (
-                // Initially, ask for the email
-                <>
+            <div className="firebaseui-container">
+                <div className="firebaseui-card-content">
+                    <div className="heading">Let's Chat!</div>
                     <button onClick={signInWithGoogle} className="firebaseui-idp-button firebaseui-idp-google">
-                    <span className="firebaseui-idp-icon-wrapper">
-                        <img className="firebaseui-idp-icon" src="/google.svg" alt="Google" />
-                    </span>
-                    <span className="firebaseui-idp-text">Sign in with Google</span>
+                        <span className="firebaseui-idp-icon-wrapper">
+                            <img className="firebaseui-idp-icon" src="/google.svg" alt="Google" />
+                        </span>
+                        <span className="firebaseui-idp-text">Sign up with Google</span>
                     </button>
                     <button onClick={signInWithApple} className="firebaseui-idp-button firebaseui-idp-apple">
-                    <span className="firebaseui-idp-icon-wrapper">
-                        <img className="firebaseui-idp-icon" src="/apple.svg" alt="Apple" />
-                    </span>
-                    <span className="firebaseui-idp-text">Sign in with Apple</span>
+                        <span className="firebaseui-idp-icon-wrapper">
+                            <img className="firebaseui-idp-icon" src="/apple.svg" alt="Apple" />
+                        </span>
+                        <span className="firebaseui-idp-text">Sign up with Apple</span>
                     </button>
-                    <button onClick={signInWithMicrosoft} className="firebaseui-idp-button firebaseui-idp-microsoft">
-                    <span className="firebaseui-idp-icon-wrapper">
-                        <img className="firebaseui-idp-icon" src="/microsoft.svg" alt="Microsoft" />
-                    </span>
-                    <span className="firebaseui-idp-text">Sign in with Microsoft</span>
-                    </button>
+                    {/* <button onClick={signInWithMicrosoft} className="firebaseui-idp-button firebaseui-idp-microsoft">
+                        <span className="firebaseui-idp-icon-wrapper">
+                            <img className="firebaseui-idp-icon" src="/microsoft.svg" alt="Microsoft" />
+                        </span>
+                        <span className="firebaseui-idp-text">Sign up with Microsoft</span>
+                    </button> */}
                     <div className="divider-container">
-                    <div className="divider">or</div>
+                        <div className="divider">or</div>
                     </div>
-                    <input
-                    type="email"
-                    placeholder="Email"
-                    required
-                    value={email}
-                    onChange={handleEmailChange} // Attach the handleEmailChange here
-                    onKeyDown={handleEmailChange} // Also attach to the onKeyDown event
-                    className="signin-popup-body-input"
-                    />
-                    {errorMessage && <div className="error-message">{errorMessage}</div>}
+                    <button onClick={openPopup} className="create-account-button">Create account</button>
+                    <div className="account-exists-text">Already have an account?</div>
                     <button
-                    onClick={handleNextClick}
-                    className="btn sign-in-next-button"
-                    disabled={!isEmailValid || !!errorMessage}
+                        onClick={openSignInPopup} // Update this line
+                        className="btn sign-in-button"
                     >
-                    Next
+                        Sign in
                     </button>
-                </>
-                )}
-                <a href="#" className="forgot-password-link" onClick={openForgotPasswordPopup}>
-                Forgot password?
-                </a>
-            </div>
-            <div className="signin-popup-footer">
-                Don't have an account? <a href="#" className="create-account-link" onClick={toggleForm}>Sign up</a>
-            </div>
+                    {showModal && (
+                        <div className="signup-popup-backdrop">
+                            <div className="signup-popup">
+                                <div className="signup-popup-header">
+                                    <button onClick={closePopup} className="signup-popup-close">&times;</button>
+                                    <h2>Create Your Account</h2>
+                                </div>
+                                <form onSubmit={createAccountWithEmail} className="signup-popup-body">
+                                    <input
+                                        type="email"
+                                        placeholder="Email"
+                                        required
+                                        value={email}
+                                        onChange={(e) => {
+                                            setEmail(e.target.value);
+                                            setErrorMessage(''); // Clear the error when the user starts typing
+                                        }}
+                                        className="signup-popup-body-input"
+                                    />
+                                    <input
+                                        type="password"
+                                        placeholder="Password"
+                                        required
+                                        value={password}
+                                        onChange={(e) => {
+                                            setPassword(e.target.value);
+                                            setErrorMessage(''); // Clear the error when the user starts typing
+                                        }}
+                                        className="signup-popup-body-input"
+                                    />
+                                    <div className="signup-popup-footer">
+                                        {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                        <button
+                                            type="submit"
+                                            className={`btn ${!isFormValid() || isSubmitting ? '' : 'btn-enabled'}`}
+                                            disabled={!isFormValid() || isSubmitting}
+                                        >
+                                            Create account
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                    {showSignInModal && (
+                        <div className="signin-popup-backdrop">
+                            <div className="signin-popup">
+                                <div className="signin-popup-header">
+                                    <button onClick={closeSignInPopup} className="signin-popup-close">&times;</button>
+                                    <h2>{emailSubmitted ? "Enter your password" : "Sign In"}</h2>
+                                </div>
+                                <div className="signin-popup-body">
+                                    {emailSubmitted ? (
+                                        // When email is submitted, ask for the password
+                                        <>
+                                            <input
+                                                type="text"
+                                                value={email}
+                                                className="signin-popup-body-input"
+                                                disabled
+                                                style={{ background: '#f7f7f7', color: '#999' }} // Inline style for gray text and background
+                                            />
+                                            <input
+                                                type="password"
+                                                placeholder="Password"
+                                                required
+                                                value={password}
+                                                onChange={(e) => {
+                                                    setPassword(e.target.value);
+                                                    setErrorMessage(''); // Clear the error when the user starts typing
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault(); // Prevent the default action to avoid submitting the form if inside one
+                                                        // Trigger the login function directly or click the Log in button programmatically
+                                                        handleSignInWithEmail();
+                                                    }
+                                                }}
+                                                className="signin-popup-body-input"
+                                            />
+                                            {errorMessage && (
+                                                <div className="error-message">{errorMessage}</div>
+                                            )}
+                                            <button
+                                                onClick={handleSignInWithEmail} // Call the function to handle email and password submission
+                                                className="btn sign-in-next-button"
+                                                disabled={!password.trim()} // Disable the button until a valid password is entered
+                                            >
+                                                Log in
+                                            </button>
+                                        </>
+                                    ) : (
+                                        // Initially, ask for the email
+                                        <>
+                                            <button onClick={signInWithGoogle} className="firebaseui-idp-button firebaseui-idp-google">
+                                                <span className="firebaseui-idp-icon-wrapper">
+                                                    <img className="firebaseui-idp-icon" src="/google.svg" alt="Google" />
+                                                </span>
+                                                <span className="firebaseui-idp-text">Sign in with Google</span>
+                                            </button>
+                                            <button onClick={signInWithApple} className="firebaseui-idp-button firebaseui-idp-apple">
+                                                <span className="firebaseui-idp-icon-wrapper">
+                                                    <img className="firebaseui-idp-icon" src="/apple.svg" alt="Apple" />
+                                                </span>
+                                                <span className="firebaseui-idp-text">Sign in with Apple</span>
+                                            </button>
+                                            <button onClick={signInWithMicrosoft} className="firebaseui-idp-button firebaseui-idp-microsoft">
+                                                <span className="firebaseui-idp-icon-wrapper">
+                                                    <img className="firebaseui-idp-icon" src="/microsoft.svg" alt="Microsoft" />
+                                                </span>
+                                                <span className="firebaseui-idp-text">Sign in with Microsoft</span>
+                                            </button>
+                                            <div className="divider-container">
+                                                <div className="divider">or</div>
+                                            </div>
+                                            <input
+                                                type="email"
+                                                placeholder="Email"
+                                                required
+                                                value={email}
+                                                onChange={handleEmailChange} // Attach the handleEmailChange here
+                                                onKeyDown={handleEmailChange} // Also attach to the onKeyDown event
+                                                className="signin-popup-body-input"
+                                            />
+                                            {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                            <button
+                                                onClick={handleNextClick}
+                                                className="btn sign-in-next-button"
+                                                disabled={!isEmailValid || !!errorMessage}
+                                            >
+                                                Next
+                                            </button>
+                                        </>
+                                    )}
+                                    <a href="#" className="forgot-password-link" onClick={openForgotPasswordPopup}>
+                                        Forgot password?
+                                    </a>
+                                </div>
+                                <div className="signin-popup-footer">
+                                    Don't have an account? <a href="#" className="create-account-link" onClick={toggleForm}>Sign up</a>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {showForgotPasswordModal && (
+                        <div className="forgot-password-popup-backdrop">
+                            <div className="forgot-password-popup">
+                                <div className="forgot-password-popup-header">
+                                    <h2>Reset Your Password</h2>
+                                    <button onClick={closeForgotPasswordPopup} className="forgot-password-popup-close">&times;</button>
+                                </div>
+                                <div className="forgot-password-popup-body">
+                                    <input
+                                        type="email"
+                                        placeholder="Enter your email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                    />
+                                    {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                    <button onClick={sendPasswordReset} className="btn forgot-password-next-button">
+                                        Send reset email
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {showForgotPasswordModal && (
+                        <div className="forgot-password-popup-backdrop">
+                            <div className="forgot-password-popup">
+                                <div className="forgot-password-popup-header">
+                                    <h2>Reset Your Password</h2>
+                                    <button onClick={closeForgotPasswordPopup} className="forgot-password-popup-close">×</button>
+                                </div>
+                                <div className="forgot-password-popup-body">
+                                    <form onSubmit={handleSendPasswordResetEmail}>
+                                        <input
+                                            type="email"
+                                            placeholder="Enter your email"
+                                            value={recoveryEmail}
+                                            onChange={(e) => setRecoveryEmail(e.target.value)}
+                                            required
+                                        />
+                                        {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                        <button type="submit" className="btn forgot-password-next-button">
+                                            Send reset email
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
-        )}
-        {showForgotPasswordModal && (
-        <div className="forgot-password-popup-backdrop">
-            <div className="forgot-password-popup">
-            <div className="forgot-password-popup-header">
-                <h2>Reset Your Password</h2>
-                <button onClick={closeForgotPasswordPopup} className="forgot-password-popup-close">&times;</button>
-            </div>
-            <div className="forgot-password-popup-body">
-                <input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                />
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
-                <button onClick={sendPasswordReset} className="btn forgot-password-next-button">
-                Send reset email
-                </button>
-            </div>
-            </div>
-        </div>
-        )}
-        {showForgotPasswordModal && (
-        <div className="forgot-password-popup-backdrop">
-            <div className="forgot-password-popup">
-            <div className="forgot-password-popup-header">
-                <h2>Reset Your Password</h2>
-                <button onClick={closeForgotPasswordPopup} className="forgot-password-popup-close">×</button>
-            </div>
-            <div className="forgot-password-popup-body">
-                <form onSubmit={handleSendPasswordResetEmail}>
-                <input
-                    type="email"
-                    placeholder="Enter your email"
-                    value={recoveryEmail}
-                    onChange={(e) => setRecoveryEmail(e.target.value)}
-                    required
-                />
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
-                <button type="submit" className="btn forgot-password-next-button">
-                    Send reset email
-                </button>
-                </form>
-            </div>
-            </div>
-        </div>
-        )}
-      </div>
-     </div>
-    </div>
     </>
-    );
+);
+
    };
 
 export default CustomLoginForm;
