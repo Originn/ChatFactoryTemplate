@@ -292,7 +292,7 @@ const toggleForm = () => {
     }
   };
 
-  
+  const darkModeStyle = theme === 'dark' ? { color: 'lightblue', textDecoration: 'underline', cursor: 'pointer' } : { color: 'blue', textDecoration: 'underline', cursor: 'pointer' };
   
   return (
     <>
@@ -300,12 +300,12 @@ const toggleForm = () => {
             <meta name="viewport" content="width=device-width, initial-scale=1" />
             {/* other head elements */}
         </Head>
-        <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
-            <button onClick={toggleTheme} style={{ border: 'none', background: 'none' }}>
-                <div className={`${buttonBgClass} p-2 rounded-full`}>
-                    <Image src={iconPath} alt={theme === 'dark' ? 'Light mode icon' : 'Dark mode icon'} width={24} height={24} />
-                </div>
-            </button>
+        <div style={{ position: 'absolute', top: '20px', left: '20px' }}>
+          <button onClick={toggleTheme} className="toggle-theme-button">
+          <div className={`${buttonBgClass} p-2 rounded-full`}>
+            <Image src={iconPath} alt={theme === 'dark' ? 'Light mode icon' : 'Light mode icon'} width={24} height={24} />
+          </div>
+          </button>
         </div>
         <div className="center-wrapper">
             <div className="image-container">
@@ -402,7 +402,6 @@ const toggleForm = () => {
                                             value={email}
                                             className="signin-popup-body-input"
                                             disabled
-                                            style={{ background: '#f7f7f7', color: '#999' }}
                                         />
                                         <input
                                             type="password"
@@ -426,7 +425,7 @@ const toggleForm = () => {
                                           {errorMessage.includes('to resend the verification email') ? (
                                             <>
                                               Please verify your email.{' '}
-                                              <span onClick={resendVerificationEmail} style={{ color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}>
+                                              <span onClick={resendVerificationEmail} style={darkModeStyle}>
                                                 Click here
                                               </span>
                                               {' '}to resend the verification email.
@@ -434,7 +433,7 @@ const toggleForm = () => {
                                           ) : errorMessage.includes('to reset your password') ? (
                                             <>
                                               The password you entered is incorrect.{' '}
-                                              <span onClick={openForgotPasswordPopup} style={{ color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}>
+                                              <span onClick={openForgotPasswordPopup} style={darkModeStyle}>
                                                 Click here
                                               </span>
                                               {' '}to reset your password.
@@ -464,15 +463,18 @@ const toggleForm = () => {
                                             onKeyDown={handleEmailChange}
                                             className="signin-popup-body-input"
                                         />
-                                        <button
-                                            onClick={handleNextClick}
-                                            className="btn sign-in-next-button"
-                                            disabled={!isEmailValid || !!errorMessage}
-                                        >
-                                            Next
-                                        </button>
+                                        {errorMessage && !emailSubmitted && (
+                                        <div className="error-message">{errorMessage}</div>
+                                      )}
+                                      <button
+                                        onClick={handleNextClick}
+                                        className="btn sign-in-next-button"
+                                        disabled={!isEmailValid || !!errorMessage}
+                                      >
+                                        Next
+                                      </button>
                                     </>
-                                )}
+                                  )}
                             </div>
                             <div className="signin-popup-footer">
                                 Don't have an account? <a href="#" className="create-account-link" onClick={toggleForm}>Sign up</a>

@@ -685,6 +685,13 @@ body.dark .submit-feedback-label {
     position: relative; /* For absolute positioning of the close button */
 }
 
+body.dark .signup-popup,
+body.dark .signin-popup {
+  background: black;
+  color: white;
+  border: 2px solid white;
+}
+
 /* Popup Header */
 .signup-popup-header h2 {
     display: flex;
@@ -758,6 +765,12 @@ body.dark .submit-feedback-label {
 .signup-popup .btn-enabled {
     background-color: #000; /* Change to black when enabled */
     color: white; /* Text color when button is enabled */
+}
+
+body.dark .signup-popup .btn-enabled { 
+    background-color: #69c9bc; /* Change to white when enabled */
+    color: black; /* Text color when button is enabled */
+
 }
 
 /* Cursor for disabled button */
@@ -912,6 +925,15 @@ body.dark .submit-feedback-label {
     font-size: 16px; /* Larger font size for readability */
 }
 
+body.dark .signin-popup-body input[type="email"],
+body.dark .signin-popup-body input[type="password"],
+body.dark .signup-popup-body-input {
+    color: #fff; /* White text */
+    background-color: #333; /* Dark grey background */
+    border: 1px solid #666; /* Darker grey border */
+}
+
+
 /* Style the 'Next' button */
 .btn.sign-in-next-button {
     width: 80%; /* Match the width of the input fields */
@@ -923,6 +945,12 @@ body.dark .submit-feedback-label {
     border: none; /* Remove border */
     font-size: 16px; /* Larger font size */
     cursor: pointer; /* Pointer cursor on hover */
+}
+
+body.dark .btn.sign-in-next-button{
+    color:#1DA1F2; 
+    background-color:#000000;
+    border:1px solid #1DA1F2;
 }
 
 .signin-popup-body-input,
@@ -939,6 +967,10 @@ body.dark .submit-feedback-label {
 .signin-popup-body-input:disabled {
   color: #999; /* Gray color */
   background: #f7f7f7; /* Slightly gray background */
+}
+
+body.dark .signin-popup-body-input:disabled {
+  background: #494949; 
 }
 
 .email-display {
@@ -1131,8 +1163,6 @@ body.dark .submit-feedback-label {
   
   .error-message {
     color: #FF0000; /* Red color for error messages */
-    background-color: #F8D7DA;
-    border-color: #F5C6CB;
     padding: 10px;
     border-radius: 5px;
     margin: 20px 0;
@@ -1272,3 +1302,20 @@ body.dark .submit-feedback-label {
     }
     
   }
+
+  .toggle-theme-button {
+    border: none;
+    background: none;
+    margin: 0;
+    padding: 0;
+    position: fixed;
+    top: 20px;        
+    left: 20px;       
+    z-index: 1000;     
+  }
+
+  .toggle-theme-button img {
+    display: block;
+    width: 24px;
+    height: 24px;
+}
