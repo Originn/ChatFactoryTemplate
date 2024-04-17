@@ -1,4 +1,4 @@
-// FeedbackModal.tsx
+// components/FeedbackModal.tsx
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { ModalProps } from '@/types'; // Define and export this from your types directory
