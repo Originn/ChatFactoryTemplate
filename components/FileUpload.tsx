@@ -3,6 +3,7 @@ import React, { ChangeEvent } from 'react';
 import styles from '@/styles/Home.module.css';
 import PDFPreview from '@/components/PDFPreview';
 import DonutProgressIndicator from '@/components/DonutProgressIndicator';
+import Image from 'next/image';
 
 interface FileUploadProps {
   file: File | null;
@@ -71,7 +72,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     <>
       {filePreview && (
         <div className={styles.filePreviewContainer} style={{ position: 'relative', display: 'inline-block' }}>
-          <img src={filePreview} alt="File preview" style={{ width: '80px', height: '80px', display: 'block' }} />
+          <Image src={filePreview} alt="File preview" style={{ width: '80px', height: '80px', display: 'block' }} />
           <button
             type="button"
             onClick={removeImage}
@@ -126,7 +127,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           onClick={triggerFileInputClick}
           className={styles.uploadbutton}
         >
-          <img src="paperclip.svg" alt="Paperclip" style={{ transform: 'rotate(180deg)' }} className={styles.svgicon} />
+          <Image src="paperclip.svg" alt="Paperclip" style={{ transform: 'rotate(180deg)' }} className={styles.svgicon} />
         </button>
       </div>
     </>

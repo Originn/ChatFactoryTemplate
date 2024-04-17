@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 interface PDFPreviewProps {
   file: File;
@@ -8,7 +9,7 @@ interface PDFPreviewProps {
 const PDFPreview: React.FC<PDFPreviewProps> = ({ file }) => {
   return (
     <div>
-      <img src="/pdf-icon.png" alt="PDF Icon" width="50" height="50" />
+      <Image src="/pdf-icon.png" alt="PDF Icon" width="50" height="50" />
       <p>{file.name}</p>
     </div>
   );
