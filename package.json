@@ -24,6 +24,7 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "firebase": "^10.10.0",
+    "firebase-admin": "^11.11.1",
     "firebaseui": "^6.1.0",
     "langchain": "^0.1.9",
     "lucide-react": "^0.125.0",

@@ -178,8 +178,7 @@ const CustomLoginForm = () => {
 
 const backToSignInPopup = () => {
   setShowForgotPasswordModal(false); // Close the Forgot Password popup
-  // No need to change emailSubmitted here since it's already true if they were on the password entry step
-  setShowSignInModal(true); // Re-open the Sign In popup
+  setShowSignInModal(true); // Open the Sign In popup
 };
 
 const isFormValid = () => {
