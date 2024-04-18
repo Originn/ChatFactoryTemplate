@@ -1,15 +1,16 @@
 //index.tsx
 import React, { useRef, useState, useEffect } from 'react';
 import { io } from "socket.io-client";
+import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import Layout from '@/components/layout';
 import LoadingDots from '@/components/ui/LoadingDots';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import styles from '@/styles/Home.module.css';
 import { Message } from '@/types/chat';
 import { auth } from "@/utils/firebase";
-import FeedbackModal from '@/components/FeedbackModal';
-import MessageList from '@/components/MessageList';
-import FileUpload from '@/components/FileUpload';
-import { useTheme } from '@/utils/useTheme'; // Adjust path as necessary
+import  FeedbackComponent from '@/components/FeedbackComponent';
 
 type RequestsInProgressType = {
   [key: string]: boolean;
@@ -30,26 +31,26 @@ const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
 let imageUrlUserIcon = '/usericon.png';
 let botimageIcon = '/solidcam.png';
 
+
 if (process.env.NODE_ENV === PRODUCTION_ENV) {
   imageUrlUserIcon = `${PRODUCTION_URL}usericon.png`;
   botimageIcon = `${PRODUCTION_URL}solidcam.png`;
+
 }
 
 // Component: Home
 export default function Home() {
     // State Hooks
-    const [theme, setTheme] = useTheme('light');
+    const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+      // Try to get the saved theme from localStorage or default to 'light'
+      return localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+  });
     const [query, setQuery] = useState<string>('');
     const [requestsInProgress, setRequestsInProgress] = useState<RequestsInProgressType>({});
     const [loading, setLoading] = useState<boolean>(false);
-    const [file, setFile] = useState<File | null>(null); // State to hold the uploaded file
-    const [filePreview, setFilePreview] = useState<string | null>(null);
-    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-    const [bucketUrl, setBucketUrl] = useState<string | null>(null);
     const [errorreact, setError] = useState<string | null>(null);
     const [roomId, setRoomId] = useState<string | null>(null);
     const [userHasScrolled, setUserHasScrolled] = useState(false);
-    const [feedbackType, setFeedbackType] = useState('');
     const [messageState, setMessageState] = useState<{
         messages: Message[];
         history: [string, string][];
@@ -59,201 +60,40 @@ export default function Home() {
         history: [],
     });
     const { messages, history } = messageState;
-    const [feedback, setFeedback] = useState<FeedbackState>({});
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [activeMessageIndex, setActiveMessageIndex] = useState<number | null>(null);
 
     // Refs
     const roomIdRef = useRef(roomId);
+    const answerStartRef = useRef<HTMLDivElement>(null);
     const messageListRef = useRef<HTMLDivElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null); // Ref for the file input
 
-    // File input change handler
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const selectedFile = event.target.files ? event.target.files[0] : null;
-      if (!selectedFile) {
-        setError("No file selected");
-        return;
-      }
-
-      setFile(selectedFile);
-      setError(null); // Clear any previous errors
-
-      // Preview image locally before upload
-      if (selectedFile.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const blob = new Blob([selectedFile], { type: selectedFile.type });
-          const blobUrl = URL.createObjectURL(blob); // Create a local URL
-          setFilePreview(blobUrl); // Set local preview URL
-          uploadImage(selectedFile); // Trigger upload after setting the preview
-        };
-        reader.readAsDataURL(selectedFile);
-      } else {
-        setFilePreview(null); // Reset preview if not an image
-      }
-    };
-
-    
     // Event Handlers
     const toggleTheme = () => {
+      // Update the theme in state and also save the new theme preference in localStorage
       const newTheme = theme === 'light' ? 'dark' : 'light';
       setTheme(newTheme);
-    };
-
-  const removeImage = async () => {
-    if (!file) {
-      console.error("No file to delete");
-      alert("No file selected to delete");
-      return;
-    }
-  
-    try {
-      const response = await fetch('/delete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ filename: file.name }), // Ensure this matches the expected format on the server
-      });
-  
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-  
-      const result = await response.json();
-      console.log("Image deleted successfully:", result.message);
-      setFile(null);
-      setFilePreview(null);
-      setUploadProgress(null);
-    } catch (error : any) {
-      console.error("Error deleting image:", error);
-      alert(`Error deleting image: ${error.message}`);
-    }
+      localStorage.setItem('theme', newTheme);
   };
-  
-
-  const uploadImage = async (file: File) => {
-    setLoading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-  
-    try {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/upload');
-  
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const progress = (event.loaded / event.total) * 100;
-          setUploadProgress(progress);  // Update upload progress
-        }
-      };
-  
-      xhr.onload = () => {
-        if (xhr.status === 200) {
-          const data = JSON.parse(xhr.response);
-          console.log('File uploaded successfully:', data.url);
-          setBucketUrl(data.url);  // Save the URL from the bucket here
-          setUploadProgress(null);  // Reset the upload progress to hide the indicator
-        } else {
-          throw new Error('Upload failed with status: ' + xhr.status);
-        }
-      };
-  
-      xhr.onerror = () => {
-        throw new Error('Network error occurred during the upload');
-      };
-  
-      xhr.send(formData);
-    } catch (error : any) {
-      console.error('Upload error:', error);
-      setError('Upload error: ' + error.message);
-      setFilePreview(null);  // Clear the preview if upload fails
-      setUploadProgress(null);  // Ensure progress is hidden on error
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const triggerFileInputClick = () => {
-    fileInputRef.current?.click();
-  };
-
-    const handleSubmitRemark = async (messageIndex : any, remark : any) => {
-        // Retrieve the feedback type ('up' or 'down') and the qaId from the message
-        const feedbackType = feedback[messageIndex]?.type;
-        const qaId = messages[messageIndex]?.qaId;
-    
-        // Ensure qaId is present
-        if (!qaId) {
-        console.error("No qaId found for message index " + messageIndex);
-        return;
-        }
-    
-        // Send this information to the server
-        try {
-        const response = await fetch('/api/submit-feedback', {
-            method: 'POST',
-            headers: {
-            'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-            qaId: qaId,
-            thumb: feedbackType,
-            comment: remark,
-            roomId: roomId,
-            }),
-        });
-    
-        if (response.ok) {
-            // Handle successful feedback submission
-            setFeedback((prev) => ({
-            ...prev,
-            [messageIndex]: {
-                ...prev[messageIndex],
-                remark: '',
-                type: undefined,
-            },
-            }));
-            setIsModalOpen(false);
-        } else {
-            // Check if the response is empty
-            const text = await response.text();
-            if (text.trim() === "") {
-            console.error('Failed to submit feedback: Empty response');
-            } else {
-            try {
-                // Attempt to parse response as JSON
-                const data = JSON.parse(text);
-                if (data && data.message) {
-                console.error('Failed to submit feedback:', data.message);
-                } else {
-                console.error('Failed to submit feedback: Invalid response');
-                }
-            } catch (jsonError) {
-                console.error('Failed to parse server response as JSON:', (jsonError as Error).message);
-            }
+    const handleEnter = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+          if (e.shiftKey) {
+              // Allow the shift+enter key to create a new line
+              // By not calling e.preventDefault(), we allow the default behavior of adding a new line
+          } else if (query) {
+              // Prevent the default enter key behavior
+              e.preventDefault();
+              // Submit the form
+              handleSubmit(e);
           }
-        }
-        } catch (error) {
-        if (error instanceof TypeError) {
-            console.error('Network error when submitting feedback:', (error as Error).message);
-        } else {
-            console.error('Error when submitting feedback:', (error as Error).message);
-        }
-        }
-    };
+      }
+  };
 
-    const handleSubmit = async (e?: React.SyntheticEvent) => {
-      if (e) e.preventDefault();
-    
-      console.log('Form submitted');
+    const handleSubmit = async (e : any) => {
+      e.preventDefault();
       setError(null);
     
-      // Ensure at least one input is available (text or image)
-      if (!query.trim() && !bucketUrl) {
-        alert('Please input a question or upload a file');
+      if (!query) {
+        alert('Please input a question');
         return;
       }
     
@@ -271,24 +111,22 @@ export default function Home() {
       setLoading(true);
       const question = query.trim();
     
-      // Add the new user message to the state only if there's text
-      if (question) {
-        setMessageState((state) => ({
-          ...state,
-          messages: [
-            ...state.messages,
-            {
-              type: 'userMessage',
-              message: question,
-              isComplete: false,
-            },
-          ],
-          history: [...state.history, [question, ""]],
-        }));
-      }
+      setMessageState((state) => ({
+        ...state,
+        messages: [
+          ...state.messages,
+          {
+            type: 'userMessage',
+            message: question,
+            isComplete: false,
+          },
+        ],
+        history: [...state.history, [question, ""]],
+      }));
     
       setQuery('');
     
+      // Fetch the user ID from the auth object, ensure user is authenticated
       const userEmail = auth.currentUser ? auth.currentUser.email : null;
     
       if (!userEmail) {
@@ -303,32 +141,24 @@ export default function Home() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            // Optionally, include the userId in the Authorization header or within the body
             'Authorization': userEmail,
           },
           body: JSON.stringify({
             question,
             history,
             roomId,
-            userEmail,
-            imageUrl: bucketUrl  // Always send the image URL if available
+            userEmail, // Including the userId in the body if not using the Authorization header
           }),
         });
+    
       } catch (error) {
         setError('An error occurred while fetching the data. Please try again.');
-        console.error('Error:', error);
+        console.error('error', error);
       } finally {
+        // Reset the request state for the current room
         setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
         setLoading(false);
-      }
-    };
-    
-    
-    const handleEnter = (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        if (!e.shiftKey && query) {
-          e.preventDefault(); // Prevent form submission via enter key
-          handleSubmit(); // Call handleSubmit without the event
-        }
       }
     };
     
@@ -479,14 +309,8 @@ export default function Home() {
   
       return () => messageListElement?.removeEventListener('scroll', handleScroll);
     }, []);
-
-    const handleOpenModal = (type: string, index: number) => {
-      setActiveMessageIndex(index);
-      setFeedback(prev => ({ ...prev, [index]: { ...prev[index], type } }));
-      setFeedbackType(type); // Set the feedback type
-      setIsModalOpen(true);
-    };
   
+
   // Main Render
     return (
       <>
@@ -497,75 +321,198 @@ export default function Home() {
             </h1>
             <main className={styles.main}>
               <div className={styles.cloud}>
-              <MessageList
-                messages={messages}
-                loading={loading}
-                userHasScrolled={userHasScrolled}
-                setUserHasScrolled={setUserHasScrolled}
-                imageUrlUserIcon={imageUrlUserIcon}
-                botimageIcon={botimageIcon}
-                handleOpenModal={handleOpenModal}
-              />
+                <div ref={messageListRef} className={styles.messagelist}>
+                {messages.map((message, index) => {
+                let webinarCount = 1;
+                let documentCount = 1;
+                  let icon;
+                  let className;
+                  if (message.type === 'apiMessage') {
+                    icon = (
+                      <Image
+                        key={index}
+                        src={botimageIcon}
+                        alt="AI"
+                        width="40"
+                        height="40"
+                        className={styles.boticon}
+                        priority
+                      />
+                    );
+                    className = styles.apimessage;
+                  } else {
+                    icon = (
+                      <Image
+                        key={index}
+                        src={imageUrlUserIcon}
+                        alt="Me"
+                        width="30"
+                        height="30"
+                        className={styles.usericon}
+                        priority
+                      />
+                    );
+                    className =
+                      loading && index === messages.length - 1
+                        ? styles.usermessagewaiting
+                        : styles.usermessage;
+                  }
+                  const hasSources = message.sourceDocs && message.sourceDocs.length > 0;
+                        // Preprocess documents to update counts based on type
+                  const totalWebinars = message.sourceDocs?.filter(doc => doc.metadata.type === 'youtube').length ?? 0;
+                  const totalDocuments = message.sourceDocs?.length ?? 0 - totalWebinars; // Assuming other types are documents
+                  return (
+                    <React.Fragment key={`chatMessageFragment-${index}`}>
+                      <div className={className}>
+                        {icon}
+                        <div className={styles.markdownanswer} ref={answerStartRef}>
+                          <ReactMarkdown
+                            rehypePlugins={[rehypeRaw as any]}
+                            components={{
+                              a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                            }}
+                          >
+                            {message.message}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                      {message.sourceDocs && (
+                      <div key={`sourceDocsAccordion-${index}`}>
+                      <Accordion type="single" collapsible className="flex-col">
+                        {message.sourceDocs.map((doc, docIndex) => {
+                          let title;
+                          let currentCount;
+                          if (doc.metadata.type === 'youtube') {
+                            title = 'Webinar';
+                            currentCount = webinarCount++; // Increment count for webinar
+                          } else { // 'PDF' and 'sentinel' are treated as documents
+                            title = 'Document';
+                            currentCount = documentCount++; // Increment count for document
+                          }
+
+                          return (
+                            <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
+                              <AccordionTrigger>
+                                <h3>{`${title} ${currentCount}`}</h3>
+                              </AccordionTrigger>
+                                  <AccordionContent>
+                                  {
+                                    doc.metadata.type === 'youtube' ? (
+                                        // YouTube link handling
+                                        <p>
+                                            <b>Source:</b>
+                                            {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View Webinar</a> : 'Unavailable'}
+                                        </p>
+                                    ) : doc.metadata.type === 'sentinel' ? (
+                                        // Sentinel link handling
+                                        <p>
+                                            <b>Source:</b>
+                                            {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View</a> : 'Unavailable'}
+                                        </p>
+                                        
+                                    ) : (
+                                        // Default handling
+                                        <>
+                                          <ReactMarkdown
+                                            rehypePlugins={[rehypeRaw as any]}
+                                            components={{
+                                              a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                                            }}
+                                          >
+                                            {doc.pageContent.split('\n')[0]}
+                                          </ReactMarkdown>
+                                          <p className="mt-2">
+                                            <b>Source:</b>
+                                            {
+                                              doc.metadata && doc.metadata.source
+                                              ? (() => {
+                                                // Extract all page numbers from the content
+                                                const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
+
+                                                // Find the largest page number mentioned
+                                                const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
+
+                                                // Filter for numbers within 2 pages of the largest number, if it exists
+                                                let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
+
+                                                // From the filtered numbers, find the smallest one to use in the link
+                                                let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
+
+                                                // If no suitable number is found within 2 pages of the largest, decide on fallback strategy
+                                                // For example, using the largest number or another logic
+                                                if (smallestPageNumberInRange === null && largestPageNumber !== null) {
+                                                    // Fallback strategy here
+                                                    // This example simply uses the largest number
+                                                    smallestPageNumberInRange = largestPageNumber;
+                                                }
+
+                                                const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
+
+                                                  return <a href={pageLink} target="_blank" rel="noopener noreferrer">View Page</a>;
+                                                })()
+                                              : 'Unavailable'
+                                            }
+                                          </p>
+                                        </>
+                                      )
+                                    }
+                                  </AccordionContent>
+                                </AccordionItem>
+                                );
+                              })}
+                          </Accordion>
+                        </div>
+                      )}
+                      {message.isComplete && <FeedbackComponent key={index} messageIndex={index} qaId={message.qaId} roomId={roomId} /> }
+                    </React.Fragment>
+                  );
+                })}
+
+                </div>
               </div>
               <div className={styles.center}>
-              <div className={styles.cloudform}>
-                <form onSubmit={handleSubmit}>
-                <div className={styles.inputArea}>
-                <textarea
-                  disabled={loading}
-                  onKeyDown={handleEnter}
-                  ref={textAreaRef}
-                  autoFocus={false}
-                  rows={1}
-                  maxLength={512}
-                  id="userInput"
-                  name="userInput"
-                  placeholder={loading ? 'Waiting for response...' : 'Message SolidCAM ChatBot...'}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className={styles.textarea}
-                />
-              </div>
-              {/* <FileUpload
-                file={file}
-                filePreview={filePreview}
-                uploadProgress={uploadProgress}
-                loading={loading}
-                handleFileChange={handleFileChange}
-                removeImage={removeImage}
-                triggerFileInputClick={triggerFileInputClick}
-                uploadImage={uploadImage}
-                setFile={setFile}
-                setFilePreview={setFilePreview}
-                setUploadProgress={setUploadProgress}
-                setError={setError}
-                fileInputRef={fileInputRef}
-              /> */}
-                    <div className={styles.buttonContainer}>
-                      <button
-                        type="submit"
-                        disabled={loading || (!query.trim() && !bucketUrl)}  // Disable the button if both text and image are not provided
-                        className={styles.generatebutton}
-                      >
-                        {loading ? (
-                          <div className={styles.loadingwheel}>
-                            <LoadingDots color="#000" />
-                          </div>
-                        ) : (
-                          <svg
-                            viewBox="0 0 20 20"
-                            className={styles.svgicon}
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
-                          </svg>
-                        )}
-                      </button>
-                    </div>
+                <div className={styles.cloudform}>
+                  <form onSubmit={handleSubmit}>
+                    <textarea
+                      disabled={loading}
+                      onKeyDown={handleEnter}
+                      ref={textAreaRef}
+                      autoFocus={false}
+                      rows={1}
+                      maxLength={512}
+                      id="userInput"
+                      name="userInput"
+                      placeholder={
+                        loading
+                          ? 'Waiting for response...'
+                          : 'Message SolidCAM ChatBot...'
+                      }
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      className={styles.textarea}
+                    />
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className={styles.generatebutton}
+                    >
+                      {loading ? (
+                        <div className={styles.loadingwheel}>
+                          <LoadingDots color="#000" />
+                        </div>
+                      ) : (
+                        <svg
+                          viewBox="0 0 20 20"
+                          className={styles.svgicon}
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+                        </svg>
+                      )}
+                    </button>
                   </form>
                 </div>
               </div>
-
               {errorreact && (
                 <div className="border border-red-400 rounded-md p-4">
                   <p className="text-red-500">{errorreact}</p>
@@ -577,21 +524,6 @@ export default function Home() {
           © 2024 SolidCAM™. All rights reserved.
         </footer>
         </Layout>
-        <FeedbackModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          messageIndex={activeMessageIndex}
-          onSubmit={handleSubmitRemark}
-          feedbackType={feedbackType}
-        />
       </>
     )
   }
-
-// Supporting Interfaces
-interface FeedbackState {
-  [key: number]: {
-    type?: string;
-    remark?: string;
-  };
-}
