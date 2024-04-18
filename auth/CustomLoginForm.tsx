@@ -20,6 +20,9 @@ const CustomLoginForm = () => {
     const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
     const [recoveryEmail, setRecoveryEmail] = useState('');
     const [theme, setTheme] = useState('light');
+    const [consentGiven, setConsentGiven] = useState(false);
+    const [showConsentModal, setShowConsentModal] = useState(false);
+    const [selectedProvider, setSelectedProvider] = useState(null);
 
     const router = useRouter();
 
@@ -34,6 +37,7 @@ const CustomLoginForm = () => {
     };
 
     const baseURL = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : '/';
+    
 
     // Use the base URL with your image path
     const moonIcon = `${baseURL}icons8-moon-50.png`;
@@ -120,71 +124,65 @@ const CustomLoginForm = () => {
         }
       };
 
-  const signInWithGoogle = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      // Redirect after sign in
-      router.push('/');
-    } catch (error) {
-      console.error('Error during Google sign-in:', error);
-      // Handle the error here
-    }
-  };
-
-  const signInWithApple = async () => {
-    try {
-      const provider = new OAuthProvider('apple.com');
-      const result = await signInWithPopup(auth, provider);
-  
-      // After successful sign-in with Apple, check if the user needs to be redirected.
-      // This could involve checking the result for specific conditions that indicate success.
-      // For example, if you're linking accounts and want to wait for that process to complete,
-      // make sure any asynchronous operations related to account linking are awaited here.
-      
-      // Assuming all conditions are met, proceed to redirect the user.
-      console.log('Successfully signed in with Apple:', result);
-      router.push('/'); // Redirect on successful sign in
-    } catch (error : any) {
-      console.error('Error during Apple sign-in:', error);
-      setErrorMessage(error.message); // Display the error message to the user
-      
-      // Depending on the error, you may want to handle specific cases differently.
-      // For example, if account linking is required but fails, you might choose a different response or error message.
-    }
-  };
-  const createAccountWithEmail = async (e : any) => {
-    e.preventDefault();
-    setIsSubmitting(true); // Indicate that submission has started
-    setErrorMessage(''); // Clear any existing error messages
-
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        // Send verification email after account creation
-        await sendEmailVerification(userCredential.user);
-        router.push('/verification-sent');
-    } catch (error : any) {
-        if (error.code === 'auth/email-already-in-use') {
-            setErrorMessage('The email address is already in use by another account.');
-        } else {
-            // Error message formatting can be improved as needed
-            const formattedError = error.message.replace('Firebase: ', '');
-            setErrorMessage(formattedError);
+      const signInWithGoogle = async () => {
+        try {
+          const provider = new GoogleAuthProvider();
+          await signInWithPopup(auth, provider);
+          router.push('/'); // Redirect on successful sign in
+        } catch (error) {
+          console.error('Error during Google sign-in:', error);
+          setErrorMessage('Failed to sign in with Google. Please try again.');
         }
-    } finally {
-        setIsSubmitting(false); // Indicate that submission has ended
-    }
-};
+      };
 
+      const signInWithApple = async () => {
+        try {
+          const provider = new OAuthProvider('apple.com');
+          await signInWithPopup(auth, provider);
+          router.push('/'); // Redirect on successful sign in
+        } catch (error) {
+          console.error('Error during Apple sign-in:', error);
+          setErrorMessage('Failed to sign in with Apple. Please try again.');
+        }
+      };
+
+      const createAccountWithEmail = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        setIsSubmitting(true); // Indicate that submission has started
+        setErrorMessage(''); // Clear any existing error messages
+      
+        if (selectedProvider) {
+            // If a provider is selected, handle the provider sign up
+            acceptConsent();
+        } else {
+            // If no provider is selected, proceed with email/password registration
+            try {
+              const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+              await sendEmailVerification(userCredential.user);
+              router.push('/verification-sent');
+            } catch (error: any) {
+                if (error.code === 'auth/email-already-in-use') {
+                    setErrorMessage('The email address is already in use by another account.');
+                } else {
+                    // Error message formatting can be improved as needed
+                    const formattedError = error.message.replace('Firebase: ', '');
+                    setErrorMessage(formattedError);
+                }
+            } finally {
+                setIsSubmitting(false); // Indicate that submission has ended
+            }
+        }
+    };
 const backToSignInPopup = () => {
   setShowForgotPasswordModal(false); // Close the Forgot Password popup
   setShowSignInModal(true); // Open the Sign In popup
 };
 
 const isFormValid = () => {
-    // Add your logic to check if the form is valid
-    return email.trim() && password.trim();
+  // Check if email and password are not empty and also check for consent if a provider is selected.
+  return email.trim() && password.trim() && (!selectedProvider || consentGiven);
 };
+
 const toggleForm = () => {
     setIsSignIn(!isSignIn); // Toggle between sign in and sign up
   };
@@ -307,6 +305,60 @@ const toggleForm = () => {
 
   const darkModeStyle = theme === 'dark' ? { color: 'lightblue', textDecoration: 'underline', cursor: 'pointer' } : { color: 'blue', textDecoration: 'underline', cursor: 'pointer' };
   
+  const handleProviderSignUp = (provider: any) => {
+    setSelectedProvider(provider); // Save the provider selection
+    setShowConsentModal(true); // Show the consent modal
+  };
+
+const ConsentModal = () => (
+  <div className="backdropStyle">
+  <div className="modalStyle">
+      <h2 className="headerStyle">Your Privacy Matters</h2>
+          <p>To enhance your experience, we securely store your email and interaction history. By agreeing, you acknowledge and consent to this use.</p>
+          <div style={{ margin: '20px 0' }}>
+              <input
+                  type="checkbox"
+                  id="user-consent-checkbox"
+                  checked={consentGiven}
+                  onChange={(e) => setConsentGiven(e.target.checked)}
+                  style={{ marginRight: '10px' }}
+              />
+              <label htmlFor="user-consent-checkbox">I agree</label>
+          </div>
+          <button onClick={acceptConsent} className="agreeButtonStyle" disabled={!consentGiven}>
+                    Agree
+                </button>
+                <button onClick={() => setShowConsentModal(false)} className="cancelButtonStyle">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    );
+  
+  
+    const acceptConsent = () => {
+      setShowConsentModal(false);
+      setConsentGiven(true);
+  
+      if (selectedProvider === 'google') {
+          signInWithGoogle();
+      } else if (selectedProvider === 'apple') {
+          signInWithApple();
+      } else {
+          createAccountWithEmail();  // This is directly creating the account
+      }
+  };
+
+    const handleCreateAccountClick = () => {
+      if (isFormValid() && !isSubmitting) {
+          if (!consentGiven) {
+              setShowConsentModal(true);  // Only show the consent modal
+          } else {
+              createAccountWithEmail();  // If already consented, proceed to create account
+          }
+      }
+  };
+
   return (
     <>
         <Head>
@@ -327,17 +379,17 @@ const toggleForm = () => {
             <div className="firebaseui-container">
                 <div className="firebaseui-card-content">
                     <div className="heading">Let's Chat!</div>
-                    <button onClick={signInWithGoogle} className="firebaseui-idp-button firebaseui-idp-google">
-                        <span className="firebaseui-idp-icon-wrapper">
-                            <img className="firebaseui-idp-icon" src="/google.svg" alt="Google" />
-                        </span>
-                        <span className="firebaseui-idp-text">Sign up with Google</span>
+                    <button onClick={() => handleProviderSignUp('google')} className="firebaseui-idp-button firebaseui-idp-google">
+                      <span className="firebaseui-idp-icon-wrapper">
+                        <img className="firebaseui-idp-icon" src="/google.svg" alt="Google" />
+                      </span>
+                      <span className="firebaseui-idp-text">Sign in with Google</span>
                     </button>
-                    <button onClick={signInWithApple} className="firebaseui-idp-button firebaseui-idp-apple">
-                        <span className="firebaseui-idp-icon-wrapper">
-                            <img className="firebaseui-idp-icon" src="/apple.svg" alt="Apple" />
-                        </span>
-                        <span className="firebaseui-idp-text">Sign up with Apple</span>
+                    <button onClick={() => handleProviderSignUp('apple')} className="firebaseui-idp-button firebaseui-idp-apple">
+                      <span className="firebaseui-idp-icon-wrapper">
+                        <img className="firebaseui-idp-icon" src="/apple.svg" alt="Apple" />
+                      </span>
+                      <span className="firebaseui-idp-text">Sign in with Apple</span>
                     </button>
                     {/* <button onClick={signInWithMicrosoft} className="firebaseui-idp-button firebaseui-idp-microsoft">
                         <span className="firebaseui-idp-icon-wrapper">
@@ -354,7 +406,7 @@ const toggleForm = () => {
                         onClick={openSignInPopup} // Update this line
                         className="btn sign-in-button"
                     >
-                        Sign in
+                        Sign in with Email
                     </button>
                     {showModal && (
                         <div className="signup-popup-backdrop">
@@ -364,39 +416,38 @@ const toggleForm = () => {
                                     <h2>Create Your Account</h2>
                                 </div>
                                 <form onSubmit={createAccountWithEmail} className="signup-popup-body">
-                                    <input
-                                        type="email"
-                                        placeholder="Email"
-                                        required
-                                        value={email}
-                                        onChange={(e) => {
-                                            setEmail(e.target.value);
-                                            setErrorMessage(''); // Clear the error when the user starts typing
-                                        }}
-                                        className="signup-popup-body-input"
-                                    />
-                                    <input
-                                        type="password"
-                                        placeholder="Password"
-                                        required
-                                        value={password}
-                                        onChange={(e) => {
-                                            setPassword(e.target.value);
-                                            setErrorMessage(''); // Clear the error when the user starts typing
-                                        }}
-                                        className="signup-popup-body-input"
-                                    />
-                                    <div className="signup-popup-footer">
-                                        {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                        <button
-                                            type="submit"
-                                            className={`btn ${!isFormValid() || isSubmitting ? '' : 'btn-enabled'}`}
-                                            disabled={!isFormValid() || isSubmitting}
-                                        >
-                                            Create account
-                                        </button>
-                                    </div>
-                                </form>
+                                <input
+                                  type="email"
+                                  placeholder="Email"
+                                  required
+                                  value={email}
+                                  onChange={(e) => {
+                                    setEmail(e.target.value);
+                                    setErrorMessage(''); // Clear the error when the user starts typing
+                                  }}
+                                  className="signup-popup-body-input"
+                                />
+                                <input
+                                  type="password"
+                                  placeholder="Password"
+                                  required
+                                  value={password}
+                                  onChange={(e) => {
+                                    setPassword(e.target.value);
+                                    setErrorMessage(''); // Clear the error when the user starts typing
+                                  }}
+                                  className="signup-popup-body-input"
+                                />
+                                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                <button
+                                  type="button"
+                                  className={`btn ${isFormValid() && !isSubmitting ? 'btn-enabled' : ''}`}
+                                  disabled={!isFormValid() || isSubmitting}
+                                  onClick={handleCreateAccountClick}
+                              >
+                                  Create account
+                              </button>
+                              </form>
                             </div>
                         </div>
                     )}
@@ -526,6 +577,7 @@ const toggleForm = () => {
                 </div>
             </div>
         </div>
+        {showConsentModal && <ConsentModal />}
     </>
 );
 
