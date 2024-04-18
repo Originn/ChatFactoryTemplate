@@ -5,6 +5,7 @@ import { auth } from 'utils/firebase';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Image from 'next/image';
+import Cookies from 'js-cookie';
 
 const CustomLoginForm = () => {
     // Removed the name state since it's not needed anymore
@@ -306,8 +307,28 @@ const toggleForm = () => {
   const darkModeStyle = theme === 'dark' ? { color: 'lightblue', textDecoration: 'underline', cursor: 'pointer' } : { color: 'blue', textDecoration: 'underline', cursor: 'pointer' };
   
   const handleProviderSignUp = (provider: any) => {
-    setSelectedProvider(provider); // Save the provider selection
-    setShowConsentModal(true); // Show the consent modal
+    setSelectedProvider(provider);
+    
+    // Check consent before showing the modal
+    const consentCookie = Cookies.get('userConsent');
+    if (consentCookie === 'true') {
+      proceedWithProviderSignIn(provider);
+    } else {
+      setShowConsentModal(true);
+    }
+  };
+
+  const proceedWithProviderSignIn = (provider: string | null) => {
+    if (!provider) {
+      console.error("Provider is null, cannot proceed with sign-in.");
+      return; // Optionally add more handling logic here.
+    }
+  
+    if (provider === 'google') {
+      signInWithGoogle();
+    } else if (provider === 'apple') {
+      signInWithApple();
+    }
   };
 
 const ConsentModal = () => (
@@ -339,15 +360,25 @@ const ConsentModal = () => (
     const acceptConsent = () => {
       setShowConsentModal(false);
       setConsentGiven(true);
-  
-      if (selectedProvider === 'google') {
-          signInWithGoogle();
-      } else if (selectedProvider === 'apple') {
-          signInWithApple();
+      Cookies.set('userConsent', 'true', { expires: 365 }); // Set a cookie for 1 year
+    
+      if (selectedProvider) {
+        proceedWithProviderSignIn(selectedProvider);
       } else {
-          createAccountWithEmail();  // This is directly creating the account
+        console.error("No provider selected, cannot proceed with sign-in.");
       }
-  };
+    };
+
+  useEffect(() => {
+    document.body.className = theme;
+  
+    // Check if consent has already been given when the component mounts
+    const consentCookie = Cookies.get('userConsent');
+    if (consentCookie === 'true') {
+      setConsentGiven(true);
+    }
+  }, []);
+  
 
     const handleCreateAccountClick = () => {
       if (isFormValid() && !isSubmitting) {
