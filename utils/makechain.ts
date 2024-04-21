@@ -69,7 +69,7 @@ class CustomRetriever extends BaseRetriever {
   }
 
   async getRelevantDocuments(query: string): Promise<MyDocument<Record<string, any>>[]> {
-    const results = await this.vectorStore.similaritySearchWithScore(query, 6);
+    const results = await this.vectorStore.similaritySearchWithScore(query, 8);
     // Map each result to include the document and its score inside metadata
     return results.map(([doc, score]) => {
       // Create a new 'metadata' object, preserving existing properties
