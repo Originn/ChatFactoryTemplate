@@ -34,7 +34,7 @@ const insertQA = async (question, answer, embeddings, sources, qaId, roomId, use
     const sourcesJson = JSON.stringify(sources);
 
     const res = await pool.query(query, [question, answer, embeddingsJson, sourcesJson, qaId, roomId, userEmail]);
-    console.log(res.rows[0]); // Output the inserted row to the console
+    //console.log(res.rows[0]); // Output the inserted row to the console
     return res.rows[0]; // Return the inserted row
   } catch (err) {
     console.error('Error running query', err);
@@ -55,7 +55,7 @@ const updateFeedback = async (qaId, thumb, comment, roomId) => {
 
   try {
     const res = await pool.query(query, [qaId, thumb, comment, roomId]);
-    console.log('Updated feedback:', res.rows[0]); // Log the updated row
+    //console.log('Updated feedback:', res.rows[0]); // Log the updated row
     return res.rows[0]; // Return the updated row
   } catch (err) {
     // Check if error is an instance of Error

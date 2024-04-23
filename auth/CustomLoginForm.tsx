@@ -102,11 +102,11 @@ const CustomLoginForm = () => {
           });
       
           // Logging the custom parameters to verify if they are set correctly.
-          console.log('Custom Parameters set for Microsoft provider:', provider.setCustomParameters);
+          //console.log('Custom Parameters set for Microsoft provider:', provider.setCustomParameters);
       
           const result = await signInWithPopup(auth, provider);
           // Success log
-          console.log('Successfully signed in with Microsoft:', result);
+          //console.log('Successfully signed in with Microsoft:', result);
       
           router.push('/'); // Redirect on successful sign in
         } catch (error : any) {

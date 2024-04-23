@@ -9,7 +9,7 @@
                 "type": "python",
                 "request": "launch",
                 "program": "${workspaceFolder}/utils/plumber.py",
-                "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/w/General_FAQ.txt"],
+                "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/w/Linda's Corner Interview with Ken Merritt COO SolidCAM USA Webinar.txt"],
                 "console": "integratedTerminal"
             },
             {

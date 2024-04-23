@@ -4,7 +4,7 @@ import { updateFeedback } from '../../db';
 
 export default async function handler(req: any, res: any) {
     if (req.method === 'POST') {
-      console.log('Received feedback submission:', req.body);  // Log the incoming request body
+      //console.log('Received feedback submission:', req.body);  // Log the incoming request body
       try {
         const { qaId, thumb, comment, roomId } = req.body;
         const result = await updateFeedback(qaId, thumb, comment, roomId);
