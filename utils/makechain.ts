@@ -11,9 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { insertQA } from '../db';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { HumanMessage } from "@langchain/core/messages";
-
-
-
+import { MaxMarginalRelevanceSearchOptions } from "@langchain/core/vectorstores";
 // Type Definitions
 type SearchResult = [MyDocument, number];
 
@@ -69,13 +67,19 @@ class CustomRetriever extends BaseRetriever {
   }
 
   async getRelevantDocuments(query: string): Promise<MyDocument<Record<string, any>>[]> {
-    const results = await this.vectorStore.similaritySearchWithScore(query, 8);
+    // Set up MMR search options
+    const mmrOptions: MaxMarginalRelevanceSearchOptions<any> = {
+        k: 6,
+        fetchK: 12,  // Option to fetch more documents initially if supported
+        lambda: 0.5, // Adjust lambda to balance relevance and diversity
+    };
+
+    // Use MMR to fetch documents
+    const results = await this.vectorStore.maxMarginalRelevanceSearch(query, mmrOptions);
     // Map each result to include the document and its score inside metadata
-    return results.map(([doc, score]) => {
-      // Create a new 'metadata' object, preserving existing properties
+    return results.map(doc => {
       const newMetadata = {
-        ...doc.metadata,
-        score: score // Set the score property inside metadata
+        ...doc.metadata 
       };
 
       return new MyDocument({
@@ -272,7 +276,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
 
       if (roomId) {
-        console.log("INSIDE ROOM_ID", roomId);     
+        //console.log("INSIDE ROOM_ID", roomId);     
         io.to(roomId).emit(`fullResponse-${roomId}`, {
           roomId: roomId,
           sourceDocs: Documents,

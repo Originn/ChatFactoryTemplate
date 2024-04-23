@@ -62,7 +62,7 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ messageIndex, qaI
         });
   
         if (response.ok) {
-          console.log("Feedback submitted successfully for messageIndex:", messageIndex);
+          //console.log("Feedback submitted successfully for messageIndex:", messageIndex);
           handleCloseModal();
         } else {
           const errorText = await response.text();
