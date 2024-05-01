@@ -996,6 +996,83 @@ def extract_and_format_pdf_nx_imachining(pdf_path):
         print(f"Error processing PDF: {e}")
         return []
 
+
+def extract_and_format_pdf_automation(pdf_path):
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            pages_content = []
+            combined_header = ""
+            combined_header_found = False
+            header_to_use = ""
+
+            for page_number, page in enumerate(pdf.pages, start=1):
+                chars = page.chars
+                current_page_header_part = ""
+
+                for char in chars:
+                    # Combine header parts if the font and size conditions are met
+                    if 'ArialBold' in char['fontname'] and char['size'] > 14.4 and char['size'] < 15:
+                        current_page_header_part += char['text']
+
+                # Set the combined header if it has not been set yet and we are on the first page with header content
+                if current_page_header_part:
+                    combined_header = current_page_header_part.strip()
+                    combined_header_found = True
+
+                # Update header for the page
+                header_text = combined_header
+
+                # On the first occurrence of a non-empty header, use it for the first two pages as well
+                header_to_use = "SolidCAM API Help"
+
+                rest_of_page = page.extract_text() or ""
+                page_content = rest_of_page
+
+                pages_content.append({
+                    'page_number': page.page_number,
+                    'header': header_text,
+                    'pageContent': page_content
+                })
+
+            # Replace empty headers with the header from page 003
+            if header_to_use:
+                for page in pages_content:
+                    if not page['header']:
+                        page['header'] = header_to_use
+
+            return pages_content
+
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        return []
+
+import os
+
+def extract_and_format_api_examples(folder_path):
+    pages_content = []
+    try:
+        # Walk through directory and subdirectories
+        for root, dirs, files in os.walk(folder_path):
+            for filename in files:
+                if filename.endswith('.vbs') or filename.endswith('.py'):  # Check if the file ends with .vbs
+                    file_path = os.path.join(root, filename)  # Full path to the file
+                    with open(file_path, 'r') as file:
+                        code_content = file.read()  # Read the content of the .vbs file
+
+                        # Append the file name and content to the pages_content list
+                        pages_content.append({
+                            'page_number': '////////',  # page_number is always 0, as each file is treated as a page
+                            'header': filename,
+                            'pageContent': code_content
+                        })
+        return pages_content
+    except Exception as e:
+        print(f"Error processing files: {e}")
+        return []
+
+
+
+
 def extract_font_details_first_page(pdf_path, page_number):
     font_details_list = []
     try:
@@ -1043,13 +1120,19 @@ if __name__ == "__main__":
             elif 'solidcam_forum' in pdf_path.lower():
                 pages_ = extract_and_format_pdf_solidcam_forum(pdf_path)
             elif 'faq_imachining' in pdf_path.lower():
-                #first_page = extract_font_details_first_page(pdf_path, 0)
-                #print(first_page)
                 pages_ = extract_and_format_pdf_faq_imachining(pdf_path)
             elif 'toolkit_reference' in pdf_path.lower():
                 pages_ = extract_and_format_pdf_Toolkit_reference(pdf_path)
             elif 'nx_imachining' in pdf_path.lower():
                 pages_ = extract_and_format_pdf_nx_imachining(pdf_path)
+            elif 'automation' in pdf_path.lower():
+                # first_page = extract_font_details_first_page(pdf_path, 1)
+                # print(first_page)
+                pages_ = extract_and_format_pdf_automation(pdf_path)
+            elif 'api_examples' in pdf_path.lower():
+                # first_page = extract_font_details_first_page(pdf_path, 1)
+                # print(first_page)
+                pages_ = extract_and_format_api_examples(pdf_path)
         # print(pages_with_home)
         # input()
 
