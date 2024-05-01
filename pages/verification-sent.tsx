@@ -15,7 +15,7 @@ export default function VerificationSent() {
       </div>
       <h1 className={styles.header}>Check Your Email</h1>
       <p className={styles.paragraph}>
-        We&apos;ve sent an email to the address you provided. Please click on the verification link in the email to complete your registration.
+        We have sent an email to the address you provided. Please click on the verification link in the email to complete your registration.
       </p>
       <p className={styles.paragraph}>
         If you don't see our email shortly, please check your junk or spam folder.
