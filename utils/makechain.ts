@@ -168,12 +168,12 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
   // Non-streaming model setup
   const nonStreamingModel = new OpenAI({
-    modelName: 'gpt-3.5-turbo-1106',
+    modelName: 'gpt-4-turbo',
     temperature: TEMPRATURE
   });
 
   const translationModel = new OpenAI({
-    modelName: 'gpt-4',
+    modelName: 'gpt-4-turbo',
     temperature: TEMPRATURE
   });
 
