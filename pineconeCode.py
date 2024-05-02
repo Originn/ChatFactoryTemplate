@@ -1,12 +1,9 @@
-import pinecone  
+# Import Pinecone correctly
+from pinecone import Pinecone
 
-pinecone.init(      
-	api_key='1cdbe8f9-6f16-4828-a5e6-6fd62810db8f',      
-	environment='us-west4-gcp'      
-)      
-index = pinecone.Index('solidcam')
-index.delete(
-    filter={
-        "source": {"$eq": "https://storage.googleapis.com/solidcam/scturn.pdf"}
-    }
-)
+# Initialize the Pinecone client
+pc = Pinecone(api_key='c67c46c1-c8f1-42ef-aa7f-c729c8fb6a99', environment='us-west4-gcp')
+
+# List indexes and print the result
+info = pc.list_indexes()
+print(info)
