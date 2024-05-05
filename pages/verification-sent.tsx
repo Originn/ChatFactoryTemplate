@@ -8,7 +8,7 @@ export default function VerificationSent() {
         {/* Next.js Image component for optimized image loading */}
         <Image 
           src='/solidcam.png' // Replace with your actual image path
-          alt="solidcam"
+          alt="SolidCAM Logo"
           width={100} // Adjust to the size of your actual image
           height={100} // Adjust to the size of your actual image
           className={styles.image}

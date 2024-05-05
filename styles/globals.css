@@ -1413,3 +1413,39 @@ body.dark .modalStyle {
 body.dark .backdropStyle {
   background-color: rgba(0, 0, 0, 0.7); /* Darker backdrop for better contrast in dark mode */
 }
+
+.success-message {
+  color: #4CAF50; /* Green color for success */
+  background-color: #E8F5E9; /* Light green background */
+  border-left: 5px solid #4CAF50; /* Solid left border for emphasis */
+  padding: 10px; /* Padding for better spacing */
+  margin: 10px 0; /* Margin for spacing around the element */
+  border-radius: 5px; /* Rounded corners for a softer look */
+}
+
+.error-message {
+  color: #D32F2F; /* Red color for errors */
+  background-color: #FFEBEE; /* Light red background */
+  border-left: 5px solid #D32F2F;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+}
+
+.warning-message {
+  color: #FF9800; /* Orange color for warnings */
+  background-color: #FFF3E0; /* Light orange background */
+  border-left: 5px solid #FF9800;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+}
+
+.info-message {
+  color: #2196F3; /* Blue color for informational messages */
+  background-color: #E3F2FD; /* Light blue background */
+  border-left: 5px solid #2196F3;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+}

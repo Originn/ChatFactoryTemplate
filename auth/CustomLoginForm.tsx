@@ -1,5 +1,5 @@
 // auth/CustomLoginForm.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, OAuthProvider, fetchSignInMethodsForEmail, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 import { useRouter } from 'next/router';
@@ -24,6 +24,7 @@ const CustomLoginForm = () => {
     const [consentGiven, setConsentGiven] = useState(false);
     const [showConsentModal, setShowConsentModal] = useState(false);
     const [selectedProvider, setSelectedProvider] = useState(null);
+    const passwordInputRef = useRef<HTMLInputElement>(null);
 
     const router = useRouter();
 
@@ -189,29 +190,33 @@ const toggleForm = () => {
   };
 
   const handleNextClick = async () => {
-    // Validate email format
     if (!validateEmail(email)) {
-      // If the email format is invalid, set an error message
-      setErrorMessage('Please enter a valid email address.');
-      return;
+        setErrorMessage('Please enter a valid email address.');
+        return;
     }
-  
-    // Check if the email exists in Firebase datastore
+
     try {
-      const methods = await fetchSignInMethodsForEmail(auth, email);
-      if (methods.length === 0) {
-        // No user found with this email address
-        setErrorMessage('No account found with this email. Please sign up.');
-      } else {
-        // Email exists, user can enter the password
-        setEmailSubmitted(true);
-        setErrorMessage(''); // Clear any previous error messages
-      }
+        const methods = await fetchSignInMethodsForEmail(auth, email);
+        if (methods.length === 0) {
+            setErrorMessage('No account found with this email. Please sign up.');
+        } else {
+            setEmailSubmitted(true); // This state change triggers the useEffect
+            setErrorMessage('');
+        }
     } catch (error) {
-      console.error('Error checking user email:', error);
-      setErrorMessage('An error occurred while checking the email.');
+        console.error('Error checking user email:', error);
+        setErrorMessage('An error occurred while checking the email.');
     }
-  };
+};
+
+useEffect(() => {
+    // Automatically focus the password input when the email has been submitted
+    if (emailSubmitted && passwordInputRef.current) {
+        passwordInputRef.current.focus();
+    }
+}, [emailSubmitted]); // Depend on emailSubmitted to trigger the focus
+
+  
   
   const validateEmail = (email : any) => {
     // Simple regex for email validation
@@ -286,23 +291,25 @@ const toggleForm = () => {
     closeForgotPasswordPopup();
   };
 
-  const handleSendPasswordResetEmail = async (e : any) => {
-    e.preventDefault(); // Prevent default form submission behavior
-    if (!recoveryEmail) {
-      // Optionally, validate the email before attempting to send a reset email
+  const handleSendPasswordResetEmail = async (e: any) => {
+    e.preventDefault();
+    if (!validateEmail(recoveryEmail)) {
       setErrorMessage("Please enter a valid email address.");
       return;
     }
+  
     try {
       await sendPasswordResetEmail(auth, recoveryEmail);
-      setErrorMessage(""); // Clear any existing error messages
-      postMessage("A password reset link has been sent to your email address. Please check your inbox."); // Inform the user
-      closeForgotPasswordPopup(); // Close the popup
+      // Redirect to the password reset confirmation page after successful email send
+      router.push('/password-reset-confirmation');
     } catch (error) {
       console.error("Failed to send password reset email:", error);
       setErrorMessage("Failed to send password reset email. Please try again later.");
+      // Optionally, you can handle different types of errors differently
     }
   };
+
+
 
   const darkModeStyle = theme === 'dark' ? { color: 'lightblue', textDecoration: 'underline', cursor: 'pointer' } : { color: 'blue', textDecoration: 'underline', cursor: 'pointer' };
   
@@ -330,6 +337,7 @@ const toggleForm = () => {
       signInWithApple();
     }
   };
+
 
 const ConsentModal = () => (
   <div className="backdropStyle">
@@ -467,6 +475,7 @@ const ConsentModal = () => (
                                     setPassword(e.target.value);
                                     setErrorMessage(''); // Clear the error when the user starts typing
                                   }}
+                                  ref={passwordInputRef}
                                   className="signup-popup-body-input"
                                 />
                                 {errorMessage && <div className="error-message">{errorMessage}</div>}
@@ -507,6 +516,7 @@ const ConsentModal = () => (
                                                 setPassword(e.target.value);
                                                 setErrorMessage(''); // Clear the error when the user starts typing
                                             }}
+                                            ref={passwordInputRef}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
                                                     e.preventDefault(); // Prevent the default action to avoid submitting the form

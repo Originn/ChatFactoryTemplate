@@ -9,7 +9,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
 
-  const noAuthRequired = ['/verify-email', '/verification-sent', '/acctmgmt'];
+  const noAuthRequired = ['/verify-email', '/verification-sent', '/password-reset-confirmation', '/acctmgmt'];
   const isAuthRequired = !noAuthRequired.some(path => router.pathname.startsWith(path));
 
   return (
