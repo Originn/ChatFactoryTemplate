@@ -455,39 +455,40 @@ const ConsentModal = () => (
                                     <h2>Create Your Account</h2>
                                 </div>
                                 <form onSubmit={createAccountWithEmail} className="signup-popup-body">
-                                <input
-                                  type="email"
-                                  placeholder="Email"
-                                  required
-                                  value={email}
-                                  onChange={(e) => {
-                                    setEmail(e.target.value);
-                                    setErrorMessage(''); // Clear the error when the user starts typing
-                                  }}
-                                  className="signup-popup-body-input"
-                                />
-                                <input
-                                  type="password"
-                                  placeholder="Password"
-                                  required
-                                  value={password}
-                                  onChange={(e) => {
-                                    setPassword(e.target.value);
-                                    setErrorMessage(''); // Clear the error when the user starts typing
-                                  }}
-                                  ref={passwordInputRef}
-                                  className="signup-popup-body-input"
-                                />
-                                {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                <button
-                                  type="button"
-                                  className={`btn ${isFormValid() && !isSubmitting ? 'btn-enabled' : ''}`}
-                                  disabled={!isFormValid() || isSubmitting}
-                                  onClick={handleCreateAccountClick}
-                              >
-                                  Create account
-                              </button>
-                              </form>
+                                  <input
+                                    type="email"
+                                    placeholder="Email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => {
+                                      setEmail(e.target.value);
+                                      setErrorMessage('');
+                                    }}
+                                    className="signup-popup-body-input"
+                                    onKeyDown={(e) => e.key === 'Enter' && isFormValid() && createAccountWithEmail(e)}
+                                  />
+                                  <input
+                                    type="password"
+                                    placeholder="Password"
+                                    required
+                                    value={password}
+                                    onChange={(e) => {
+                                      setPassword(e.target.value);
+                                      setErrorMessage('');
+                                    }}
+                                    className="signup-popup-body-input"
+                                    ref={passwordInputRef}
+                                    onKeyDown={(e) => e.key === 'Enter' && isFormValid() && createAccountWithEmail(e)}
+                                  />
+                                  {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                  <button
+                                    type="submit"  // This makes the button the default submitter of the form
+                                    className={`btn ${isFormValid() && !isSubmitting ? 'btn-enabled' : ''}`}
+                                    disabled={!isFormValid() || isSubmitting}
+                                  >
+                                    Create account
+                                  </button>
+                                </form>
                             </div>
                         </div>
                     )}
