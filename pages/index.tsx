@@ -35,7 +35,6 @@ let botimageIcon = '/solidcam.png';
 if (process.env.NODE_ENV === PRODUCTION_ENV) {
   imageUrlUserIcon = `${PRODUCTION_URL}usericon.png`;
   botimageIcon = `${PRODUCTION_URL}solidcam.png`;
-
 }
 
 // Component: Home

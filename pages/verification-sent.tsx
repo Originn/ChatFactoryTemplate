@@ -1,13 +1,24 @@
 import styles from '@/styles/VerificationSent.module.css';
 import Image from 'next/image'
 
+const PRODUCTION_ENV = 'production';
+const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
+
+// Image URLs
+let scimageIcon = '/solidcam.png';
+
+
+if (process.env.NODE_ENV === PRODUCTION_ENV) {
+  scimageIcon = `${PRODUCTION_URL}solidcam.png`;
+}
+
 export default function VerificationSent() {
   return (
     <div className={styles.verificationSentContainer}>
       <div className={styles.imageContainer}>
         {/* Next.js Image component for optimized image loading */}
         <Image 
-          src='/solidcam.png' // Replace with your actual image path
+          src={scimageIcon} // Replace with your actual image path
           alt="SolidCAM Logo"
           width={100} // Adjust to the size of your actual image
           height={100} // Adjust to the size of your actual image
