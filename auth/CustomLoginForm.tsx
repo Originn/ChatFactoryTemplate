@@ -91,40 +91,40 @@ const CustomLoginForm = () => {
       }
   };
 
-    const signInWithMicrosoft = async () => {
-        // Pre-attempt log: you might want to log the current state before attempting to sign in.
-        console.log(`Attempting to sign in with Microsoft. Current email: ${email}`);
+    // const signInWithMicrosoft = async () => {
+    //     // Pre-attempt log: you might want to log the current state before attempting to sign in.
+    //     console.log(`Attempting to sign in with Microsoft. Current email: ${email}`);
       
-        try {
-          const provider = new OAuthProvider('microsoft.com');
-          provider.addScope('User.Read');
-          provider.setCustomParameters({
-            prompt: 'select_account',
-          });
+    //     try {
+    //       const provider = new OAuthProvider('microsoft.com');
+    //       provider.addScope('User.Read');
+    //       provider.setCustomParameters({
+    //         prompt: 'select_account',
+    //       });
       
-          // Logging the custom parameters to verify if they are set correctly.
-          //console.log('Custom Parameters set for Microsoft provider:', provider.setCustomParameters);
+    //       // Logging the custom parameters to verify if they are set correctly.
+    //       //console.log('Custom Parameters set for Microsoft provider:', provider.setCustomParameters);
       
-          const result = await signInWithPopup(auth, provider);
-          // Success log
-          //console.log('Successfully signed in with Microsoft:', result);
+    //       const result = await signInWithPopup(auth, provider);
+    //       // Success log
+    //       //console.log('Successfully signed in with Microsoft:', result);
       
-          router.push('/'); // Redirect on successful sign in
-        } catch (error : any) {
-          // Error log: capture and log the complete error object
-          console.error('Error during Microsoft sign-in:', error);
+    //       router.push('/'); // Redirect on successful sign in
+    //     } catch (error : any) {
+    //       // Error log: capture and log the complete error object
+    //       console.error('Error during Microsoft sign-in:', error);
           
-          // Depending on the error, it could be related to the company mail configuration
-          if (error.email && error.email === email) {
-            console.error(`Sign-in failed for company email ${email}.`, error);
-          } else {
-            console.error('Sign-in failed for an unknown reason.', error);
-          }
+    //       // Depending on the error, it could be related to the company mail configuration
+    //       if (error.email && error.email === email) {
+    //         console.error(`Sign-in failed for company email ${email}.`, error);
+    //       } else {
+    //         console.error('Sign-in failed for an unknown reason.', error);
+    //       }
       
-          // Set error message for UI. You might want to handle sensitive error info differently.
-          setErrorMessage(`Error during sign-in with Microsoft: ${error.message}`);
-        }
-      };
+    //       // Set error message for UI. You might want to handle sensitive error info differently.
+    //       setErrorMessage(`Error during sign-in with Microsoft: ${error.message}`);
+    //     }
+    //   };
 
       const signInWithGoogle = async () => {
         try {

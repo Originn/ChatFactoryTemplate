@@ -71,7 +71,7 @@ class CustomRetriever extends BaseRetriever {
     const mmrOptions: MaxMarginalRelevanceSearchOptions<any> = {
         k: 6,
         fetchK: 12,  // Option to fetch more documents initially if supported
-        lambda: 0.5, // Adjust lambda to balance relevance and diversity
+        lambda: 0.3, // Adjust lambda to balance relevance and diversity
     };
 
     // Use MMR to fetch documents
