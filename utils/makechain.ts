@@ -60,33 +60,45 @@ async function translateToEnglish(question: string, translationModel: OpenAI): P
 // Class Definitions
 class CustomRetriever extends BaseRetriever {
   
-  lc_namespace = [];
+  lc_namespace = [];  // Confirm if this is being used or else consider removing it.
 
   constructor(private vectorStore: PineconeStore) {
     super();
   }
 
   async getRelevantDocuments(query: string): Promise<MyDocument<Record<string, any>>[]> {
+    // Retrieve all configuration settings at once
+    const { k, fetchK, lambda } = this.getMMRSettings();
+    
     // Set up MMR search options
     const mmrOptions: MaxMarginalRelevanceSearchOptions<any> = {
-        k: 6,
-        fetchK: 12,  // Option to fetch more documents initially if supported
-        lambda: 0.3, // Adjust lambda to balance relevance and diversity
+        k: k,
+        fetchK: fetchK,  // Option to fetch more documents initially if supported
+        lambda: lambda, // Adjust lambda to balance relevance and diversity
     };
 
     // Use MMR to fetch documents
     const results = await this.vectorStore.maxMarginalRelevanceSearch(query, mmrOptions);
     // Map each result to include the document and its score inside metadata
-    return results.map(doc => {
-      const newMetadata = {
-        ...doc.metadata 
-      };
-
-      return new MyDocument({
+    return results.map(doc => new MyDocument({
         ...doc,
-        metadata: newMetadata
-      });
-    });
+        metadata: { ...doc.metadata }
+    }));
+  }
+  
+  // Method to retrieve and parse environment settings for MMR
+  private getMMRSettings(): { k: number, fetchK: number, lambda: number } {
+    return {
+        k: this.getEnvironmentSetting('K_EMBEDDINGS', 6),
+        fetchK: this.getEnvironmentSetting('FETCH_K_EMBEDDINGS', 12),
+        lambda: parseFloat(process.env['LAMBDA_EMBEDDINGS'] || '0.3')  // Ensuring lambda is parsed as float
+    };
+  }
+
+  // Generic method to retrieve environment settings and provide a default if undefined or not a number
+  private getEnvironmentSetting(variable: string, defaultValue: number): number {
+    const value = Number(process.env[variable]);
+    return isNaN(value) ? defaultValue : value;
   }
 
   async storeEmbeddings(query: string, minScoreSourcesThreshold: number) {
