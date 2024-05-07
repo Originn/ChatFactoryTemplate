@@ -1016,7 +1016,7 @@ def extract_and_format_pdf_automation(pdf_path):
 
                 # Set the combined header if it has not been set yet and we are on the first page with header content
                 if current_page_header_part:
-                    combined_header = current_page_header_part.strip()
+                    combined_header = current_page_header_part.strip() + " (SolidCAM API Help)"
                     combined_header_found = True
 
                 # Update header for the page
