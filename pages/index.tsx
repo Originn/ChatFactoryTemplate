@@ -11,6 +11,7 @@ import styles from '@/styles/Home.module.css';
 import { Message } from '@/types/chat';
 import { auth } from "@/utils/firebase";
 import  FeedbackComponent from '@/components/FeedbackComponent';
+import Link from 'next/link';
 
 type RequestsInProgressType = {
   [key: string]: boolean;
@@ -551,6 +552,7 @@ export default function Home() {
           </div>
         <footer className="footer m-auto p-4 text-center" style={{ bottom: -20 }}>
           © 2024 SolidCAM™. All rights reserved.
+          <p><Link href="/privacy-policy"><a>Privacy Policy</a></Link></p>
         </footer>
         </Layout>
       </>
