@@ -1485,6 +1485,6 @@ body.dark .backdropStyle {
 .Home_center__O_TIN {
   position: relative;  /* or 'absolute' or 'fixed' depending on need */
   width: 100%;          /* Adjust width as needed */
-  height: 150px;        /* Set a fixed height or use 'vh' for a percentage of the viewport height */
+  height: 100px;        /* Set a fixed height or use 'vh' for a percentage of the viewport height */
   z-index: 10;          /* Ensure it's layered correctly if using 'absolute' or 'fixed' */
 }
