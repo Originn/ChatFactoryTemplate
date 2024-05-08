@@ -340,7 +340,7 @@ export default function Home() {
     return (
       <>
         <Layout theme={theme} toggleTheme={toggleTheme}>
-        <div className="mx-auto flex flex-col gap-4" style={{ flexGrow: 1 }}>
+        <div className="mx-auto flex flex-col gap-4">
           <main className={styles.main} style={{ flex: `1 0 ${textAreaHeight}` }}>
             <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
               SolidCAM ChatBot
@@ -517,7 +517,6 @@ export default function Home() {
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       className={styles.textarea}
-                      style={{ height: '60px' }}
                     />
                     <button
                       type="submit"
@@ -548,7 +547,7 @@ export default function Home() {
               )}
             </main>
           </div>
-        <footer className="footer m-auto p-4 text-center">
+        <footer className="footer m-auto p-4 text-center" style={{ position: 'relative', bottom: '20px' }}>
           © 2024 SolidCAM™. All rights reserved.
         </footer>
         </Layout>

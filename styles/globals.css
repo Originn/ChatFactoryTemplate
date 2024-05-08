@@ -11,8 +11,8 @@
 }
 
 html, body {
-    overflow-x: auto; /* Prevent horizontal overflow */
-    overflow-y: auto;
+    overflow-x: hidden; /* Prevent horizontal overflow */
+    overflow-y: hidden;
   }
   
 
@@ -179,11 +179,6 @@ body.dark a {
     color: rgb(255, 255, 255); /* This will set the color to white */
 }
 
-
-/* Overall scrollbar styling */
-body.dark::-webkit-scrollbar {
-    width: 10px;
-}
 
 /* Thumb (the part you drag) styling */
 body.dark::-webkit-scrollbar-thumb {
@@ -1487,4 +1482,8 @@ body.dark .backdropStyle {
   width: 100%;          /* Adjust width as needed */
   height: 100px;        /* Set a fixed height or use 'vh' for a percentage of the viewport height */
   z-index: 10;          /* Ensure it's layered correctly if using 'absolute' or 'fixed' */
+}
+
+.Home_cloudform__PjM4h {
+  height: 30px;
 }
