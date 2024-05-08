@@ -213,8 +213,7 @@ body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
     background-color: #999999;
 }
 
-/* Adjustments for .Home_messagelist__wIt78 in light mode */
-body.light .Home_cloud__16v52 {
+.Home_cloud__16v52 {
   background-color: var(--background-light); /* Use the light mode background variable or a specific color */
   color: #000000; /* Dark text color for contrast */
   border: 2px solid #cccccc; /* Make border more visible with a darker color */
