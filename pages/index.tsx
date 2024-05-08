@@ -91,6 +91,7 @@ export default function Home() {
         setTextAreaHeight(`${newHeight}px`);
     }
 };
+
     
     const toggleTheme = () => {
       // Update the theme in state and also save the new theme preference in localStorage
