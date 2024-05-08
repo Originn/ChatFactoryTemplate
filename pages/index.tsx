@@ -65,8 +65,33 @@ export default function Home() {
     const answerStartRef = useRef<HTMLDivElement>(null);
     const messageListRef = useRef<HTMLDivElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
+    const [textAreaHeight, setTextAreaHeight] = useState<string>('auto');
 
     // Event Handlers
+
+    useEffect(() => {
+      adjustTextAreaHeight();
+  }, [query]); // Adjusts the height every time the query (textarea content) changes
+  
+  useEffect(() => {
+      // To adjust height on initial load if there's initial content
+      adjustTextAreaHeight();
+  }, []); // Ensures it runs once the component is mounted
+  
+  const adjustTextAreaHeight = () => {
+    if (textAreaRef.current) {
+        textAreaRef.current.style.height = 'auto'; // Reset height to recalculate
+        const baseHeight = 24; // Base single line height, adjust as needed
+        const newHeight = Math.min(textAreaRef.current.scrollHeight, 10 * baseHeight);
+        textAreaRef.current.style.height = `${newHeight}px`;
+
+        // Move the textarea upwards by changing the bottom position
+        const offset = newHeight - baseHeight; // Calculate how much taller than one line it is
+        textAreaRef.current.style.transform = `translateY(-${offset}px)`;
+        setTextAreaHeight(`${newHeight}px`);
+    }
+};
+    
     const toggleTheme = () => {
       // Update the theme in state and also save the new theme preference in localStorage
       const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -314,7 +339,8 @@ export default function Home() {
     return (
       <>
         <Layout theme={theme} toggleTheme={toggleTheme}>
-          <div className="mx-auto flex flex-col gap-4">
+        <div className="mx-auto flex flex-col gap-4" style={{ flexGrow: 1 }}>
+          <main className={styles.main} style={{ flex: `1 0 ${textAreaHeight}` }}>
             <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
               SolidCAM ChatBot
             </h1>
@@ -469,6 +495,7 @@ export default function Home() {
 
                 </div>
               </div>
+              </main>
               <div className={styles.center}>
                 <div className={styles.cloudform}>
                   <form onSubmit={handleSubmit}>
@@ -478,7 +505,7 @@ export default function Home() {
                       ref={textAreaRef}
                       autoFocus={false}
                       rows={1}
-                      maxLength={512}
+                      maxLength={50000}
                       id="userInput"
                       name="userInput"
                       placeholder={
@@ -489,6 +516,7 @@ export default function Home() {
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       className={styles.textarea}
+                      style={{ height: '60px' }}
                     />
                     <button
                       type="submit"
