@@ -341,7 +341,7 @@ export default function Home() {
       <>
         <Layout theme={theme} toggleTheme={toggleTheme}>
         <div className="mx-auto flex flex-col gap-4">
-          <main className={styles.main} style={{ flex: `1 0 ${textAreaHeight}` }}>
+          <main className={styles.main}>
             <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
               SolidCAM ChatBot
             </h1>

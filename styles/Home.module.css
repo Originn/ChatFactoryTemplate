@@ -1,9 +1,14 @@
-.main { /* This is the top box! */
+.main {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
+
+}
+
+.Home_cloud__16v52,.Home_messagelist__wIt78 {
+  flex-shrink: 1; /* Allows the .main to shrink if necessary */
 }
 
 .header {
