@@ -117,7 +117,9 @@ export default function Home() {
       e.preventDefault();
       setError(null);
     
-      if (!query) {
+      const trimmedQuery = query.trim();
+
+      if (!trimmedQuery) {
         alert('Please input a question');
         return;
       }
@@ -547,7 +549,7 @@ export default function Home() {
               )}
             </main>
           </div>
-        <footer className="footer m-auto p-4 text-center" style={{ position: 'relative', bottom: '20px' }}>
+        <footer className="footer m-auto p-4 text-center" style={{ bottom: -20 }}>
           © 2024 SolidCAM™. All rights reserved.
         </footer>
         </Layout>
