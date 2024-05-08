@@ -550,10 +550,14 @@ export default function Home() {
               )}
             </main>
           </div>
-        <footer className="footer m-auto p-4 text-center" style={{ bottom: -20 }}>
-          © 2024 SolidCAM™. All rights reserved.
-          <p><Link href="/privacy-policy"><a>Privacy Policy</a></Link></p>
-        </footer>
+          <footer className="footer m-auto p-4 text-center" style={{ bottom: -20 }}>
+            © 2024 SolidCAM™. All rights reserved.
+            <p>
+              <Link href="/privacy-policy" passHref>
+                Privacy Policy
+              </Link>
+            </p>
+          </footer>
         </Layout>
       </>
     )
