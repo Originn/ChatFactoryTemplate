@@ -28,7 +28,7 @@ export default function PrivacyPolicy() {
       <h1 className={styles.header}>Privacy Policy for SolidCAM ChatBot</h1>
       <h2 className={styles.subHeader}>Effective Date: 5th May 2024</h2>
       <p className={styles.paragraph}>
-        SolidCAM ChatBot utilizes leading-edge language learning models (LLMs) to provide responsive and accurate answers to users' inquiries regarding SolidCAM software. This document outlines our commitment to your privacy and details the measures we take to protect the personal information you share with us while interacting with our service.
+        SolidCAM ChatBot utilizes leading-edge language learning models (LLMs) to provide responsive and accurate answers to users&apos; inquiries regarding SolidCAM software. This document outlines our commitment to your privacy and details the measures we take to protect the personal information you share with us while interacting with our service.
       </p>
 
       <h3 className={styles.sectionHeader}>Information Collection</h3>
