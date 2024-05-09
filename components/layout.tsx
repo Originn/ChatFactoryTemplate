@@ -29,7 +29,7 @@ if (process.env.NODE_ENV === PRODUCTION_ENV) {
 
 export default function Layout({ children, theme, toggleTheme }: LayoutProps) {
   return (
-    <div className={`flex flex-col min-h-screen mx-auto ${theme}`}>
+    <div className={`flex flex-col min-h-screen mx-auto ${theme === 'dark' ? 'dark' : ''}`}>
       <header className={`sticky top-0 z-40 w-full ${theme === 'light' ? 'bg-white' : 'bg-dark-header'}`}>
         <div className="h-16 border-b border-b-slate-200 py-4">
           <nav className="ml-4 pl-6 flex items-center justify-start">
