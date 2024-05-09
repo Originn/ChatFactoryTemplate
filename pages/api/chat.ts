@@ -6,6 +6,8 @@ import { makeChain } from '@/utils/makechain';
 import { getPinecone } from '@/utils/pinecone-client';
 import { PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { getIO } from "@/socketServer.cjs";
+import { QuestionEmbedder } from "@/scripts/QuestionEmbedder"
+
 
 export default async function handler(
   req: NextApiRequest,
@@ -38,6 +40,26 @@ export default async function handler(
         namespace: PINECONE_NAME_SPACE,
       },
     );
+
+    // Create an instance of the QuestionEmbedder class
+    const questionEmbedder = new QuestionEmbedder(
+      vectorStore,
+      new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
+      userEmail
+    );
+
+    const embedQuestionResult = await questionEmbedder.embedQuestion(sanitizedQuestion, userEmail);
+    if (embedQuestionResult) {
+      // The sanitizedQuestion started with the code prefix and was embedded
+      // You can skip executing the code block here
+      const message = 'Text embedded successfully';
+      if (roomId) {
+        io.to(roomId).emit("newToken", message);
+      } else {
+        roomIdError = true;
+      }
+      return res.status(200).json({ message: 'Question embedded successfully' });
+    }
 
     // Initialize chain for API calls, also define token handling through io instance
     
