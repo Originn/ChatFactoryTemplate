@@ -1,6 +1,7 @@
 // pages/privacy-policy.tsx
 import Image from 'next/image';
 import styles from '@/styles/PrivacyPolicy.module.css';
+import Link from 'next/link';
 
 const PRODUCTION_ENV = 'production';
 const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
@@ -16,13 +17,15 @@ export default function PrivacyPolicy() {
   return (
     <div className={styles.privacyContainer}>
       <div className={styles.imageContainer}>
-        <Image 
-          src={scimageIcon}
-          alt="SolidCAM Logo"
-          width={100}
-          height={100}
-          className={styles.image}
-        />
+      <Link href="/">
+            <Image 
+              src={scimageIcon}
+              alt="SolidCAM Logo"
+              width={100}
+              height={100}
+              className={styles.image}
+            />
+        </Link>
       </div>
       <div className={`${styles.privacyPolicyTextContainer} ${styles.textContainer}`}>
       <h1 className={styles.header}>Privacy Policy for SolidCAM ChatBot</h1>
