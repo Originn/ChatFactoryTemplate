@@ -1,20 +1,21 @@
 /* styles/PrivacyPolicy.module.css */
+
 .privacyContainer {
-  display: flex;  /* Changed from grid to flex for better control over the layout */
-  flex-direction: column;  /* Stack children vertically */
-  max-width: 800px;
-  margin: 0 auto;  /* Center the container */
-  padding: 20px;
-  height: 98vh;  /* Full viewport height */
-  align-items: stretch;  /* Stretch children to fill the width */
-  text-align: left;
+  display: flex;         /* Enables flexbox */
+  flex-direction: column;/* Stacks children vertically */
+  justify-content: center;/* Vertically centers the children */
+  align-items: center;   /* Horizontally centers the children */
+  min-height: 100vh;     /* Minimum height to take the full viewport height */
+  width: 100%;           /* Full width of the viewport */
 }
 
-
 .textContainer {
-  max-width: 100%;
-  overflow-y: auto; /* Enable vertical scrolling for the text container */
-  height: 80vh; /* Set a fixed height for the text container */
+  width: 100%;             /* Take up to 100% of its parent width */
+  max-width: 100%;        /* Maximum width, keeps it from growing too large */
+  max-height: 80vh;        /* Maximum height to enable scrolling */
+  overflow-y: auto;        /* Enables scrolling when content exceeds max-height */
+  padding-left: 700px;
+  box-sizing: border-box;  /* Padding is included in the width/height calculations */
 }
 
 .imageContainer {
@@ -25,22 +26,23 @@
   border-radius: 50%;
 }
 
+.header, .subHeader, .sectionHeader, .paragraph {
+  margin-bottom: 20px;  /* Consistent margin-bottom for simplicity */
+}
+
 .header {
   font-size: 32px;
   color: #333;
-  margin-bottom: 20px;
 }
 
 .subHeader {
   font-size: 24px;
   color: #666;
-  margin-bottom: 15px;
 }
 
 .sectionHeader {
   font-size: 20px;
   color: #333;
-  margin-bottom: 15px;
 }
 
 .paragraph {
@@ -48,13 +50,4 @@
   color: #444;
   line-height: 1.6;
   max-width: 600px;
-  margin-bottom: 10px;
-}
-
-
-
-
-.textContainer {
-  overflow-y: auto;  /* Enable vertical scrolling */
-  flex-grow: 1;  /* Allow the container to expand to fill available space */
 }
