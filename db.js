@@ -6,22 +6,22 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const isProduction = process.env.NODE_ENV === 'production';
-const poolConfig = isProduction ? {
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false // Required for Heroku Postgres
-  },
-} : {
-  connectionString: process.env.DATABASE_URL,
-  // In non-production environments, do not use SSL
-  ssl: false,
-};
+const poolConfig = isProduction
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false // Required for Heroku Postgres
+      }
+    }
+  : {
+      connectionString: process.env.DATABASE_URL, // In non-production environments, do not use SSL
+      ssl: false
+    };
 
 const pool = new Pool(poolConfig);
 
 const insertQA = async (question, answer, embeddings, sources, qaId, roomId, userEmail) => {
   // Remove the Unicode escape sequence from the answerRaw string
-
   const query = `
     INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, "qaId", "roomId", userEmail)
     VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -32,7 +32,6 @@ const insertQA = async (question, answer, embeddings, sources, qaId, roomId, use
     // Ensure embeddings is a JSON string
     const embeddingsJson = JSON.stringify(embeddings);
     const sourcesJson = JSON.stringify(sources);
-
     const res = await pool.query(query, [question, answer, embeddingsJson, sourcesJson, qaId, roomId, userEmail]);
     //console.log(res.rows[0]); // Output the inserted row to the console
     return res.rows[0]; // Return the inserted row
@@ -42,16 +41,14 @@ const insertQA = async (question, answer, embeddings, sources, qaId, roomId, use
   }
 };
 
-
-
 // Assuming `pool` is your database connection pool
 const updateFeedback = async (qaId, thumb, comment, roomId) => {
   const query = `
-  UPDATE QuestionsAndAnswers
-  SET thumb = $2, comment = $3
-  WHERE "qaId" = $1 and "roomId" = $4
-  RETURNING *;
-`;
+    UPDATE QuestionsAndAnswers
+    SET thumb = $2, comment = $3
+    WHERE "qaId" = $1 and "roomId" = $4
+    RETURNING *;
+  `;
 
   try {
     const res = await pool.query(query, [qaId, thumb, comment, roomId]);
@@ -64,10 +61,25 @@ const updateFeedback = async (qaId, thumb, comment, roomId) => {
     } else {
       console.error('Unknown error running updateFeedback query');
     }
-    throw err;  // Rethrow the error to be caught by the calling handler
+    throw err; // Rethrow the error to be caught by the calling handler
   }
 };
 
+const insertQuestionEmbedderDetails = async (embeddedText, timestamp, email) => {
+  const query = `
+    INSERT INTO "QuestionEmbedder" ("Embedded_text", "timestamp", "email")
+    VALUES ($1, $2, $3)
+    RETURNING *;
+  `;
 
+  try {
+    const res = await pool.query(query, [embeddedText, timestamp, email]);
+    console.log('Inserted QuestionEmbedder row:', res.rows[0]); // Log the inserted row
+    return res.rows[0]; // Return the inserted row
+  } catch (err) {
+    console.error('Error running insertQuestionEmbedderDetails query:', err);
+    throw err;
+  }
+};
 
-export { pool, insertQA, updateFeedback };
+export { pool, insertQA, updateFeedback, insertQuestionEmbedderDetails };
