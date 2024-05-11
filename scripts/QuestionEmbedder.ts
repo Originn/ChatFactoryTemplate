@@ -1,7 +1,6 @@
 // QuestionEmbedder.ts
 import { PineconeStore } from '@langchain/pinecone';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { Document } from '@langchain/core/documents';
 import { insertQuestionEmbedderDetails } from '@/db';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { waitForUserInput } from '@/utils/textsplitter';
