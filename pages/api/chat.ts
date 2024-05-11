@@ -2,17 +2,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
-import { QuestionEmbedder } from "@/scripts/QuestionEmbedder";
+import { makeChain } from '@/utils/makechain';
 import { getPinecone } from '@/utils/pinecone-client';
 import { PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { getIO } from "@/socketServer.cjs";
+import { QuestionEmbedder } from "@/scripts/QuestionEmbedder"
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   const { question, roomId, userEmail } = req.body;
-  
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -24,23 +25,6 @@ export default async function handler(
   const sanitizedQuestion = question.trim().replaceAll('\n', ' ');
   const codePrefix = '8374-8924-7365-2734';
   const io = getIO();
-  
-  if (!sanitizedQuestion.startsWith(codePrefix)) {
-    const message = `The format of your question is incorrect. Please use the format: ${codePrefix}\nheader: YOUR_HEADER\n text: YOUR_TEXT`;
-    if (roomId) {
-      io.to(roomId).emit("newToken", message);
-    }
-    return res.status(400).json({ message });
-  }
-
-  const headerTextSplit = sanitizedQuestion.slice(codePrefix.length).trim().split(' text:');
-  if (headerTextSplit.length < 2 || !headerTextSplit[0].startsWith('header:')) {
-    const message = `The format of your question is incorrect. Please use the format: ${codePrefix}\nheader: YOUR_HEADER\n text: YOUR_TEXT`;
-    if (roomId) {
-      io.to(roomId).emit("newToken", message);
-    }
-    return res.status(400).json({ message });
-  }
 
   try {
     const pinecone = await getPinecone();
@@ -53,32 +37,49 @@ export default async function handler(
       },
     );
 
-    const questionEmbedder = new QuestionEmbedder(
-      vectorStore,
-      new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
-      userEmail
-    );
+    if (sanitizedQuestion.startsWith(codePrefix)) {
+      const formatCheck = sanitizedQuestion.slice(codePrefix.length).trim();
+      const headerIndex = formatCheck.indexOf('header:');
+      const textIndex = formatCheck.indexOf(' text:');
 
-    const embedQuestionResult = await questionEmbedder.embedQuestion(sanitizedQuestion, userEmail);
-    if (embedQuestionResult) {
-      const message = 'Text embedded successfully';
-      if (roomId) {
-        io.to(roomId).emit("newToken", message);
+      if (headerIndex === -1 || textIndex === -1 || headerIndex >= textIndex) {
+        const message = `The format of your question is incorrect. Please use the format: header: YOUR_HEADER text: YOUR_TEXT`;
+        if (roomId) {
+          io.to(roomId).emit("newToken", message);
+        }
+        return res.status(400).json({ message });
       }
-      return res.status(200).json({ message });
+
+      const questionEmbedder = new QuestionEmbedder(
+        vectorStore,
+        new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
+        userEmail
+      );
+
+      const embedQuestionResult = await questionEmbedder.embedQuestion(sanitizedQuestion, userEmail);
+      if (embedQuestionResult) {
+        const message = 'Text embedded successfully';
+        if (roomId) {
+          io.to(roomId).emit("newToken", message);
+        }
+        return res.status(200).json({ message });
+      } else {
+        return res.status(500).json({ message: 'Failed to embed the text' });
+      }
     } else {
-      const message = 'Failed to embed the text';
-      if (roomId) {
-        io.to(roomId).emit("newToken", message);
-      }
-      return res.status(500).json({ message });
+      // Initialize chain for API calls, also define token handling through io instance
+      const chain = makeChain(vectorStore, (token) => {
+        if (roomId) {
+          io.to(roomId).emit("newToken", token);
+        }
+      }, userEmail);
+
+      // Make the API call using the chain, passing in the sanitized question, scored documents, and room ID
+      const Documents = await chain.call(sanitizedQuestion, [], roomId, userEmail);
+      return res.status(200).json({ sourceDocs: Documents });
     }
   } catch (error : any) {
-    console.log('error', error);
-    const message = 'Internal server error';
-    if (roomId) {
-      io.to(roomId).emit("newToken", message);
-    }
+    console.error('Error', error);
     return res.status(500).json({ error: error.message || 'Something went wrong' });
   }
 }
