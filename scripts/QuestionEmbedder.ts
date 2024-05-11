@@ -26,7 +26,7 @@ export class QuestionEmbedder {
 
   async embedQuestion(sanitizedQuestion: string, userEmail: any): Promise<boolean> {
     if (!sanitizedQuestion.startsWith(codePrefix)) {
-      console.log('Error: Question does not start with the required code prefix.');
+      //console.log('Error: Question does not start with the required code prefix.');
       return false;
     }
 
@@ -36,7 +36,7 @@ export class QuestionEmbedder {
     const textIndex = questionBody.indexOf(' text:');
 
     if (headerIndex === -1 || textIndex === -1 || textIndex <= headerIndex) {
-      console.log('Error: Question format is incorrect. Expected format "header: [header] text: [text]".');
+      //console.log('Error: Question format is incorrect. Expected format "header: [header] text: [text]".');
       return false;
     }
 
@@ -55,14 +55,14 @@ export class QuestionEmbedder {
     });
 
     // Log each chunk with metadata
-    console.log('Split into chunks with headers:');
-    documentChunks.forEach((doc, index) => {
-      console.log(`Chunk ${index + 1}:`, doc.pageContent);
-      console.log(`Metadata for Chunk ${index + 1}:`, doc.metadata);
-    });
+    // console.log('Split into chunks with headers:');
+    // documentChunks.forEach((doc, index) => {
+    //   console.log(`Chunk ${index + 1}:`, doc.pageContent);
+    //   console.log(`Metadata for Chunk ${index + 1}:`, doc.metadata);
+    // });
 
     // Wait for user input before proceeding
-    await waitForUserInput();
+    //await waitForUserInput();
 
     // Embed each document chunk
     const embeddingsPromises = documentChunks.map(doc => this.embeddings.embedDocuments([doc.pageContent]));
@@ -76,7 +76,7 @@ export class QuestionEmbedder {
 
     const timestamp = new Date().toISOString();
     await insertQuestionEmbedderDetails(questionBody, timestamp, userEmail);
-    console.log('All chunks embedded successfully.');
+    //console.log('All chunks embedded successfully.');
     return true;
   }
 }
