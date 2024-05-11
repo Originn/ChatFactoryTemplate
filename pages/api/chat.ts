@@ -43,7 +43,7 @@ export default async function handler(
       const textIndex = formatCheck.indexOf(' text:');
 
       if (headerIndex === -1 || textIndex === -1 || headerIndex >= textIndex) {
-        const message = `The format of your question is incorrect. Please use the format: header: YOUR_HEADER text: YOUR_TEXT`;
+        const message = `The format of your question is incorrect. Please use the format: 8374-8924-7365-2734 header: YOUR_HEADER text: YOUR_TEXT`;
         if (roomId) {
           io.to(roomId).emit("newToken", message);
         }
