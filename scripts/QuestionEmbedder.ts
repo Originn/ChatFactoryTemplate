@@ -45,7 +45,7 @@ export class QuestionEmbedder {
 
     // Use the splitter to divide the question into chunks with headers
     const documentChunks = await this.textSplitter.createDocuments([text], [{
-      file: 'user uploads',
+      file: header,
       loc: { lines: { from: 0, to: 0 } },
       source: userEmail,
       type: 'user_input',
