@@ -1016,7 +1016,7 @@ def extract_and_format_pdf_automation(pdf_path):
 
                 # Set the combined header if it has not been set yet and we are on the first page with header content
                 if current_page_header_part:
-                    combined_header = current_page_header_part.strip() + " (SolidCAM API Help)"
+                    combined_header = "SolidCAM API Help - " + current_page_header_part.strip()
                     combined_header_found = True
 
                 # Update header for the page
@@ -1031,8 +1031,9 @@ def extract_and_format_pdf_automation(pdf_path):
                 pages_content.append({
                     'page_number': page.page_number,
                     'header': header_text,
-                    'pageContent': page_content
+                    'pageContent': page_content + "\nType: 'API', Category: 'API Documentation' 'Tags: SolidCAM API"
                 })
+
 
             # Replace empty headers with the header from page 003
             if header_to_use:
@@ -1054,7 +1055,7 @@ def extract_and_format_api_examples(folder_path):
         # Walk through directory and subdirectories
         for root, dirs, files in os.walk(folder_path):
             for filename in files:
-                if filename.endswith('.vbs') or filename.endswith('.py'):  # Check if the file ends with .vbs
+                if filename.endswith('.vbs'):  # Check if the file ends with .vbs
                     file_path = os.path.join(root, filename)  # Full path to the file
                     with open(file_path, 'r') as file:
                         code_content = file.read()  # Read the content of the .vbs file
@@ -1062,7 +1063,7 @@ def extract_and_format_api_examples(folder_path):
                         # Append the file name and content to the pages_content list
                         pages_content.append({
                             'page_number': '////////',  # page_number is always 0, as each file is treated as a page
-                            'header': filename,
+                            'header': filename + " Type: 'Visual Basic Scripting', Category: 'Visual Basic' 'Tags: VBS, API\n",
                             'pageContent': code_content
                         })
         return pages_content

@@ -91,7 +91,7 @@ class CustomRetriever extends BaseRetriever {
     return {
         k: this.getEnvironmentSetting('K_EMBEDDINGS', 6),
         fetchK: this.getEnvironmentSetting('FETCH_K_EMBEDDINGS', 12),
-        lambda: parseFloat(process.env['LAMBDA_EMBEDDINGS'] || '0.3')  // Ensuring lambda is parsed as float
+        lambda: parseFloat(process.env['LAMBDA_EMBEDDINGS'] || '0.2')  // Ensuring lambda is parsed as float
     };
   }
 
@@ -182,12 +182,12 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
   // Non-streaming model setup
   const nonStreamingModel = new OpenAI({
-    modelName: 'gpt-4-turbo',
+    modelName: 'gpt-4o',
     temperature: TEMPRATURE
   });
 
   const translationModel = new OpenAI({
-    modelName: 'gpt-4-turbo',
+    modelName: 'gpt-4o',
     temperature: TEMPRATURE
   });
 
@@ -237,7 +237,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           qaTemplate: formattedPrompt,
           questionGeneratorTemplate: CONDENSE_PROMPT,
           returnSourceDocuments: true,
-          verbose: false
+          verbose: true
         }
       );
 
