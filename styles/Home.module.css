@@ -120,6 +120,17 @@
   animation-name: loading-gradient;
 }
 
+.warning {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  z-index: 1;
+  padding: 10px 0;
+  color: gray;
+  margin-bottom: -30px;
+}
+
 @keyframes loading-gradient {
   0% {
     background-position: -100% 0;

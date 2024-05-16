@@ -541,9 +541,9 @@ export default function Home() {
                       )}
                     </button>
                   </form>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-25px', marginBottom: '0px' }}>
+                  <div className={styles.warning}>
                     <p style={{ fontSize: 'small', color: 'gray' }}>
-                      SolidCAM ChatBot may display inaccurate info so double-check its responses.
+                      SolidCAM ChatBot may display inaccurate info so double-check its responses
                     </p>
                   </div>
                 </div>
