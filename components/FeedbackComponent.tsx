@@ -79,21 +79,21 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ messageIndex, qaI
         <div className="tooltip-container up">
           <Tooltip message="Give positive feedback">
             <button onClick={() => handleOpenModal('up')}>
-              <Image src={thumbUpIcon} alt="Thumb Up" width={20} height={20} />
+              <Image src={thumbUpIcon} alt="Thumb Up" width={25} height={25} />
             </button>
           </Tooltip>
         </div>
         <div className="tooltip-container down">
           <Tooltip message="Give negative feedback">
             <button onClick={() => handleOpenModal('down')}>
-              <Image src={thumbDownIcon} alt="Thumb Down" width={20} height={20} />
+              <Image src={thumbDownIcon} alt="Thumb Down" width={25} height={25} />
             </button>
           </Tooltip>
         </div>
         <div className="tooltip-container comment">
           <Tooltip message="Add a comment">
             <button onClick={() => handleOpenModal('comment')}>
-              <Image src={commentIcon} alt="Comment" width={20} height={20} />
+              <Image src={commentIcon} alt="Comment" width={25} height={25} />
             </button>
           </Tooltip>
         </div>
