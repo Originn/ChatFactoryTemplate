@@ -5,16 +5,16 @@ import Tooltip from './Tooltip';
 import RemarksModal from './RemarksModal';
 
 
-let thumbUpIcon = '/icons8-thumb-up-50.png'
-let thumbDownIcon = '/icons8-thumbs-down-50.png'
-let commentIcon = '/icons8-message-50.png';
+let thumbUpIcon = '/icons8-thumbs-up-30.png'
+let thumbDownIcon = '/icons8-thumbs-down-30.png'
+let commentIcon = '/icons8-message-30.png';
 const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
 const PRODUCTION_ENV = 'production';
 
 if (process.env.NODE_ENV === PRODUCTION_ENV) {
-    thumbUpIcon = `${PRODUCTION_URL}icons8-thumb-up-50.png`
-    thumbDownIcon = `${PRODUCTION_URL}icons8-thumbs-down-50.png`
-    commentIcon = `${PRODUCTION_URL}icons8-message-50.png`
+    thumbUpIcon = `${PRODUCTION_URL}icons8-thumbs-up-30.png`
+    thumbDownIcon = `${PRODUCTION_URL}icons8-thumbs-down-30.png`
+    commentIcon = `${PRODUCTION_URL}icons8-message-30.png`
   }
 
   interface FeedbackComponentProps {
