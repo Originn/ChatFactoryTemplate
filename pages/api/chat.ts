@@ -35,7 +35,7 @@ export default async function handler(
   }
 
   const sanitizedQuestion = question.trim().replaceAll('\n', ' ');
-  const codePrefix = '8374-8924-7365-2734';
+  const codePrefix = 'embed-4831-embed-4831';
   const io = getIO();
 
   try {
@@ -96,7 +96,6 @@ export default async function handler(
         }
       }
     } else {
-      console.log(`Normal question processing for roomId: ${roomId}`);
       const pinecone = await getPinecone();
       const vectorStore = await PineconeStore.fromExistingIndex(
         new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
