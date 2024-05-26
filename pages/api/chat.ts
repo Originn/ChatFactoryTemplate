@@ -86,8 +86,11 @@ export default async function handler(
     let session = roomSessions[roomId];
 
     // Check if the question is an image URL and history contains the codePrefix
+    console.log('sanitizedQuestion:', sanitizedQuestion);
     const isImageUrl = sanitizedQuestion?.startsWith('https://storage.googleapis.com/solidcam/');
+    console.log('isImageUrl:', isImageUrl);
     const hasCodePrefixInHistory = history && history.length >= 3 && history[history.length - 3][0].includes(codePrefix);
+    console.log('hasCodePrefixInHistory:', hasCodePrefixInHistory);
 
     if (isImageUrl && hasCodePrefixInHistory) {
       session = session || { stage: 4, header: '', text: '', images: [] };
