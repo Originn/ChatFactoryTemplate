@@ -103,8 +103,10 @@ export default async function handler(
       // Get image descriptions one by one
       for (let img of session.images ?? []) {
         if (!img.description) {
+          console.log("Fetching description for image:", img.url);
           img.description = await getImageDescription(img.url);
           img.description += " [END OF DESCRIPTION]";
+          console.log("Description fetched for image:", img.url, "Description:", img.description);
         }
       }
 
@@ -127,6 +129,7 @@ export default async function handler(
 
       const imagesText = session.images?.map(img => `${img.url} image description: ${img.description}`).join(' ');
       const headerAndText = `${codePrefix} header: ${session.header} ${imagesText} text: ${session.text}`;
+      console.log('Header and Text:', headerAndText);
       const embedQuestionResult = await questionEmbedder.embedQuestion(headerAndText, userEmail);
       if (embedQuestionResult) {
         const message = 'Your text and images (if provided) have been successfully embedded.';
