@@ -22,28 +22,39 @@ interface RoomSession {
 }
 
 const roomSessions: { [key: string]: RoomSession } = {};
-const storage = new Storage();
 
 // Utility function to get image description
-async function getImageDescription(imageUrl: string): Promise<string> {
-  const response = await openAIClient.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: "Please describe the image as best as you can" },
-          {
-            type: "image_url",
-            image_url: { url: imageUrl },
-          },
-        ],
-      },
-    ],
-    max_tokens: 300,
-  });
+async function getImageDescription(imageUrl : any) {
+  try {
+    console.log("Starting getImageDescription for URL:", imageUrl);
 
-  return response.choices[0]?.message?.content ?? "Description not available.";
+    const response = await openAIClient.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Please describe the image as best as you can" },
+            {
+              type: "image_url",
+              image_url: { url: imageUrl },
+            },
+          ],
+        },
+      ],
+      max_tokens: 300,
+    });
+
+    console.log("Received response from OpenAI:", response);
+
+    const description = response.choices[0]?.message?.content ?? "Description not available.";
+    console.log("Extracted description:", description);
+
+    return description;
+  } catch (error) {
+    console.error('Error getting image description:', error);
+    return "Error getting image description.";
+  }
 }
 
 export default async function handler(
@@ -163,56 +174,8 @@ export default async function handler(
         io.to(roomId).emit("stageUpdate", 4);
         return res.status(200).json({ message });
 
-      } else if (imageUrl && session.stage === 4) {
-        // Handle the image URL case
-        session.images = session.images || [];
-        session.images.push({ url: imageUrl });
-
-        roomSessions[roomId] = session;
-
-        // Get image descriptions one by one
-        for (let img of session.images) {
-          if (!img.description) {
-            img.description = await getImageDescription(img.url);
-          }
-        }
-
-        const pinecone = await getPinecone();
-        const vectorStore = await PineconeStore.fromExistingIndex(
-          new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
-          {
-            pineconeIndex: pinecone,
-            namespace: PINECONE_NAME_SPACE,
-            textKey: 'text',
-          },
-        );
-
-        const questionEmbedder = new QuestionEmbedder(
-          vectorStore,
-          new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
-          userEmail
-        );
-
-        const imagesText = session.images.map(img => `${img.url} image description: ${img.description}`).join(' ');
-        const headerAndText = `${codePrefix} header: ${session.header} ${imagesText} text: ${session.text}`;
-        const embedQuestionResult = await questionEmbedder.embedQuestion(headerAndText, userEmail);
-        if (embedQuestionResult) {
-          const message = 'Your text and images (if provided) have been successfully embedded.';
-          io.to(roomId).emit("newToken", message);
-          io.to(roomId).emit("imageDescriptions", session.images); // Emit the image descriptions
-
-          // Emit an event to remove the thumbnails from the frontend
-          io.to(roomId).emit("removeThumbnails");
-
-          delete roomSessions[roomId];
-          return res.status(200).json({ message });
-        } else {
-          console.error(`Embedding failed for roomId: ${roomId}`);
-          const message = 'Embedding failed. Please try again.';
-          io.to(roomId).emit("newToken", message);
-          return res.status(500).json({ message });
-        }
       }
+
     } else {
       if (!question) {
         return res.status(400).json({ message: 'No question in the request' });
