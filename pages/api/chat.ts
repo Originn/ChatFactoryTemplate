@@ -1,3 +1,4 @@
+//pages\api\chat.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
@@ -11,7 +12,6 @@ import createClient from "openai";
 
 // Initialize OpenAI client
 const openAIClient = new createClient({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
 });
 
 interface RoomSession {
@@ -24,7 +24,8 @@ interface RoomSession {
 const roomSessions: { [key: string]: RoomSession } = {};
 
 // Utility function to get image description
-async function getImageDescription(imageUrl : any) {
+async function getImageDescription(imageUrl: string, roomId: string) {
+  const io = getIO();
   try {
     console.log("Starting getImageDescription for URL:", imageUrl);
 
@@ -43,16 +44,22 @@ async function getImageDescription(imageUrl : any) {
         },
       ],
       max_tokens: 300,
+      stream: true, // Enable streaming
     });
 
-    console.log("Received response from OpenAI:", response);
+    let description = '';
+    for await (const token of response) {
+      if (token.choices[0]?.delta?.content) {
+        description += token.choices[0].delta.content;
+        io.to(roomId).emit("newToken", token.choices[0].delta.content);
+      }
+    }
 
-    const description = response.choices[0]?.message?.content ?? "Description not available.";
     console.log("Extracted description:", description);
-
     return description;
   } catch (error) {
     console.error('Error getting image description:', error);
+    io.to(roomId).emit("newToken", "Error getting image description.");
     return "Error getting image description.";
   }
 }
@@ -104,7 +111,7 @@ export default async function handler(
       for (let img of session.images ?? []) {
         if (!img.description) {
           console.log("Fetching description for image:", img.url);
-          img.description = await getImageDescription(img.url);
+          img.description = await getImageDescription(img.url, roomId);
           img.description += " [END OF DESCRIPTION]";
           console.log("Description fetched for image:", img.url, "Description:", img.description);
         }
