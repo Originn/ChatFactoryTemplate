@@ -1,4 +1,3 @@
-//pages\api\chat.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
@@ -95,6 +94,11 @@ export default async function handler(
     if (isImageUrl && hasCodePrefixInHistory) {
       session = session || { stage: 4, header: '', text: '', images: [] };
 
+      // Ensure images array is initialized
+      if (!session.images) {
+        session.images = [];
+      }
+
       // Extract header and text from history
       const headerEntry = history[history.length - 2];
       const textEntry = history[history.length - 1];
@@ -106,7 +110,7 @@ export default async function handler(
       for (const url of imageUrls) {
         console.log('url:', url);
         if (url.startsWith('https://storage.googleapis.com/solidcam/')) {
-          session.images?.push({ url });
+          session.images.push({ url });
           console.log('session:', session);
         }
       }
