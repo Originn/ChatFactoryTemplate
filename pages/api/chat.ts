@@ -26,7 +26,6 @@ const roomSessions: { [key: string]: RoomSession } = {};
 async function getImageDescription(imageUrl: string, roomId: string) {
   const io = getIO();
   try {
-    console.log("Starting getImageDescription for URL:", imageUrl);
 
     const response = await openAIClient.chat.completions.create({
       model: "gpt-4o",
@@ -54,7 +53,6 @@ async function getImageDescription(imageUrl: string, roomId: string) {
       }
     }
 
-    console.log("Extracted description:", description);
     return description;
   } catch (error) {
     console.error('Error getting image description:', error);
@@ -85,11 +83,8 @@ export default async function handler(
     let session = roomSessions[roomId];
 
     // Check if the question is an image URL and history contains the codePrefix
-    console.log('sanitizedQuestion:', sanitizedQuestion);
     const isImageUrl = sanitizedQuestion?.startsWith('https://storage.googleapis.com/solidcam/');
-    console.log('isImageUrl:', isImageUrl);
     const hasCodePrefixInHistory = history && history.length >= 3 && history[history.length - 3][0].includes(codePrefix);
-    console.log('hasCodePrefixInHistory:', hasCodePrefixInHistory);
 
     if (isImageUrl && hasCodePrefixInHistory) {
       session = session || { stage: 4, header: '', text: '', images: [] };
@@ -106,25 +101,18 @@ export default async function handler(
       session.header = headerEntry ? headerEntry[0].replace(codePrefix, '').trim() : session.header;
       session.text = textEntry ? textEntry[0] : session.text;
       const imageUrls = sanitizedQuestion.split(' ');
-      console.log('imageUrls:', imageUrls);
       for (const url of imageUrls) {
-        console.log('url:', url);
         if (url.startsWith('https://storage.googleapis.com/solidcam/')) {
           session.images.push({ url });
-          console.log('session:', session);
         }
       }
 
       roomSessions[roomId] = session;
 
-      // Get image descriptions one by one
-      console.log('session.images:', session.images);
       for (let img of session.images ?? []) {
         if (!img.description) {
-          console.log("Fetching description for image:", img.url);
           img.description = await getImageDescription(img.url, roomId);
           img.description += " [END OF DESCRIPTION]";
-          console.log("Description fetched for image:", img.url, "Description:", img.description);
         }
       }
 
@@ -147,7 +135,6 @@ export default async function handler(
 
       const imagesText = session.images?.map(img => `${img.url} image description: ${img.description}`).join(' ');
       const headerAndText = `${codePrefix} header: ${session.header} ${imagesText} text: ${session.text}`;
-      console.log('Header and Text:', headerAndText);
       const embedQuestionResult = await questionEmbedder.embedQuestion(headerAndText, userEmail);
       if (embedQuestionResult) {
         const message = 'Your text and images (if provided) have been successfully embedded.';
