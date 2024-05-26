@@ -12,8 +12,6 @@ import { HumanMessage } from "@langchain/core/messages";
 import { MaxMarginalRelevanceSearchOptions } from "@langchain/core/vectorstores";
 import { BaseRetrieverInterface } from '@langchain/core/retrievers';
 import { RunnableConfig } from '@langchain/core/runnables';
-import { Callbacks } from '@langchain/core/callbacks/manager';
-
 // Type Definitions
 type SearchResult = [MyDocument, number];
 

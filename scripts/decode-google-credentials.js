@@ -1,3 +1,4 @@
+//scripts\decode-google-credentials.js
 const fs = require('fs');
 const path = require('path');
 
