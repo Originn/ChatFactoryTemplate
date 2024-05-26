@@ -102,15 +102,19 @@ export default async function handler(
       session.header = headerEntry ? headerEntry[0].replace(codePrefix, '').trim() : session.header;
       session.text = textEntry ? textEntry[0] : session.text;
       const imageUrls = sanitizedQuestion.split(' ');
+      console.log('imageUrls:', imageUrls);
       for (const url of imageUrls) {
+        console.log('url:', url);
         if (url.startsWith('https://storage.googleapis.com/solidcam/')) {
           session.images?.push({ url });
+          console.log('session:', session);
         }
       }
 
       roomSessions[roomId] = session;
 
       // Get image descriptions one by one
+      console.log('session.images:', session.images);
       for (let img of session.images ?? []) {
         if (!img.description) {
           console.log("Fetching description for image:", img.url);
