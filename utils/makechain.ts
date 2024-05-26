@@ -1,6 +1,4 @@
-//makechain.ts
-
-import { OpenAI } from '@langchain/openai';
+import { OpenAI, ChatOpenAI } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
 import { ConversationalRetrievalQAChain } from 'langchain/chains';
 import { MyDocument } from 'utils/GCSLoader';
@@ -12,8 +10,17 @@ import { insertQA } from '../db';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { HumanMessage } from "@langchain/core/messages";
 import { MaxMarginalRelevanceSearchOptions } from "@langchain/core/vectorstores";
+import { BaseRetrieverInterface } from '@langchain/core/retrievers';
+import { RunnableConfig } from '@langchain/core/runnables';
+import { Callbacks } from '@langchain/core/callbacks/manager';
+
 // Type Definitions
 type SearchResult = [MyDocument, number];
+
+interface DocumentInterface<T> {
+  pageContent: string;
+  metadata: T;
+}
 
 // Utility Functions
 async function detectLanguageWithOpenAI(text: string, nonStreamingModel: OpenAI): Promise<string> {
@@ -30,12 +37,8 @@ async function detectLanguageWithOpenAI(text: string, nonStreamingModel: OpenAI)
 
 async function filteredSimilaritySearch(vectorStore: any, queryVector: number[], type: string, limit: number, minScore: number): Promise<SearchResult[]> {
   try {
-    
     const results: SearchResult[] = await vectorStore.similaritySearchVectorWithScore(queryVector, limit, { type: type });
-
-    // Explicitly type the destructured elements in the filter method
     const filteredResults = results.filter(([document, score]: SearchResult) => score >= minScore);
-
     return filteredResults;
   } catch (error) {
     console.error("Error in filteredSimilaritySearch:", error);
@@ -46,56 +49,52 @@ async function filteredSimilaritySearch(vectorStore: any, queryVector: number[],
 async function translateToEnglish(question: string, translationModel: OpenAI): Promise<string> {
   const response = await translationModel.generate([TRANSLATION_PROMPT.replace('{question}', question)]);
 
-  // Extract the translated text from the response
   if (response.generations.length > 0 && response.generations[0].length > 0) {
     const firstGeneration = response.generations[0][0];
     const translatedText = firstGeneration.text.trim();
     return translatedText;
   }
 
-  // Return an empty string or a default message if no translation is found
   return 'Translation not available.';
 }
 
 // Class Definitions
-class CustomRetriever extends BaseRetriever {
-  
+class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Record<string, any>> {
   lc_namespace = [];  // Confirm if this is being used or else consider removing it.
 
   constructor(private vectorStore: PineconeStore) {
     super();
   }
 
-  async getRelevantDocuments(query: string): Promise<MyDocument<Record<string, any>>[]> {
-    // Retrieve all configuration settings at once
+  async getRelevantDocuments(query: string, options?: Partial<RunnableConfig>): Promise<DocumentInterface<Record<string, any>>[]> {
     const { k, fetchK, lambda } = this.getMMRSettings();
-    
-    // Set up MMR search options
+
     const mmrOptions: MaxMarginalRelevanceSearchOptions<any> = {
-        k: k,
-        fetchK: fetchK,  // Option to fetch more documents initially if supported
-        lambda: lambda, // Adjust lambda to balance relevance and diversity
+      k: k,
+      fetchK: fetchK,
+      lambda: lambda,
     };
 
-    // Use MMR to fetch documents
     const results = await this.vectorStore.maxMarginalRelevanceSearch(query, mmrOptions);
-    // Map each result to include the document and its score inside metadata
     return results.map(doc => new MyDocument({
-        ...doc,
-        metadata: { ...doc.metadata }
+      ...doc,
+      metadata: { ...doc.metadata }
     }));
   }
+
+  async invoke(input: string, options?: Partial<RunnableConfig>): Promise<DocumentInterface<Record<string, any>>[]> {
+    const documents = await this.getRelevantDocuments(input, options);
+    return documents;
+  }
   
-  // Method to retrieve and parse environment settings for MMR
   private getMMRSettings(): { k: number, fetchK: number, lambda: number } {
     return {
-        k: this.getEnvironmentSetting('K_EMBEDDINGS', 6),
-        fetchK: this.getEnvironmentSetting('FETCH_K_EMBEDDINGS', 12),
-        lambda: parseFloat(process.env['LAMBDA_EMBEDDINGS'] || '0.2')  // Ensuring lambda is parsed as float
+      k: this.getEnvironmentSetting('K_EMBEDDINGS', 6),
+      fetchK: this.getEnvironmentSetting('FETCH_K_EMBEDDINGS', 12),
+      lambda: parseFloat(process.env['LAMBDA_EMBEDDINGS'] || '0.2')
     };
   }
 
-  // Generic method to retrieve environment settings and provide a default if undefined or not a number
   private getEnvironmentSetting(variable: string, defaultValue: number): number {
     const value = Number(process.env[variable]);
     return isNaN(value) ? defaultValue : value;
@@ -114,16 +113,14 @@ class CustomRetriever extends BaseRetriever {
       this.vectorStore, embeddingsResponse, 'sentinel', 2, minScoreSourcesThreshold
     );
 
-    const combinedResults = [...pdfResults, ...webinarResults,...sentinelResults];
+    const combinedResults = [...pdfResults, ...webinarResults, ...sentinelResults];
 
     combinedResults.sort((a, b) => b[1] - a[1]);
 
     return combinedResults;
   }
-  // Implement any other abstract methods or properties required by BaseRetriever
 }
 
-// Constants and Variables
 const io = getIO();
 const roomMemories: Record<string, BufferMemory> = {};
 const MODEL_NAME = process.env.MODEL_NAME;
@@ -141,14 +138,13 @@ Chat History:
 Follow Up Input: {question}
 Standalone question:`;
 
-// QA_PROMPT is reliable for specific request from us, and also incoporating the new question generated by the CONDENSE_PROMPT
 const QA_PROMPT = `You are a multilingual helpful and friendly assistant. You focus on helping SolidCAM users with their questions.
 
 - When asked about a specific Service Pack (SP) release, like SolidCAM 2023 SP3, answer about this specific Service Pack (SP) release only! Don't include in your answer info about other Service Packs (e.g., don't include SolidCAM 2023 SP1 info in an answer about SP3).
 - If a question is unrelated to SolidCAM, kindly inform the user that your assistance is focused on SolidCAM-related topics.
 - If the user asks a question without marking the year answer the question regarding the latest SolidCAM 2023 release.
 - Discuss iMachining only if the user specifically asks for it.
-- Add links only if the link appear in the context.
+- Add links only if the link appear in the context. Also show all jpg images directly in the answer.
 - If you do not have the information in the context to answer a question, admit it openly without fabricating responses.
 - If the user's questions is valid and there is no documentation or context about it, let him know that he cam leave a comment and we will do our best to include it at a later stage.
 Your responses should be tailored to the question's intent, using text formatting (bold with **, italic with __, strikethrough with ~~) to enhance clarity, and organized with headings, paragraphs, or lists as appropriate.
@@ -158,19 +154,17 @@ context: {context}
 Question: {question}
 Answer in the {language} language:`;
 
-
 const TRANSLATION_PROMPT = `Translate the following text to English. Try to translate it taking into account that it's about SolidCAM. Return the translated question only:\nText: {question}`;
 const LANGUAGE_DETECTION_PROMPT = `Detect the language of the following text and respond with the language name only, nothing else:\n\nText: "{text}"`;
 const TEMPRATURE = parseFloat(process.env.TEMPRATURE || "0");
 
 export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void, userEmail: string) => {
-  
-  const streamingModel = new OpenAI({
+  const streamingModel = new ChatOpenAI({
     streaming: true,
     modelName: MODEL_NAME,
     temperature: TEMPRATURE,
     modelKwargs: {
-      seed: 1
+      seed: 1,
     },
     callbacks: [
       {
@@ -181,7 +175,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     ],
   });
 
-  // Non-streaming model setup
   const nonStreamingModel = new OpenAI({
     modelName: 'gpt-4o',
     temperature: TEMPRATURE
@@ -195,6 +188,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
   function generateUniqueId(): string {
     return uuidv4();
   }
+
   return {
     call: async (question: string, Documents: MyDocument[], roomId: string, userEmail: string) => {
       const qaId = generateUniqueId();
@@ -213,20 +207,17 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         question = await translateToEnglish(question, translationModel);
       }
 
-      const formattedPrompt = QA_PROMPT
-        .replace('{language}', language);
-      
-      // Since the first user question in not going through the CONDENSE_PROMPT and therefor abbriviations cannot be changed, i have added a generic user message.
+      const formattedPrompt = QA_PROMPT.replace('{language}', language);
+
       if ((chat_history.chatHistory as any).messages.length === 0) {
         const initialHumanMessage = new HumanMessage({
           content: "Hi",
           name: "Human",
-      });
-      chat_history.chatHistory.addMessage(initialHumanMessage); // Hypothetical method to add message
+        });
+        chat_history.chatHistory.addMessage(initialHumanMessage);
       }
 
       const customRetriever = new CustomRetriever(vectorstore);
-      // Use the specific room memory for the chain
       const chain = ConversationalRetrievalQAChain.fromLLM(
         streamingModel,
         customRetriever,
@@ -244,13 +235,14 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       const responseText = (await (async () => {
         const response = await chain.invoke({
-            question: question,
+          question: question,
         });
         return {
           text: response.text,
           sourceDocuments: response.sourceDocuments
         };
       })());
+
       const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
       let embeddingsStore;
       if (language == 'English' || language == 'German') {
@@ -259,38 +251,37 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           const myDoc = new MyDocument({
             pageContent: doc.pageContent,
             metadata: {
-              source: doc.metadata.source,     
-              type: doc.metadata.type,         
+              source: doc.metadata.source,
+              type: doc.metadata.type,
               videoLink: doc.metadata.videoLink,
               file: doc.metadata.file,
-              score: score                     
+              score: score,
+              image: doc.metadata.image
             }
           });
-        
+
           Documents.push(myDoc);
         }
-      }
-      else{
+      } else {
         embeddingsStore = await responseText.sourceDocuments;
         for (const doc of embeddingsStore) {
           const myDoc = new MyDocument({
-              pageContent: doc.pageContent,
-              metadata: {
-                  source: doc.metadata.source,
-                  type: doc.metadata.type,
-                  videoLink: doc.metadata.videoLink,
-                  file: doc.metadata.file,
-                  score: doc.metadata.score
-              }
+            pageContent: doc.pageContent,
+            metadata: {
+              source: doc.metadata.source,
+              type: doc.metadata.type,
+              videoLink: doc.metadata.videoLink,
+              file: doc.metadata.file,
+              score: doc.metadata.score,
+              image: doc.metadata.image
+            }
           });
-      
+
           Documents.push(myDoc);
-        }      
+        }
       }
 
-
       if (roomId) {
-        //console.log("INSIDE ROOM_ID", roomId);     
         io.to(roomId).emit(`fullResponse-${roomId}`, {
           roomId: roomId,
           sourceDocs: Documents,
@@ -304,7 +295,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       }
 
       await insertQA(question, responseText.text, responseText.sourceDocuments, Documents, qaId, roomId, userEmail);
-    
+
       let totalScore = 0;
       let count = 0;
       if (Documents && Documents.length > 0) {
@@ -317,23 +308,8 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         totalScore = count > 0 ? totalScore / count : 0;
       }
 
-        
-        // Filter the chat history by score
-        const SCORE_THRESHOLD = 0.02;
-        //chatHistory = chatHistory.filter(entry => entry.score >= SCORE_THRESHOLD);
-  
-        // Manage chat history size
-        const MAX_HISTORY_LENGTH = 10;
-        // if (chatHistory.length > MAX_HISTORY_LENGTH) {
-        //   chatHistory = chatHistory.slice(-MAX_HISTORY_LENGTH);
-        // }
-  
-        // Update roomChatHistories with the filtered and truncated chatHistory
-        //roomChatHistories[roomId] = chatHistory;
-  
-        return Documents;
-      },
-      vectorstore,
-    };
+      return Documents;
+    },
+    vectorstore,
+  };
 };
-

@@ -65,6 +65,17 @@
   display: flex;
 }
 
+.fileUploadButton {
+  position: absolute;
+  top: -1.5rem;
+  right: 3rem;
+  color: rgb(165, 162, 162);
+  background: none;
+  padding: 0.3rem;
+  border: none;
+  display: flex;
+}
+
 .loadingwheel {
   position: absolute;
   top: 0.2rem;
@@ -79,6 +90,11 @@
 }
 
 .generatebutton:hover {
+  background: #e4575726;
+  border-radius: 0.2rem;
+}
+
+.fileUploadButton:hover {
   background: #e4575726;
   border-radius: 0.2rem;
 }
@@ -315,3 +331,4 @@
   margin-top: 20px; /* Adjust spacing above the line as needed */
   margin-bottom: 20px; /* Adjust spacing below the line as needed */
 }
+

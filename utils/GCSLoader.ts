@@ -107,9 +107,7 @@ class GCSLoader {
     
                 for (const fileName of fileNames) {
                     const filePath = path.join(folderPath, fileName);
-                    console.log("filePath:", filePath);
                     if (!fileName.endsWith('.pdf') && !fileName.endsWith('.txt') && !fileName.endsWith('vbs') && !fileName.endsWith('python')) {
-                        console.log(`Skipping unsupported file: ${fileName}`);
                         continue;
                     }
     
