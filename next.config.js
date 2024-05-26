@@ -9,6 +9,10 @@ const nextConfig = {
     config.experiments = { ...config.experiments, topLevelAwait: true };
     return config;
   },
+  env: {
+    GCLOUD_STORAGE_BUCKET: process.env.GCLOUD_STORAGE_BUCKET,
+    GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  },
 };
 
 module.exports = nextConfig;

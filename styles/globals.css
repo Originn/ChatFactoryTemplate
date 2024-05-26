@@ -1489,3 +1489,25 @@ body.dark .backdropStyle {
   height: 30px;
 }
 
+.image-container {
+  position: absolute;
+  top: 120px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 700px; /* Set a maximum height for the container */
+  overflow-y: auto; /* Enable vertical scrolling */
+}
+
+
+.image-preview {
+  width: 150px;
+  height: 150px;
+}
+
+.textareaContainer {
+  display: flex;
+  align-items: center;
+}
+
