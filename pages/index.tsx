@@ -221,7 +221,7 @@ const handleSubmit = async (e : any) => {
 
   const trimmedQuery = query.trim();
 
-  if (!trimmedQuery) {
+  if (!trimmedQuery && currentStage !== 4) { // Allow empty text if in stage 4
     alert('Please input a question');
     return;
   }
@@ -697,6 +697,7 @@ return (
                   }
                   value={query}
                   className={styles.textarea}
+                  readOnly={currentStage === 4}
                 />
                 {currentStage === 4 && (
                   <label htmlFor="fileInput" className={styles.fileUploadButton}>
