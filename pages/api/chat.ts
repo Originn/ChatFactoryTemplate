@@ -193,14 +193,14 @@ export default async function handler(
         session.header = sanitizedQuestion;
         roomSessions[roomId] = { ...session, stage: 3 };
         io.to(roomId).emit("storeHeader", session.header);
-        const message = 'Thank you! Now, please provide the text associated with the header.';
+        const message = 'Thank you! Now, please provide the **text** associated with the header.';
         io.to(roomId).emit("newToken", message);
         return res.status(200).json({ message });
 
       } else if (session.stage === 3) {
         session.text = sanitizedQuestion;
         roomSessions[roomId] = { ...session, stage: 4 };
-        const message = 'If you have an image to upload, please do so now.';
+        const message = 'If you have an **image** to upload, please do so now.';
         io.to(roomId).emit("newToken", message);
         io.to(roomId).emit("stageUpdate", 4);
         return res.status(200).json({ message });
