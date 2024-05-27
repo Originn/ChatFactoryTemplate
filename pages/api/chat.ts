@@ -200,7 +200,7 @@ export default async function handler(
       } else if (session.stage === 3) {
         session.text = sanitizedQuestion;
         roomSessions[roomId] = { ...session, stage: 4 };
-        const message = 'If you have an **image** to upload, please do so now.';
+        const message = 'If you have an **image** to upload, please do so now. If image is not needed click submit.';
         io.to(roomId).emit("newToken", message);
         io.to(roomId).emit("stageUpdate", 4);
         return res.status(200).json({ message });
