@@ -11,6 +11,7 @@ import { Message } from '@/types/chat';
 import { auth } from "@/utils/firebase";
 import FeedbackComponent from '@/components/FeedbackComponent';
 import Link from 'next/link';
+import GoogleAnalytics from '@/components/GoogleAnalytics'; // Import the component
 
 type RequestsInProgressType = {
   [key: string]: boolean;
@@ -21,6 +22,39 @@ interface DocumentWithMetadata {
     source: string;
   };
 }
+
+const handleWebinarClick = (url: string) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'webinar_source_click', {
+      event_category: 'Webinars',
+      event_label: 'Webinar',
+      user_id: auth.currentUser?.email,
+      value: url,
+    });
+  }
+};
+
+const handleDocumentClick = (url: string) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'document_source_click', {
+      event_category: 'Documents',
+      event_label: 'Document',
+      user_id: auth.currentUser?.email,
+      value: url,
+    });
+  }
+};
+
+const measureFirstTokenTime = (timeDifference: number) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'first_token_response_time', {
+      event_category: 'ChatBot',
+      event_label: 'Time from Submit to First Token',
+      user_id: auth.currentUser?.email,
+      value: timeDifference,
+    });
+  }
+};
 
 // Constants
 const PRODUCTION_ENV = 'production';
@@ -56,9 +90,8 @@ export default function Home() {
     messages: [],
     history: [],
   });
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentStage, setCurrentStage] = useState<number | null>(null);
-
+  const [firstTokenTimes, setFirstTokenTimes] = useState<{ [key: string]: number | null }>({});
   const { messages, history } = messageState;
 
   // Refs
@@ -68,6 +101,10 @@ export default function Home() {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [textAreaHeight, setTextAreaHeight] = useState<string>('auto');
   const [imagePreviews, setImagePreviews] = useState<{ url: string, fileName: string }[]>([]);
+  const submitTimeRef = useRef<number | null>(null);
+  const firstTokenCalculatedRef = useRef<{ [key: string]: boolean }>({});
+
+
 
   // Event Handlers
 
@@ -135,6 +172,7 @@ export default function Home() {
       document.removeEventListener('paste', handlePaste);
     };
   }, [currentStage]);
+  
   
   const adjustTextAreaHeight = () => {
     if (textAreaRef.current) {
@@ -215,7 +253,7 @@ const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
   setQuery(value);
 };
 
-const handleSubmit = async (e : any) => {
+const handleSubmit = async (e: any) => {
   e.preventDefault();
   setError(null);
 
@@ -265,6 +303,10 @@ const handleSubmit = async (e : any) => {
     return;
   }
 
+  // Record the time of submission
+  const currentTime = performance.now();
+  submitTimeRef.current = currentTime;  // Use ref here
+
   try {
     await fetch('/api/chat', {
       method: 'POST',
@@ -290,6 +332,10 @@ const handleSubmit = async (e : any) => {
     setLoading(false);
   }
 };
+
+
+
+
 
 // New function to handle file selection
 const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -370,44 +416,48 @@ useEffect(() => {
   const socket = io(serverUrl);
 
   // Event handler for 'assignedRoom'
-  const handleAssignedRoom = (assignedRoomId : any) => {
+  const handleAssignedRoom = (assignedRoomId: string) => {
     setRoomId(assignedRoomId);
+    roomIdRef.current = assignedRoomId; // Set the ref
     setRequestsInProgress(prev => ({ ...prev, [assignedRoomId]: false }));
-
+  
     const responseEventName = `fullResponse-${assignedRoomId}`;
     const handleFullResponse = (response: any) => {
       setMessageState((state) => {
-          const { sourceDocs, qaId } = response;
+        const { sourceDocs, qaId } = response;
   
-          const deduplicatedDocs = sourceDocs.reduce((acc: DocumentWithMetadata[], doc: DocumentWithMetadata) => {
-              const sourceURL = doc.metadata.source;
-              const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
-              // For other documents, use the original deduplication logic
-              if (timestamp && !acc.some((d: DocumentWithMetadata) => d.metadata.source.includes(`t=${timestamp}s`))) {
-                  acc.push(doc);
-              } else if (!timestamp) {
-                  acc.push(doc);
-              }
-
-              return acc;
-          }, []);
+        const deduplicatedDocs = sourceDocs.reduce((acc: DocumentWithMetadata[], doc: DocumentWithMetadata) => {
+          const sourceURL = doc.metadata.source;
+          const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
+          // For other documents, use the original deduplication logic
+          if (timestamp && !acc.some((d: DocumentWithMetadata) => d.metadata.source.includes(`t=${timestamp}s`))) {
+            acc.push(doc);
+          } else if (!timestamp) {
+            acc.push(doc);
+          }
   
-          const updatedMessages = state.messages.map((message, index, arr) => {
-              if (index === arr.length - 1 && message.type === 'apiMessage') {
-                  
-                  return { ...message, sourceDocs: deduplicatedDocs, qaId: qaId, isComplete:true };
-              }
-              return message;
-          });
+          return acc;
+        }, []);
   
-          return { ...state, messages: updatedMessages };
+        const updatedMessages = state.messages.map((message, index, arr) => {
+          if (index === arr.length - 1 && message.type === 'apiMessage') {
+            return { ...message, sourceDocs: deduplicatedDocs, qaId: qaId, isComplete: true };
+          }
+          return message;
+        });
+  
+        return { ...state, messages: updatedMessages };
       });
-  };
+  
+      // Reset the firstTokenCalculatedRef for the current roomId
+      firstTokenCalculatedRef.current[assignedRoomId] = false;
+    };
   
     socket.on(responseEventName, handleFullResponse);
-
+  
     return () => socket.off(responseEventName, handleFullResponse);
   };
+  
 
   socket.on('assignedRoom', handleAssignedRoom);
   socket.on('connect_error', (errorreact) => console.log('Connection Error:', errorreact));
@@ -433,7 +483,7 @@ useEffect(() => {
     });
 
   // Listener for 'newToken'
-  socket.on("newToken", (token) => {
+  socket.on("newToken", (token, isLastToken) => {
     setMessageState((state) => {
       const lastMessage = state.messages[state.messages.length - 1];
       if (lastMessage && lastMessage.type === 'apiMessage') {
@@ -441,16 +491,39 @@ useEffect(() => {
           ...state,
           messages: [
             ...state.messages.slice(0, -1),
-            { ...lastMessage, message: lastMessage.message + token, isComplete: false },
+            { ...lastMessage, message: lastMessage.message + token, isComplete: isLastToken },
           ],
         };
       }
       return {
         ...state,
-        messages: [...state.messages, { type: 'apiMessage', message: token, isComplete: false }],
+        messages: [...state.messages, { type: 'apiMessage', message: token, isComplete: isLastToken }],
       };
     });
+  
+    const currentRoomId = roomIdRef.current as string;
+  
+    // Record the first token arrival time if it hasn't been recorded yet
+    if (!firstTokenTimes[currentRoomId] && !firstTokenCalculatedRef.current[currentRoomId]) {
+      const currentTime = performance.now();
+      setFirstTokenTimes(prevTimes => {
+        return { ...prevTimes, [currentRoomId]: currentTime };
+      });
+  
+      if (submitTimeRef.current) {
+        const timeDifference = currentTime - submitTimeRef.current;
+        console.log('timeDifference:', timeDifference);
+        measureFirstTokenTime(timeDifference);
+      }
+  
+      // Mark this roomId as having the first token calculated
+      firstTokenCalculatedRef.current[currentRoomId] = true;
+    } else {
+    }
   });
+  
+  
+  
 
   // Cleanup function for when the component unmounts
   return () => {
@@ -502,180 +575,196 @@ useEffect(() => {
 // Main Render
 return (
   <>
+    <GoogleAnalytics /> {/* Add the component here */}
     <Layout theme={theme} toggleTheme={toggleTheme}>
-    <div className="mx-auto flex flex-col gap-4">
-    {imagePreviews.length > 0 && (
-    <div className="image-container">
-      {imagePreviews.map((image, index) => (
-        <div key={index} className="image-wrapper" style={{ position: 'relative' }}>
-          <img
-            src={image.url}
-            alt={`Image Preview ${index + 1}`}
-            className="image-preview"
-            style={{ width: '150px', height: '150px', marginBottom: '10px' }}
-          />
-          <button onClick={() => handleDeleteImage(image.fileName, index)} className="delete-button" style={{ position: 'absolute', top: 0, right: 0 }}>
-            X
-          </button>
-        </div>
-      ))}
-    </div>
-  )}
-      <main className={styles.main}>
-        <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
-          SolidCAM ChatBot
-        </h1>
-        <main className={styles.main}>
-          <div className={styles.cloud}>
-            <div ref={messageListRef} className={styles.messagelist}>
-            {messages.map((message, index) => {
-            let webinarCount = 1;
-            let documentCount = 1;
-              let icon;
-              let className;
-              if (message.type === 'apiMessage') {
-                icon = (
-                  <Image
-                    key={index}
-                    src={botimageIcon}
-                    alt="AI"
-                    width="40"
-                    height="40"
-                    className={styles.boticon}
-                    priority
-                  />
-                );
-                className = styles.apimessage;
-              } else {
-                icon = (
-                  <Image
-                    key={index}
-                    src={imageUrlUserIcon}
-                    alt="Me"
-                    width="30"
-                    height="30"
-                    className={styles.usericon}
-                    priority
-                  />
-                );
-                className =
-                  loading && index === messages.length - 1
-                    ? styles.usermessagewaiting
-                    : styles.usermessage;
-              }
-              const hasSources = message.sourceDocs && message.sourceDocs.length > 0;
-                    // Preprocess documents to update counts based on type
-              const totalWebinars = message.sourceDocs?.filter(doc => doc.metadata.type === 'youtube').length ?? 0;
-              const totalDocuments = message.sourceDocs?.length ?? 0 - totalWebinars; // Assuming other types are documents
-              return (
-                <React.Fragment key={`chatMessageFragment-${index}`}>
-                  <div className={className}>
-                    {icon}
-                    <div className={styles.markdownanswer} ref={answerStartRef}>
-                      <ReactMarkdown
-                        rehypePlugins={[rehypeRaw as any]}
-                        components={{
-                          a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
-                        }}
-                      >
-                        {message.message}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                  {message.sourceDocs && (
-                  <div key={`sourceDocsAccordion-${index}`}>
-                  <Accordion type="single" collapsible className="flex-col">
-                    {message.sourceDocs.map((doc, docIndex) => {
-                      let title;
-                      let currentCount;
-                      if (doc.metadata.type === 'youtube') {
-                        title = 'Webinar';
-                        currentCount = webinarCount++; // Increment count for webinar
-                      } else { // 'PDF' and 'sentinel' are treated as documents
-                        title = 'Document';
-                        currentCount = documentCount++; // Increment count for document
-                      }
-
-                      return (
-                        <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
-                          <AccordionTrigger>
-                            <h3>{`${title} ${currentCount}`}</h3>
-                          </AccordionTrigger>
-                              <AccordionContent>
-                              {
-                                doc.metadata.type === 'youtube' ? (
-                                    // YouTube link handling
-                                    <p>
-                                        <b>Source:</b>
-                                        {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View Webinar</a> : 'Unavailable'}
-                                    </p>
-                                ) : doc.metadata.type === 'sentinel' ? (
-                                    // Sentinel link handling
-                                    <p>
-                                        <b>Source:</b>
-                                        {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">View</a> : 'Unavailable'}
-                                    </p>
-                                    
-                                ) : (
-                                    // Default handling
-                                    <>
-                                      <ReactMarkdown
-                                        rehypePlugins={[rehypeRaw as any]}
-                                        components={{
-                                          a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
-                                        }}
-                                      >
-                                        {doc.pageContent.split('\n')[0]}
-                                      </ReactMarkdown>
-                                      <p className="mt-2">
-                                        <b>Source:</b>
-                                        {
-                                          doc.metadata && doc.metadata.source
-                                          ? (() => {
-                                            // Extract all page numbers from the content
-                                            const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
-
-                                            // Find the largest page number mentioned
-                                            const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
-
-                                            // Filter for numbers within 2 pages of the largest number, if it exists
-                                            let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
-
-                                            // From the filtered numbers, find the smallest one to use in the link
-                                            let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
-
-                                            // If no suitable number is found within 2 pages of the largest, decide on fallback strategy
-                                            // For example, using the largest number or another logic
-                                            if (smallestPageNumberInRange === null && largestPageNumber !== null) {
-                                                // Fallback strategy here
-                                                // This example simply uses the largest number
-                                                smallestPageNumberInRange = largestPageNumber;
-                                            }
-
-                                            const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
-
-                                              return <a href={pageLink} target="_blank" rel="noopener noreferrer">View Page</a>;
-                                            })()
-                                          : 'Unavailable'
-                                        }
-                                      </p>
-                                    </>
-                                  )
-                                }
-                              </AccordionContent>
-                            </AccordionItem>
-                            );
-                          })}
-                      </Accordion>
-                    </div>
-                  )}
-                  {message.isComplete && <FeedbackComponent key={index} messageIndex={index} qaId={message.qaId} roomId={roomId} /> }
-                </React.Fragment>
-              );
-            })}
-
-            </div>
+      <div className="mx-auto flex flex-col gap-4">
+        {imagePreviews.length > 0 && (
+          <div className="image-container">
+            {imagePreviews.map((image, index) => (
+              <div key={index} className="image-wrapper" style={{ position: 'relative' }}>
+                <img
+                  src={image.url}
+                  alt={`Image Preview ${index + 1}`}
+                  className="image-preview"
+                  style={{ width: '150px', height: '150px', marginBottom: '10px' }}
+                />
+                <button onClick={() => handleDeleteImage(image.fileName, index)} className="delete-button" style={{ position: 'absolute', top: 0, right: 0 }}>
+                  X
+                </button>
+              </div>
+            ))}
           </div>
+        )}
+        <main className={styles.main}>
+          <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
+            SolidCAM ChatBot
+          </h1>
+          <main className={styles.main}>
+            <div className={styles.cloud}>
+              <div ref={messageListRef} className={styles.messagelist}>
+                {messages.map((message, index) => {
+                  let webinarCount = 1;
+                  let documentCount = 1;
+                  let icon;
+                  let className;
+                  if (message.type === 'apiMessage') {
+                    icon = (
+                      <Image
+                        key={index}
+                        src={botimageIcon}
+                        alt="AI"
+                        width="40"
+                        height="40"
+                        className={styles.boticon}
+                        priority
+                      />
+                    );
+                    className = styles.apimessage;
+                  } else {
+                    icon = (
+                      <Image
+                        key={index}
+                        src={imageUrlUserIcon}
+                        alt="Me"
+                        width="30"
+                        height="30"
+                        className={styles.usericon}
+                        priority
+                      />
+                    );
+                    className =
+                      loading && index === messages.length - 1
+                        ? styles.usermessagewaiting
+                        : styles.usermessage;
+                  }
+                  const hasSources = message.sourceDocs && message.sourceDocs.length > 0;
+                  // Preprocess documents to update counts based on type
+                  const totalWebinars = message.sourceDocs?.filter(doc => doc.metadata.type === 'youtube').length ?? 0;
+                  const totalDocuments = message.sourceDocs?.length ?? 0 - totalWebinars; // Assuming other types are documents
+                  return (
+                    <React.Fragment key={`chatMessageFragment-${index}`}>
+                      <div className={className}>
+                        {icon}
+                        <div className={styles.markdownanswer} ref={answerStartRef}>
+                        <ReactMarkdown
+                          rehypePlugins={[rehypeRaw as any]}
+                          components={{
+                            a: ({ node, ...props }) => {
+                              const isWebinar = props.href && props.href.includes('youtube.com'); // Assuming webinar links are YouTube URLs
+                              return (
+                                <a
+                                  {...props}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={() => {
+                                    if (isWebinar) {
+                                      handleWebinarClick(props.href || '');
+                                    } else {
+                                      handleDocumentClick(props.href || '');
+                                    }
+                                  }}
+                                />
+                              );
+                            }
+                          }}
+                        >
+                          {message.message}
+                        </ReactMarkdown>
+                        </div>
+                      </div>
+                      {message.sourceDocs && (
+                        <div key={`sourceDocsAccordion-${index}`}>
+                          <Accordion type="single" collapsible className="flex-col">
+                            {message.sourceDocs.map((doc, docIndex) => {
+                              let title;
+                              let currentCount;
+                              if (doc.metadata.type === 'youtube') {
+                                title = 'Webinar';
+                                currentCount = webinarCount++; // Increment count for webinar
+                              } else { // 'PDF' and 'sentinel' are treated as documents
+                                title = 'Document';
+                                currentCount = documentCount++; // Increment count for document
+                              }
+
+                              return (
+                                <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
+                                  <AccordionTrigger>
+                                    <h3>{`${title} ${currentCount}`}</h3>
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    {
+                                      doc.metadata.type === 'youtube' ? (
+                                        // YouTube link handling
+                                        <p>
+                                          <b>Source:</b>
+                                          {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleWebinarClick(doc.metadata.source)}>View Webinar</a> : 'Unavailable'}
+                                        </p>
+                                      ) : doc.metadata.type === 'sentinel' ? (
+                                        // Sentinel link handling
+                                        <p>
+                                          <b>Source:</b>
+                                          {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(doc.metadata.source)}>View</a> : 'Unavailable'}
+                                        </p>
+                                      ) : (
+                                        // Default handling
+                                        <>
+                                          <ReactMarkdown
+                                            rehypePlugins={[rehypeRaw as any]}
+                                            components={{
+                                              a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(props.href || '')} />
+                                            }}
+                                          >
+                                            {doc.pageContent.split('\n')[0]}
+                                          </ReactMarkdown>
+                                          <p className="mt-2">
+                                            <b>Source:</b>
+                                            {
+                                              doc.metadata && doc.metadata.source
+                                                ? (() => {
+                                                  // Extract all page numbers from the content
+                                                  const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
+
+                                                  // Find the largest page number mentioned
+                                                  const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
+
+                                                  // Filter for numbers within 2 pages of the largest number, if it exists
+                                                  let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
+
+                                                  // From the filtered numbers, find the smallest one to use in the link
+                                                  let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
+
+                                                  // If no suitable number is found within 2 pages of the largest, decide on fallback strategy
+                                                  // For example, using the largest number or another logic
+                                                  if (smallestPageNumberInRange === null && largestPageNumber !== null) {
+                                                    // Fallback strategy here
+                                                    // This example simply uses the largest number
+                                                    smallestPageNumberInRange = largestPageNumber;
+                                                  }
+
+                                                  const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
+
+                                                  return <a href={pageLink} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(pageLink)}>View Page</a>;
+                                                })()
+                                                : 'Unavailable'
+                                            }
+                                          </p>
+                                        </>
+                                      )
+                                    }
+                                  </AccordionContent>
+                                </AccordionItem>
+                              );
+                            })}
+                          </Accordion>
+                        </div>
+                      )}
+                      {message.isComplete && <FeedbackComponent key={index} messageIndex={index} qaId={message.qaId} roomId={roomId} />}
+                    </React.Fragment>
+                  );
+                })}
+
+              </div>
+            </div>
           </main>
           <div className={styles.center}>
             <div className={styles.cloudform}>
