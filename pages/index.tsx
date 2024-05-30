@@ -12,7 +12,9 @@ import { Message } from '@/types/chat';
 import { auth } from "@/utils/firebase";
 import FeedbackComponent from '@/components/FeedbackComponent';
 import Link from 'next/link';
-import GoogleAnalytics from '@/components/GoogleAnalytics'; // Import the component
+import GoogleAnalytics from '@/components/GoogleAnalytics';
+import { handleWebinarClick, handleDocumentClick, measureFirstTokenTime } from '@/utils/tracking';
+
 
 type RequestsInProgressType = {
   [key: string]: boolean;
@@ -23,39 +25,6 @@ interface DocumentWithMetadata {
     source: string;
   };
 }
-
-const handleWebinarClick = (url: string) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', 'webinar_source_click', {
-      event_category: 'Webinars',
-      event_label: 'Webinar',
-      user_id: auth.currentUser?.email,
-      value: url,
-    });
-  }
-};
-
-const handleDocumentClick = (url: string) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', 'document_source_click', {
-      event_category: 'Documents',
-      event_label: 'Document',
-      user_id: auth.currentUser?.email,
-      value: url,
-    });
-  }
-};
-
-const measureFirstTokenTime = (timeDifference: number) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', 'first_token_response_time', {
-      event_category: 'ChatBot',
-      event_label: 'Time from Submit to First Token',
-      user_id: auth.currentUser?.email,
-      value: timeDifference,
-    });
-  }
-};
 
 // Constants
 const PRODUCTION_ENV = 'production';
@@ -473,7 +442,7 @@ useEffect(() => {
     });
 
     socket.on("removeThumbnails", () => {
-      const thumbnailElement = document.querySelector('.image-container');
+      const thumbnailElement = document.querySelector('.image-container-image-thumb');
       if (thumbnailElement) {
         thumbnailElement.remove();
       }
@@ -580,7 +549,7 @@ return (
     <Layout theme={theme} toggleTheme={toggleTheme}>
       <div className="mx-auto flex flex-col gap-4">
         {imagePreviews.length > 0 && (
-          <div className="image-container">
+          <div className="image-container-image-thumb">
             {imagePreviews.map((image, index) => (
               <div key={index} className="image-wrapper" style={{ position: 'relative' }}>
                 <img

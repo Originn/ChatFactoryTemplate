@@ -525,36 +525,39 @@ body.dark .submit-feedback-label {
   
   .center-wrapper {
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column; /* Stack items vertically */
+    justify-content: center; /* Center vertically */
+    align-items: center; /* Center horizontally */
     min-height: 100vh;
     width: 100%;
-  }
-
-  .image-container {
-    flex: 1; /* Takes up 1 portion of the space */
-    display: flex;
-    justify-content: center; /* Center image horizontally */
-    align-items: center; /* Center image vertically */
-    max-width: 50%; /* Limits the width to half of the container */
-  }
-
-  .center-wrapper img {
-    max-width: 90%; /* Allow some padding */
-    height: auto; /* Maintain aspect ratio */
+    text-align: center;
   }
   
-  .firebaseui-container {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch; /* Stretch the children */
-    width: 100%;
-    max-width: 500px; /* Maximum width of the container */
-    margin: 0 auto; /* Centering the container */
-    padding: 20px; /* Padding inside the container */
-    box-shadow: none;
-    background-color: transparent;
-  }
+  /* Container for the image */
+.image-container {
+  display: flex;
+  justify-content: center; /* Center image horizontally */
+  align-items: center; /* Center image vertically */
+  margin-bottom: 20px; /* Space between image and form */
+}
+
+/* Styling for the image */
+.image-container img {
+  max-width: 200px; /* Adjust the image size as needed */
+  height: auto;
+}
+
+/* Container for the FirebaseUI sign-in form */
+.firebaseui-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* Stretch the children */
+  width: 100%;
+  max-width: 500px; /* Maximum width of the container */
+  padding: 20px; /* Padding inside the container */
+  box-shadow: none;
+  background-color: transparent;
+}
 
   .firebaseui-idp-button,
   .create-account-button,
@@ -1489,7 +1492,7 @@ body.dark .backdropStyle {
   height: 30px;
 }
 
-.image-container {
+.image-container-image-thumb {
   position: absolute;
   top: 120px;
   left: 10px;
@@ -1509,5 +1512,19 @@ body.dark .backdropStyle {
 .textareaContainer {
   display: flex;
   align-items: center;
+}
+
+#termsfeed-com---nb {
+  position: fixed;
+  bottom: 10px; /* Position it 10px from the bottom */
+  left: 10px; /* Position it 10px from the left */
+  max-width: 600px; /* Set a max-width */
+  max-height: 300px;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  font-size: 14px !important;
+  border-radius: 5px !important;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
+  overflow: hidden;
 }
 
