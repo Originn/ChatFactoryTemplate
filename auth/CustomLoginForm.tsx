@@ -163,16 +163,21 @@ const CustomLoginForm = () => {
               await sendEmailVerification(userCredential.user);
               router.push('/verification-sent');
             } catch (error: any) {
-                if (error.code === 'auth/email-already-in-use') {
-                    setErrorMessage('The email address is already in use by another account.');
-                } else {
-                    // Error message formatting can be improved as needed
-                    const formattedError = error.message.replace('Firebase: ', '');
-                    setErrorMessage(formattedError);
-                }
+              window.gtag('event', 'signup_error', {
+                event_category: 'Signup',
+                event_label: error.code,
+                value: email,
+              });
+            
+              if (error.code === 'auth/email-already-in-use') {
+                setErrorMessage('The email address is already in use by another account.');
+              } else {
+                const formattedError = error.message.replace('Firebase: ', '');
+                setErrorMessage(formattedError);
+              }
             } finally {
-                setIsSubmitting(false); // Indicate that submission has ended
-            }
+              setIsSubmitting(false); // Indicate that submission has ended
+            }            
         }
     };
 const backToSignInPopup = () => {
