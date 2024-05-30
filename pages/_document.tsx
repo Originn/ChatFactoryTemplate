@@ -1,5 +1,5 @@
-// pages/_document.tsx
 import { Html, Head, Main, NextScript } from "next/document";
+import Script from "next/script";
 
 export default function Document() {
   return (
@@ -12,13 +12,13 @@ export default function Document() {
         />
         {/* Other head elements */}
         {/* Cookie Consent by TermsFeed */}
-        <script
-          type="text/javascript"
+        <Script
           src="https://www.termsfeed.com/public/cookie-consent/4.1.0/cookie-consent.js"
           charSet="UTF-8"
-        ></script>
-        <script
-          type="text/javascript"
+          strategy="beforeInteractive"
+        ></Script>
+        <Script
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               document.addEventListener('DOMContentLoaded', function () {
@@ -66,16 +66,14 @@ export default function Document() {
               });
             `,
           }}
-        ></script>
-        <script
-          type="text/plain"
-          data-cookie-consent="tracking"
-          async
+        ></Script>
+        <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-LRZR96PT9B"
-        ></script>
-        <script
-          type="text/plain"
+          strategy="afterInteractive"
           data-cookie-consent="tracking"
+        ></Script>
+        <Script
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               window.dataLayer = window.dataLayer || [];
@@ -84,11 +82,10 @@ export default function Document() {
               gtag('config', 'G-LRZR96PT9B');
             `,
           }}
-        ></script>
+        ></Script>
         <noscript>
           Free cookie consent management tool by <a href="https://www.termsfeed.com/">TermsFeed</a>
         </noscript>
-        {/* End Cookie Consent by TermsFeed */}
       </Head>
       <body>
         <Main />
