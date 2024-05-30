@@ -18,6 +18,11 @@ export default function Document() {
           strategy="beforeInteractive"
         ></Script>
         <Script
+          src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/3.0.1/js.cookie.min.js"
+          strategy="beforeInteractive"
+        ></Script>
+        <Script
+          id="cookie-consent-script"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
@@ -73,6 +78,7 @@ export default function Document() {
           data-cookie-consent="tracking"
         ></Script>
         <Script
+          id="google-analytics-script"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
