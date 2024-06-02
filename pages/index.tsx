@@ -796,10 +796,12 @@ return (
                   )}
                 </button>
               </form>
-              <div className={styles.warning}>
-                <p style={{ fontSize: 'small', color: 'gray' }}>
-                  SolidCAM ChatBot may display inaccurate info so double-check its responses
-                </p>
+              <div className="disclaimer-container">
+                <div className={styles.disclaimerText}>
+                  <p style={{ fontSize: 'small', color: 'gray' }}>
+                    SolidCAM ChatBot may display inaccurate info so double-check its responses
+                  </p>
+                </div>
               </div>
             </div>
           </div>
