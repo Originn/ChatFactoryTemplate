@@ -8,6 +8,7 @@
     --header-background-dark: #000000;
     --google-blue: #4285F4;
     --microsoft-blue: #2F2F2F;
+    --footer-height: -60px;
 }
 
 html, body {
@@ -1528,3 +1529,15 @@ body.dark .backdropStyle {
   overflow: hidden;
 }
 
+.content-container {
+  display: flex;
+  flex-direction: column;
+  height: 65vh; /* Set the height to 100vh */
+  box-sizing: border-box; /* Include padding and border in the height */
+  padding-bottom: calc(var(--footer-height) + var(--textarea-height) + 20px); /* Adjust the value as needed */
+}
+
+.auto-height {
+  flex-grow: 1 !important;
+  overflow-y: auto !important;
+}

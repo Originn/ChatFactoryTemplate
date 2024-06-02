@@ -146,17 +146,20 @@ export default function Home() {
   
   const adjustTextAreaHeight = () => {
     if (textAreaRef.current) {
-        textAreaRef.current.style.height = 'auto'; // Reset height to recalculate
-        const baseHeight = 24; // Base single line height, adjust as needed
-        const newHeight = Math.min(textAreaRef.current.scrollHeight, 10 * baseHeight);
-        textAreaRef.current.style.height = `${newHeight}px`;
-
-        // Move the textarea upwards by changing the bottom position
-        const offset = newHeight - baseHeight; // Calculate how much taller than one line it is
-        textAreaRef.current.style.transform = `translateY(-${offset}px)`;
-        setTextAreaHeight(`${newHeight}px`);
+      textAreaRef.current.style.height = 'auto'; // Reset height to recalculate
+      const baseHeight = 24; // Base single line height, adjust as needed
+      const newHeight = Math.min(textAreaRef.current.scrollHeight, 10 * baseHeight);
+      textAreaRef.current.style.height = `${newHeight}px`;
+  
+      // Move the textarea upwards by changing the bottom position
+      const offset = newHeight - baseHeight; // Calculate how much taller than one line it is
+      textAreaRef.current.style.transform = `translateY(-${offset}px)`;
+      setTextAreaHeight(`${newHeight}px`);
+  
+      // Update the --textarea-height CSS variable
+      document.documentElement.style.setProperty('--textarea-height', `${newHeight}px`);
     }
-};
+  };
 
 const handleDeleteImage = async (fileName: string, index: number) => {
   try {
@@ -545,7 +548,7 @@ useEffect(() => {
 // Main Render
 return (
   <>
-    <GoogleAnalytics /> {/* Add the component here */}
+    <GoogleAnalytics /> {}
     <Layout theme={theme} toggleTheme={toggleTheme}>
       <div className="mx-auto flex flex-col gap-4">
         {imagePreviews.length > 0 && (
@@ -570,7 +573,8 @@ return (
             SolidCAM ChatBot
           </h1>
           <main className={styles.main}>
-            <div className={styles.cloud}>
+          <div className="content-container">
+            <div className={`${styles.cloud} auto-height`}>
               <div ref={messageListRef} className={styles.messagelist}>
                 {messages.map((message, index) => {
                   let webinarCount = 1;
@@ -735,6 +739,7 @@ return (
 
               </div>
             </div>
+          </div>
           </main>
           <div className={styles.center}>
             <div className={styles.cloudform}>
