@@ -14,6 +14,7 @@ import FeedbackComponent from '@/components/FeedbackComponent';
 import Link from 'next/link';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import { handleWebinarClick, handleDocumentClick, measureFirstTokenTime } from '@/utils/tracking';
+import { v4 as uuidv4 } from 'uuid';
 
 
 type RequestsInProgressType = {
@@ -91,7 +92,7 @@ export default function Home() {
       if (currentStage !== 4) {
         return;
       }
-  
+      
       const items = event.clipboardData?.items;
       if (items) {
         for (let i = 0; i < items.length; i++) {
@@ -103,7 +104,7 @@ export default function Home() {
               formData.append("file", blob);
   
               // Include the header in the form data
-              const header = sessionStorage.getItem('header') || 'default-header';
+              const header = sessionStorage.getItem('header') || 'image' + uuidv4();
               formData.append("header", header);
   
               const response = await fetch('/api/upload', {
@@ -125,8 +126,8 @@ export default function Home() {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    imageUrl: data.imageUrl, // Ensure this key matches what the server expects
-                    roomId, // Make sure roomId is always sent
+                    imageUrl: data.imageUrl,
+                    roomId,
                     userEmail: auth.currentUser?.email || 'default-email',
                   }),
                 });
