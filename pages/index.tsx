@@ -50,6 +50,8 @@ interface CustomLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 
 const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    console.log('Link clicked:', href); // Log the clicked link URL
+
     if (!href) return; // Do nothing if href is undefined
 
     event.preventDefault();
@@ -57,20 +59,26 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
     const isWebinar = href.includes('youtube.com');
     const isPDF = href.endsWith('.pdf') || href.includes('.pdf#page=');
     const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    console.log('isiOS:', isiOS);
 
     if (isWebinar) {
+      console.log('Webinar link detected');
       handleWebinarClick(href);
     } else if (isPDF) {
+      console.log('PDF link detected');
       let pdfLink = href;
       if (href.includes('#page=')) {
         const [base, page] = href.split('#page=');
-        pdfLink = isiOS ? `${base}#page${page}` : `${base}#page=${page}`;
+        const pageNumber = page.replace(/\D/g, ''); // Remove non-digit characters from the page number
+        console.log('pageNumber:', pageNumber);
+        pdfLink = isiOS ? `${base}#page${pageNumber}` : `${base}#page=${pageNumber}`;
       } else if (isiOS) {
         pdfLink = `${href}#page10`; // Append a default page number for iOS if not specified
       }
 
       window.open(pdfLink, '_blank', 'noopener,noreferrer');
     } else {
+      console.log('Regular link detected');
       window.open(href, '_blank', 'noopener,noreferrer');
     }
   };
@@ -81,7 +89,6 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
     </a>
   );
 };
-
 // Component: Home
 export default function Home() {
   // State Hooks
@@ -533,7 +540,6 @@ export default function Home() {
     
         if (submitTimeRef.current) {
           const timeDifference = currentTime - submitTimeRef.current;
-          console.log('timeDifference:', timeDifference);
           measureFirstTokenTime(timeDifference);
         }
     
@@ -739,10 +745,14 @@ export default function Home() {
                                                         // This example simply uses the largest number
                                                         smallestPageNumberInRange = largestPageNumber;
                                                       }
-
                                                       const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
 
-                                                      return <a href={pageLink} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(pageLink)}>View Page</a>;
+                                                      // Detect if it's iOS
+                                                      const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+                                                      
+                                                      const iosPageLink = isiOS ? pageLink.replace('#page=', '#page') : pageLink;
+
+                                                      return <a href={iosPageLink} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(pageLink)}>View Page</a>;
                                                     })()
                                                     : 'Unavailable'
                                                 }
