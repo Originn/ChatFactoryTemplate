@@ -1247,6 +1247,14 @@ body.dark .signin-popup-body-input:disabled {
     overflow-y: auto; /* Allow scrolling within the popup if content is too long */
   }
 
+  .account-exists-text {
+    margin-top: 10px;
+  }
+
+  .firebaseui-card-content {
+    padding-bottom: 120px;
+  }
+
   .center-wrapper {
     display: flex;
     flex-direction: column;
