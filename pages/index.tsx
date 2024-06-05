@@ -44,23 +44,32 @@ if (process.env.NODE_ENV === PRODUCTION_ENV) {
   botimageIcon = `${PRODUCTION_URL}solidcam.png`;
 }
 
-const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
-  const isWebinar = href?.includes('youtube.com');
+interface CustomLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+  href?: string;
+}
 
+const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (!href) return; // Do nothing if href is undefined
 
     event.preventDefault();
+
+    const isWebinar = href.includes('youtube.com');
+    const isPDF = href.endsWith('.pdf');
+    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+
     if (isWebinar) {
       handleWebinarClick(href);
+    } else if (isPDF) {
+      let pdfLink = href;
+      if (href.includes('#page=')) {
+        const [base, page] = href.split('#page=');
+        pdfLink = isiOS ? `${base}#page${page}` : `${base}#page=${page}`;
+      }
+
+      window.open(pdfLink, '_blank', 'noopener,noreferrer');
     } else {
-      handleDocumentClick(href);
-      const link = document.createElement('a');
-      link.href = href;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      window.open(href, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -70,7 +79,6 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
     </a>
   );
 };
-
 // Component: Home
 export default function Home() {
   // State Hooks
