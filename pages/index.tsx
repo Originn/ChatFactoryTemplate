@@ -297,6 +297,9 @@ const handleSubmit = async (e: any) => {
       }),
     });
 
+    // Scroll to top or desired position after submission
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
   } catch (error) {
     setError('An error occurred while fetching the data. Please try again.');
     console.error('error', error);
@@ -307,8 +310,19 @@ const handleSubmit = async (e: any) => {
   }
 };
 
+// Ensure the page stays at the top on mobile
+useEffect(() => {
+  const handleScrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
+  // Call the function when the component mounts
+  handleScrollToTop();
 
+  return () => {
+    // Cleanup if necessary
+  };
+}, []);
 
 
 // New function to handle file selection
@@ -625,22 +639,35 @@ return (
                           rehypePlugins={[rehypeRaw as any]}
                           components={{
                             a: ({ node, ...props }) => {
-                              const isWebinar = props.href && props.href.includes('youtube.com'); // Assuming webinar links are YouTube URLs
+                              const isWebinar = props.href && props.href.includes('youtube.com');
                               return (
                                 <a
                                   {...props}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  onClick={() => {
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    const url = props.href || '';
                                     if (isWebinar) {
-                                      handleWebinarClick(props.href || '');
+                                      handleWebinarClick(url);
                                     } else {
-                                      handleDocumentClick(props.href || '');
+                                      handleDocumentClick(url);
+                                      if (url.endsWith('.pdf')) {
+                                        // For PDF links, use JavaScript to force navigation
+                                        const link = document.createElement('a');
+                                        link.href = url;
+                                        link.target = '_blank';
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                      } else {
+                                        window.open(url, '_blank');
+                                      }
                                     }
                                   }}
                                 />
                               );
-                            }
+                            },
                           }}
                         >
                           {message.message}
