@@ -292,6 +292,7 @@ body.dark .submit-feedback-label {
     width: 50%;
     box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
     border-radius: 20px; /* Rounded corners for the modal */
+    overflow-y: auto;
 }
 
 .modal-header {
@@ -526,12 +527,14 @@ body.dark .submit-feedback-label {
   
   .center-wrapper {
     display: flex;
-    flex-direction: column; /* Stack items vertically */
-    justify-content: center; /* Center vertically */
-    align-items: center; /* Center horizontally */
+    flex-direction: column;
+    align-items: center; /* Centers children vertically */
+    justify-content: center;
     min-height: 100vh;
+    height: 100vh;
     width: 100%;
     text-align: center;
+    overflow: hidden; /* Prevent overflow */
   }
   
   /* Container for the image */
@@ -1188,71 +1191,48 @@ body.dark .signin-popup-body-input:disabled {
     font-size: 16px;
   }
 
-  @media (max-width: 600px) {
-    .signin-popup {
-        width: 90%; /* The popup will take up 90% of the screen width */
-        padding: 20px; /* Adjust padding to not be too large */
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Slight shadow for depth */
-        position: fixed; /* Fixed position to stay in view on scroll */
-        top: 50%; /* Center vertically */
-        left: 50%; /* Center horizontally */
-        transform: translate(-50%, -50%); /* Offset the transform to center the popup */
-        max-height: 80vh; /* Maximum height to allow some space at the top and bottom */
-        overflow-y: auto; /* Allow scrolling within the popup if content is too long */
-      }
-    
-      .signin-popup-close {
-        top: 10px; /* Position the close button a little closer to the edge */
-        right: 10px;
-      }
-    
-      .signin-popup-body-input,
-      .signin-popup .btn {
-        width: calc(100% - 2rem); /* Adjust width taking padding into account */
-        margin: 0.5rem 0; /* Adjust margin for inputs and buttons */
-      }
-    
-      /* Adjust styles for any links in the body of the popup */
-      .signin-popup-body .firebaseui-link {
-        font-size: 14px;
-      }
-    .firebaseui-idp-button,
-    .create-account-button,
-    .sign-in-button,
-    .signin-popup-body-input,
-    .signup-popup-body input {
-      width: 100%;
-    }
-    .btn.sign-in-next-button {
-        /* Explicitly reaffirm positioning and size to prevent unintended shifts */
-        width: 80%; /* Keep width consistent */
-        padding: 15px 20px; /* Maintain padding */
-        margin: 20px auto; /* Adjust margin to ensure vertical position is consistent */
-        /* Add any additional positioning styles needed to keep the button in place */
-    }
-  }
-  
-  /* Example media query for larger screens */
-  @media (min-width: 601px) {
-    .center-wrapper {
-      flex-direction: row; /* Align items in a row for larger screens */
-      justify-content: center;
-    }
-    
-    .firebaseui-container {
-      max-width: 400px; /* Adjust width of the container */
-    }
-    
-    .divider-container {
-      justify-content: space-between;
-    }
-
-    .heading {
-        font-size: 4rem; /* Larger font size for larger screens */
-    }
-  }
-
   @media (max-width: 768px) {
+
+    
+    #termsfeed-com---nb {
+      bottom: 0 !important;
+      left: 0 !important;
+      width: 80%; /* Full width */
+      max-width: none; /* Remove max-width */
+      max-height: 150px; /* Reduce max-height */
+      font-size: 12px !important; /* Smaller font size */
+      border-radius: 0 !important; /* Remove border radius */
+      box-shadow: none !important; /* Remove box shadow */
+      overflow-y: auto !important; /* Make it scrollable vertically */
+      padding: 0.1rem !important;
+    }
+    
+    #termsfeed-com---nb .cc-compliance {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 0.1rem;
+    }
+    
+    #termsfeed-com---nb .cc-btn {
+      flex: 1 1 100%;
+      margin: 5px 0;
+      font-size: 12px !important; /* Smaller font size */
+      padding: 0.1rem;
+    }
+
+    .content-container, .Home_main__VkIEL {
+      height: auto !important;
+      padding: 0.1rem !important;
+    }
+  
+    .Home_cloud__16v52 {
+      height: 55vh !important;
+    }
+  
+    .textarea {
+      width: 90vw !important;
+    }
 
   /* If the popup still appears too large between 600px and 768px screen widths, you can add more styles here */
   .signin-popup {
@@ -1267,13 +1247,17 @@ body.dark .signin-popup-body-input:disabled {
     overflow-y: auto; /* Allow scrolling within the popup if content is too long */
   }
 
-    .center-wrapper {
-        display: flex;
-        justify-content: center; /* Centers children horizontally */
-        align-items: center; /* Centers children vertically */
-        flex-direction: column; /* Stacks children vertically */
-        text-align: center; /* Centers text */
-      } /* Stack items vertically, image at the top */
+  .center-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Align items at the start */
+    min-height: 100vh; /* Ensure it takes the full viewport height */
+    width: 100%;
+    text-align: center;
+    overflow-y: auto; /* Enable vertical scrolling */
+    padding-top: 20px; /* Add padding to avoid cropping the image */
+  }
 
     .image-container img {
     width: 100%; /* Allows the image to resize within its container */
@@ -1338,7 +1322,6 @@ body.dark .signin-popup-body-input:disabled {
     height: 24px;
 }
 
-/* styles/LoginForm.module.css */
 
 .modalStyle {
   position: fixed;
@@ -1532,9 +1515,11 @@ body.dark .backdropStyle {
 .content-container {
   display: flex;
   flex-direction: column;
-  height: 65vh; /* Set the height to 100vh */
-  box-sizing: border-box; /* Include padding and border in the height */
-  padding-bottom: calc(var(--footer-height) + var(--textarea-height) + 20px); /* Adjust the value as needed */
+  height: 65vh; /* Adjust as necessary */
+  box-sizing: border-box;
+  padding-bottom: calc(var(--footer-height) + var(--textarea-height) + 20px);
+  max-width: 100%; /* Ensure it doesn't exceed the viewport width */
+  width: 100%; /* Take full width */
 }
 
 .auto-height {
