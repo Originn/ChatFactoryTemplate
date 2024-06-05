@@ -55,7 +55,7 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
     event.preventDefault();
 
     const isWebinar = href.includes('youtube.com');
-    const isPDF = href.endsWith('.pdf');
+    const isPDF = href.endsWith('.pdf') || href.includes('.pdf#page=');
     const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
 
     if (isWebinar) {
@@ -65,6 +65,8 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
       if (href.includes('#page=')) {
         const [base, page] = href.split('#page=');
         pdfLink = isiOS ? `${base}#page${page}` : `${base}#page=${page}`;
+      } else if (isiOS) {
+        pdfLink = `${href}#page10`; // Append a default page number for iOS if not specified
       }
 
       window.open(pdfLink, '_blank', 'noopener,noreferrer');
@@ -79,6 +81,7 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
     </a>
   );
 };
+
 // Component: Home
 export default function Home() {
   // State Hooks
