@@ -9,7 +9,7 @@
                 "type": "python",
                 "request": "launch",
                 "program": "${workspaceFolder}/utils/plumber.py",
-                "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/api_examples/vbs"],
+                "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/w/Session 2 - Machine Simulation and the importance of its settings Webinar.txt"],
                 "console": "integratedTerminal"
             },
             {
