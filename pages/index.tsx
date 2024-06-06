@@ -49,42 +49,9 @@ interface CustomLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 }
 
 const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
-  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    console.log('Link clicked:', href); // Log the clicked link URL
-
-    if (!href) return; // Do nothing if href is undefined
-
-    event.preventDefault();
-
-    const isWebinar = href.includes('youtube.com');
-    const isPDF = href.endsWith('.pdf') || href.includes('.pdf#page=');
-    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    console.log('isiOS:', isiOS);
-
-    if (isWebinar) {
-      console.log('Webinar link detected');
-      handleWebinarClick(href);
-    } else if (isPDF) {
-      console.log('PDF link detected');
-      let pdfLink = href;
-      if (href.includes('#page=')) {
-        const [base, page] = href.split('#page=');
-        const pageNumber = page.replace(/\D/g, ''); // Remove non-digit characters from the page number
-        console.log('pageNumber:', pageNumber);
-        pdfLink = isiOS ? `${base}#page${pageNumber}` : `${base}#page=${pageNumber}`;
-      } else if (isiOS) {
-        pdfLink = `${href}#page10`; // Append a default page number for iOS if not specified
-      }
-
-      window.open(pdfLink, '_blank', 'noopener,noreferrer');
-    } else {
-      console.log('Regular link detected');
-      window.open(href, '_blank', 'noopener,noreferrer');
-    }
-  };
 
   return (
-    <a href={href} {...props} target="_blank" rel="noopener noreferrer" onClick={handleClick}>
+    <a href={href} {...props} target="_blank" rel="noopener noreferrer">
       {children}
     </a>
   );

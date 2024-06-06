@@ -348,6 +348,55 @@ def process_solidcam_licence_text(text_file_path):
 
     return results
 
+def process_solidcam_general_faq_webinars(text_file_path):
+    results = []
+    try:
+        with open(text_file_path, 'r', encoding='utf-8') as text_file:
+            lines = text_file.readlines()
+
+            # Initialize a list to hold the current Q&A block
+            qa_block = []
+            for line in lines[1:]:  # Skip the "General_FAQ" header
+                line = line.strip()
+                if line:  # If the line is not empty, add it to the current Q&A block
+                    qa_block.append(line)
+                else:  # If the line is empty, it means the end of the current Q&A block
+                    if qa_block:  # Check if there's a Q&A block to process
+                        # Process the Q&A block to extract the question and answers
+                        question = qa_block[0]  # The first line of the block is the question
+                        answers = " ".join(qa_block[1:])  # Join the rest of the block as the answers
+                        results.append({
+                            "header": f"General_FAQ_Webinars | {question}",
+                            "contents": [
+                                {
+                                    "page_number": 0,
+                                    "PageContent": answers
+                                }
+                            ]
+                        })
+                        qa_block = []  # Reset the Q&A block for the next one
+            
+            # Process any remaining Q&A block after the loop
+            if qa_block:
+                question = qa_block[0]
+                answers = " ".join(qa_block[1:])
+                results.append({
+                    "header": f"General_FAQ_Webinars | {question}",
+                    "contents": [
+                        {
+                            "page_number": 0,
+                            "PageContent": answers
+                        }
+                    ]
+                })
+
+    except FileNotFoundError:
+        print(f"Text file {text_file_path} not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    return results
+
 def process_solidcam_general_faq(text_file_path):
     results = []
     try:
@@ -1096,11 +1145,14 @@ if __name__ == "__main__":
     folder_name = os.path.basename(os.path.dirname(pdf_path))
     # Check if 'webinar' is in the file name
     if pdf_path.endswith('.txt'):
-        if 'Webinar' in pdf_path:
+        if re.search(r'\bWebinar\b', pdf_path, re.IGNORECASE):
             results = process_webinar_text(pdf_path)
             sys.stdout.write(json.dumps(results))
         elif 'SolidCAM_licensing' in pdf_path:
             results = process_solidcam_licence_text(pdf_path)
+            sys.stdout.write(json.dumps(results))
+        elif 'General_FAQ_Webinars' in pdf_path:
+            results = process_solidcam_general_faq_webinars(pdf_path)
             sys.stdout.write(json.dumps(results))
         elif 'General_FAQ' in pdf_path:
             results = process_solidcam_general_faq(pdf_path)
