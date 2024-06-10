@@ -16,6 +16,7 @@ import useSocket from '@/hooks/useSocket';
 import useFileUpload from '@/hooks/useFileUpload';
 import useTheme from '@/hooks/useTheme'; // Import the custom hook
 import usePasteImageUpload from '@/hooks/usePasteImageUpload'; // Import the new custom hook
+import UploadStatusBanner from './UploadStatusBanner'; // Import the new banner component
 
 const PRODUCTION_ENV = 'production';
 const LOCAL_URL = 'http://localhost:3000';
@@ -56,6 +57,7 @@ const Home: FC = () => {
     history: [],
   });
   const [currentStage, setCurrentStage] = useState<number | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null); // Add uploadStatus state
   const { messages, history } = messageState;
   const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : LOCAL_URL;
 
@@ -66,7 +68,7 @@ const Home: FC = () => {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [textAreaHeight, setTextAreaHeight] = useState<string>('auto');
   const { submitTimeRef } = useSocket(serverUrl, roomId, setRequestsInProgress, setMessageState, setCurrentStage, setRoomId);
-  const { imagePreviews, handleFileChange, handleDeleteImage, setImagePreviews } = useFileUpload(setQuery, roomId, auth);
+  const { imagePreviews, handleFileChange, handleDeleteImage, setImagePreviews } = useFileUpload(setQuery, roomId, auth, setUploadStatus);
 
   usePasteImageUpload(currentStage, setImagePreviews, setQuery, roomId, auth);
 
@@ -278,6 +280,9 @@ const Home: FC = () => {
                 </div>
               ))}
             </div>
+          )}
+          {uploadStatus && (
+            <UploadStatusBanner status={uploadStatus} /> // Display the upload status banner
           )}
           <main className={styles.main}>
             <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">

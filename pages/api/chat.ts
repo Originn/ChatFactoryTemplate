@@ -114,31 +114,43 @@ async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, 
 
   const imagesText = session.images?.map(img => `${img.url} image description: ${img.description}`).join(' ') || '';
   const headerAndText = `${codePrefix} header: ${session.header} ${imagesText} text: ${session.text}`;
+
   try {
     const embedQuestionResult = await questionEmbedder.embedQuestion(headerAndText, userEmail);
     if (embedQuestionResult) {
-        const message = '\n\n**Your text and images (if provided) have been successfully embedded.**';
-        io.to(roomId).emit("newToken", message);
-
-        // Emit an event to remove the thumbnails from the frontend
-        io.to(roomId).emit("removeThumbnails");
-        io.to(roomId).emit("resetStages");
-
-        delete roomSessions[roomId];
-        console.log(`Embedding successful for roomId: ${roomId}`);
-        return { status: 200, message };
+      const message = '\n\n**Your text and images (if provided) have been successfully embedded.**';
+      io.to(roomId).emit("newToken", message);
+  
+      // Emit an event to remove the thumbnails from the frontend
+      io.to(roomId).emit("removeThumbnails");
+      io.to(roomId).emit("resetStages");
+  
+      delete roomSessions[roomId];
+      console.log(`Embedding successful for roomId: ${roomId}`);
+      
+      // Emit an event to hide the banner on success
+      io.to(roomId).emit("uploadStatus", "Upload and processing complete.");
+      return { status: 200, message };
     } else {
-        console.error(`Embedding failed for roomId: ${roomId}`);
-        const message = 'Embedding failed. Please try again.';
-        io.to(roomId).emit("newToken", message);
-        return { status: 500, message };
+      console.error(`Embedding failed for roomId: ${roomId}`);
+      const message = 'Embedding failed. Please try again.';
+      io.to(roomId).emit("newToken", message);
+      
+      // Emit an event to hide the banner on failure
+      io.to(roomId).emit("uploadStatus", "Upload and processing failed.");
+      return { status: 500, message };
     }
-} catch (error) {
+  } catch (error) {
     console.error(`Error during embedding for roomId: ${roomId}:`, error);
     const message = 'Embedding process encountered an error. Please try again.';
     io.to(roomId).emit("newToken", message);
+    
+    // Emit an event to hide the banner on error
+    io.to(roomId).emit("uploadStatus", "Upload and processing failed.");
     return { status: 500, message };
-}}
+  }
+}
+
 
 export default async function handler(
   req: NextApiRequest,
@@ -190,10 +202,17 @@ export default async function handler(
 
       for (let img of session.images ?? []) {
         if (!img.description) {
-          img.description = await getImageDescription(img.url, roomId);
-          img.description += " [END OF DESCRIPTION]";
+          if (img.url.includes("www_linkedin_com")) {
+            console.log(`Skipping image description for LinkedIn URL: ${img.url}`);
+            img.description = "LinkedIn image URL, no description fetched.";
+          } else {
+            img.description = await getImageDescription(img.url, roomId);
+            img.description += " [END OF DESCRIPTION]";
+          }
         }
       }
+
+      io.to(roomId).emit("uploadStatus", "Uploading and processing your data...");
 
       const result = await handleEmbeddingAndResponse(session, roomId, userEmail);
       return res.status(result.status).json({ message: result.message });

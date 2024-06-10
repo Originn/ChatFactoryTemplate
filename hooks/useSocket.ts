@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { DocumentWithMetadata } from '@/interfaces/index_interface';
-import {measureFirstTokenTime } from '@/utils/tracking';
+import { measureFirstTokenTime } from '@/utils/tracking';
 
 const useSocket = (
   serverUrl: string,
@@ -15,9 +15,10 @@ const useSocket = (
   const firstTokenCalculatedRef = useRef<{ [key: string]: boolean }>({});
   const submitTimeRef = useRef<number | null>(null);
   const [firstTokenTimes, setFirstTokenTimes] = useState<{ [key: string]: number | null }>({});
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    const socket = io(serverUrl, {
+    const socket: Socket = io(serverUrl, {
       transports: ['websocket'],
     });
 
@@ -123,6 +124,10 @@ const useSocket = (
       }
     });
 
+    socket.on('uploadStatus', (status: string) => {
+      setUploadStatus(status);
+    });
+
     return () => {
       socket.off('assignedRoom', handleAssignedRoom);
       socket.off('connect_error');
@@ -130,6 +135,7 @@ const useSocket = (
       socket.off('stageUpdate');
       socket.off('storeHeader');
       socket.off('resetStages');
+      socket.off('uploadStatus');
       if (roomId) {
         setRequestsInProgress((prev: any) => {
           const updated = { ...prev };
@@ -141,7 +147,7 @@ const useSocket = (
     };
   }, [serverUrl]);
 
-  return { submitTimeRef };
+  return { submitTimeRef, uploadStatus };
 };
 
 export default useSocket;
