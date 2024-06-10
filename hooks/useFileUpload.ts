@@ -9,13 +9,15 @@ interface ImagePreview {
 const useFileUpload = (
   setQuery: (query: string | ((prevQuery: string) => string)) => void, 
   roomId: string | null, 
-  auth: any
+  auth: any,
+  setUploadStatus: (status: string | null) => void // Add setUploadStatus as a parameter
 ) => {
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
+      setUploadStatus('Uploading and processing...'); // Set upload status to "Uploading and processing..."
       for (const file of Array.from(files)) {
         const timestamp = Date.now();
         const fileNameWithTimestamp = `${uuidv4()}-${timestamp}.jpg`; // Generate a unique filename with timestamp
@@ -25,31 +27,44 @@ const useFileUpload = (
         const header = sessionStorage.getItem('header') || 'default-header';
         formData.append("header", header);
 
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        const data = await response.json();
-        if (data.imageUrls) {
-          data.imageUrls.forEach(({ url, fileName }: { url: string, fileName: string }) => {
-            setImagePreviews((prevPreviews: ImagePreview[]) => [...prevPreviews, { url, fileName }]);
-            setQuery((prevQuery: string) => `${prevQuery}\n${url}`);
-          });
-
-          await fetch('/api/chat', {
+        try {
+          const response = await fetch('/api/upload', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              imageUrl: data.imageUrl, // Ensure this key matches what the server expects
-              roomId, // Make sure roomId is always sent
-              userEmail: auth.currentUser?.email || 'default-email',
-            }),
+            body: formData,
           });
+
+          const data = await response.json();
+          if (data.imageUrls) {
+            data.imageUrls.forEach(({ url, fileName }: { url: string, fileName: string }) => {
+              setImagePreviews((prevPreviews: ImagePreview[]) => [...prevPreviews, { url, fileName }]);
+              setQuery((prevQuery: string) => `${prevQuery}\n${url}`);
+            });
+
+            await fetch('/api/chat', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                imageUrl: data.imageUrl, // Ensure this key matches what the server expects
+                roomId, // Make sure roomId is always sent
+                userEmail: auth.currentUser?.email || 'default-email',
+              }),
+            });
+          }
+        } catch (error) {
+          console.error('Error uploading file:', error);
+          setUploadStatus('Upload and processing failed.'); // Set upload status to "Upload and processing failed."
+          setTimeout(() => {
+            setUploadStatus(null); // Clear the status after a short delay
+          }, 3000);
+          return; // Exit the loop if an error occurs
         }
       }
+      setUploadStatus('Upload and processing complete.'); // Set upload status to "Upload and processing complete."
+      setTimeout(() => {
+        setUploadStatus(null); // Clear the status after a short delay
+      }, 3000);
     }
   };
 
