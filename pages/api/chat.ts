@@ -59,36 +59,36 @@ async function getImageDescription(imageUrl: string, roomId: string) {
   }
 }
 
-async function getImageDescriptionInNormalQuestion(imageUrl: string, roomId: string) {
-  const io = getIO();
-  try {
-    const response = await openAIClient.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "You should: \
-            1. Describe the image as concisely and as best as possible in 275 words. \
-            2. If there are Errors in the image make sure it's included in the description." },
-            {
-              type: "image_url",
-              image_url: { url: imageUrl },
-            },
-          ],
-        },
-      ],
-      max_tokens: 300,
-    });
+// async function getImageDescriptionInNormalQuestion(imageUrl: string, roomId: string) {
+//   const io = getIO();
+//   try {
+//     const response = await openAIClient.chat.completions.create({
+//       model: "gpt-4o",
+//       messages: [
+//         {
+//           role: "user",
+//           content: [
+//             { type: "text", text: "You should: \
+//             1. Describe the image as concisely and as best as possible in 275 words. \
+//             2. If there are Errors in the image make sure it's included in the description." },
+//             {
+//               type: "image_url",
+//               image_url: { url: imageUrl },
+//             },
+//           ],
+//         },
+//       ],
+//       max_tokens: 300,
+//     });
 
-    return response.choices[0].message.content;
+//     return response.choices[0].message.content;
 
-  } catch (error) {
-    console.error('Error getting image description:', error);
-    io.to(roomId).emit("newToken", "Error getting image description.");
-    return "Error getting image description.";
-  }
-}
+//   } catch (error) {
+//     console.error('Error getting image description:', error);
+//     io.to(roomId).emit("newToken", "Error getting image description.");
+//     return "Error getting image description.";
+//   }
+// }
 
 // Utility function to handle embedding and response
 async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, userEmail: string) {
@@ -114,24 +114,31 @@ async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, 
 
   const imagesText = session.images?.map(img => `${img.url} image description: ${img.description}`).join(' ') || '';
   const headerAndText = `${codePrefix} header: ${session.header} ${imagesText} text: ${session.text}`;
-  const embedQuestionResult = await questionEmbedder.embedQuestion(headerAndText, userEmail);
-  if (embedQuestionResult) {
-    const message = '\n\n**Your text and images (if provided) have been successfully embedded.**';
-    io.to(roomId).emit("newToken", message);
+  try {
+    const embedQuestionResult = await questionEmbedder.embedQuestion(headerAndText, userEmail);
+    if (embedQuestionResult) {
+        const message = '\n\n**Your text and images (if provided) have been successfully embedded.**';
+        io.to(roomId).emit("newToken", message);
 
-    // Emit an event to remove the thumbnails from the frontend
-    io.to(roomId).emit("removeThumbnails");
-    io.to(roomId).emit("resetStages");
+        // Emit an event to remove the thumbnails from the frontend
+        io.to(roomId).emit("removeThumbnails");
+        io.to(roomId).emit("resetStages");
 
-    delete roomSessions[roomId];
-    return { status: 200, message };
-  } else {
-    console.error(`Embedding failed for roomId: ${roomId}`);
-    const message = 'Embedding failed. Please try again.';
+        delete roomSessions[roomId];
+        console.log(`Embedding successful for roomId: ${roomId}`);
+        return { status: 200, message };
+    } else {
+        console.error(`Embedding failed for roomId: ${roomId}`);
+        const message = 'Embedding failed. Please try again.';
+        io.to(roomId).emit("newToken", message);
+        return { status: 500, message };
+    }
+} catch (error) {
+    console.error(`Error during embedding for roomId: ${roomId}:`, error);
+    const message = 'Embedding process encountered an error. Please try again.';
     io.to(roomId).emit("newToken", message);
     return { status: 500, message };
-  }
-}
+}}
 
 export default async function handler(
   req: NextApiRequest,
@@ -243,34 +250,34 @@ export default async function handler(
         return res.status(400).json({ message: 'No question in the request' });
       }
 
-      const isImageUrl = sanitizedQuestion?.startsWith('https://storage.googleapis.com/solidcam/');
-      if (isImageUrl) {
-        const imageURL = sanitizedQuestion.split(' ')[0];
-        const additionalText = sanitizedQuestion.split(' ').slice(1).join(' ');
-        const description = await getImageDescriptionInNormalQuestion(imageURL, roomId);
-        console.log(description);
-        const imageWithQuestion = description + ' [END OF DESCRIPTION] ' + additionalText;
+      // const isImageUrl = sanitizedQuestion?.startsWith('https://storage.googleapis.com/solidcam/');
+      // if (isImageUrl) {
+      //   const imageURL = sanitizedQuestion.split(' ')[0];
+      //   const additionalText = sanitizedQuestion.split(' ').slice(1).join(' ');
+      //   const description = await getImageDescriptionInNormalQuestion(imageURL, roomId);
+      //   console.log(description);
+      //   const imageWithQuestion = description + ' [END OF DESCRIPTION] ' + additionalText;
         
-        // Proceed to the embedding logic for cases with updated question
-        const pinecone = await getPinecone();
-        const vectorStore = await PineconeStore.fromExistingIndex(
-          new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
-          {
-            pineconeIndex: pinecone,
-            namespace: PINECONE_NAME_SPACE,
-            textKey: 'text',
-          },
-        );
+      //   // Proceed to the embedding logic for cases with updated question
+      //   const pinecone = await getPinecone();
+      //   const vectorStore = await PineconeStore.fromExistingIndex(
+      //     new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
+      //     {
+      //       pineconeIndex: pinecone,
+      //       namespace: PINECONE_NAME_SPACE,
+      //       textKey: 'text',
+      //     },
+      //   );
       
-        const chain = makeChain(vectorStore, (token) => {
-          if (roomId) {
-            io.to(roomId).emit("newToken", token);
-          }
-        }, userEmail);
+      //   const chain = makeChain(vectorStore, (token) => {
+      //     if (roomId) {
+      //       io.to(roomId).emit("newToken", token);
+      //     }
+      //   }, userEmail);
       
-        const Documents = await chain.call(imageWithQuestion, [], roomId, userEmail);
-        return res.status(200).json({ sourceDocs: Documents });
-      }
+      //   const Documents = await chain.call(imageWithQuestion, [], roomId, userEmail);
+      //   return res.status(200).json({ sourceDocs: Documents });
+      // }
 
 
       // Proceed to the embedding logic for cases without images
