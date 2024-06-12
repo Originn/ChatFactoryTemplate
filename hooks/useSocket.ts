@@ -37,10 +37,14 @@ const useSocket = (
 
           const deduplicatedDocs = sourceDocs.reduce((acc: DocumentWithMetadata[], doc: DocumentWithMetadata) => {
             const sourceURL = doc.metadata.source;
-            const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
-            if (timestamp && !acc.some((d: DocumentWithMetadata) => d.metadata.source.includes(`t=${timestamp}s`))) {
-              acc.push(doc);
-            } else if (!timestamp) {
+            if (sourceURL) {
+              const timestamp = sourceURL.match(/t=(\d+)s$/)?.[1];
+              if (timestamp && !acc.some((d: DocumentWithMetadata) => d.metadata.source.includes(`t=${timestamp}s`))) {
+                acc.push(doc);
+              } else if (!timestamp) {
+                acc.push(doc);
+              }
+            } else {
               acc.push(doc);
             }
             return acc;

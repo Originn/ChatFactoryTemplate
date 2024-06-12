@@ -264,19 +264,21 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       } else {
         embeddingsStore = await responseText.sourceDocuments;
         for (const doc of embeddingsStore) {
-          const myDoc = new MyDocument({
-            pageContent: doc.pageContent,
-            metadata: {
-              source: doc.metadata.source,
-              type: doc.metadata.type,
-              videoLink: doc.metadata.videoLink,
-              file: doc.metadata.file,
-              score: doc.metadata.score,
-              image: doc.metadata.image
-            }
-          });
-
-          Documents.push(myDoc);
+          if (doc.metadata.type !== "txt" && doc.metadata.type !== "user_input") { //don't include user_input or txt types sources in the sources and they contains links and casues a crash
+            const myDoc = new MyDocument({
+              pageContent: doc.pageContent,
+              metadata: {
+                source: doc.metadata.source,
+                type: doc.metadata.type,
+                videoLink: doc.metadata.videoLink,
+                file: doc.metadata.file,
+                score: doc.metadata.score,
+                image: doc.metadata.image
+              }
+            });
+      
+            Documents.push(myDoc);
+          }
         }
       }
 
