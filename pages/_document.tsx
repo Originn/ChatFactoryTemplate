@@ -43,7 +43,7 @@ export default function Document() {
                     if (consentStatus) {
                       Cookies.set('cookieConsent', 'true', { expires: 365 });
                     } else {
-                      Cookies.set('cookieConsent', 'false', { expires: 365 });
+                      Cookies.set('cookieConsent', 'false');
                       disableTrackingScripts();
                     }
                   },
@@ -51,7 +51,7 @@ export default function Document() {
                     if (status === 'allow') {
                       Cookies.set('cookieConsent', 'true', { expires: 365 });
                     } else {
-                      Cookies.set('cookieConsent', 'false', { expires: 365 });
+                      Cookies.set('cookieConsent', 'false');
                       disableTrackingScripts();
                     }
                   }
