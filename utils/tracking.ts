@@ -1,9 +1,8 @@
-// utils/tracking.ts
 import Cookies from 'js-cookie';
 import { auth } from "@/utils/firebase";
 
 const getCookieConsent = () => {
-  const consent = Cookies.get('cookie_consent_user_accepted');
+  const consent = Cookies.get('cookiesConsent');
   return consent;
 };
 

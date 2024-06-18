@@ -5,13 +5,10 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
-        {/* Preload the Inter font */}
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap"
           rel="stylesheet"
         />
-        {/* Other head elements */}
-        {/* Cookie Consent by TermsFeed */}
         <Script
           src="https://www.termsfeed.com/public/cookie-consent/4.1.0/cookie-consent.js"
           charSet="UTF-8"
@@ -41,28 +38,26 @@ export default function Document() {
                   onInitialConsent: function() {
                     const consentStatus = cookieconsent.hasConsented('tracking');
                     if (consentStatus) {
-                      Cookies.set('cookieConsent', 'true', { expires: 365 });
+                      Cookies.set('cookiesConsent', 'true', { expires: 365 });
                     } else {
-                      Cookies.set('cookieConsent', 'false');
+                      Cookies.set('cookiesConsent', 'false');
                       disableTrackingScripts();
                     }
                   },
                   onStatusChange: function(status) {
                     if (status === 'allow') {
-                      Cookies.set('cookieConsent', 'true', { expires: 365 });
+                      Cookies.set('cookiesConsent', 'true', { expires: 365 });
                     } else {
-                      Cookies.set('cookieConsent', 'false');
+                      Cookies.set('cookiesConsent', 'false');
                       disableTrackingScripts();
                     }
                   }
                 });
 
                 function disableTrackingScripts() {
-                  // Remove Google Analytics scripts
                   const trackingScripts = document.querySelectorAll('script[data-cookie-consent="tracking"]');
                   trackingScripts.forEach(script => script.remove());
 
-                  // Additional logic to disable tracking functions
                   window.gtag = function() {};
                   window.handleWebinarClick = function() {};
                   window.handleDocumentClick = function() {};
