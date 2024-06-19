@@ -20,6 +20,7 @@ interface DocumentInterface<T> {
   metadata: T;
 }
 
+
 // Utility Functions
 async function detectLanguageWithOpenAI(text: string, nonStreamingModel: OpenAI): Promise<string> {
   const prompt = LANGUAGE_DETECTION_PROMPT.replace('{text}', text);
@@ -202,7 +203,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       let chat_history = roomMemories[roomId];
       const language = await detectLanguageWithOpenAI(question, nonStreamingModel);
 
-      if (language !== 'English' && language !== 'German') {
+      if (language !== 'English') {
         question = await translateToEnglish(question, translationModel);
       }
 
@@ -244,7 +245,34 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
       let embeddingsStore;
-      if (language == 'English' || language == 'German') {
+      if (language !== 'English') {
+        embeddingsStore = await customRetriever.storeEmbeddings(responseText.text, minScoreSourcesThreshold);
+        Documents = [...responseText.sourceDocuments];
+        
+        // Apply filtering after combining sources
+        Documents = Documents.filter(doc => doc.metadata.type !== 'other');
+      
+        for (const [doc, score] of embeddingsStore) {
+          if (doc.metadata.type !== "txt" && doc.metadata.type !== "user_input") {
+            const myDoc = new MyDocument({
+              pageContent: doc.pageContent,
+              metadata: {
+                source: doc.metadata.source,
+                type: doc.metadata.type,
+                videoLink: doc.metadata.videoLink,
+                file: doc.metadata.file,
+                score: score,
+                image: doc.metadata.image
+              }
+            });
+      
+            Documents.push(myDoc);
+          }
+        }
+        Documents.sort((a, b) => (b.metadata.score ? 1 : 0) - (a.metadata.score ? 1 : 0));
+      }
+      
+      if (language === 'English') {
         embeddingsStore = await customRetriever.storeEmbeddings(responseText.text, minScoreSourcesThreshold);
         for (const [doc, score] of embeddingsStore) {
           const myDoc = new MyDocument({
@@ -258,30 +286,14 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
               image: doc.metadata.image
             }
           });
-
+      
           Documents.push(myDoc);
         }
-      } else {
-        embeddingsStore = await responseText.sourceDocuments;
-        for (const doc of embeddingsStore) {
-          if (doc.metadata.type !== "txt" && doc.metadata.type !== "user_input") { //don't include user_input or txt types sources in the sources and they contains links and casues a crash
-            const myDoc = new MyDocument({
-              pageContent: doc.pageContent,
-              metadata: {
-                source: doc.metadata.source,
-                type: doc.metadata.type,
-                videoLink: doc.metadata.videoLink,
-                file: doc.metadata.file,
-                score: doc.metadata.score,
-                image: doc.metadata.image
-              }
-            });
-      
-            Documents.push(myDoc);
-          }
-        }
+        
+        // Apply filtering after combining sources
+        Documents = Documents.filter(doc => doc.metadata.type !== 'other');
       }
-
+      
       if (roomId) {
         io.to(roomId).emit(`fullResponse-${roomId}`, {
           roomId: roomId,
@@ -294,9 +306,9 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           qaId: qaId
         });
       }
-
+      
       await insertQA(question, responseText.text, responseText.sourceDocuments, Documents, qaId, roomId, userEmail);
-
+      
       let totalScore = 0;
       let count = 0;
       if (Documents && Documents.length > 0) {
@@ -308,7 +320,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         }
         totalScore = count > 0 ? totalScore / count : 0;
       }
-
+      
       return Documents;
     },
     vectorstore,
