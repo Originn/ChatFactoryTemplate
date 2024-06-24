@@ -5,9 +5,12 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   OAuthProvider,
+  setPersistence,
+  browserLocalPersistence,
   fetchSignInMethodsForEmail,
   sendEmailVerification,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  onAuthStateChanged
 } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 import { useRouter } from 'next/router';
@@ -50,7 +53,19 @@ const CustomLoginForm = () => {
     if (dataConsent === 'true') {
       setDataConsentGiven(true);
     }
-  }, [theme]);
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in.
+        const token = Cookies.get('sessionToken');
+        if (!token) {
+          router.push('/'); // Redirect to home page or dashboard
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [theme, router]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -70,15 +85,12 @@ const CustomLoginForm = () => {
     }
 
     try {
+      await setPersistence(auth, browserLocalPersistence);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       if (userCredential.user.emailVerified) {
-        if (!cookiesConsentGiven) {
-          Cookies.set('sessionToken', 'tempSessionToken', { expires: 1 }); // Temp session
-          router.push('/'); // Redirect to home page or dashboard
-        } else {
-          Cookies.set('sessionToken', 'persistentSessionToken', { expires: 365 }); // Persistent session
-          router.push('/'); // Redirect to home page or dashboard
-        }
+        const expiresIn = cookiesConsentGiven ? 365 : 1;
+        Cookies.set('sessionToken', 'persistentSessionToken', { expires: expiresIn }); // Set session token
+        router.push('/'); // Redirect to home page or dashboard
       } else {
         setErrorMessage('Your email is not verified. Please check your inbox or click here to resend the verification email.');
       }
@@ -151,6 +163,7 @@ const CustomLoginForm = () => {
     } else {
       // If no provider is selected, proceed with email/password registration
       try {
+        await setPersistence(auth, browserLocalPersistence);
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await sendEmailVerification(userCredential.user);
         router.push('/verification-sent');
