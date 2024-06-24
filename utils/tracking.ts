@@ -2,8 +2,8 @@ import Cookies from 'js-cookie';
 import { auth } from "@/utils/firebase";
 
 const getCookieConsent = () => {
-  const consent = Cookies.get('cookiesConsent');
-  return consent;
+  const cookiesConsent = Cookies.get('cookie_consent_user_accepted');
+  return cookiesConsent;
 };
 
 export const handleWebinarClick = (url: string) => {
