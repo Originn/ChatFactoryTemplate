@@ -12,6 +12,7 @@ import { HumanMessage } from "@langchain/core/messages";
 import { MaxMarginalRelevanceSearchOptions } from "@langchain/core/vectorstores";
 import { BaseRetrieverInterface } from '@langchain/core/retrievers';
 import { RunnableConfig } from '@langchain/core/runnables';
+
 // Type Definitions
 type SearchResult = [MyDocument, number];
 
@@ -250,7 +251,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         Documents = [...responseText.sourceDocuments];
         
         // Apply filtering after combining sources
-        Documents = Documents.filter(doc => doc.metadata.type !== 'other');
+        Documents = Documents.filter(doc => doc.metadata.type !== 'other' && doc.metadata.type !== "txt" && doc.metadata.type !== "user_input");
       
         for (const [doc, score] of embeddingsStore) {
           if (doc.metadata.type !== "txt" && doc.metadata.type !== "user_input") {
