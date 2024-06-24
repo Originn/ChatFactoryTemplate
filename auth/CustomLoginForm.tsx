@@ -31,39 +31,37 @@ const CustomLoginForm = () => {
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [theme, setTheme] = useState('light');
-  const [consentGiven, setConsentGiven] = useState(false);
   const [cookiesConsentGiven, setCookiesConsentGiven] = useState(false);
   const [dataConsentGiven, setDataConsentGiven] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [showDataConsentModal, setShowDataConsentModal] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState(null);
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
 
   const router = useRouter();
 
   useEffect(() => {
     document.body.className = theme;
-    const cookiesConsent = Cookies.get('cookiesConsent');
+    const consentAccepted = Cookies.get('cookie_consent_user_accepted');
     const dataConsent = Cookies.get('dataConsent');
-
-    if (cookiesConsent === 'true') {
+  
+    if (consentAccepted === 'true') {
       setCookiesConsentGiven(true);
     }
-
+  
     if (dataConsent === 'true') {
       setDataConsentGiven(true);
     }
-
+  
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // User is signed in.
         const token = Cookies.get('sessionToken');
         if (!token) {
-          router.push('/'); // Redirect to home page or dashboard
+          router.push('/');
         }
       }
     });
-
+  
     return () => unsubscribe();
   }, [theme, router]);
 
@@ -80,17 +78,15 @@ const CustomLoginForm = () => {
 
   const handleSignInWithEmail = async () => {
     if (!dataConsentGiven) {
-      setShowDataConsentModal(true);
+      setShowConsentModal(true);
       return;
     }
-
+  
     try {
       await setPersistence(auth, browserLocalPersistence);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       if (userCredential.user.emailVerified) {
-        const expiresIn = cookiesConsentGiven ? 365 : 1;
-        Cookies.set('sessionToken', 'persistentSessionToken', { expires: expiresIn }); // Set session token
-        router.push('/'); // Redirect to home page or dashboard
+        router.push('/');
       } else {
         setErrorMessage('Your email is not verified. Please check your inbox or click here to resend the verification email.');
       }
@@ -98,6 +94,7 @@ const CustomLoginForm = () => {
       handleAuthError(error);
     }
   };
+  
 
   const handleAuthError = (error: any) => {
     console.error('Error during email sign-in:', error);
@@ -192,7 +189,7 @@ const CustomLoginForm = () => {
   };
 
   const isFormValid = () => {
-    return email.trim() && password.trim() && (!selectedProvider || consentGiven);
+    return email.trim() && password.trim() && (!selectedProvider || dataConsentGiven);
   };
 
   const toggleForm = () => {
@@ -252,6 +249,7 @@ const CustomLoginForm = () => {
     setEmail(''); // Clear the email field
     setPassword(''); // Clear the password field, if you also want to clear this
     setErrorMessage(''); // Clear any error messages
+    setSelectedProvider('email'); // Set provider to 'email'
     setShowSignInModal(true); // Open the sign-in popup
   };
 
@@ -272,20 +270,6 @@ const CustomLoginForm = () => {
 
   const closeForgotPasswordPopup = () => {
     setShowForgotPasswordModal(false); // Close the forgot password popup
-  };
-
-  const sendPasswordReset = async () => {
-    if (!validateEmail(email)) {
-      setErrorMessage('Please enter a valid email address.');
-      return;
-    }
-    try {
-      await sendPasswordResetEmail(auth, email);
-      setErrorMessage('Check your email for a link to reset your password.');
-    } catch (error) {
-      console.error('Error sending password reset email:', error);
-      setErrorMessage('Failed to send password reset email. Please try again.');
-    }
   };
 
   const closeAllPopups = () => {
@@ -312,7 +296,7 @@ const CustomLoginForm = () => {
   const handleProviderSignUp = (provider: any) => {
     setSelectedProvider(provider);
 
-    const consentCookie = Cookies.get('userConsent');
+    const consentCookie = Cookies.get('dataConsent');
     if (consentCookie === 'true') {
       proceedWithProviderSignIn(provider);
     } else {
@@ -325,39 +309,34 @@ const CustomLoginForm = () => {
       console.error("Provider is null, cannot proceed with sign-in.");
       return;
     }
-
-    if (provider === 'google') {
-      signInWithGoogle();
-    } else if (provider === 'apple') {
-      signInWithApple();
+  
+    switch (provider) {
+      case 'google':
+        signInWithGoogle();
+        break;
+      case 'apple':
+        signInWithApple();
+        break;
+      case 'email':
+        handleSignInWithEmail();
+        break;
+      default:
+        console.error(`Unknown provider: ${provider}`);
     }
   };
+  
 
   const acceptConsent = () => {
     setShowConsentModal(false);
-    setConsentGiven(true);
-    Cookies.set('userConsent', 'true', { expires: 365 });
-
-    if (selectedProvider) {
-      proceedWithProviderSignIn(selectedProvider);
-    } else {
-      console.error("No provider selected, cannot proceed with sign-in.");
-    }
-  };
-
-  const acceptDataConsent = () => {
-    setShowDataConsentModal(false);
     setDataConsentGiven(true);
     Cookies.set('dataConsent', 'true', { expires: 365 });
-  };
-
-  const handleCreateAccountClick = () => {
-    if (isFormValid() && !isSubmitting) {
-      if (!consentGiven) {
-        setShowConsentModal(true);
-      } else {
-        createAccountWithEmail();
-      }
+  
+    if (selectedProvider) {
+      proceedWithProviderSignIn(selectedProvider);
+    } else if (selectedProvider === 'email') {
+      handleSignInWithEmail(); // Call email sign-in directly if provider is email
+    } else {
+      console.error("No provider selected, cannot proceed with sign-in.");
     }
   };
 
@@ -372,41 +351,16 @@ const CustomLoginForm = () => {
           <input
             type="checkbox"
             id="user-consent-checkbox"
-            checked={consentGiven}
-            onChange={(e) => setConsentGiven(e.target.checked)}
-            style={{ marginRight: '10px' }}
-          />
-          <label htmlFor="user-consent-checkbox">I agree</label>
-        </div>
-        <button onClick={acceptConsent} className="agreeButtonStyle" disabled={!consentGiven}>
-          Agree
-        </button>
-        <button onClick={() => setShowConsentModal(false)} className="cancelButtonStyle">
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-
-  const DataConsentModal = () => (
-    <div className="backdropStyle">
-      <div className="modalStyle">
-        <h2 className="headerStyle">Consent for Data Usage</h2>
-        <p>To enhance your experience, we securely store your email and interaction history. By agreeing, you acknowledge and consent to this use.</p>
-        <div style={{ margin: '20px 0' }}>
-          <input
-            type="checkbox"
-            id="data-consent-checkbox"
             checked={dataConsentGiven}
             onChange={(e) => setDataConsentGiven(e.target.checked)}
             style={{ marginRight: '10px' }}
           />
-          <label htmlFor="data-consent-checkbox">I agree</label>
+          <label htmlFor="user-consent-checkbox">I agree</label>
         </div>
-        <button onClick={acceptDataConsent} className="agreeButtonStyle" disabled={!dataConsentGiven}>
+        <button onClick={acceptConsent} className="agreeButtonStyle" disabled={!dataConsentGiven}>
           Agree
         </button>
-        <button onClick={() => setShowDataConsentModal(false)} className="cancelButtonStyle">
+        <button onClick={() => setShowConsentModal(false)} className="cancelButtonStyle">
           Cancel
         </button>
       </div>
@@ -624,7 +578,6 @@ const CustomLoginForm = () => {
         </div>
       </div>
       {showConsentModal && <ConsentModal />}
-      {showDataConsentModal && <DataConsentModal />}
     </>
   );
 };

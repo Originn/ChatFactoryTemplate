@@ -35,24 +35,19 @@ export default function Document() {
                   "page_refresh_confirmation_buttons": false,
                   "website_name": "solidcamchat",
                   "website_privacy_policy_url": "https://www.solidcamchat.com/privacy-policy",
-                  onInitialConsent: function() {
-                    const consentStatus = cookieconsent.hasConsented('tracking');
-                    if (consentStatus) {
-                      Cookies.set('cookiesConsent', 'true', { expires: 365 });
-                    } else {
-                      Cookies.set('cookiesConsent', 'false');
-                      disableTrackingScripts();
-                    }
+                  onInitialConsent: function(status) {
+                    handleConsentChange(status);
                   },
                   onStatusChange: function(status) {
-                    if (status === 'allow') {
-                      Cookies.set('cookiesConsent', 'true', { expires: 365 });
-                    } else {
-                      Cookies.set('cookiesConsent', 'false');
-                      disableTrackingScripts();
-                    }
+                    handleConsentChange(status);
                   }
                 });
+
+                function handleConsentChange(status) {
+                  if (!cookieconsent.hasConsented('tracking')) {
+                    disableTrackingScripts();
+                  }
+                }
 
                 function disableTrackingScripts() {
                   const trackingScripts = document.querySelectorAll('script[data-cookie-consent="tracking"]');
