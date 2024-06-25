@@ -85,7 +85,10 @@ const CustomLoginForm = () => {
     try {
       await setPersistence(auth, browserLocalPersistence);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      if (userCredential.user.emailVerified) {
+      const user = userCredential.user;
+      if (user.emailVerified) {
+        const token = await user.getIdToken(true); // Refresh token after sign-in
+        Cookies.set('sessionToken', token, { expires: 1 }); // Update cookie
         router.push('/');
       } else {
         setErrorMessage('Your email is not verified. Please check your inbox or click here to resend the verification email.');
@@ -130,8 +133,11 @@ const CustomLoginForm = () => {
   const signInWithGoogle = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.push('/'); // Redirect on successful sign in
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const token = await user.getIdToken(true); // Refresh token after sign-in
+      Cookies.set('sessionToken', token, { expires: 1 });
+      router.push('/');
     } catch (error) {
       console.error('Error during Google sign-in:', error);
       setErrorMessage('Failed to sign in with Google. Please try again.');
@@ -141,8 +147,11 @@ const CustomLoginForm = () => {
   const signInWithApple = async () => {
     try {
       const provider = new OAuthProvider('apple.com');
-      await signInWithPopup(auth, provider);
-      router.push('/'); // Redirect on successful sign in
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const token = await user.getIdToken(true); // Refresh token after sign-in
+      Cookies.set('sessionToken', token, { expires: 1 });
+      router.push('/');
     } catch (error) {
       console.error('Error during Apple sign-in:', error);
       setErrorMessage('Failed to sign in with Apple. Please try again.');
