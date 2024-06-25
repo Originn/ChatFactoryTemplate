@@ -1,7 +1,8 @@
 import React, { ReactElement, useEffect, useState, ReactNode } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 import CustomLoginForm from './CustomLoginForm'; 
+import Cookies from 'js-cookie';
 
 interface AuthWrapperProps {
   children: ReactNode;
@@ -23,18 +24,48 @@ const AuthWrapper = ({ children }: AuthWrapperProps): ReactElement | null => {
   });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUserState(prevState => ({
-        ...prevState,
-        isAuthChecked: true,
-        isLoading: false,
-        isSignedIn: !!user,
-        isEmailVerified: !!user && user.emailVerified,
-      }));
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const tokenResult = await getIdTokenResult(user);
+        const expiryTime = new Date(tokenResult.expirationTime).getTime();
+        const currentTime = new Date().getTime();
+        const timeLeft = expiryTime - currentTime;
+  
+        if (timeLeft < 5 * 60 * 1000) { // 5 minutes before expiration
+          await user.getIdToken(true); // Refresh token
+        }
+  
+        setUserState({
+          isLoading: false,
+          isSignedIn: true,
+          isEmailVerified: user.emailVerified,
+          isAuthChecked: true,
+        });
+      } else {
+        setUserState({
+          isLoading: false,
+          isSignedIn: false,
+          isEmailVerified: false,
+          isAuthChecked: true,
+        });
+      }
     });
-    
-    return () => unsubscribe();
+  
+    // Set up interval to refresh token periodically
+    const intervalId = setInterval(async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const tokenResult = await getIdTokenResult(user, true);
+        Cookies.set('sessionToken', tokenResult.token, { expires: 1 });
+      }
+    }, 50 * 60 * 1000); // Every 50 minutes
+  
+    return () => {
+      unsubscribe();
+      clearInterval(intervalId);
+    };
   }, []);
+  
 
   // Render the login form if the user is not signed in or if the email isn't verified
   if (userState.isLoading) {
