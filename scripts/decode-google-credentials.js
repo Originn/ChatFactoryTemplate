@@ -8,7 +8,7 @@ if (!base64Credentials) {
 }
 
 const decodedCredentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
-const credentialsPath = path.join(__dirname, '..', 'my-drive-390208-f428ca482a32.json');
+const credentialsPath = path.join(__dirname, '..', 'solidcamchat-d2e223321c7b.json');
 
 fs.writeFileSync(credentialsPath, decodedCredentials);
 
