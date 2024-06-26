@@ -3,7 +3,7 @@ import { Storage } from '@google-cloud/storage';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 const storage = new Storage();
-const bucketName = process.env.GCLOUD_STORAGE_BUCKET || 'solidcam';
+const bucketName = process.env.GCLOUD_STORAGE_BUCKET || 'solidcam-chatbot-documents';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {

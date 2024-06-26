@@ -174,7 +174,7 @@ export default async function handler(
     let session = roomSessions[roomId];
 
     // Check if the question is an image URL and history contains the codePrefix
-    const isImageUrl = sanitizedQuestion?.startsWith('https://storage.googleapis.com/solidcam/');
+    const isImageUrl = sanitizedQuestion?.startsWith('https://storage.googleapis.com/solidcam-chatbot-documents/');
     const hasCodePrefixInHistory = history && history.length >= 3 && history[history.length - 3][0].includes(codePrefix);
 
     if (isImageUrl && hasCodePrefixInHistory) {
@@ -193,7 +193,7 @@ export default async function handler(
       session.text = textEntry ? textEntry[0] : session.text;
       const imageUrls = sanitizedQuestion.split(' ');
       for (const url of imageUrls) {
-        if (url.startsWith('https://storage.googleapis.com/solidcam/')) {
+        if (url.startsWith('https://storage.googleapis.com/solidcam-chatbot-documents/')) {
           session.images.push({ url });
         }
       }

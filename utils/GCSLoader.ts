@@ -42,7 +42,7 @@ class GCSLoader {
 
     constructor(bucketName: string) {
         this.storage = new Storage();
-        this.bucketName = "solidcam";
+        this.bucketName = "solidcam-chatbot-documents";
     }
 
     generatePublicUrl(fileName: string): string {

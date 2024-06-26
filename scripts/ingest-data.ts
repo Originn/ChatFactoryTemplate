@@ -180,7 +180,7 @@ function removeDuplicatedSections(content: string, header: string): string {
 export const run = async () => {
     try {
         /*load raw docs from GCS bucket */
-        const bucketName = 'solidcam';
+        const bucketName = process.env.GCLOUD_STORAGE_BUCKET || 'solidcam-chatbot-documents';
         const gcsLoader = new GCSLoader(bucketName);
         const rawDocs = await gcsLoader.load();
         //console.log('Number of raw documents:', rawDocs.length);

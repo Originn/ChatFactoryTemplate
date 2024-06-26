@@ -5,7 +5,7 @@ import formidable from 'formidable';
 import fs from 'fs';
 
 const storage = new Storage();
-const bucketName = process.env.GCLOUD_STORAGE_BUCKET || 'solidcam';
+const bucketName = process.env.GCLOUD_STORAGE_BUCKET || 'solidcam-chatbot-documents';
 
 export const config = {
   api: {
