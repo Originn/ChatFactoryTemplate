@@ -83,8 +83,9 @@ const Home: FC = () => {
 
 const updateSourceURL = (sourceURL : any) => {
   const oldBucketURL = 'https://storage.googleapis.com/solidcam/';
+  const oldBucketURL1 = 'https://storage.googleapis.com/solidcam-chatbot-documents-chatbot-documents/';
   const newBucketURL = 'https://storage.googleapis.com/solidcam-chatbot-documents/';
-  if (sourceURL.startsWith(oldBucketURL)) {
+  if (sourceURL.startsWith(oldBucketURL || oldBucketURL1)) {
     return sourceURL.replace(oldBucketURL, newBucketURL);
   }
   return sourceURL;
