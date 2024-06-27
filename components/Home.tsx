@@ -81,16 +81,6 @@ const Home: FC = () => {
     adjustTextAreaHeight();
   }, []);
 
-const updateSourceURL = (sourceURL : any) => {
-  const oldBucketURL = 'https://storage.googleapis.com/solidcam/';
-  const oldBucketURL1 = 'https://storage.googleapis.com/solidcam-chatbot-documents-chatbot-documents/';
-  const newBucketURL = 'https://storage.googleapis.com/solidcam-chatbot-documents/';
-  if (sourceURL.startsWith(oldBucketURL || oldBucketURL1)) {
-    return sourceURL.replace(oldBucketURL, newBucketURL);
-  }
-  return sourceURL;
-};
-
   const adjustTextAreaHeight = () => {
     if (textAreaRef.current) {
       textAreaRef.current.style.height = 'auto'; // Reset height to recalculate
@@ -358,88 +348,89 @@ const updateSourceURL = (sourceURL : any) => {
                           {message.sourceDocs && (
                             <div key={`sourceDocsAccordion-${index}`}>
                               <Accordion type="single" collapsible className="flex-col">
-                              {message.sourceDocs.map((doc, docIndex) => {
-                                let title;
-                                let currentCount;
-                                if (doc.metadata.type === 'youtube') {
-                                  title = 'Webinar';
-                                  currentCount = webinarCount++; // Increment count for webinar
-                                } else { // 'PDF' and 'sentinel' are treated as documents
-                                  title = 'Document';
-                                  currentCount = documentCount++; // Increment count for document
-                                }
+                                {message.sourceDocs.map((doc, docIndex) => {
+                                  let title;
+                                  let currentCount;
+                                  if (doc.metadata.type === 'youtube') {
+                                    title = 'Webinar';
+                                    currentCount = webinarCount++; // Increment count for webinar
+                                  } else { // 'PDF' and 'sentinel' are treated as documents
+                                    title = 'Document';
+                                    currentCount = documentCount++; // Increment count for document
+                                  }
 
-                                const updatedSource = updateSourceURL(doc.metadata.source); // Update the source URL here
-
-                                return (
-                                  <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
-                                    <AccordionTrigger>
-                                      <h3>{`${title} ${currentCount}`}</h3>
-                                    </AccordionTrigger>
-                                    <AccordionContent>
-                                      {
-                                        doc.metadata.type === 'youtube' ? (
-                                          <p>
-                                            <b>Source:</b>
-                                            {doc.metadata.source ? <a href={updatedSource} target="_blank" rel="noopener noreferrer" onClick={() => handleWebinarClick(updatedSource)}>View Webinar</a> : 'Unavailable'}
-                                          </p>
-                                        ) : doc.metadata.type === 'sentinel' ? (
-                                          <p>
-                                            <b>Source:</b>
-                                            {doc.metadata.source ? <a href={updatedSource} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(updatedSource)}>View</a> : 'Unavailable'}
-                                          </p>
-                                        ) : (
-                                          <>
-                                            <ReactMarkdown
-                                              components={{
-                                                a: (props: ComponentProps<'a'>) => <CustomLink {...props} />,
-                                              }}
-                                            >
-                                              {doc.pageContent.split('\n')[0]}
-                                            </ReactMarkdown>
-                                            <p className="mt-2">
+                                  return (
+                                    <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
+                                      <AccordionTrigger>
+                                        <h3>{`${title} ${currentCount}`}</h3>
+                                      </AccordionTrigger>
+                                      <AccordionContent>
+                                        {
+                                          doc.metadata.type === 'youtube' ? (
+                                            // YouTube link handling
+                                            <p>
                                               <b>Source:</b>
-                                              {
-                                                doc.metadata && doc.metadata.source
-                                                  ? (() => {
-                                                    // Extract all page numbers from the content
-                                                    const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
-
-                                                    // Find the largest page number mentioned
-                                                    const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
-
-                                                    // Filter for numbers within 2 pages of the largest number, if it exists
-                                                    let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
-
-                                                    // From the filtered numbers, find the smallest one to use in the link
-                                                    let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
-
-                                                    // If no suitable number is found within 2 pages of the largest, decide on fallback strategy
-                                                    // For example, using the largest number or another logic
-                                                    if (smallestPageNumberInRange === null && largestPageNumber !== null) {
-                                                      // Fallback strategy here
-                                                      // This example simply uses the largest number
-                                                      smallestPageNumberInRange = largestPageNumber;
-                                                    }
-                                                    const pageLink = smallestPageNumberInRange !== null ? `${updatedSource}#page=${smallestPageNumberInRange}` : updatedSource;
-
-                                                    // Detect if it's iOS
-                                                    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-                                                    
-                                                    const iosPageLink = isiOS ? pageLink.replace('#page=', '#page') : pageLink;
-
-                                                    return <a href={iosPageLink} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(pageLink)}>View Page</a>;
-                                                  })()
-                                                  : 'Unavailable'
-                                              }
+                                              {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleWebinarClick(doc.metadata.source)}>View Webinar</a> : 'Unavailable'}
                                             </p>
-                                          </>
-                                        )
-                                      }
-                                    </AccordionContent>
-                                  </AccordionItem>
-                                );
-                              })}
+                                          ) : doc.metadata.type === 'sentinel' ? (
+                                            // Sentinel link handling
+                                            <p>
+                                              <b>Source:</b>
+                                              {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(doc.metadata.source)}>View</a> : 'Unavailable'}
+                                            </p>
+                                          ) : (
+                                            // Default handling
+                                            <>
+                                              <ReactMarkdown
+                                                components={{
+                                                  a: (props: ComponentProps<'a'>) => <CustomLink {...props} />,
+                                                }}
+                                              >
+                                                {doc.pageContent.split('\n')[0]}
+                                              </ReactMarkdown>
+                                              <p className="mt-2">
+                                                <b>Source:</b>
+                                                {
+                                                  doc.metadata && doc.metadata.source
+                                                    ? (() => {
+                                                      // Extract all page numbers from the content
+                                                      const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
+
+                                                      // Find the largest page number mentioned
+                                                      const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
+
+                                                      // Filter for numbers within 2 pages of the largest number, if it exists
+                                                      let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
+
+                                                      // From the filtered numbers, find the smallest one to use in the link
+                                                      let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
+
+                                                      // If no suitable number is found within 2 pages of the largest, decide on fallback strategy
+                                                      // For example, using the largest number or another logic
+                                                      if (smallestPageNumberInRange === null && largestPageNumber !== null) {
+                                                        // Fallback strategy here
+                                                        // This example simply uses the largest number
+                                                        smallestPageNumberInRange = largestPageNumber;
+                                                      }
+                                                      const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
+
+                                                      // Detect if it's iOS
+                                                      const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+                                                      
+                                                      const iosPageLink = isiOS ? pageLink.replace('#page=', '#page') : pageLink;
+
+                                                      return <a href={iosPageLink} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(pageLink)}>View Page</a>;
+                                                    })()
+                                                    : 'Unavailable'
+                                                }
+                                              </p>
+                                            </>
+                                          )
+                                        }
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  );
+                                })}
                               </Accordion>
                             </div>
                           )}
