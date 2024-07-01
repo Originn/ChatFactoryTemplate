@@ -346,3 +346,14 @@
 }
 
 
+/* Add this to your Home.module.css */
+.micButton {
+  position: absolute;
+  top: -1.5rem;
+  right: 3rem;
+  color: rgb(165, 162, 162);
+  background: none;
+  padding: 0.3rem;
+  border: none;
+  display: flex;
+}

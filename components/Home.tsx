@@ -17,6 +17,7 @@ import useFileUpload from '@/hooks/useFileUpload';
 import useTheme from '@/hooks/useTheme'; // Import the custom hook
 import usePasteImageUpload from '@/hooks/usePasteImageUpload'; // Import the new custom hook
 import UploadStatusBanner from './UploadStatusBanner'; // Import the new banner component
+import { RecordAudioReturnType, recordAudio, transcribeAudio } from '../utils/speechRecognition'; // Import the speech recognition helper and type
 
 const PRODUCTION_ENV = 'production';
 const LOCAL_URL = 'http://localhost:3000';
@@ -71,6 +72,86 @@ const Home: FC = () => {
   const { imagePreviews, handleFileChange, handleDeleteImage, setImagePreviews } = useFileUpload(setQuery, roomId, auth, setUploadStatus);
 
   usePasteImageUpload(currentStage, setImagePreviews, setQuery, roomId, auth);
+
+  // Speech recognition state and handler
+  const [listening, setListening] = useState(false);
+  const [speechError, setSpeechError] = useState(null);
+
+  // Add this state
+  const [recorder, setRecorder] = useState<RecordAudioReturnType | null>(null);
+  const [shouldSubmitAfterTranscription, setShouldSubmitAfterTranscription] = useState<boolean>(false);
+
+  const replaceCommonMisrecognitions = (text: any) => {
+    type CorrectionsType = {
+      [key: string]: string;
+    };
+
+    const corrections: CorrectionsType = {
+      'Solid cup': 'SolidCAM',
+      'Sonic on': 'SolidCAM',
+      'solocam': 'SolidCAM',
+      'Sonic car': 'SolidCAM',
+      'Sonic come': 'SolidCAM',
+      'Sonic coming': 'SolidCAM',
+      // Add more corrections as needed
+    };
+
+    Object.keys(corrections).forEach((incorrect) => {
+      const correct = corrections[incorrect];
+      const regex = new RegExp(incorrect, 'gi');
+      text = text.replace(regex, correct);
+    });
+
+    return text;
+  };
+
+  const handleMicClick = async () => {
+    console.log('Mic clicked. Current state:', { listening, recorder });
+    setSpeechError(null);
+  
+    try {
+      if (!listening) {
+        console.log('Starting recording...');
+        const newRecorder = await recordAudio();
+        console.log('New recorder created:', newRecorder);
+        newRecorder.start();
+        setRecorder(newRecorder);
+        setListening(true);
+        console.log('Recording started. New state:', { listening: true, recorder: newRecorder });
+      } else {
+        console.log('Stopping recording...');
+        if (!recorder) {
+          throw new Error('No recorder available');
+        }
+        const audioBlob = await recorder.stop();
+        console.log('Recording stopped. Audio blob:', audioBlob);
+        console.log('Transcribing audio...');
+        const transcription = await transcribeAudio(audioBlob);
+        console.log('Transcription received:', transcription);
+        setQuery((prevQuery) => {
+          const updatedQuery = `${prevQuery} ${transcription}`.trim();
+          return updatedQuery;
+        });
+        setRecorder(null);
+        setListening(false);
+        setShouldSubmitAfterTranscription(true);
+        console.log('Process completed. New state:', { listening: false, recorder: null });
+      }
+    } catch (err: any) {
+      console.error('handleMicClick error:', err);
+      setSpeechError(err.message || 'An error occurred');
+      setListening(false);
+      setRecorder(null);
+      console.log('Error occurred. Reset state:', { listening: false, recorder: null });
+    }
+  };
+
+  useEffect(() => {
+    if (shouldSubmitAfterTranscription) {
+      handleSubmit();
+      setShouldSubmitAfterTranscription(false);
+    }
+  }, [query]);
 
   // Event Handlers
   useEffect(() => {
@@ -133,8 +214,8 @@ const Home: FC = () => {
     setQuery(value);
   };
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: any) => {
+    if (e) e.preventDefault();
 
     if (!roomId) {
       console.error('No roomId available');
@@ -444,59 +525,78 @@ const Home: FC = () => {
             </main>
             <div className={styles.center}>
               <div className={styles.cloudform}>
-                <form onSubmit={handleSubmit} className={styles.textareaContainer}>
-                  <textarea
-                    disabled={loading}
-                    onKeyDown={handleEnter}
-                    onChange={handleChange}
-                    ref={textAreaRef}
-                    autoFocus={false}
-                    rows={1}
-                    maxLength={50000}
-                    id="userInput"
-                    name="userInput"
-                    placeholder={
-                      loading
-                        ? 'Waiting for response...'
-                        : 'Message SolidCAM ChatBot...'
-                    }
-                    value={query}
-                    className={styles.textarea}
-                    readOnly={currentStage === 4}
-                  />
-                  {currentStage === 4 && (
-                    <label htmlFor="fileInput" className={styles.fileUploadButton}>
-                      <input
-                        id="fileInput"
-                        type="file"
-                        accept="image/jpeg"
-                        style={{ display: 'none' }}
-                        onChange={handleFileChange}
-                        multiple
-                      />
-                      <img src="/icons8-image-upload-48.png" alt="Upload JPG" style={{ width: '30px', height: '30px' }} />
-                    </label>
+              <form onSubmit={handleSubmit} className={styles.textareaContainer}>
+                <textarea
+                  disabled={loading}
+                  onKeyDown={handleEnter}
+                  onChange={handleChange}
+                  ref={textAreaRef}
+                  autoFocus={false}
+                  rows={1}
+                  maxLength={50000}
+                  id="userInput"
+                  name="userInput"
+                  placeholder={
+                    loading
+                      ? 'Waiting for response...'
+                      : 'Message SolidCAM ChatBot...'
+                  }
+                  value={query}
+                  className={styles.textarea}
+                  readOnly={currentStage === 4}
+                />
+                {currentStage === 4 && (
+                  <label htmlFor="fileInput" className={styles.fileUploadButton}>
+                    <input
+                      id="fileInput"
+                      type="file"
+                      accept="image/jpeg"
+                      style={{ display: 'none' }}
+                      onChange={handleFileChange}
+                      multiple
+                    />
+                    <img src="/icons8-image-upload-48.png" alt="Upload JPG" style={{ width: '30px', height: '30px' }} />
+                  </label>
+                )}
+                <button
+                  type="submit"
+                  id="submitButton"
+                  disabled={loading}
+                  className={styles.generatebutton}
+                >
+                  {loading ? (
+                    <div className={styles.loadingwheel}>
+                      <LoadingDots color="#000" />
+                    </div>
+                  ) : (
+                    <svg
+                      viewBox="0 0 20 20"
+                      className={styles.svgicon}
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+                    </svg>
                   )}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className={styles.generatebutton}
-                  >
-                    {loading ? (
-                      <div className={styles.loadingwheel}>
-                        <LoadingDots color="#000" />
-                      </div>
-                    ) : (
-                      <svg
-                        viewBox="0 0 20 20"
-                        className={styles.svgicon}
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
-                      </svg>
-                    )}
-                  </button>
-                </form>
+                </button>
+                <label htmlFor="micInput" className={styles.micButton}>
+                  <input
+                    id="micInput"
+                    type="button"
+                    style={{ display: 'none' }}
+                    onClick={handleMicClick}
+                  />
+                  <img
+                    src="/icons8-mic-50.png"
+                    alt="Mic"
+                    style={{ width: '30px', height: '30px', opacity: listening ? 0.5 : 1 }}
+                  />
+                </label>
+              </form>
+                {speechError && (
+                  <div className="border border-red-400 rounded-md p-4">
+                    <p className="text-red-500">{speechError}</p>
+                  </div>
+                )}
                 <div className="disclaimer-container">
                   <div className={styles.disclaimerText}>
                     <p style={{ fontSize: 'small', color: 'gray' }}>
