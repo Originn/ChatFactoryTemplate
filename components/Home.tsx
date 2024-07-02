@@ -18,6 +18,8 @@ import useTheme from '@/hooks/useTheme'; // Import the custom hook
 import usePasteImageUpload from '@/hooks/usePasteImageUpload'; // Import the new custom hook
 import UploadStatusBanner from './UploadStatusBanner'; // Import the new banner component
 import { RecordAudioReturnType, recordAudio, transcribeAudio } from '../utils/speechRecognition'; // Import the speech recognition helper and type
+import WaveSurfer from 'wavesurfer.js';
+import RecordPlugin from 'wavesurfer.js/dist/plugins/record.js';
 
 const PRODUCTION_ENV = 'production';
 const LOCAL_URL = 'http://localhost:3000';
@@ -80,71 +82,127 @@ const Home: FC = () => {
   // Add this state
   const [recorder, setRecorder] = useState<RecordAudioReturnType | null>(null);
   const [shouldSubmitAfterTranscription, setShouldSubmitAfterTranscription] = useState<boolean>(false);
-
-  const replaceCommonMisrecognitions = (text: any) => {
-    type CorrectionsType = {
-      [key: string]: string;
-    };
-
-    const corrections: CorrectionsType = {
-      'Solid cup': 'SolidCAM',
-      'Sonic on': 'SolidCAM',
-      'solocam': 'SolidCAM',
-      'Sonic car': 'SolidCAM',
-      'Sonic come': 'SolidCAM',
-      'Sonic coming': 'SolidCAM',
-      // Add more corrections as needed
-    };
-
-    Object.keys(corrections).forEach((incorrect) => {
-      const correct = corrections[incorrect];
-      const regex = new RegExp(incorrect, 'gi');
-      text = text.replace(regex, correct);
-    });
-
-    return text;
-  };
+  const [recordingTime, setRecordingTime] = useState<number>(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const wavesurferRef = useRef<WaveSurfer | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMicClick = async () => {
-    console.log('Mic clicked. Current state:', { listening, recorder });
-    setSpeechError(null);
-  
     try {
       if (!listening) {
-        console.log('Starting recording...');
         const newRecorder = await recordAudio();
-        console.log('New recorder created:', newRecorder);
         newRecorder.start();
         setRecorder(newRecorder);
         setListening(true);
-        console.log('Recording started. New state:', { listening: true, recorder: newRecorder });
-      } else {
-        console.log('Stopping recording...');
-        if (!recorder) {
-          throw new Error('No recorder available');
+        setRecordingTime(0);
+  
+        // Initialize WaveSurfer after starting the recording
+        setTimeout(() => {
+          const container = document.getElementById('waveform');
+          if (container) {
+            try {
+              const wavesurfer = WaveSurfer.create({
+                container: '#waveform',
+                waveColor: 'rgb(200, 0, 200)',
+                progressColor: 'rgb(100, 0, 100)',
+                height: 50,
+              });
+  
+              const record = wavesurfer.registerPlugin(RecordPlugin.create({
+                scrollingWaveform: true,
+                renderRecordedAudio: true,
+              }));
+  
+              record.on('record-start', () => {
+                console.log('Recording started in WaveSurfer');
+              });
+  
+              wavesurferRef.current = wavesurfer;
+  
+              if (record) {
+                record.startRecording();
+              }
+            } catch (error) {
+              console.error('Error initializing WaveSurfer:', error);
+            }
+          } else {
+            console.error('WaveSurfer container not found');
+          }
+        }, 500);
+  
+        // Clear any existing timer interval
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
         }
-        const audioBlob = await recorder.stop();
-        console.log('Recording stopped. Audio blob:', audioBlob);
-        console.log('Transcribing audio...');
-        const transcription = await transcribeAudio(audioBlob);
-        console.log('Transcription received:', transcription);
-        setQuery((prevQuery) => {
-          const updatedQuery = `${prevQuery} ${transcription}`.trim();
-          return updatedQuery;
-        });
-        setRecorder(null);
-        setListening(false);
-        setShouldSubmitAfterTranscription(true);
-        console.log('Process completed. New state:', { listening: false, recorder: null });
+  
+        // Set a new timer interval
+        timerRef.current = setInterval(() => {
+          setRecordingTime((prevTime) => prevTime + 1);
+        }, 1000); // Ensure the interval is 1000ms (1 second)
+      } else {
+        stopRecording();
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('handleMicClick error:', err);
-      setSpeechError(err.message || 'An error occurred');
-      setListening(false);
-      setRecorder(null);
-      console.log('Error occurred. Reset state:', { listening: false, recorder: null });
+      cleanup();
     }
   };
+  
+  const stopRecording = async () => {
+    if (!recorder) {
+      return;
+    }
+    const audioBlob = await recorder.stop();
+  
+    // Stop and remove WaveSurfer immediately
+    if (wavesurferRef.current) {
+      wavesurferRef.current.destroy();
+      wavesurferRef.current = null;
+    }
+  
+    // Stop the microphone stream
+    if (recorder.stream) {
+      recorder.stream.getTracks().forEach(track => track.stop());
+    }
+  
+    setRecorder(null);
+    setListening(false);
+    setIsTranscribing(true);  // Start showing loading state
+  
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  
+    // Perform transcription
+    const transcription = await transcribeAudio(audioBlob);
+  
+    // Update the query with the transcription result
+    setQuery((prevQuery) => prevQuery + " " + transcription);
+    setIsTranscribing(false);  // Stop showing loading state
+  };
+  
+  const cleanup = () => {
+    setListening(false);
+    setRecorder(null);
+    setIsTranscribing(false);
+  
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  
+    if (wavesurferRef.current) {
+      wavesurferRef.current.destroy();
+      wavesurferRef.current = null;
+    }
+  
+    // Stop the microphone stream in case of error
+    if (recorder && recorder.stream) {
+      recorder.stream.getTracks().forEach(track => track.stop());
+    }
+  };
+  
 
   useEffect(() => {
     if (shouldSubmitAfterTranscription) {
@@ -524,7 +582,7 @@ const Home: FC = () => {
               </div>
             </main>
             <div className={styles.center}>
-              <div className={styles.cloudform}>
+            <div className={styles.cloudform}>
               <form onSubmit={handleSubmit} className={styles.textareaContainer}>
                 <textarea
                   disabled={loading}
@@ -545,53 +603,72 @@ const Home: FC = () => {
                   className={styles.textarea}
                   readOnly={currentStage === 4}
                 />
-                {currentStage === 4 && (
-                  <label htmlFor="fileInput" className={styles.fileUploadButton}>
-                    <input
-                      id="fileInput"
-                      type="file"
-                      accept="image/jpeg"
-                      style={{ display: 'none' }}
-                      onChange={handleFileChange}
-                      multiple
-                    />
-                    <img src="/icons8-image-upload-48.png" alt="Upload JPG" style={{ width: '30px', height: '30px' }} />
-                  </label>
-                )}
-                <button
-                  type="submit"
-                  id="submitButton"
-                  disabled={loading}
-                  className={styles.generatebutton}
-                >
-                  {loading ? (
-                    <div className={styles.loadingwheel}>
-                      <LoadingDots color="#000" />
-                    </div>
-                  ) : (
-                    <svg
-                      viewBox="0 0 20 20"
-                      className={styles.svgicon}
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
-                    </svg>
+                  {listening && (
+                        <div className={styles.waveContainer}>
+                          <div id="waveform" className={styles.soundVisual}></div>
+                          <button
+                            type="button"
+                            className={`${styles.stopRecordingButton} ${styles.squareButton}`}
+                            onClick={cleanup}  // Updated handler to cleanup
+                          >
+                            X
+                          </button>
+                          <div className={styles.timer}>
+                            {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+                          </div>
+                          <button
+                            type="button"
+                            className={`${styles.checkRecordingButton} ${styles.circleButton}`}
+                            onClick={stopRecording}  // Updated handler to stopRecording
+                          >
+                            ✓
+                          </button>
+                        </div>
+                      )}
+                    {!listening && !loading && (
+                      <>
+                        <button
+                          type="submit"
+                          id="submitButton"
+                          disabled={loading || isTranscribing}
+                          className={styles.generatebutton}
+                        >
+                          {loading || isTranscribing ? (
+                            <div className={styles.loadingwheel}>
+                              <LoadingDots color="#000" />
+                            </div>
+                          ) : (
+                          <svg
+                            viewBox="0 0 20 20"
+                            className={styles.svgicon}
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+                          </svg>
+                        )}
+                      </button>
+                      <label htmlFor="micInput" className={styles.micButton}>
+                        <input
+                          id="micInput"
+                          type="button"
+                          style={{ display: 'none' }}
+                          onClick={handleMicClick}
+                          disabled={isTranscribing}
+                        />
+                        <Image
+                          src="/icons8-mic-50.png"
+                          alt="Mic"
+                          className={styles.micIcon}
+                          width='30' 
+                          height='30' 
+                          style={{ 
+                            opacity: listening || isTranscribing ? 0.5 : 1 
+                          }}
+                        />
+                      </label>
+                    </>
                   )}
-                </button>
-                <label htmlFor="micInput" className={styles.micButton}>
-                  <input
-                    id="micInput"
-                    type="button"
-                    style={{ display: 'none' }}
-                    onClick={handleMicClick}
-                  />
-                  <img
-                    src="/icons8-mic-50.png"
-                    alt="Mic"
-                    style={{ width: '30px', height: '30px', opacity: listening ? 0.5 : 1 }}
-                  />
-                </label>
-              </form>
+                </form>
                 {speechError && (
                   <div className="border border-red-400 rounded-md p-4">
                     <p className="text-red-500">{speechError}</p>

@@ -266,6 +266,25 @@
   opacity: 0.8;
 }
 
+@media (max-width: 1300px) {
+  .soundVisual {
+    width: 65% !important;; /* Ensure it takes full width */
+  }
+}
+
+@media (max-width: 1300px) {
+  .soundVisual {
+    width: 55% !important;; /* Ensure it takes full width */
+  }
+}
+
+@media (max-width: 768px) {
+  .soundVisual {
+    width: 40% !important;; /* Ensure it takes full width */
+  }
+}
+
+
 /* Mobile optimization */
 @media (max-width: 600px) {
   .main {
@@ -299,6 +318,10 @@
     font-size: 0.7rem;
     width: 100%;
     text-align: center;
+  }
+
+  .soundVisual {
+    width: 30% !important;; /* Ensure it takes full width */
   }
 }
 
@@ -356,4 +379,96 @@
   padding: 0.3rem;
   border: none;
   display: flex;
+}
+
+.soundVisual {
+  width: 75%; /* Ensure it takes full width */
+  height: 56px; 
+  position: absolute;
+  margin-right:30px;
+}
+
+
+.waveContainer {
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  top: -32px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ffffff;
+  height: 56px;
+  border-radius: 0.5rem;
+  border-left: 2px solid #bfbfbf;
+  border-right: 2px solid #bfbfbf;
+}
+
+.timer {
+  font-size: 16px;
+  margin-left: auto; /* Push the timer to the right */
+  display: flex;
+  align-items: center; /* Align the content vertically center */
+  padding: 1rem 1rem 1rem 1rem;
+}
+
+.stopRecordingButton {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.checkRecordingButton {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.squareButton, .circleButton {
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow for height effect */
+  margin-top: 13px;
+}
+
+.squareButton {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px; /* Slightly rounded corners */
+  margin-left: 45px;
+  border:1px solid #bfbfbf;
+}
+
+.squareButton:hover {
+  background-color: #f5c6cb; /* Slightly darker red on hover */
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* Increase shadow on hover */
+}
+
+.circleButton {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%; /* Fully rounded corners */
+  margin-right: 35px;
+  border:1px solid #bfbfbf;
+}
+
+.circleButton:hover {
+  background-color: #c3e6cb; /* Slightly darker green on hover */
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* Increase shadow on hover */
+}
+
+.micIcon{
+  padding: 0.3rem;
+  color: rgb(165, 162, 162);
+}
+
+
+.micIcon:hover{
+  background: #e4575726;
+  border-radius: 0.2rem;
 }
