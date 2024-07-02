@@ -46,7 +46,8 @@
     "socket.io-client": "^4.7.2",
     "tailwind-merge": "^1.10.0",
     "tiktoken": "^1.0.10",
-    "tmp-promise": "^3.0.3"
+    "tmp-promise": "^3.0.3",
+    "wavesurfer.js": "^7.8.0"
   },
   "devDependencies": {
     "@types/formidable": "^3.4.5",
