@@ -92,6 +92,10 @@ async function getImageDescription(imageUrl: string, roomId: string) {
 
 // Utility function to handle embedding and response
 async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, userEmail: string) {
+  // api/chat.ts
+  console.log("Debugging...");
+  debugger;  // This will trigger the debugger if attached
+
   const io = getIO();
   const codePrefix = 'embed-4831-embed-4831';
 
@@ -257,7 +261,7 @@ export default async function handler(
       } else if (session.stage === 3) {
         session.text = sanitizedQuestion;
         roomSessions[roomId] = { ...session, stage: 4 };
-        const message = 'If you have an **image** to upload, please do so now. If image is not needed click submit.';
+        const message = 'If you have an **.jpg image** to upload, please do so now. If image is not needed click submit.';
         io.to(roomId).emit("newToken", message);
         io.to(roomId).emit("stageUpdate", 4);
         return res.status(200).json({ message });

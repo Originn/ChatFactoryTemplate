@@ -5,7 +5,10 @@ const nextConfig = {
   images: {
     domains: ['solidcam.herokuapp.com', 'localhost'],
   },
-  webpack(config) {
+  webpack(config, { dev, isServer }) {
+    if (dev && isServer) {
+      config.devtool = 'source-map';  // Ensures source maps are created for server-side code
+    }
     config.experiments = { ...config.experiments, topLevelAwait: true };
     return config;
   },
