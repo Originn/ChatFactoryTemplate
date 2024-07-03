@@ -6,7 +6,6 @@ import RecordPlugin from 'wavesurfer.js/dist/plugins/record.js';
 import styles from '@/styles/Home.module.css';
 import { handleMicClickEvent } from '@/utils/tracking'; // Import the new function
 
-
 interface MicrophoneRecorderProps {
   setQuery: React.Dispatch<React.SetStateAction<string>>;
   loading: boolean;

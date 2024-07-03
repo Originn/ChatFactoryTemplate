@@ -4,17 +4,17 @@
   "private": true,
   "license": "UNLICENSED",
   "author": "orisomekh<orisomekh.solidcam.com>",
-"scripts": {
-  "heroku-prebuild": "node scripts/decode-google-credentials.js",
-  "dev": "node --inspect server.cjs",
-  "build": "next build",
-  "start": "next start",
-  "type-check": "tsc --noEmit",
-  "lint": "eslint --ignore-path .gitignore \"**/*.+(ts|js|tsx)\"",
-  "format": "prettier --ignore-path .gitignore \"**/*.+(ts|js|tsx)\" --write",
-  "ingest": "tsx -r dotenv/config scripts/ingest-data.ts",
-  "export": "next export"
-},
+  "scripts": {
+    "heroku-prebuild": "node scripts/decode-google-credentials.js",
+    "dev": "node --inspect server.cjs",
+    "build": "next build",
+    "start": "next start",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint --ignore-path .gitignore \"**/*.+(ts|js|tsx)\"",
+    "format": "prettier --ignore-path .gitignore \"**/*.+(ts|js|tsx)\" --write",
+    "ingest": "tsx -r dotenv/config scripts/ingest-data.ts",
+    "export": "next export"
+  },
   "dependencies": {
     "@google-cloud/storage": "^6.12.0",
     "@langchain/core": "^0.2.1",
@@ -33,6 +33,7 @@
     "js-cookie": "^3.0.5",
     "langchain": "^0.2.2",
     "lucide-react": "^0.125.0",
+    "mic-recorder-to-mp3": "^2.2.2",
     "natural": "^6.7.2",
     "next": "^14.2.3",
     "pdf-parse": "1.1.1",
