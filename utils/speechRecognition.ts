@@ -41,6 +41,7 @@ export const transcribeAudio = async (audioBase64: string): Promise<string> => {
   const blob = new Blob([Buffer.from(audioBase64, 'base64')], { type: 'audio/mp3' });
   formData.append('file', blob, 'audio.mp3');
   formData.append('model', 'whisper-1');
+  formData.append('prompt', 'SolidCAM');
   formData.append('response_format', 'json');
 
   try {
