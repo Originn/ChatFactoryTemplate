@@ -11,9 +11,16 @@ interface MicrophoneRecorderProps {
   loading: boolean;
   setIsTranscribing: React.Dispatch<React.SetStateAction<boolean>>;
   isTranscribing: boolean;
+  setIsMicActive: React.Dispatch<React.SetStateAction<boolean>>; // New prop
 }
 
-const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({ setQuery, loading, setIsTranscribing, isTranscribing }) => {
+const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({ 
+  setQuery, 
+  loading, 
+  setIsTranscribing, 
+  isTranscribing,
+  setIsMicActive // New prop
+}) => {
   const [listening, setListening] = useState(false);
   const [recorder, setRecorder] = useState<RecordAudioReturnType | null>(null);
   const [recordingTime, setRecordingTime] = useState<number>(0);
@@ -28,6 +35,7 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({ setQuery, loading, se
         newRecorder.start();
         setRecorder(newRecorder);
         setListening(true);
+        setIsMicActive(true); // Set mic active
         setRecordingTime(0);
 
         setTimeout(() => {
@@ -95,6 +103,7 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({ setQuery, loading, se
 
     setRecorder(null);
     setListening(false);
+    setIsMicActive(false); // Set mic inactive
     setIsTranscribing(true);
 
     if (timerRef.current) {
@@ -111,6 +120,7 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({ setQuery, loading, se
     setListening(false);
     setRecorder(null);
     setIsTranscribing(false);
+    setIsMicActive(false); // Set mic inactive
 
     if (timerRef.current) {
       clearInterval(timerRef.current);

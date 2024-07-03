@@ -71,6 +71,7 @@ const Home: FC = () => {
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const [shouldSubmitAfterTranscription, setShouldSubmitAfterTranscription] = useState<boolean>(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
+  const [isMicActive, setIsMicActive] = useState(false);
 
 
   usePasteImageUpload(currentStage, setImagePreviews, setQuery, roomId, auth);
@@ -449,7 +450,7 @@ const Home: FC = () => {
                         onChange={handleFileChange}
                         multiple
                       />
-                      <img src="/icons8-image-upload-48.png" alt="Upload JPG" style={{ width: '30px', height: '30px' }} />
+                      <Image src="/icons8-image-upload-48.png" alt="Upload JPG" width = '30' height = '30'/>
                     </label>
                   ) : (
                     <MicrophoneRecorder
@@ -457,28 +458,31 @@ const Home: FC = () => {
                       loading={loading}
                       setIsTranscribing={setIsTranscribing}
                       isTranscribing={isTranscribing}
+                      setIsMicActive={setIsMicActive}
                     />
                   )}
-                  <button
-                    type="submit"
-                    id="submitButton"
-                    disabled={loading || isTranscribing}
-                    className={styles.generatebutton}
-                  >
-                    {loading || isTranscribing ? (
-                      <div className={styles.loadingwheel}>
-                        <LoadingDots color="#000" />
-                      </div>
-                    ) : (
-                      <svg
-                        viewBox="0 0 20 20"
-                        className={styles.svgicon}
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
-                      </svg>
-                    )}
-                  </button>
+                  {!isMicActive && (
+                    <button
+                      type="submit"
+                      id="submitButton"
+                      disabled={loading || isTranscribing}
+                      className={styles.generatebutton}
+                    >
+                      {loading || isTranscribing ? (
+                        <div className={styles.loadingwheel}>
+                          <LoadingDots color="#000" />
+                        </div>
+                      ) : (
+                        <svg
+                          viewBox="0 0 20 20"
+                          className={styles.svgicon}
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+                        </svg>
+                      )}
+                    </button>
+                  )}
                 </form>
                 {speechError && (
                   <div className="border border-red-400 rounded-md p-4">
