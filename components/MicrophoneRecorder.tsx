@@ -4,7 +4,8 @@ import { RecordAudioReturnType, recordAudio, transcribeAudio } from '../utils/sp
 import WaveSurfer from 'wavesurfer.js';
 import RecordPlugin from 'wavesurfer.js/dist/plugins/record.js';
 import styles from '@/styles/Home.module.css';
-import LoadingDots from './ui/LoadingDots';
+import { handleMicClickEvent } from '@/utils/tracking'; // Import the new function
+
 
 interface MicrophoneRecorderProps {
   setQuery: React.Dispatch<React.SetStateAction<string>>;
@@ -30,6 +31,7 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({
 
   const handleMicClick = async () => {
     try {
+      handleMicClickEvent();
       if (!listening) {
         const newRecorder = await recordAudio();
         newRecorder.start();
