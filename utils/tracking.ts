@@ -41,3 +41,14 @@ export const measureFirstTokenTime = (timeDifference: number) => {
     });
   }
 };
+
+export const handleMicClickEvent = () => {
+  const consent = getCookieConsent();
+  if (consent && consent === 'true' && typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'mic_click', {
+      event_category: 'Interaction',
+      event_label: 'Microphone Click',
+      user_id: auth.currentUser?.email,
+    });
+  }
+};
