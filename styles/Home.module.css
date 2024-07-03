@@ -268,19 +268,19 @@
 
 @media (max-width: 1300px) {
   .soundVisual {
-    width: 65% !important;; /* Ensure it takes full width */
+    width: 65% !important; /* Ensure it takes full width */
   }
 }
 
-@media (max-width: 1300px) {
+@media (max-width: 1000px) {
   .soundVisual {
-    width: 55% !important;; /* Ensure it takes full width */
+    width: 55% !important; /* Ensure it takes full width */
   }
 }
 
 @media (max-width: 768px) {
   .soundVisual {
-    width: 40% !important;; /* Ensure it takes full width */
+    width: 40% !important; /* Ensure it takes full width */
   }
 }
 
@@ -321,7 +321,7 @@
   }
 
   .soundVisual {
-    width: 30% !important;; /* Ensure it takes full width */
+    width: 30% !important;
   }
 }
 
@@ -382,7 +382,7 @@
 }
 
 .soundVisual {
-  width: 75%; /* Ensure it takes full width */
+  width: 75%;
   height: 56px; 
   position: absolute;
   margin-right:30px;
@@ -393,15 +393,13 @@
   display: flex;
   justify-content: center;
   position: absolute;
-  top: -32px;
-  left: 0;
+  top: -29px;
+  left: 4px;
   right: 0;
   bottom: 0;
   background: #ffffff;
-  height: 56px;
-  border-radius: 0.5rem;
-  border-left: 2px solid #bfbfbf;
-  border-right: 2px solid #bfbfbf;
+  height: 50px;
+  width:95%
 }
 
 .timer {
