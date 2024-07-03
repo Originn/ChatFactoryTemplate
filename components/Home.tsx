@@ -14,12 +14,10 @@ import Layout from './layout';
 import GoogleAnalytics from './GoogleAnalytics';
 import useSocket from '@/hooks/useSocket';
 import useFileUpload from '@/hooks/useFileUpload';
-import useTheme from '@/hooks/useTheme'; // Import the custom hook
-import usePasteImageUpload from '@/hooks/usePasteImageUpload'; // Import the new custom hook
-import UploadStatusBanner from './UploadStatusBanner'; // Import the new banner component
-import { RecordAudioReturnType, recordAudio, transcribeAudio } from '../utils/speechRecognition'; // Import the speech recognition helper and type
-import WaveSurfer from 'wavesurfer.js';
-import RecordPlugin from 'wavesurfer.js/dist/plugins/record.js';
+import useTheme from '@/hooks/useTheme';
+import usePasteImageUpload from '@/hooks/usePasteImageUpload';
+import UploadStatusBanner from './UploadStatusBanner';
+import MicrophoneRecorder from './MicrophoneRecorder';
 
 const PRODUCTION_ENV = 'production';
 const LOCAL_URL = 'http://localhost:3000';
@@ -42,7 +40,6 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
 };
 
 const Home: FC = () => {
-  // Use custom hook for theme management
   const { theme, toggleTheme } = useTheme();
 
   const [query, setQuery] = useState<string>('');
@@ -60,11 +57,10 @@ const Home: FC = () => {
     history: [],
   });
   const [currentStage, setCurrentStage] = useState<number | null>(null);
-  const [uploadStatus, setUploadStatus] = useState<string | null>(null); // Add uploadStatus state
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const { messages, history } = messageState;
   const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : LOCAL_URL;
 
-  // Refs
   const roomIdRef = useRef<string | null>(roomId);
   const answerStartRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -72,137 +68,12 @@ const Home: FC = () => {
   const [textAreaHeight, setTextAreaHeight] = useState<string>('auto');
   const { submitTimeRef } = useSocket(serverUrl, roomId, setRequestsInProgress, setMessageState, setCurrentStage, setRoomId);
   const { imagePreviews, handleFileChange, handleDeleteImage, setImagePreviews } = useFileUpload(setQuery, roomId, auth, setUploadStatus);
+  const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
+  const [shouldSubmitAfterTranscription, setShouldSubmitAfterTranscription] = useState<boolean>(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+
 
   usePasteImageUpload(currentStage, setImagePreviews, setQuery, roomId, auth);
-
-  // Speech recognition state and handler
-  const [listening, setListening] = useState(false);
-  const [speechError, setSpeechError] = useState(null);
-
-  // Add this state
-  const [recorder, setRecorder] = useState<RecordAudioReturnType | null>(null);
-  const [shouldSubmitAfterTranscription, setShouldSubmitAfterTranscription] = useState<boolean>(false);
-  const [recordingTime, setRecordingTime] = useState<number>(0);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const wavesurferRef = useRef<WaveSurfer | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleMicClick = async () => {
-    try {
-      if (!listening) {
-        const newRecorder = await recordAudio();
-        newRecorder.start();
-        setRecorder(newRecorder);
-        setListening(true);
-        setRecordingTime(0);
-  
-        // Initialize WaveSurfer after starting the recording
-        setTimeout(() => {
-          const container = document.getElementById('waveform');
-          if (container) {
-            try {
-              const wavesurfer = WaveSurfer.create({
-                container: '#waveform',
-                waveColor: 'rgb(200, 0, 200)',
-                progressColor: 'rgb(100, 0, 100)',
-                height: 50,
-              });
-  
-              const record = wavesurfer.registerPlugin(RecordPlugin.create({
-                scrollingWaveform: true,
-                renderRecordedAudio: true,
-              }));
-  
-              record.on('record-start', () => {
-                console.log('Recording started in WaveSurfer');
-              });
-  
-              wavesurferRef.current = wavesurfer;
-  
-              if (record) {
-                record.startRecording();
-              }
-            } catch (error) {
-              console.error('Error initializing WaveSurfer:', error);
-            }
-          } else {
-            console.error('WaveSurfer container not found');
-          }
-        }, 500);
-  
-        // Clear any existing timer interval
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-        }
-  
-        // Set a new timer interval
-        timerRef.current = setInterval(() => {
-          setRecordingTime((prevTime) => prevTime + 1);
-        }, 1000); // Ensure the interval is 1000ms (1 second)
-      } else {
-        stopRecording();
-      }
-    } catch (err) {
-      console.error('handleMicClick error:', err);
-      cleanup();
-    }
-  };
-  
-  const stopRecording = async () => {
-    if (!recorder) {
-      return;
-    }
-    const audioBlob = await recorder.stop();
-  
-    // Stop and remove WaveSurfer immediately
-    if (wavesurferRef.current) {
-      wavesurferRef.current.destroy();
-      wavesurferRef.current = null;
-    }
-  
-    // Stop the microphone stream
-    if (recorder.stream) {
-      recorder.stream.getTracks().forEach(track => track.stop());
-    }
-  
-    setRecorder(null);
-    setListening(false);
-    setIsTranscribing(true);  // Start showing loading state
-  
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  
-    // Perform transcription
-    const transcription = await transcribeAudio(audioBlob);
-  
-    // Update the query with the transcription result
-    setQuery((prevQuery) => prevQuery + " " + transcription);
-    setIsTranscribing(false);  // Stop showing loading state
-  };
-  
-  const cleanup = () => {
-    setListening(false);
-    setRecorder(null);
-    setIsTranscribing(false);
-  
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  
-    if (wavesurferRef.current) {
-      wavesurferRef.current.destroy();
-      wavesurferRef.current = null;
-    }
-  
-    // Stop the microphone stream in case of error
-    if (recorder && recorder.stream) {
-      recorder.stream.getTracks().forEach(track => track.stop());
-    }
-  };
-  
 
   useEffect(() => {
     if (shouldSubmitAfterTranscription) {
@@ -211,7 +82,6 @@ const Home: FC = () => {
     }
   }, [query]);
 
-  // Event Handlers
   useEffect(() => {
     adjustTextAreaHeight();
   }, [query]);
@@ -222,17 +92,15 @@ const Home: FC = () => {
 
   const adjustTextAreaHeight = () => {
     if (textAreaRef.current) {
-      textAreaRef.current.style.height = 'auto'; // Reset height to recalculate
-      const baseHeight = 24; // Base single line height, adjust as needed
+      textAreaRef.current.style.height = 'auto';
+      const baseHeight = 24;
       const newHeight = Math.min(textAreaRef.current.scrollHeight, 10 * baseHeight);
       textAreaRef.current.style.height = `${newHeight}px`;
 
-      // Move the textarea upwards by changing the bottom position
-      const offset = newHeight - baseHeight; // Calculate how much taller than one line it is
+      const offset = newHeight - baseHeight;
       textAreaRef.current.style.transform = `translateY(-${offset}px)`;
       setTextAreaHeight(`${newHeight}px`);
 
-      // Update the --textarea-height CSS variable
       document.documentElement.style.setProperty('--textarea-height', `${newHeight}px`);
     }
   };
@@ -240,12 +108,8 @@ const Home: FC = () => {
   const handleEnter = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       if (e.shiftKey) {
-        // Allow the shift+enter key to create a new line
-        // By not calling e.preventDefault(), we allow the default behavior of adding a new line
       } else if (query) {
-        // Prevent the default enter key behavior
         e.preventDefault();
-        // Submit the form
         handleSubmit(e);
       }
     }
@@ -254,19 +118,16 @@ const Home: FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { value } = e.target;
     if (currentStage === 4) {
-      // Split the current query into lines
       const lines = value.split('\n');
-      // Split the existing query into lines
       const existingLines = query.split('\n');
 
-      // Check if any existing line (URL) is being edited
       const isEditingUrl = lines.some((line, index) => {
         const existingLine = existingLines[index] || '';
         return existingLine.startsWith('http') && line !== existingLine;
       });
 
       if (isEditingUrl) {
-        return; // Prevent any change to URLs
+        return;
       }
     }
     setQuery(value);
@@ -284,7 +145,7 @@ const Home: FC = () => {
     setError(null);
     const trimmedQuery = query.trim();
 
-    if (!trimmedQuery && currentStage !== 4) { // Allow empty text if in stage 4
+    if (!trimmedQuery && currentStage !== 4) {
       alert('Please input a question');
       return;
     }
@@ -313,7 +174,6 @@ const Home: FC = () => {
 
     setQuery('');
 
-    // Fetch the user ID from the auth object, ensure user is authenticated
     const userEmail = auth.currentUser ? auth.currentUser.email : null;
 
     if (!userEmail) {
@@ -323,56 +183,46 @@ const Home: FC = () => {
       return;
     }
 
-    // Record the time of submission
     const currentTime = performance.now();
-    submitTimeRef.current = currentTime;  // Use ref here
+    submitTimeRef.current = currentTime;
 
     try {
       await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Optionally, include the userId in the Authorization header or within the body
           'Authorization': userEmail,
         },
         body: JSON.stringify({
           question,
           history,
           roomId,
-          userEmail, // Including the userId in the body if not using the Authorization header
+          userEmail,
         }),
       });
 
-      // Scroll to top or desired position after submission
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       setError('An error occurred while fetching the data. Please try again.');
       console.error('error', error);
     } finally {
-      // Reset the request state for the current room
       setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
       setLoading(false);
     }
   };
 
-  // Ensure the page stays at the top on mobile
   useEffect(() => {
     const handleScrollToTop = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Call the function when the component mounts
     handleScrollToTop();
 
-    return () => {
-      // Cleanup if necessary
-    };
+    return () => {};
   }, []);
 
-  // Effects
-
   useEffect(() => {
-    roomIdRef.current = roomId; //to avoid heroku warning
+    roomIdRef.current = roomId;
   }, [roomId]);
 
   useEffect(() => {
@@ -397,7 +247,6 @@ const Home: FC = () => {
     return () => messageListElement?.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Main Render
   return (
     <>
       <GoogleAnalytics /> {}
@@ -421,7 +270,7 @@ const Home: FC = () => {
             </div>
           )}
           {uploadStatus && (
-            <UploadStatusBanner status={uploadStatus} /> // Display the upload status banner
+            <UploadStatusBanner status={uploadStatus} />
           )}
           <main className={styles.main}>
             <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
@@ -467,9 +316,8 @@ const Home: FC = () => {
                             : styles.usermessage;
                       }
                       const hasSources = message.sourceDocs && message.sourceDocs.length > 0;
-                      // Preprocess documents to update counts based on type
                       const totalWebinars = message.sourceDocs?.filter(doc => doc.metadata.type === 'youtube').length ?? 0;
-                      const totalDocuments = message.sourceDocs?.length ?? 0 - totalWebinars; // Assuming other types are documents
+                      const totalDocuments = message.sourceDocs?.length ?? 0 - totalWebinars;
                       return (
                         <React.Fragment key={`chatMessageFragment-${index}`}>
                           <div className={className}>
@@ -492,10 +340,10 @@ const Home: FC = () => {
                                   let currentCount;
                                   if (doc.metadata.type === 'youtube') {
                                     title = 'Webinar';
-                                    currentCount = webinarCount++; // Increment count for webinar
-                                  } else { // 'PDF' and 'sentinel' are treated as documents
+                                    currentCount = webinarCount++;
+                                  } else {
                                     title = 'Document';
-                                    currentCount = documentCount++; // Increment count for document
+                                    currentCount = documentCount++;
                                   }
 
                                   return (
@@ -506,19 +354,16 @@ const Home: FC = () => {
                                       <AccordionContent>
                                         {
                                           doc.metadata.type === 'youtube' ? (
-                                            // YouTube link handling
                                             <p>
                                               <b>Source:</b>
                                               {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleWebinarClick(doc.metadata.source)}>View Webinar</a> : 'Unavailable'}
                                             </p>
                                           ) : doc.metadata.type === 'sentinel' ? (
-                                            // Sentinel link handling
                                             <p>
                                               <b>Source:</b>
                                               {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(doc.metadata.source)}>View</a> : 'Unavailable'}
                                             </p>
                                           ) : (
-                                            // Default handling
                                             <>
                                               <ReactMarkdown
                                                 components={{
@@ -532,30 +377,21 @@ const Home: FC = () => {
                                                 {
                                                   doc.metadata && doc.metadata.source
                                                     ? (() => {
-                                                      // Extract all page numbers from the content
                                                       const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
 
-                                                      // Find the largest page number mentioned
                                                       const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
 
-                                                      // Filter for numbers within 2 pages of the largest number, if it exists
                                                       let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
 
-                                                      // From the filtered numbers, find the smallest one to use in the link
                                                       let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
 
-                                                      // If no suitable number is found within 2 pages of the largest, decide on fallback strategy
-                                                      // For example, using the largest number or another logic
                                                       if (smallestPageNumberInRange === null && largestPageNumber !== null) {
-                                                        // Fallback strategy here
-                                                        // This example simply uses the largest number
                                                         smallestPageNumberInRange = largestPageNumber;
                                                       }
                                                       const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
 
-                                                      // Detect if it's iOS
                                                       const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-                                                      
+
                                                       const iosPageLink = isiOS ? pageLink.replace('#page=', '#page') : pageLink;
 
                                                       return <a href={iosPageLink} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(pageLink)}>View Page</a>;
@@ -582,92 +418,67 @@ const Home: FC = () => {
               </div>
             </main>
             <div className={styles.center}>
-            <div className={styles.cloudform}>
-              <form onSubmit={handleSubmit} className={styles.textareaContainer}>
-                <textarea
-                  disabled={loading}
-                  onKeyDown={handleEnter}
-                  onChange={handleChange}
-                  ref={textAreaRef}
-                  autoFocus={false}
-                  rows={1}
-                  maxLength={50000}
-                  id="userInput"
-                  name="userInput"
-                  placeholder={
-                    loading
-                      ? 'Waiting for response...'
-                      : 'Message SolidCAM ChatBot...'
-                  }
-                  value={query}
-                  className={styles.textarea}
-                  readOnly={currentStage === 4}
-                />
-                  {listening && (
-                        <div className={styles.waveContainer}>
-                          <div id="waveform" className={styles.soundVisual}></div>
-                          <button
-                            type="button"
-                            className={`${styles.stopRecordingButton} ${styles.squareButton}`}
-                            onClick={cleanup}  // Updated handler to cleanup
-                          >
-                            X
-                          </button>
-                          <div className={styles.timer}>
-                            {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
-                          </div>
-                          <button
-                            type="button"
-                            className={`${styles.checkRecordingButton} ${styles.circleButton}`}
-                            onClick={stopRecording}  // Updated handler to stopRecording
-                          >
-                            ✓
-                          </button>
-                        </div>
-                      )}
-                    {!listening && !loading && (
-                      <>
-                        <button
-                          type="submit"
-                          id="submitButton"
-                          disabled={loading || isTranscribing}
-                          className={styles.generatebutton}
-                        >
-                          {loading || isTranscribing ? (
-                            <div className={styles.loadingwheel}>
-                              <LoadingDots color="#000" />
-                            </div>
-                          ) : (
-                          <svg
-                            viewBox="0 0 20 20"
-                            className={styles.svgicon}
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
-                          </svg>
-                        )}
-                      </button>
-                      <label htmlFor="micInput" className={styles.micButton}>
-                        <input
-                          id="micInput"
-                          type="button"
-                          style={{ display: 'none' }}
-                          onClick={handleMicClick}
-                          disabled={isTranscribing}
-                        />
-                        <Image
-                          src="/icons8-mic-50.png"
-                          alt="Mic"
-                          className={styles.micIcon}
-                          width='30' 
-                          height='30' 
-                          style={{ 
-                            opacity: listening || isTranscribing ? 0.5 : 1 
-                          }}
-                        />
-                      </label>
-                    </>
+              <div className={styles.cloudform}>
+                <form onSubmit={handleSubmit} className={styles.textareaContainer}>
+                  <textarea
+                    disabled={loading}
+                    onKeyDown={handleEnter}
+                    onChange={handleChange}
+                    ref={textAreaRef}
+                    autoFocus={false}
+                    rows={1}
+                    maxLength={50000}
+                    id="userInput"
+                    name="userInput"
+                    placeholder={
+                      loading
+                        ? 'Waiting for response...'
+                        : 'Message SolidCAM ChatBot...'
+                    }
+                    value={query}
+                    className={styles.textarea}
+                    readOnly={currentStage === 4}
+                  />
+                  {currentStage === 4 ? (
+                    <label htmlFor="fileInput" className={styles.fileUploadButton}>
+                      <input
+                        id="fileInput"
+                        type="file"
+                        accept="image/jpeg"
+                        style={{ display: 'none' }}
+                        onChange={handleFileChange}
+                        multiple
+                      />
+                      <img src="/icons8-image-upload-48.png" alt="Upload JPG" style={{ width: '30px', height: '30px' }} />
+                    </label>
+                  ) : (
+                    <MicrophoneRecorder
+                      setQuery={setQuery}
+                      loading={loading}
+                      setIsTranscribing={setIsTranscribing}
+                      isTranscribing={isTranscribing}
+                    />
                   )}
+                  <button
+                    type="submit"
+                    id="submitButton"
+                    disabled={loading || isTranscribing}
+                    className={styles.generatebutton}
+                  >
+                    {loading || isTranscribing ? (
+                      <div className={styles.loadingwheel}>
+                        <LoadingDots color="#000" />
+                      </div>
+                    ) : (
+                      <svg
+                        viewBox="0 0 20 20"
+                        className={styles.svgicon}
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+                      </svg>
+                    )}
+                  </button>
                 </form>
                 {speechError && (
                   <div className="border border-red-400 rounded-md p-4">

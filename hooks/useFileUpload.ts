@@ -17,10 +17,10 @@ const useFileUpload = (
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      setUploadStatus('Uploading and processing...'); // Set upload status to "Uploading and processing..."
+      setUploadStatus('Uploading and processing...');
       for (const file of Array.from(files)) {
         const timestamp = Date.now();
-        const fileNameWithTimestamp = `${uuidv4()}-${timestamp}.jpg`; // Generate a unique filename with timestamp
+        const fileNameWithTimestamp = `${uuidv4()}-${timestamp}.jpg`;
         const formData = new FormData();
         formData.append("file", file, fileNameWithTimestamp);
 
@@ -36,8 +36,9 @@ const useFileUpload = (
           const data = await response.json();
           if (data.imageUrls) {
             data.imageUrls.forEach(({ url, fileName }: { url: string, fileName: string }) => {
-              setImagePreviews((prevPreviews: ImagePreview[]) => [...prevPreviews, { url, fileName }]);
-              setQuery((prevQuery: string) => `${prevQuery}\n${url}`);
+              const cacheBustedUrl = `${url}?${uuidv4()}`; // Add a unique query parameter to the URL
+              setImagePreviews((prevPreviews: ImagePreview[]) => [...prevPreviews, { url: cacheBustedUrl, fileName }]);
+              setQuery((prevQuery: string) => `${prevQuery}\n${cacheBustedUrl}`);
             });
 
             await fetch('/api/chat', {
