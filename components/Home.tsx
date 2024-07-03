@@ -439,6 +439,7 @@ const Home: FC = () => {
                     value={query}
                     className={styles.textarea}
                     readOnly={currentStage === 4}
+                    style={{ paddingRight: '80px' }}
                   />
                   {currentStage === 4 ? (
                     <label htmlFor="fileInput" className={styles.fileUploadButton}>
