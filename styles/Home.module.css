@@ -266,65 +266,6 @@
   opacity: 0.8;
 }
 
-@media (max-width: 1300px) {
-  .soundVisual {
-    width: 65% !important; /* Ensure it takes full width */
-  }
-}
-
-@media (max-width: 1000px) {
-  .soundVisual {
-    width: 55% !important; /* Ensure it takes full width */
-  }
-}
-
-@media (max-width: 768px) {
-  .soundVisual {
-    width: 40% !important; /* Ensure it takes full width */
-  }
-}
-
-
-/* Mobile optimization */
-@media (max-width: 600px) {
-  .main {
-    padding: 1rem;
-    max-height: 90vh;
-  }
-
-  .cloud {
-    width: 22rem;
-    height: 28rem;
-  }
-  .textarea {
-    width: 22rem;
-  }
-  .topnav {
-    border: 1px solid black;
-    align-items: center;
-    padding: 0.85rem 0.75rem 0.85rem 0.75rem;
-  }
-
-  .navlogo {
-    font-size: 1.25rem;
-    width: 20rem;
-  }
-
-  .markdownanswer code {
-    white-space: pre-wrap !important;
-  }
-
-  .footer {
-    font-size: 0.7rem;
-    width: 100%;
-    text-align: center;
-  }
-
-  .soundVisual {
-    width: 30% !important;
-  }
-}
-
 .markdownanswer ol {
   list-style-type: decimal;
   list-style-position: outside;
@@ -382,10 +323,10 @@
 }
 
 .soundVisual {
-  width: 75%;
+  width: 35%;
   height: 56px; 
   position: absolute;
-  margin-right:30px;
+  margin-right:2px;
 }
 
 
@@ -394,12 +335,35 @@
   justify-content: center;
   position: absolute;
   top: -29px;
-  left: 4px;
-  right: 0;
-  bottom: 0;
+  right: 4px;
   background: #ffffff;
   height: 50px;
-  width:95%
+  width: 22%; /* Adjust this percentage as needed */
+  border-radius: 4px; /* Slightly rounded corners */
+}
+
+@media (max-width: 1439px) {
+  .waveContainer {
+    width:30%;
+  }
+}
+
+@media (max-width: 1090px) {
+  .waveContainer {
+    width:40%;
+  }
+}
+
+@media (max-width: 800px) {
+  .waveContainer {
+    width:50%;
+  }
+}
+
+@media (max-width: 639px) {
+  .waveContainer {
+    width:60%;
+  }
 }
 
 .timer {
@@ -451,7 +415,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%; /* Fully rounded corners */
-  margin-right: 35px;
+  margin-right: 0px;
   border:1px solid #bfbfbf;
 }
 
@@ -469,4 +433,57 @@
 .micIcon:hover{
   background: #e4575726;
   border-radius: 0.2rem;
+}
+
+/* Mobile optimization */
+@media (max-width: 600px) {
+  .main {
+    padding: 1rem;
+    max-height: 90vh;
+  }
+
+  .cloud {
+    width: 22rem;
+    height: 28rem;
+  }
+  .textarea {
+    width: 22rem;
+  }
+  .topnav {
+    border: 1px solid black;
+    align-items: center;
+    padding: 0.85rem 0.75rem 0.85rem 0.75rem;
+  }
+
+  .navlogo {
+    font-size: 1.25rem;
+    width: 20rem;
+  }
+
+  .markdownanswer code {
+    white-space: pre-wrap !important;
+  }
+
+  .markdownanswer ol,
+  .markdownanswer ul,
+  .markdownanswer p {
+    margin: 0.2rem;
+  }
+
+  .markdownanswer ol {
+    list-style-type: decimal;
+    list-style-position: outside;
+    margin-left: 0.2em;
+    padding-left: 0.2em;
+  }
+
+  .footer {
+    font-size: 0.7rem;
+    width: 100%;
+    text-align: center;
+  }
+
+  .waveContainer {
+    width:75%;
+  }
 }

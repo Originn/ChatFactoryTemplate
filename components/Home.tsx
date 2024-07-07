@@ -434,12 +434,14 @@ const Home: FC = () => {
                     placeholder={
                       loading
                         ? 'Waiting for response...'
+                        : isMicActive
+                        ? ''
                         : 'Message SolidCAM ChatBot...'
                     }
                     value={query}
                     className={styles.textarea}
                     readOnly={currentStage === 4}
-                    style={{ paddingRight: '80px' }}
+                    
                   />
                   {currentStage === 4 ? (
                     <label htmlFor="fileInput" className={styles.fileUploadButton}>

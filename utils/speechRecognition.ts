@@ -21,7 +21,7 @@ export const recordAudio = (): Promise<RecordAudioReturnType> => {
           const reader = new FileReader();
           reader.onloadend = () => {
             const base64Data = reader.result as string;
-            resolve(base64Data.split(',')[1]); // Remove the "data:audio/mp3;base64," part
+            resolve(base64Data.split(',')[1]);
           };
           reader.readAsDataURL(blob);
         });
