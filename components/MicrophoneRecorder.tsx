@@ -4,14 +4,14 @@ import { RecordAudioReturnType, recordAudio, transcribeAudio } from '../utils/sp
 import WaveSurfer from 'wavesurfer.js';
 import RecordPlugin from 'wavesurfer.js/dist/plugins/record.js';
 import styles from '@/styles/Home.module.css';
-import { handleMicClickEvent } from '@/utils/tracking'; // Import the new function
+import { handleMicClickEvent } from '@/utils/tracking';
 
 interface MicrophoneRecorderProps {
   setQuery: React.Dispatch<React.SetStateAction<string>>;
   loading: boolean;
   setIsTranscribing: React.Dispatch<React.SetStateAction<boolean>>;
   isTranscribing: boolean;
-  setIsMicActive: React.Dispatch<React.SetStateAction<boolean>>; // New prop
+  setIsMicActive: React.Dispatch<React.SetStateAction<boolean>>; // Add this line
 }
 
 const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({ 
@@ -48,11 +48,17 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({
                 waveColor: 'rgb(200, 0, 200)',
                 progressColor: 'rgb(100, 0, 100)',
                 height: 50,
+                barWidth: 3,
+                barHeight: 15,
+                barGap: 2,
+                hideScrollbar: true,
+                cursorWidth: 0,
+                interact: false,
               });
 
               const record = wavesurfer.registerPlugin(RecordPlugin.create({
-                scrollingWaveform: true,
-                renderRecordedAudio: true,
+                scrollingWaveform: false,
+                renderRecordedAudio: false,
               }));
 
               record.on('record-start', () => {
@@ -89,54 +95,74 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({
   };
 
   const stopRecording = async () => {
+    console.log('Hi from stop');
     if (!recorder) return;
-
-    const audioBlob = await recorder.stop();
-
-    if (wavesurferRef.current) {
-      wavesurferRef.current.destroy();
-      wavesurferRef.current = null;
+  
+    try {
+      const audioBlob = await recorder.stop();
+  
+      if (wavesurferRef.current) {
+        wavesurferRef.current.destroy();
+        wavesurferRef.current = null;
+      }
+  
+      // Ensure all tracks are stopped
+      if (recorder.stream) {
+        recorder.stream.getTracks().forEach(track => {
+          track.stop();
+          recorder.stream.removeTrack(track);
+        });
+      }
+  
+      setIsTranscribing(true);
+  
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+  
+      const transcription = await transcribeAudio(audioBlob);
+      setQuery((prevQuery) => prevQuery + " " + transcription);
+    } catch (error) {
+      console.error("Error stopping recording:", error);
+    } finally {
+      setListening(false);
+      setRecorder(null);
+      setIsTranscribing(false);
+      setIsMicActive(false);
+      setRecordingTime(0);
     }
-
-    if (recorder.stream) {
-      recorder.stream.getTracks().forEach(track => track.stop());
-    }
-
-    setRecorder(null);
-    setListening(false);
-    setIsMicActive(false); // Set mic inactive
-    setIsTranscribing(true);
-
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    const transcription = await transcribeAudio(audioBlob);
-    setQuery((prevQuery) => prevQuery + " " + transcription);
-    setIsTranscribing(false);
   };
 
   const cleanup = () => {
-    setListening(false);
-    setRecorder(null);
-    setIsTranscribing(false);
-    setIsMicActive(false); // Set mic inactive
-
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+    console.log('Cleanup initiated');
+    if (recorder) {
+      recorder.stop();
+      if (recorder.stream) {
+        recorder.stream.getTracks().forEach(track => {
+          track.stop();
+          recorder.stream.removeTrack(track);
+        });
+      }
     }
-
+  
     if (wavesurferRef.current) {
       wavesurferRef.current.destroy();
       wavesurferRef.current = null;
     }
-
-    if (recorder && recorder.stream) {
-      recorder.stream.getTracks().forEach(track => track.stop());
+  
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
+  
+    setListening(false);
+    setRecorder(null);
+    setIsTranscribing(false);
+    setIsMicActive(false);
+    setRecordingTime(0);
   };
+
 
   return (
     <div>
