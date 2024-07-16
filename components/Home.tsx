@@ -18,6 +18,8 @@ import useTheme from '@/hooks/useTheme';
 import usePasteImageUpload from '@/hooks/usePasteImageUpload';
 import UploadStatusBanner from './UploadStatusBanner';
 import MicrophoneRecorder from './MicrophoneRecorder';
+import ImageUpload from './ImageUploadFromHome';
+import useFileUploadFromHome from '@/hooks/useFileUploadFromHome';
 
 const PRODUCTION_ENV = 'production';
 const LOCAL_URL = 'http://localhost:3000';
@@ -72,7 +74,7 @@ const Home: FC = () => {
   const [shouldSubmitAfterTranscription, setShouldSubmitAfterTranscription] = useState<boolean>(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [isMicActive, setIsMicActive] = useState(false);
-
+  const { homeImagePreviews, handleHomeFileChange, handleHomeDeleteImage, setHomeImagePreviews } = useFileUploadFromHome(setQuery, roomId, auth, setUploadStatus);
 
   usePasteImageUpload(currentStage, setImagePreviews, setQuery, roomId, auth);
 
@@ -136,30 +138,30 @@ const Home: FC = () => {
 
   const handleSubmit = async (e?: any) => {
     if (e) e.preventDefault();
-
+  
     if (!roomId) {
       console.error('No roomId available');
       setError('No roomId available');
       return;
     }
-
+  
     setError(null);
     const trimmedQuery = query.trim();
-
+  
     if (!trimmedQuery && currentStage !== 4) {
       alert('Please input a question');
       return;
     }
-
+  
     if (requestsInProgress[roomId]) {
       return;
     }
-
+  
     setRequestsInProgress(prev => ({ ...prev, [roomId]: true }));
     setUserHasScrolled(false);
     setLoading(true);
     const question = query.trim();
-
+  
     setMessageState((state) => ({
       ...state,
       messages: [
@@ -172,46 +174,70 @@ const Home: FC = () => {
       ],
       history: [...state.history, [question, ""]],
     }));
-
+  
     setQuery('');
-
+  
     const userEmail = auth.currentUser ? auth.currentUser.email : null;
-
+  
     if (!userEmail) {
       console.error('User not authenticated');
       setLoading(false);
       setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
       return;
     }
-
-    const currentTime = performance.now();
-    submitTimeRef.current = currentTime;
-
-    try {
-      await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': userEmail,
-        },
-        body: JSON.stringify({
-          question,
-          history,
-          roomId,
-          userEmail,
-        }),
-      });
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (error) {
-      setError('An error occurred while fetching the data. Please try again.');
-      console.error('error', error);
-    } finally {
-      setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
-      setLoading(false);
+  
+    if (homeImagePreviews.length > 0) {
+      // If there are images, call chatWithImages
+      try {
+        await fetch('/api/chatWithImages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            question,
+            roomId,
+            imageUrls: homeImagePreviews.map(preview => preview.url),
+            history, // Pass the history
+          }),
+        });
+  
+      } catch (error) {
+        setError('An error occurred while fetching the data. Please try again.');
+        console.error('error', error);
+      } finally {
+        setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
+        setLoading(false);
+      }
+    } else {
+      // If there are no images, call the original chat endpoint
+      try {
+        await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': userEmail,
+          },
+          body: JSON.stringify({
+            question,
+            history, // Pass the history
+            roomId,
+            userEmail,
+          }),
+        });
+  
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (error) {
+        setError('An error occurred while fetching the data. Please try again.');
+        console.error('error', error);
+      } finally {
+        setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
+        setLoading(false);
+      }
     }
   };
-
+  
+  
   useEffect(() => {
     const handleScrollToTop = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -253,9 +279,9 @@ const Home: FC = () => {
       <GoogleAnalytics /> {}
       <Layout theme={theme} toggleTheme={toggleTheme}>
         <div className="mx-auto flex flex-col gap-4">
-          {imagePreviews.length > 0 && (
+          {homeImagePreviews.length > 0 && (
             <div className="image-container-image-thumb">
-              {imagePreviews.map((image, index) => (
+              {homeImagePreviews.map((image, index) => (
                 <div key={index} className="image-wrapper" style={{ position: 'relative' }}>
                   <img
                     src={image.url}
@@ -263,7 +289,7 @@ const Home: FC = () => {
                     className="image-preview"
                     style={{ width: '150px', height: '150px', marginBottom: '10px' }}
                   />
-                  <button onClick={() => handleDeleteImage(image.fileName, index)} className="delete-button" style={{ position: 'absolute', top: 0, right: 0 }}>
+                  <button onClick={() => handleHomeDeleteImage(image.fileName, index)} className="delete-button" style={{ position: 'absolute', top: 0, right: 0 }}>
                     X
                   </button>
                 </div>
@@ -441,8 +467,8 @@ const Home: FC = () => {
                     value={query}
                     className={styles.textarea}
                     readOnly={currentStage === 4}
-                    
                   />
+                  <ImageUpload handleFileChange={handleHomeFileChange} />
                   {currentStage === 4 ? (
                     <label htmlFor="fileInput" className={styles.fileUploadButton}>
                       <input
@@ -450,10 +476,10 @@ const Home: FC = () => {
                         type="file"
                         accept="image/jpeg"
                         style={{ display: 'none' }}
-                        onChange={handleFileChange}
+                        onChange={handleHomeFileChange}
                         multiple
                       />
-                      <Image src="/icons8-image-upload-48.png" alt="Upload JPG" width = '30' height = '30'/>
+                      <Image src="/icons8-image-upload-48.png" alt="Upload JPG" width="30" height="30"/>
                     </label>
                   ) : (
                     <MicrophoneRecorder
@@ -519,6 +545,6 @@ const Home: FC = () => {
       </Layout>
     </>
   );
-}
+};
 
 export default Home;

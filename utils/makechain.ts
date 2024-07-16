@@ -12,6 +12,8 @@ import { HumanMessage } from "@langchain/core/messages";
 import { MaxMarginalRelevanceSearchOptions } from "@langchain/core/vectorstores";
 import { BaseRetrieverInterface } from '@langchain/core/retrievers';
 import { RunnableConfig } from '@langchain/core/runnables';
+import MemoryService from '@/utils/memoryService';
+
 
 // Type Definitions
 type SearchResult = [MyDocument, number];
@@ -122,7 +124,6 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
 }
 
 const io = getIO();
-const roomMemories: Record<string, BufferMemory> = {};
 const MODEL_NAME = process.env.MODEL_NAME;
 const CONDENSE_PROMPT = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
 If the follow up question does not need context like when the follow up question is a remark like: excellent, thanks, thank you etc., return the exact same text back.
@@ -192,31 +193,24 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
   }
 
   return {
-    call: async (question: string, Documents: MyDocument[], roomId: string, userEmail: string) => {
+    call: async (input: string, Documents: MyDocument[], roomId: string, userEmail: string) => {
       const qaId = generateUniqueId();
 
-      if (!roomMemories[roomId]) {
-        roomMemories[roomId] = new BufferMemory({
-          memoryKey: "chat_history",
-          inputKey: "question",
-          outputKey: "text",
-        });
-      }
-      let chat_history = roomMemories[roomId];
-      const language = await detectLanguageWithOpenAI(question, nonStreamingModel);
+      const chat_memory = MemoryService.getChatMemory(roomId);
+      const language = await detectLanguageWithOpenAI(input, nonStreamingModel);
 
       if (language !== 'English') {
-        question = await translateToEnglish(question, translationModel);
+        input = await translateToEnglish(input, translationModel);
       }
 
       const formattedPrompt = QA_PROMPT.replace('{language}', language);
 
-      if ((chat_history.chatHistory as any).messages.length === 0) {
+      if ((chat_memory.chatHistory as any).messages.length === 0) {
         const initialHumanMessage = new HumanMessage({
           content: "Hi",
           name: "Human",
         });
-        chat_history.chatHistory.addMessage(initialHumanMessage);
+        chat_memory.chatHistory.addMessage(initialHumanMessage);
       }
 
       const customRetriever = new CustomRetriever(vectorstore);
@@ -224,32 +218,32 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         streamingModel,
         customRetriever,
         {
-          memory: chat_history,
+          memory: chat_memory,
           questionGeneratorChainOptions: {
             llm: nonStreamingModel,
           },
           qaTemplate: formattedPrompt,
           questionGeneratorTemplate: CONDENSE_PROMPT,
           returnSourceDocuments: true,
-          verbose: false
+          verbose: false,
         }
       );
 
-      const responseText = (await (async () => {
-        const response = await chain.invoke({
-          question: question,
-        });
-        return {
-          text: response.text,
-          sourceDocuments: response.sourceDocuments
-        };
-      })());
+      const response = await chain.invoke({
+        question: input,  // Use 'input' key
+        chat_history: chat_memory.chatHistory,
+      });
+
+      await chat_memory.saveContext(
+        { question: input },  // Use 'input' key
+        { text: response.text }  // Use 'output' key
+      );
 
       const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
       let embeddingsStore;
       if (language !== 'English') {
-        embeddingsStore = await customRetriever.storeEmbeddings(responseText.text, minScoreSourcesThreshold);
-        Documents = [...responseText.sourceDocuments];
+        embeddingsStore = await customRetriever.storeEmbeddings(response.text, minScoreSourcesThreshold);
+        Documents = [...response.sourceDocuments];
         
         // Apply filtering after combining sources
         Documents = Documents.filter(doc => doc.metadata.type !== 'other' && doc.metadata.type !== "txt" && doc.metadata.type !== "user_input");
@@ -275,7 +269,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       }
       
       if (language === 'English') {
-        embeddingsStore = await customRetriever.storeEmbeddings(responseText.text, minScoreSourcesThreshold);
+        embeddingsStore = await customRetriever.storeEmbeddings(response.text, minScoreSourcesThreshold);
         for (const [doc, score] of embeddingsStore) {
           const myDoc = new MyDocument({
             pageContent: doc.pageContent,
@@ -309,7 +303,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         });
       }
       
-      await insertQA(question, responseText.text, responseText.sourceDocuments, Documents, qaId, roomId, userEmail);
+      await insertQA(input, response.text, response.sourceDocuments, Documents, qaId, roomId, userEmail);
       
       let totalScore = 0;
       let count = 0;
@@ -322,9 +316,18 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         }
         totalScore = count > 0 ? totalScore / count : 0;
       }
-      
-      return Documents;
+
+      MemoryService.updateChatMemory(roomId, chat_memory);
+
+      return {
+        text: response.text,
+        sourceDocuments: response.sourceDocuments
+      };
     },
     vectorstore,
   };
 };
+
+
+
+
