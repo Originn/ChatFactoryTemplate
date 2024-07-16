@@ -76,6 +76,17 @@
   display: flex;
 }
 
+.fileUploadButtonInHome{
+  position: absolute;
+  top: -1.5rem;
+  right: 5.5rem;
+  color: rgb(165, 162, 162);
+  background: none;
+  padding: 0.3rem;
+  border: none;
+  display: flex;
+}
+
 .loadingwheel {
   position: absolute;
   top: 0.2rem;

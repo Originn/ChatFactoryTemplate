@@ -59,43 +59,8 @@ async function getImageDescription(imageUrl: string, roomId: string) {
   }
 }
 
-// async function getImageDescriptionInNormalQuestion(imageUrl: string, roomId: string) {
-//   const io = getIO();
-//   try {
-//     const response = await openAIClient.chat.completions.create({
-//       model: "gpt-4o",
-//       messages: [
-//         {
-//           role: "user",
-//           content: [
-//             { type: "text", text: "You should: \
-//             1. Describe the image as concisely and as best as possible in 275 words. \
-//             2. If there are Errors in the image make sure it's included in the description." },
-//             {
-//               type: "image_url",
-//               image_url: { url: imageUrl },
-//             },
-//           ],
-//         },
-//       ],
-//       max_tokens: 300,
-//     });
-
-//     return response.choices[0].message.content;
-
-//   } catch (error) {
-//     console.error('Error getting image description:', error);
-//     io.to(roomId).emit("newToken", "Error getting image description.");
-//     return "Error getting image description.";
-//   }
-// }
-
 // Utility function to handle embedding and response
 async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, userEmail: string) {
-  // api/chat.ts
-  console.log("Debugging...");
-  debugger;  // This will trigger the debugger if attached
-
   const io = getIO();
   const codePrefix = 'embed-4831-embed-4831';
 
@@ -261,7 +226,7 @@ export default async function handler(
       } else if (session.stage === 3) {
         session.text = sanitizedQuestion;
         roomSessions[roomId] = { ...session, stage: 4 };
-        const message = 'If you have an **.jpg image** to upload, please do so now. If image is not needed click submit.';
+        const message = 'If you have an **image** to upload, please do so now. If image is not needed click submit.';
         io.to(roomId).emit("newToken", message);
         io.to(roomId).emit("stageUpdate", 4);
         return res.status(200).json({ message });
@@ -272,36 +237,6 @@ export default async function handler(
       if (!question) {
         return res.status(400).json({ message: 'No question in the request' });
       }
-
-      // const isImageUrl = sanitizedQuestion?.startsWith('https://storage.googleapis.com/solidcam/');
-      // if (isImageUrl) {
-      //   const imageURL = sanitizedQuestion.split(' ')[0];
-      //   const additionalText = sanitizedQuestion.split(' ').slice(1).join(' ');
-      //   const description = await getImageDescriptionInNormalQuestion(imageURL, roomId);
-      //   console.log(description);
-      //   const imageWithQuestion = description + ' [END OF DESCRIPTION] ' + additionalText;
-        
-      //   // Proceed to the embedding logic for cases with updated question
-      //   const pinecone = await getPinecone();
-      //   const vectorStore = await PineconeStore.fromExistingIndex(
-      //     new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
-      //     {
-      //       pineconeIndex: pinecone,
-      //       namespace: PINECONE_NAME_SPACE,
-      //       textKey: 'text',
-      //     },
-      //   );
-      
-      //   const chain = makeChain(vectorStore, (token) => {
-      //     if (roomId) {
-      //       io.to(roomId).emit("newToken", token);
-      //     }
-      //   }, userEmail);
-      
-      //   const Documents = await chain.call(imageWithQuestion, [], roomId, userEmail);
-      //   return res.status(200).json({ sourceDocs: Documents });
-      // }
-
 
       // Proceed to the embedding logic for cases without images
       const pinecone = await getPinecone();
@@ -328,3 +263,6 @@ export default async function handler(
     return res.status(500).json({ error: error.message || 'Something went wrong' });
   }
 }
+
+
+
