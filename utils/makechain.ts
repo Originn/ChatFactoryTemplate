@@ -216,6 +216,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       //console.log("Memory:", memory);
       //console.log("Image URLs:", imageUrls);
 
+      //currently does not run the image model when there is a imageUrl in the memory object, can be revised later if needed.
       if (imageUrls && imageUrls.length > 0) {
         try {
           const response = await openai.chat.completions.create({
@@ -289,11 +290,11 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         }),
       });
 
-      const chatHistory = await memory.loadMemoryVariables({});
+      const chatHistory = await MemoryService.getChatHistory(roomId);
 
       const ragResponse = await ragChain.invoke({
         input,
-        chat_history: chatHistory.chat_history,
+        chat_history: chatHistory,
       });
 
       // Update the chat memory with the new interaction

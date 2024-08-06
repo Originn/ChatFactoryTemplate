@@ -1,5 +1,6 @@
-import BufferMemory from "./BufferMemory";
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
+import { InputValues } from "langchain/memory";
+import BufferMemory from "./BufferMemory";
 
 class MemoryService {
   private static chatMemory: Record<string, BufferMemory> = {};
@@ -15,15 +16,32 @@ class MemoryService {
 
   static async updateChatMemory(roomId: string, input: string, output: string, imageUrl: string[]): Promise<void> {
     const memory = this.getChatMemory(roomId);
-    await memory.saveContext({ input }, { output });
+    memory.messages.push(new HumanMessage(input));
+    memory.messages.push(new AIMessage(output));
+    
     // Save the imageUrl in metadata if provided
-    if (imageUrl) {
+    if (imageUrl && imageUrl.length > 0) {
       memory.metadata.imageUrl = imageUrl;
     }
   }
 
+  static async getChatHistory(roomId: string): Promise<BaseMessage[]> {
+    const memory = this.getChatMemory(roomId);
+    const result = await memory.loadMemoryVariables({} as InputValues);
+    return result[memory.memoryKey] as BaseMessage[];
+  }
+
   static clearChatMemory(roomId: string): void {
-    delete this.chatMemory[roomId];
+    const memory = this.getChatMemory(roomId);
+    memory.messages = [];
+    memory.metadata = {};
+  }
+
+  static async logMemoryState(roomId: string): Promise<void> {
+    const memory = this.getChatMemory(roomId);
+    console.log(`Memory state for room ${roomId}:`);
+    console.log('Messages:', memory.messages);
+    console.log('Metadata:', memory.metadata);
   }
 }
 
