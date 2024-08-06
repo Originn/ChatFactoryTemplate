@@ -213,9 +213,8 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       
       // Retrieve the memory for this room
       const memory = MemoryService.getChatMemory(roomId);
-      console.log("Memory:", memory);
-      console.log("Image URLs:", imageUrls);
-      let enhancedInput = input;
+      //console.log("Memory:", memory);
+      //console.log("Image URLs:", imageUrls);
 
       if (imageUrls && imageUrls.length > 0) {
         try {
@@ -252,7 +251,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       
         // Combine all image descriptions
         const imageDescription = response.choices[0].message.content;
-        console.log("Combined Image Descriptions:", imageDescription);
+        //console.log("Combined Image Descriptions:", imageDescription);
         input = `${input} [Image model answer: ${imageDescription}]`;
       } catch (error) {
         console.error('Error processing images:', error);
@@ -261,10 +260,10 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     }
       
       // Use enhancedInput instead of input in the rest of the function
-      const language = await detectLanguageWithOpenAI(enhancedInput, nonStreamingModel);
+      const language = await detectLanguageWithOpenAI(input, nonStreamingModel);
       
       if (language !== 'English') {
-        input = await translateToEnglish(enhancedInput, translationModel);
+        input = await translateToEnglish(input, translationModel);
       }
 
       const customRetriever = new CustomRetriever(vectorstore);
@@ -298,7 +297,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       });
 
       // Update the chat memory with the new interaction
-      await MemoryService.updateChatMemory(roomId, enhancedInput, ragResponse.answer, imageUrls);
+      await MemoryService.updateChatMemory(roomId, input, ragResponse.answer, imageUrls);
 
 
       const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
