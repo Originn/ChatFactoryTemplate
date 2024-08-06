@@ -28,13 +28,8 @@ class BufferMemory extends BaseChatMemory implements BufferMemoryInput {
   }
 
   async loadMemoryVariables(_values: InputValues): Promise<MemoryVariables> {
-    const messages = this.messages.map((msg: BaseMessage) => ({
-      ...msg,
-      content: msg.content,
-    }));
-
     return {
-      [this.memoryKey]: messages,
+      [this.memoryKey]: this.messages,
       ...this.metadata,
     };
   }
