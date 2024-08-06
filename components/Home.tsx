@@ -540,7 +540,7 @@ const Home: FC = () => {
                       style={{ display: 'none' }}
                       id="generalFileInput"
                     />
-                    <label htmlFor="generalFileInput" className={styles.fileUploadButton}>
+                    <label htmlFor="generalFileInput" className={styles.fileUploadButton} title="Upload image">
                       <Image src="/image-upload-48.png" alt="Upload JPG" width="30" height="30" />
                     </label>
                   </>
