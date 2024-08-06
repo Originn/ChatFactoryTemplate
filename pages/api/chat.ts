@@ -95,7 +95,6 @@ async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, 
       io.to(roomId).emit("resetStages");
   
       delete roomSessions[roomId];
-      console.log(`Embedding successful for roomId: ${roomId}`);
       
       // Emit an event to hide the banner on success
       io.to(roomId).emit("uploadStatus", "Upload and processing complete.");
@@ -125,7 +124,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { question, roomId, userEmail, imageUrl, history } = req.body;
+  const { question, roomId, userEmail, imageUrls, history } = req.body;
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -143,10 +142,10 @@ export default async function handler(
     let session = roomSessions[roomId];
 
     // Check if the question is an image URL and history contains the codePrefix
-    const isImageUrl = sanitizedQuestion?.startsWith('https://storage.googleapis.com/solidcam-chatbot-documents/');
+    const isImageUrls = sanitizedQuestion?.startsWith('https://storage.googleapis.com/solidcam-chatbot-documents/');
     const hasCodePrefixInHistory = history && history.length >= 3 && history[history.length - 3][0].includes(codePrefix);
 
-    if (isImageUrl && hasCodePrefixInHistory) {
+    if (isImageUrls && hasCodePrefixInHistory) {
       session = session || { stage: 4, header: '', text: '', images: [] };
 
       // Ensure images array is initialized
@@ -172,7 +171,6 @@ export default async function handler(
       for (let img of session.images ?? []) {
         if (!img.description) {
           if (img.url.includes("www_linkedin_com")) {
-            console.log(`Skipping image description for LinkedIn URL: ${img.url}`);
             img.description = "LinkedIn image URL, no description fetched.";
           } else {
             img.description = await getImageDescription(img.url, roomId);
@@ -255,7 +253,7 @@ export default async function handler(
         }
       }, userEmail);
 
-      const Documents = await chain.call(sanitizedQuestion, [], roomId, userEmail);
+      const Documents = await chain.call(sanitizedQuestion, [], roomId, userEmail, imageUrls);
       return res.status(200).json({ sourceDocs: Documents });
     }
   } catch (error: any) {

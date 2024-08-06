@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ImagePreview {
   url: string;
   fileName: string;
+}
+
+interface UploadProgress {
+  [key: string]: number | null;  // Changed to allow null
 }
 
 const useFileUploadFromHome = (
@@ -13,9 +17,15 @@ const useFileUploadFromHome = (
   setUploadStatus: (status: string | null) => void
 ) => {
   const [homeImagePreviews, setHomeImagePreviews] = useState<ImagePreview[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleHomeFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
+    if (files && files.length > 2) {
+      alert('Only 2 images are allowed per upload');
+      return;
+    }
     if (files && files.length > 0) {
       setUploadStatus('Uploading and processing...');
       for (const file of Array.from(files)) {
@@ -24,41 +34,72 @@ const useFileUploadFromHome = (
         const formData = new FormData();
         formData.append("file", file, fileNameWithTimestamp);
 
-        // Get the current date and time
         const now = new Date();
-        const dateTimeString = now.toISOString(); // You can format this string as you like
+        const dateTimeString = now.toISOString();
 
         formData.append("header", dateTimeString);
 
         try {
-          const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/upload', true);
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percentComplete = (event.loaded / event.total) * 100;
+              setUploadProgress(prev => ({
+                ...prev,
+                [fileNameWithTimestamp]: percentComplete
+              }));
+            }
+          };
+
+          await new Promise<void>((resolve, reject) => {
+            xhr.onload = () => {
+              if (xhr.status === 200) {
+                try {
+                  const data = JSON.parse(xhr.responseText);
+                  if (data.imageUrls) {
+                    setHomeImagePreviews((prevPreviews: ImagePreview[]) => {
+                      const newPreviews = [
+                        ...prevPreviews,
+                        ...data.imageUrls.map(({ url, fileName }: { url: string, fileName: string }) => ({
+                          url: `${url}`,
+                          fileName: fileName
+                        }))
+                      ];
+                      console.log("Updated homeImagePreviews:", newPreviews);
+                      return newPreviews;
+                    });
+                    // Clear progress for uploaded files
+                    data.imageUrls.forEach(({ fileName }: { fileName: string }) => {
+                      setUploadProgress(prev => ({
+                        ...prev,
+                        [fileName]: null  // Set to null instead of 100
+                      }));
+                    });
+                  }
+                  resolve();
+                } catch (error) {
+                  console.error('Error parsing response:', error);
+                  reject(new Error('Error parsing server response'));
+                }
+              } else {
+                console.error('Upload failed with status:', xhr.status);
+                console.error('Response:', xhr.responseText);
+                reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
+              }
+            };
+
+            xhr.onerror = () => {
+              console.error('XHR error occurred');
+              reject(new Error('Network error occurred during upload'));
+            };
+
+            xhr.send(formData);
           });
-
-          const data = await response.json();
-          if (data.imageUrls) {
-            data.imageUrls.forEach(({ url, fileName }: { url: string, fileName: string }) => {
-              const cacheBustedUrl = `${url}?${uuidv4()}`;
-              setHomeImagePreviews((prevPreviews: ImagePreview[]) => [...prevPreviews, { url: cacheBustedUrl, fileName }]);
-              // No update to setQuery here
-            });
-
-            await fetch('/api/chat', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                imageUrl: data.imageUrl,
-                roomId,
-                userEmail: auth.currentUser?.email || 'default-email',
-              }),
-            });
-          }
-        } catch (error) {
+        } catch (error:any) {
           console.error('Error uploading file:', error);
-          setUploadStatus('Upload and processing failed.');
+          setUploadStatus(`Upload failed: ${error.message}`);
           setTimeout(() => {
             setUploadStatus(null);
           }, 3000);
@@ -70,33 +111,35 @@ const useFileUploadFromHome = (
         setUploadStatus(null);
       }, 3000);
     }
+    // Reset the file input
+    if (event.target) {
+      event.target.value = '';
+    }
   };
 
   const handleHomeDeleteImage = async (fileName: string, index: number) => {
     try {
       const response = await fetch('/api/delete', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileName }),
       });
-
-      if (response.ok) {
-        setHomeImagePreviews((prevPreviews: ImagePreview[]) => {
-          const newPreviews = prevPreviews.filter((_, i) => i !== index);
-          const urlToDelete = prevPreviews[index].url;
-          setQuery((prevQuery: string) => {
-            const lines = prevQuery.split('\n');
-            return lines.filter(line => line !== urlToDelete).join('\n');
-          });
-          return newPreviews;
-        });
-      } else {
-        console.error('Failed to delete image from GCP');
-      }
+      if (!response.ok) throw new Error('Failed to delete image');
+      
+      setHomeImagePreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
+      // Remove the progress for the deleted image
+      setUploadProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[fileName];
+        return newProgress;
+      });
     } catch (error) {
-      console.error('Error deleting image:', error);
+      console.error('Error deleting general user image:', error);
+    } finally {
+      // Reset the file input using the ref
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -105,6 +148,8 @@ const useFileUploadFromHome = (
     handleHomeFileChange,
     handleHomeDeleteImage,
     setHomeImagePreviews,
+    fileInputRef,
+    uploadProgress,
   };
 };
 

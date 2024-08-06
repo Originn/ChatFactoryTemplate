@@ -17,7 +17,7 @@ const ImageUpload: FC<ImageUploadProps> = ({ handleFileChange }) => {
         onChange={handleFileChange}
         multiple
       />
-      <Image src="/icons8-image-upload-48.png" alt="Upload JPG" width="30" height="30" />
+      <Image src="/image-upload-48.png" alt="Upload JPG" width="30" height="30" />
     </label>
   );
 };

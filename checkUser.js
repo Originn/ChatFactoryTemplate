@@ -13,7 +13,6 @@ admin.initializeApp({
 async function checkUserState(uid) {
   try {
     const userRecord = await admin.auth().getUser(uid);
-    console.log('User Data:', userRecord.toJSON());
   } catch (error) {
     console.error('Error fetching user data:', error);
   }

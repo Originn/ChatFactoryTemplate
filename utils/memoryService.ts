@@ -1,59 +1,29 @@
-import { BufferMemory } from "langchain/memory";
+import BufferMemory from "./BufferMemory";
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
 
-interface ChatMessage {
-  role: string;
-  content: string;
-}
-
 class MemoryService {
-  private static chatMemory: Record<string, ChatMessage[]> = {};
+  private static chatMemory: Record<string, BufferMemory> = {};
 
   static getChatMemory(roomId: string): BufferMemory {
     if (!this.chatMemory[roomId]) {
-      this.chatMemory[roomId] = [];
+      this.chatMemory[roomId] = new BufferMemory({ 
+        memoryKey: "chat_history",
+      });
     }
-
-    const memory = new BufferMemory({
-      memoryKey: "chat_history",
-      inputKey: "question",  // Specify the input key
-      outputKey: "text", // Specify the output key
-      returnMessages: true,
-    });
-
-    // Populate memory with stored messages
-    const chatHistory = this.chatMemory[roomId].map(msg => 
-      msg.role === 'Human' ? new HumanMessage(msg.content) : new AIMessage(msg.content)
-    );
-    (memory as any).chatHistory.messages = chatHistory;
-
-    this.logChatMemory(roomId);
-    return memory;
+    return this.chatMemory[roomId];
   }
 
-  static updateChatMemory(roomId: string, memory: BufferMemory): void {
-    const chatHistory = (memory as any).chatHistory.messages;
-    this.chatMemory[roomId] = chatHistory.map((msg: BaseMessage) => ({
-      role: msg._getType(),
-      content: msg.content,
-    }));
-    this.logChatMemory(roomId);
+  static async updateChatMemory(roomId: string, input: string, output: string, imageUrl: string[]): Promise<void> {
+    const memory = this.getChatMemory(roomId);
+    await memory.saveContext({ input }, { output });
+    // Save the imageUrl in metadata if provided
+    if (imageUrl) {
+      memory.metadata.imageUrl = imageUrl;
+    }
   }
 
   static clearChatMemory(roomId: string): void {
     delete this.chatMemory[roomId];
-  }
-
-  static logChatMemory(roomId: string): void {
-    console.log(`Chat Memory for roomId: ${roomId}`);
-    if (this.chatMemory[roomId]) {
-      console.log("Chat History:");
-      this.chatMemory[roomId].forEach((message, index) => {
-        console.log(`${index + 1}: ${message.role} - ${message.content}`);
-      });
-    } else {
-      console.log("No messages in chat history.");
-    }
   }
 }
 

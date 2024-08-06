@@ -20,11 +20,11 @@ const poolConfig = isProduction
 
 const pool = new Pool(poolConfig);
 
-const insertQA = async (question, answer, embeddings, sources, qaId, roomId, userEmail) => {
+const insertQA = async (question, answer, embeddings, sources, qaId, roomId, userEmail, imageurl) => {
   // Remove the Unicode escape sequence from the answerRaw string
   const query = `
-    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, "qaId", "roomId", userEmail)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, "qaId", "roomId", userEmail, imageurl)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING *;
   `;
 
@@ -32,8 +32,7 @@ const insertQA = async (question, answer, embeddings, sources, qaId, roomId, use
     // Ensure embeddings is a JSON string
     const embeddingsJson = JSON.stringify(embeddings);
     const sourcesJson = JSON.stringify(sources);
-    const res = await pool.query(query, [question, answer, embeddingsJson, sourcesJson, qaId, roomId, userEmail]);
-    //console.log(res.rows[0]); // Output the inserted row to the console
+    const res = await pool.query(query, [question, answer, embeddingsJson, sourcesJson, qaId, roomId, userEmail, imageurl]);
     return res.rows[0]; // Return the inserted row
   } catch (err) {
     console.error('Error running query', err);
@@ -52,7 +51,6 @@ const updateFeedback = async (qaId, thumb, comment, roomId) => {
 
   try {
     const res = await pool.query(query, [qaId, thumb, comment, roomId]);
-    //console.log('Updated feedback:', res.rows[0]); // Log the updated row
     return res.rows[0]; // Return the updated row
   } catch (err) {
     // Check if error is an instance of Error
@@ -74,7 +72,6 @@ const insertQuestionEmbedderDetails = async (embeddedText, timestamp, email) => 
 
   try {
     const res = await pool.query(query, [embeddedText, timestamp, email]);
-    console.log('Inserted QuestionEmbedder row:', res.rows[0]); // Log the inserted row
     return res.rows[0]; // Return the inserted row
   } catch (err) {
     console.error('Error running insertQuestionEmbedderDetails query:', err);

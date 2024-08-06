@@ -1,8 +1,6 @@
-import { OpenAI, ChatOpenAI } from '@langchain/openai';
+import { OpenAI as LangchainOpenAI, ChatOpenAI } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
-import { ConversationalRetrievalQAChain } from 'langchain/chains';
 import { MyDocument } from 'utils/GCSLoader';
-import { BufferMemory } from "langchain/memory";
 import { BaseRetriever } from "@langchain/core/retrievers";
 import { getIO } from "@/socketServer.cjs";
 import { v4 as uuidv4 } from 'uuid';
@@ -13,7 +11,14 @@ import { MaxMarginalRelevanceSearchOptions } from "@langchain/core/vectorstores"
 import { BaseRetrieverInterface } from '@langchain/core/retrievers';
 import { RunnableConfig } from '@langchain/core/runnables';
 import MemoryService from '@/utils/memoryService';
+import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
+import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
+import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retriever";
+import { createRetrievalChain } from "langchain/chains/retrieval";
+import OpenAIChat from "openai"; // Import OpenAI without aliasing
 
+
+const openai = new OpenAIChat(); // Initialize OpenAI
 
 // Type Definitions
 type SearchResult = [MyDocument, number];
@@ -23,11 +28,11 @@ interface DocumentInterface<T> {
   metadata: T;
 }
 
-
 // Utility Functions
-async function detectLanguageWithOpenAI(text: string, nonStreamingModel: OpenAI): Promise<string> {
+async function detectLanguageWithOpenAI(text: string, nonStreamingModel: ChatOpenAI): Promise<string> {
   const prompt = LANGUAGE_DETECTION_PROMPT.replace('{text}', text);
-  const response = await nonStreamingModel.generate([prompt]);
+  const message = new HumanMessage(prompt);
+  const response = await nonStreamingModel.generate([[message]]);
 
   if (response.generations.length > 0 && response.generations[0].length > 0) {
     const firstGeneration = response.generations[0][0];
@@ -48,8 +53,11 @@ async function filteredSimilaritySearch(vectorStore: any, queryVector: number[],
   }
 }
 
-async function translateToEnglish(question: string, translationModel: OpenAI): Promise<string> {
-  const response = await translationModel.generate([TRANSLATION_PROMPT.replace('{question}', question)]);
+async function translateToEnglish(question: string, translationModel: ChatOpenAI): Promise<string> {
+  const prompt = TRANSLATION_PROMPT.replace('{question}', question);
+  const message = new HumanMessage(prompt);
+  
+  const response = await translationModel.generate([[message]]);
 
   if (response.generations.length > 0 && response.generations[0].length > 0) {
     const firstGeneration = response.generations[0][0];
@@ -125,10 +133,10 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
 
 const io = getIO();
 const MODEL_NAME = process.env.MODEL_NAME;
-const CONDENSE_PROMPT = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
+const contextualizeQSystemPrompt = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
 If the follow up question does not need context like when the follow up question is a remark like: excellent, thanks, thank you etc., return the exact same text back.
-Rephrase the Standalone question also if replacing abbriviations to full strings.
-abbriviations:
+Rephrase the Standalone question also if replacing abbreviations to full strings.
+abbreviations:
 HSS - High Speed Surface
 HSM - High Speed Machining
 HSR - High Speed Roughing
@@ -136,10 +144,10 @@ gpp - general post processor
 
 Chat History:
 {chat_history}
-Follow Up Input: {question}
+Follow Up Input: {input}
 Standalone question:`;
 
-const QA_PROMPT = `You are a multilingual helpful and friendly assistant. You focus on helping SolidCAM users with their questions.
+const qaSystemPrompt = `You are a multilingual helpful and friendly assistant. You focus on helping SolidCAM users with their questions.
 
 - If you do not have the information in the context to answer a question, admit it openly without fabricating responses.
 - Do not mention that SolidCAM originated in Israel. Instead, state that it is an internationally developed software with a global team of developers.
@@ -147,6 +155,7 @@ const QA_PROMPT = `You are a multilingual helpful and friendly assistant. You fo
 - If a question is unrelated to SolidCAM, kindly inform the user that your assistance is focused on SolidCAM-related topics.
 - If the user asks a question without marking the year answer the question regarding the latest SolidCAM 2023 release.
 - Discuss iMachining only if the user specifically asks for it.
+- When you see [Image model answer: in the Question, you can understand that an image was used and try to answer the question with the data given from the Image model about the image. 
 - Always add links if the link appear in the context and it is relevant to the answer. 
 - show .jpg images directly in the answer if they are in the context and are relevant per the image description. You can explain the image only if you have the full image description, but don't give the image description verbatim.
 - If the user's questions is valid and there is no documentation or context about it, let him know that he can leave a comment and we will do our best to include it at a later stage.
@@ -154,18 +163,18 @@ Your responses should be tailored to the question's intent, using text formattin
 =========
 context: {context}
 =========
-Question: {question}
+Question: {input}
 Answer in the {language} language:`;
 
 const TRANSLATION_PROMPT = `Translate the following text to English. Try to translate it taking into account that it's about SolidCAM. Return the translated question only:\nText: {question}`;
 const LANGUAGE_DETECTION_PROMPT = `Detect the language of the following text and respond with the language name only, nothing else:\n\nText: "{text}"`;
-const TEMPRATURE = parseFloat(process.env.TEMPRATURE || "0");
+const TEMPERATURE = parseFloat(process.env.TEMPERATURE || "0");
 
 export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void, userEmail: string) => {
   const streamingModel = new ChatOpenAI({
     streaming: true,
     modelName: MODEL_NAME,
-    temperature: TEMPRATURE,
+    temperature: TEMPERATURE,
     modelKwargs: {
       seed: 1,
     },
@@ -178,76 +187,130 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     ],
   });
 
-  const nonStreamingModel = new OpenAI({
+  const nonStreamingModel = new ChatOpenAI({
     modelName: 'gpt-4o',
-    temperature: TEMPRATURE
+    temperature: TEMPERATURE,
   });
 
-  const translationModel = new OpenAI({
+  const translationModel = new ChatOpenAI({
     modelName: 'gpt-4o',
-    temperature: TEMPRATURE
+    temperature: TEMPERATURE,
   });
 
   function generateUniqueId(): string {
     return uuidv4();
   }
 
+  const contextualizeQPrompt = ChatPromptTemplate.fromMessages([
+    ["system", contextualizeQSystemPrompt],
+    new MessagesPlaceholder("chat_history"),
+    ["human", "{input}"],
+  ]);
+
   return {
-    call: async (input: string, Documents: MyDocument[], roomId: string, userEmail: string) => {
+    call: async (input: string, Documents: MyDocument[], roomId: string, userEmail: string, imageUrls: string[]) => {
       const qaId = generateUniqueId();
+      
+      // Retrieve the memory for this room
+      const memory = MemoryService.getChatMemory(roomId);
+      console.log("Memory:", memory);
+      console.log("Image URLs:", imageUrls);
+      let enhancedInput = input;
 
-      const chat_memory = MemoryService.getChatMemory(roomId);
-      const language = await detectLanguageWithOpenAI(input, nonStreamingModel);
-
-      if (language !== 'English') {
-        input = await translateToEnglish(input, translationModel);
+      if (imageUrls && imageUrls.length > 0) {
+        try {
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "text", text:`Given the following question and images, provide necessary and concice data about the images to help answer the question. 
+                          Do not try to answer the question itself. This will be passed to another model which needs the data about the images. 
+                          If the user asks about how to machine a part in the images, give specific details of the geometry of the part. 
+                          If there are 2 images, check if they are the same part but viewed from different angles.`
+                  },
+                ],
+              },
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: `Question: ${input}`
+                  },
+                  ...imageUrls.map(url => ({
+                    type: "image_url",
+                    image_url: {
+                      url: url
+                    }
+                  } as const))
+                ],
+              },
+            ],
+          });
+      
+        // Combine all image descriptions
+        const imageDescription = response.choices[0].message.content;
+        console.log("Combined Image Descriptions:", imageDescription);
+        input = `${input} [Image model answer: ${imageDescription}]`;
+      } catch (error) {
+        console.error('Error processing images:', error);
+        // Handle the error appropriately
       }
-
-      const formattedPrompt = QA_PROMPT.replace('{language}', language);
-
-      if ((chat_memory.chatHistory as any).messages.length === 0) {
-        const initialHumanMessage = new HumanMessage({
-          content: "Hi",
-          name: "Human",
-        });
-        chat_memory.chatHistory.addMessage(initialHumanMessage);
+    }
+      
+      // Use enhancedInput instead of input in the rest of the function
+      const language = await detectLanguageWithOpenAI(enhancedInput, nonStreamingModel);
+      
+      if (language !== 'English') {
+        input = await translateToEnglish(enhancedInput, translationModel);
       }
 
       const customRetriever = new CustomRetriever(vectorstore);
-      const chain = ConversationalRetrievalQAChain.fromLLM(
-        streamingModel,
-        customRetriever,
-        {
-          memory: chat_memory,
-          questionGeneratorChainOptions: {
-            llm: nonStreamingModel,
-          },
-          qaTemplate: formattedPrompt,
-          questionGeneratorTemplate: CONDENSE_PROMPT,
-          returnSourceDocuments: true,
-          verbose: false,
-        }
-      );
 
-      const response = await chain.invoke({
-        question: input,  // Use 'input' key
-        chat_history: chat_memory.chatHistory,
+      const formattedPrompt = qaSystemPrompt.replace('{language}', language);
+
+      const qaPrompt = ChatPromptTemplate.fromMessages([
+        ["system", formattedPrompt],
+        new MessagesPlaceholder("chat_history"),
+        ["human", "{input}"],
+      ]);
+
+      // Create the RAG chain
+      const ragChain = await createRetrievalChain({
+        retriever: await createHistoryAwareRetriever({
+          llm: nonStreamingModel,
+          retriever: customRetriever,
+          rephrasePrompt: contextualizeQPrompt,
+        }),
+        combineDocsChain: await createStuffDocumentsChain({
+          llm: streamingModel,
+          prompt: qaPrompt,
+        }),
       });
 
-      await chat_memory.saveContext(
-        { question: input },  // Use 'input' key
-        { text: response.text }  // Use 'output' key
-      );
+      const chatHistory = await memory.loadMemoryVariables({});
+
+      const ragResponse = await ragChain.invoke({
+        input,
+        chat_history: chatHistory.chat_history,
+      });
+
+      // Update the chat memory with the new interaction
+      await MemoryService.updateChatMemory(roomId, enhancedInput, ragResponse.answer, imageUrls);
+
 
       const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
       let embeddingsStore;
+
       if (language !== 'English') {
-        embeddingsStore = await customRetriever.storeEmbeddings(response.text, minScoreSourcesThreshold);
-        Documents = [...response.sourceDocuments];
-        
+        embeddingsStore = await customRetriever.storeEmbeddings(ragResponse.answer, minScoreSourcesThreshold);
+        Documents = [...ragResponse.context];
+
         // Apply filtering after combining sources
         Documents = Documents.filter(doc => doc.metadata.type !== 'other' && doc.metadata.type !== "txt" && doc.metadata.type !== "user_input");
-      
+
         for (const [doc, score] of embeddingsStore) {
           if (doc.metadata.type !== "txt" && doc.metadata.type !== "user_input") {
             const myDoc = new MyDocument({
@@ -258,18 +321,18 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
                 videoLink: doc.metadata.videoLink,
                 file: doc.metadata.file,
                 score: score,
-                image: doc.metadata.image
-              }
+                image: doc.metadata.image,
+              },
             });
-      
+
             Documents.push(myDoc);
           }
         }
         Documents.sort((a, b) => (b.metadata.score ? 1 : 0) - (a.metadata.score ? 1 : 0));
       }
-      
+
       if (language === 'English') {
-        embeddingsStore = await customRetriever.storeEmbeddings(response.text, minScoreSourcesThreshold);
+        embeddingsStore = await customRetriever.storeEmbeddings(ragResponse.answer, minScoreSourcesThreshold);
         for (const [doc, score] of embeddingsStore) {
           const myDoc = new MyDocument({
             pageContent: doc.pageContent,
@@ -279,32 +342,32 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
               videoLink: doc.metadata.videoLink,
               file: doc.metadata.file,
               score: score,
-              image: doc.metadata.image
-            }
+              image: doc.metadata.image,
+            },
           });
-      
+
           Documents.push(myDoc);
         }
-        
+
         // Apply filtering after combining sources
         Documents = Documents.filter(doc => doc.metadata.type !== 'other');
       }
-      
+
       if (roomId) {
         io.to(roomId).emit(`fullResponse-${roomId}`, {
           roomId: roomId,
           sourceDocs: Documents,
-          qaId: qaId
+          qaId: qaId,
         });
       } else {
         io.emit("fullResponse", {
           sourceDocs: Documents,
-          qaId: qaId
+          qaId: qaId,
         });
       }
-      
-      await insertQA(input, response.text, response.sourceDocuments, Documents, qaId, roomId, userEmail);
-      
+
+      await insertQA(input, ragResponse.answer, ragResponse.sourceDocuments, Documents, qaId, roomId, userEmail, imageUrls);
+
       let totalScore = 0;
       let count = 0;
       if (Documents && Documents.length > 0) {
@@ -317,17 +380,11 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         totalScore = count > 0 ? totalScore / count : 0;
       }
 
-      MemoryService.updateChatMemory(roomId, chat_memory);
-
       return {
-        text: response.text,
-        sourceDocuments: response.sourceDocuments
+        text: ragResponse.answer,
+        sourceDocuments: ragResponse.sourceDocuments,
       };
     },
     vectorstore,
   };
 };
-
-
-
-

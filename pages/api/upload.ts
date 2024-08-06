@@ -27,6 +27,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     const fileArray = Array.isArray(files.file) ? files.file : [files.file];
+
+    // Check if more than 2 files are being uploaded
+    if (fileArray.length > 2) {
+      return res.status(400).json({ error: 'Only 2 images are allowed per upload' });
+    }
+
     const header = Array.isArray(fields.header) ? fields.header[0] : fields.header;
     const sanitizedHeader = (header || 'default').replace(/[^a-z0-9]/gi, '_').toLowerCase();
 

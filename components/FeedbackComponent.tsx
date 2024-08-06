@@ -56,13 +56,12 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ messageIndex, qaI
           body: JSON.stringify({
             qaId,
             thumb: feedbackType,
-            comment: remark, // Use the remark passed directly
+            comment: remark,
             roomId,
           }),
         });
   
         if (response.ok) {
-          //console.log("Feedback submitted successfully for messageIndex:", messageIndex);
           handleCloseModal();
         } else {
           const errorText = await response.text();
