@@ -62,7 +62,6 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({
               }));
 
               record.on('record-start', () => {
-                console.log('Recording started in WaveSurfer');
               });
 
               wavesurferRef.current = wavesurfer;
@@ -95,7 +94,6 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({
   };
 
   const stopRecording = async () => {
-    console.log('Hi from stop');
     if (!recorder) return;
   
     try {
@@ -135,7 +133,6 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({
   };
 
   const cleanup = () => {
-    console.log('Cleanup initiated');
     if (recorder) {
       recorder.stop();
       if (recorder.stream) {

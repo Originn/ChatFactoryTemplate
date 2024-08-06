@@ -16,10 +16,12 @@ import useSocket from '@/hooks/useSocket';
 import useFileUpload from '@/hooks/useFileUpload';
 import useTheme from '@/hooks/useTheme';
 import usePasteImageUpload from '@/hooks/usePasteImageUpload';
-import UploadStatusBanner from './UploadStatusBanner';
 import MicrophoneRecorder from './MicrophoneRecorder';
 import ImageUpload from './ImageUploadFromHome';
 import useFileUploadFromHome from '@/hooks/useFileUploadFromHome';
+import { ImagePreview, ImagePreviewData } from './ImagePreview';
+import EnlargedImageView from './EnlargedImageView';
+
 
 const PRODUCTION_ENV = 'production';
 const LOCAL_URL = 'http://localhost:3000';
@@ -43,7 +45,6 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
 
 const Home: FC = () => {
   const { theme, toggleTheme } = useTheme();
-
   const [query, setQuery] = useState<string>('');
   const [requestsInProgress, setRequestsInProgress] = useState<RequestsInProgressType>({});
   const [loading, setLoading] = useState<boolean>(false);
@@ -69,14 +70,36 @@ const Home: FC = () => {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [textAreaHeight, setTextAreaHeight] = useState<string>('auto');
   const { submitTimeRef } = useSocket(serverUrl, roomId, setRequestsInProgress, setMessageState, setCurrentStage, setRoomId);
-  const { imagePreviews, handleFileChange, handleDeleteImage, setImagePreviews } = useFileUpload(setQuery, roomId, auth, setUploadStatus);
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const [shouldSubmitAfterTranscription, setShouldSubmitAfterTranscription] = useState<boolean>(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [isMicActive, setIsMicActive] = useState(false);
-  const { homeImagePreviews, handleHomeFileChange, handleHomeDeleteImage, setHomeImagePreviews } = useFileUploadFromHome(setQuery, roomId, auth, setUploadStatus);
+  const [enlargedImage, setEnlargedImage] = useState<ImagePreviewData | null>(null);
 
-  usePasteImageUpload(currentStage, setImagePreviews, setQuery, roomId, auth);
+
+  const {
+    imagePreviews,
+    handleFileChange,
+    handleDeleteImage,
+    setImagePreviews,
+    uploadProgress: internalUploadProgress
+  } = useFileUpload(setQuery, roomId, auth, setUploadStatus);
+
+  const {
+    homeImagePreviews,
+    handleHomeFileChange,
+    handleHomeDeleteImage,
+    setHomeImagePreviews,
+    fileInputRef,
+    uploadProgress: homeUploadProgress
+  } = useFileUploadFromHome(setQuery, roomId, auth, setUploadStatus);
+
+  const { uploadProgress: pasteUploadProgress, clearPastedImagePreviews } = usePasteImageUpload(
+    roomId,
+    auth,
+    textAreaRef,
+    setHomeImagePreviews
+  );
 
   useEffect(() => {
     if (shouldSubmitAfterTranscription) {
@@ -148,8 +171,8 @@ const Home: FC = () => {
     setError(null);
     const trimmedQuery = query.trim();
   
-    if (!trimmedQuery && currentStage !== 4) {
-      alert('Please input a question');
+    if (!trimmedQuery && currentStage !== 4 && homeImagePreviews.length === 0) {
+      alert('Please input a question or upload an image');
       return;
     }
   
@@ -162,6 +185,7 @@ const Home: FC = () => {
     setLoading(true);
     const question = query.trim();
   
+  
     setMessageState((state) => ({
       ...state,
       messages: [
@@ -170,6 +194,7 @@ const Home: FC = () => {
           type: 'userMessage',
           message: question,
           isComplete: false,
+          images: homeImagePreviews.slice(0, 3),
         },
       ],
       history: [...state.history, [question, ""]],
@@ -186,58 +211,41 @@ const Home: FC = () => {
       return;
     }
   
-    if (homeImagePreviews.length > 0) {
-      // If there are images, call chatWithImages
-      try {
-        await fetch('/api/chatWithImages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            question,
-            roomId,
-            imageUrls: homeImagePreviews.map(preview => preview.url),
-            history, // Pass the history
-          }),
-        });
+    const imageUrls = homeImagePreviews.slice(0, 3).map(preview => preview.url);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': userEmail,
+        },
+        body: JSON.stringify({
+          question,
+          history,
+          roomId,
+          imageUrls, // Send up to three image URLs
+          userEmail,
+        }),
+      });
   
-      } catch (error) {
-        setError('An error occurred while fetching the data. Please try again.');
-        console.error('error', error);
-      } finally {
-        setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
-    } else {
-      // If there are no images, call the original chat endpoint
-      try {
-        await fetch('/api/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': userEmail,
-          },
-          body: JSON.stringify({
-            question,
-            history, // Pass the history
-            roomId,
-            userEmail,
-          }),
-        });
   
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } catch (error) {
-        setError('An error occurred while fetching the data. Please try again.');
-        console.error('error', error);
-      } finally {
-        setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
-        setLoading(false);
-      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      setError('An error occurred while fetching the data. Please try again.');
+      console.error('error', error);
+    } finally {
+      setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
+      setLoading(false);
+      setHomeImagePreviews([]);
+      clearPastedImagePreviews();
+
     }
   };
-  
-  
+
   useEffect(() => {
     const handleScrollToTop = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -279,26 +287,42 @@ const Home: FC = () => {
       <GoogleAnalytics /> {}
       <Layout theme={theme} toggleTheme={toggleTheme}>
         <div className="mx-auto flex flex-col gap-4">
-          {homeImagePreviews.length > 0 && (
+          {/* For internal embedding */}
+          {imagePreviews.length > 0 && (
             <div className="image-container-image-thumb">
-              {homeImagePreviews.map((image, index) => (
-                <div key={index} className="image-wrapper" style={{ position: 'relative' }}>
-                  <img
-                    src={image.url}
-                    alt={`Image Preview ${index + 1}`}
-                    className="image-preview"
-                    style={{ width: '150px', height: '150px', marginBottom: '10px' }}
-                  />
-                  <button onClick={() => handleHomeDeleteImage(image.fileName, index)} className="delete-button" style={{ position: 'absolute', top: 0, right: 0 }}>
-                    X
-                  </button>
-                </div>
+              {imagePreviews.map((image, index) => (
+                <ImagePreview
+                  key={index}
+                  image={image}
+                  index={index}
+                  onDelete={handleDeleteImage}
+                  uploadProgress={pasteUploadProgress[image.fileName] || null}
+                />
               ))}
             </div>
           )}
-          {uploadStatus && (
-            <UploadStatusBanner status={uploadStatus} />
+          {/* Render the EnlargedImageView when an image is clicked */}
+          {enlargedImage && (
+            <EnlargedImageView
+              imageUrl={enlargedImage.url}
+              altText={enlargedImage.fileName}
+              onClose={() => setEnlargedImage(null)}
+            />
           )}
+
+            {homeImagePreviews.length > 0 && !loading && (
+              <div className="image-container-image-thumb">
+                {homeImagePreviews.map((image, index) => (
+                  <ImagePreview
+                    key={index}
+                    image={image}
+                    index={index}
+                    onDelete={handleHomeDeleteImage}
+                    uploadProgress={pasteUploadProgress[image.fileName] || homeUploadProgress[image.fileName] || null}
+                  />
+                ))}
+              </div>
+            )}
           <main className={styles.main}>
             <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
               SolidCAM ChatBot
@@ -347,18 +371,48 @@ const Home: FC = () => {
                       const totalDocuments = message.sourceDocs?.length ?? 0 - totalWebinars;
                       return (
                         <React.Fragment key={`chatMessageFragment-${index}`}>
-                          <div className={className}>
-                            {icon}
-                            <div className={styles.markdownanswer} ref={answerStartRef}>
-                              <ReactMarkdown
-                                components={{
-                                  a: (props: ComponentProps<'a'>) => <CustomLink {...props} />,
-                                }}
-                              >
-                                {message.message}
-                              </ReactMarkdown>
+                        <div className={className}>
+                          {icon}
+                          <div className={styles.markdownanswer} ref={answerStartRef}>
+                          {message.images && message.images.length > 0 && (
+                            <div className="image-container" style={{ 
+                              marginBottom: '10px', 
+                              display: 'flex', 
+                              flexWrap: 'wrap', 
+                              gap: '10px',
+                              justifyContent: 'start'
+                            }}>
+                              {message.images.map((image, imgIndex) => (
+                                <div key={imgIndex} style={{ 
+                                  width: '150px', 
+                                  height: '150px', 
+                                  overflow: 'hidden',
+                                  position: 'relative'
+                                }}>
+                                  <img 
+                                    src={image.url} 
+                                    alt={`User uploaded: ${image.fileName}`} 
+                                    style={{ 
+                                      width: '100%', 
+                                      height: '100%', 
+                                      objectFit: 'cover',
+                                      cursor: 'pointer'
+                                    }}
+                                    onClick={() => setEnlargedImage(image)}
+                                  />
+                                </div>
+                              ))}
                             </div>
+                          )}
+                            <ReactMarkdown
+                              components={{
+                                a: (props: ComponentProps<'a'>) => <CustomLink {...props} />,
+                              }}
+                            >
+                              {message.message}
+                            </ReactMarkdown>
                           </div>
+                        </div>
                           {message.sourceDocs && (
                             <div key={`sourceDocsAccordion-${index}`}>
                               <Accordion type="single" collapsible className="flex-col">
@@ -446,73 +500,99 @@ const Home: FC = () => {
             </main>
             <div className={styles.center}>
               <div className={styles.cloudform}>
-                <form onSubmit={handleSubmit} className={styles.textareaContainer}>
-                  <textarea
-                    disabled={loading}
-                    onKeyDown={handleEnter}
-                    onChange={handleChange}
-                    ref={textAreaRef}
-                    autoFocus={false}
-                    rows={1}
-                    maxLength={50000}
-                    id="userInput"
-                    name="userInput"
-                    placeholder={
-                      loading
-                        ? 'Waiting for response...'
-                        : isMicActive
-                        ? ''
-                        : 'Message SolidCAM ChatBot...'
-                    }
-                    value={query}
-                    className={styles.textarea}
-                    readOnly={currentStage === 4}
-                  />
-                  <ImageUpload handleFileChange={handleHomeFileChange} />
-                  {currentStage === 4 ? (
+              <form onSubmit={handleSubmit} className={styles.textareaContainer}>
+                <textarea
+                  disabled={loading}
+                  onKeyDown={handleEnter}
+                  onChange={handleChange}
+                  ref={textAreaRef}
+                  autoFocus={false}
+                  rows={1}
+                  maxLength={50000}
+                  id="userInput"
+                  name="userInput"
+                  placeholder={
+                    loading
+                      ? 'Waiting for response...'
+                      : isMicActive
+                      ? ''
+                      : 'Message SolidCAM ChatBot...'
+                  }
+                  value={query}
+                  className={styles.textarea}
+                  readOnly={currentStage === 4}
+                />
+                
+                {/* Conditionally render the ImageUpload component */}
+                {!loading && (
+                  <ImageUpload handleFileChange={handleFileChange} />
+                )}
+                
+                {/* Conditionally render the general file input and label */}
+                {!loading && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      onChange={handleHomeFileChange}
+                      accept="image/*"
+                      multiple
+                      style={{ display: 'none' }}
+                      id="generalFileInput"
+                    />
+                    <label htmlFor="generalFileInput" className={styles.fileUploadButton}>
+                      <Image src="/image-upload-48.png" alt="Upload JPG" width="30" height="30" />
+                    </label>
+                  </>
+                )}
+                
+                {currentStage === 4 ? (
+                  !loading && (
                     <label htmlFor="fileInput" className={styles.fileUploadButton}>
                       <input
                         id="fileInput"
                         type="file"
                         accept="image/jpeg"
                         style={{ display: 'none' }}
-                        onChange={handleHomeFileChange}
+                        onChange={handleFileChange}
                         multiple
                       />
-                      <Image src="/icons8-image-upload-48.png" alt="Upload JPG" width="30" height="30"/>
+                      <Image src="/image-upload-48.png" alt="Upload JPG" width="30" height="30" />
                     </label>
-                  ) : (
-                    <MicrophoneRecorder
-                      setQuery={setQuery}
-                      loading={loading}
-                      setIsTranscribing={setIsTranscribing}
-                      isTranscribing={isTranscribing}
-                      setIsMicActive={setIsMicActive}
-                    />
-                  )}
-                  {!isMicActive && (
-                    <button
-                      type="submit"
-                      id="submitButton"
-                      disabled={loading || isTranscribing}
-                      className={styles.generatebutton}
-                    >
-                      {loading || isTranscribing ? (
-                        <div className={styles.loadingwheel}>
-                          <LoadingDots color="#000" />
-                        </div>
-                      ) : (
-                        <svg
-                          viewBox="0 0 20 20"
-                          className={styles.svgicon}
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
-                        </svg>
-                      )}
-                    </button>
-                  )}
-                </form>
+                  )
+                ) : (
+                  <MicrophoneRecorder
+                    setQuery={setQuery}
+                    loading={loading}
+                    setIsTranscribing={setIsTranscribing}
+                    isTranscribing={isTranscribing}
+                    setIsMicActive={setIsMicActive}
+                  />
+                )}
+                
+                {!isMicActive && (
+                  <button
+                    type="submit"
+                    id="submitButton"
+                    disabled={loading || isTranscribing}
+                    className={styles.generatebutton}
+                  >
+                    {loading || isTranscribing ? (
+                      <div className={styles.loadingwheel}>
+                        <LoadingDots color="#000" />
+                      </div>
+                    ) : (
+                      <svg
+                        viewBox="0 0 20 20"
+                        className={styles.svgicon}
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+                      </svg>
+                    )}
+                  </button>
+                )}
+              </form>
                 {speechError && (
                   <div className="border border-red-400 rounded-md p-4">
                     <p className="text-red-500">{speechError}</p>
