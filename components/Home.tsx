@@ -91,7 +91,8 @@ const Home: FC = () => {
     handleHomeDeleteImage,
     setHomeImagePreviews,
     fileInputRef,
-    uploadProgress: homeUploadProgress
+    uploadProgress: homeUploadProgress,
+    fileErrors
   } = useFileUploadFromHome(setQuery, roomId, auth, setUploadStatus);
 
   const { uploadProgress: pasteUploadProgress, clearPastedImagePreviews } = usePasteImageUpload(
@@ -310,19 +311,30 @@ const Home: FC = () => {
             />
           )}
 
-            {homeImagePreviews.length > 0 && !loading && (
-              <div className="image-container-image-thumb">
-                {homeImagePreviews.map((image, index) => (
-                  <ImagePreview
-                    key={index}
-                    image={image}
-                    index={index}
-                    onDelete={handleHomeDeleteImage}
-                    uploadProgress={pasteUploadProgress[image.fileName] || homeUploadProgress[image.fileName] || null}
-                  />
-                ))}
-              </div>
-            )}
+          {homeImagePreviews.length > 0 && !loading && (
+            <div className="image-container-image-thumb">
+              {homeImagePreviews.map((image, index) => (
+                <ImagePreview
+                  key={index}
+                  image={image}
+                  index={index}
+                  onDelete={handleHomeDeleteImage}
+                  uploadProgress={pasteUploadProgress[image.fileName] || homeUploadProgress[image.fileName] || null}
+                />
+              ))}
+            </div>
+          )}
+
+          {/*section to display file errors */}
+          {Object.entries(fileErrors).length > 0 && (
+            <div className="error-container">
+              {Object.entries(fileErrors).map(([fileName, error]) => (
+                <div key={fileName} className="border border-red-400 rounded-md p-2 mt-2">
+                  <p className="text-red-500 text-sm">{`Error uploading: ${error}`}</p>
+                </div>
+              ))}
+            </div>
+          )}
           <main className={styles.main}>
             <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
               SolidCAM ChatBot

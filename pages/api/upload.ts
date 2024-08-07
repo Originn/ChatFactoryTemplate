@@ -13,6 +13,8 @@ export const config = {
   },
 };
 
+const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const form = formidable({ multiples: true, keepExtensions: true });
 
@@ -33,6 +35,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: 'Only 2 images are allowed per upload' });
     }
 
+    // Check if all files are images
+    const invalidFiles = fileArray.filter(file => !file.mimetype || !allowedMimeTypes.includes(file.mimetype));
+    if (invalidFiles.length > 0) {
+      return res.status(400).json({ 
+        error: 'Invalid file type(s) detected', 
+        details: `Only JPEG, PNG, GIF, and WebP images are allowed.`
+      });
+    }
+
     const header = Array.isArray(fields.header) ? fields.header[0] : fields.header;
     const sanitizedHeader = (header || 'default').replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
@@ -43,12 +54,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
 
         const filePath = file.filepath;
-        let fileName = `${sanitizedHeader}.jpg`;
+        const fileExtension = file.originalFilename ? file.originalFilename.split('.').pop() : 'jpg';
+        const safeFileExtension = fileExtension ? fileExtension.toLowerCase() : 'jpg';
+        
+        let fileName = `${sanitizedHeader}.${safeFileExtension}`;
         let fileExists = await storage.bucket(bucketName).file(fileName).exists();
         let fileIndex = index;
 
         while (fileExists[0]) {
-          fileName = `${sanitizedHeader}_${fileIndex}.jpg`;
+          fileName = `${sanitizedHeader}_${fileIndex}.${safeFileExtension}`;
           fileExists = await storage.bucket(bucketName).file(fileName).exists();
           fileIndex++;
         }
@@ -58,6 +72,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const blobStream = blob.createWriteStream({
           resumable: false,
           gzip: true,
+          metadata: {
+            contentType: file.mimetype || 'application/octet-stream',
+          },
         });
 
         await new Promise((resolve, reject) => {
@@ -73,9 +90,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const uploadResults = await Promise.all(uploadPromises);
       return res.status(200).json({ imageUrls: uploadResults });
-    } catch (error) {
+    } catch (error:any) {
       console.error('Error uploading image: ', error);
-      return res.status(500).json({ error: 'Failed to upload image' });
+      return res.status(500).json({ error: 'Failed to upload image', details: error.message });
     }
   });
 };

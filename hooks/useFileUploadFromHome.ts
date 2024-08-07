@@ -18,6 +18,7 @@ const useFileUploadFromHome = (
 ) => {
   const [homeImagePreviews, setHomeImagePreviews] = useState<ImagePreview[]>([]);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({});
+  const [fileErrors, setFileErrors] = useState<{ [key: string]: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleHomeFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,6 +29,7 @@ const useFileUploadFromHome = (
     }
     if (files && files.length > 0) {
       setUploadStatus('Uploading and processing...');
+      setFileErrors({});
       for (const file of Array.from(files)) {
         const timestamp = Date.now();
         const fileNameWithTimestamp = `${uuidv4()}-${timestamp}.jpg`;
@@ -86,7 +88,14 @@ const useFileUploadFromHome = (
               } else {
                 console.error('Upload failed with status:', xhr.status);
                 console.error('Response:', xhr.responseText);
-                reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
+                let errorMessage = 'Upload failed';
+                try {
+                  const errorData = JSON.parse(xhr.responseText);
+                  errorMessage = errorData.details || errorData.error || errorMessage;
+                } catch (parseError) {
+                  console.error('Error parsing error response:', parseError);
+                }
+                reject(new Error(errorMessage));
               }
             };
 
@@ -97,19 +106,22 @@ const useFileUploadFromHome = (
 
             xhr.send(formData);
           });
-        } catch (error:any) {
+        } catch (error: any) {
           console.error('Error uploading file:', error);
-          setUploadStatus(`Upload failed: ${error.message}`);
-          setTimeout(() => {
-            setUploadStatus(null);
-          }, 3000);
-          return;
+          setFileErrors(prev => ({
+            ...prev,
+            [fileNameWithTimestamp]: error.message
+          }));
         }
       }
-      setUploadStatus('Upload and processing complete.');
+      if (Object.keys(fileErrors).length > 0) {
+        setUploadStatus('Some files failed to upload. Check individual file errors.');
+      } else {
+        setUploadStatus('Upload and processing complete.');
+      }
       setTimeout(() => {
         setUploadStatus(null);
-      }, 3000);
+      }, 5000);
     }
     // Reset the file input
     if (event.target) {
@@ -150,6 +162,7 @@ const useFileUploadFromHome = (
     setHomeImagePreviews,
     fileInputRef,
     uploadProgress,
+    fileErrors,
   };
 };
 
