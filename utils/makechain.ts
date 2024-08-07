@@ -212,15 +212,18 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       const qaId = generateUniqueId();
       
       // Retrieve the memory for this room
-      const memory = MemoryService.getChatMemory(roomId);
+      //const memory = MemoryService.getChatMemory(roomId);
       //console.log("Memory:", memory);
       //console.log("Image URLs:", imageUrls);
+
+      type ChatModel =  'gpt-4o' | 'gpt-4o-mini';
+      const IMAGE_MODEL_NAME: ChatModel = (process.env.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
 
       //currently does not run the image model when there is a imageUrl in the memory object, can be revised later if needed.
       if (imageUrls && imageUrls.length > 0) {
         try {
           const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: IMAGE_MODEL_NAME,
             messages: [
               {
                 role: "user",
