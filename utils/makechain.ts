@@ -220,7 +220,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       type ChatModel =  'gpt-4o' | 'gpt-4o-mini';
       const IMAGE_MODEL_NAME: ChatModel = (process.env.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
 
-      //currently does not run the image model when there is a imageUrl in the memory object, can be revised later if needed.
       if (imageUrls && imageUrls.length > 0) {
         try {
           const response = await openai.chat.completions.create({
