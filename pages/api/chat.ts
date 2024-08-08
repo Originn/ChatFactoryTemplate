@@ -253,8 +253,8 @@ export default async function handler(
         }
       }, userEmail);
 
-      const Documents = await chain.call(sanitizedQuestion, [], roomId, userEmail, imageUrls);
-      return res.status(200).json({ sourceDocs: Documents });
+      await chain.call(sanitizedQuestion, [], roomId, userEmail, imageUrls);
+      return res.status(200).json({ message: 'Embedding complete' });
     }
   } catch (error: any) {
     console.error('Error', error);
