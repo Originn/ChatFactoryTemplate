@@ -94,6 +94,7 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
 
   async invoke(input: string, options?: Partial<RunnableConfig>): Promise<DocumentInterface<Record<string, any>>[]> {
     const documents = await this.getRelevantDocuments(input, options);
+    //console.log("Documents:", documents);
     return documents;
   }
   
@@ -127,6 +128,7 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
 
     combinedResults.sort((a, b) => b[1] - a[1]);
 
+    //console.log("Combined Results:", combinedResults);
     return combinedResults;
   }
 }
@@ -153,7 +155,7 @@ const qaSystemPrompt = `You are a multilingual helpful and friendly assistant. Y
 - Do not mention that SolidCAM originated in Israel. Instead, state that it is an internationally developed software with a global team of developers.
 - When asked about a specific Service Pack (SP) release, like SolidCAM 2023 SP3, answer about this specific Service Pack (SP) release only! Don't include in your answer info about other Service Packs (e.g., don't include SolidCAM 2023 SP1 info in an answer about SP3).
 - If a question is unrelated to SolidCAM, kindly inform the user that your assistance is focused on SolidCAM-related topics.
-- If the user asks a question without marking the year answer the question regarding the latest SolidCAM 2024 release.
+- If the user asks a question without marking the year answer the question regarding the latest SolidCAM 2023 release.
 - Discuss iMachining only if the user specifically asks for it.
 - When you see [Image model answer:...] in the Question, you can understand that an image was used and answer the question with the data given from the Image model about the image. 
 - Always add links if the link appear in the context and it is relevant to the answer. 
@@ -301,6 +303,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         chat_history: chatHistory,
       });
 
+
       // Update the chat memory with the new interaction
       await MemoryService.updateChatMemory(roomId, input, ragResponse.answer, imageUrls);
 
@@ -370,7 +373,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         });
       }
 
-      await insertQA(input, ragResponse.answer, embeddingsStore, Documents, qaId, roomId, userEmail, imageUrls);
+      await insertQA(input, ragResponse.answer, ragResponse.context, Documents, qaId, roomId, userEmail, imageUrls);
 
       let totalScore = 0;
       let count = 0;
@@ -384,10 +387,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         totalScore = count > 0 ? totalScore / count : 0;
       }
 
-      return {
-        text: ragResponse.answer,
-        sourceDocuments: ragResponse.sourceDocuments,
-      };
+      return {};
     },
     vectorstore,
   };

@@ -225,7 +225,7 @@ const Home: FC = () => {
           question,
           history,
           roomId,
-          imageUrls, // Send up to three image URLs
+          imageUrls,
           userEmail,
         }),
       });
