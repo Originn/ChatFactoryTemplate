@@ -370,8 +370,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         });
       }
 
-      console.log("ragResponse.sourceDocuments:", ragResponse.sourceDocuments);
-
       await insertQA(input, ragResponse.answer, embeddingsStore, Documents, qaId, roomId, userEmail, imageUrls);
 
       let totalScore = 0;
