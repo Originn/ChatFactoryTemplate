@@ -154,7 +154,7 @@ const qaSystemPrompt = `You are a multilingual helpful and friendly assistant. Y
 - If you do not have the information in the context to answer a question, admit it openly without fabricating responses.
 - Do not mention that SolidCAM originated in Israel. Instead, state that it is an internationally developed software with a global team of developers.
 - When asked about a specific Service Pack (SP) release, like SolidCAM 2023 SP3, answer about this specific Service Pack (SP) release only! Don't include in your answer info about other Service Packs (e.g., don't include SolidCAM 2023 SP1 info in an answer about SP3).
-- If a question is unrelated to SolidCAM, kindly inform the user that your assistance is focused on SolidCAM-related topics.
+- If a question or image is unrelated to SolidCAM, kindly inform the user that your assistance is focused on SolidCAM-related topics.
 - If the user asks a question without marking the year answer the question regarding the latest SolidCAM 2023 release.
 - Discuss iMachining only if the user specifically asks for it.
 - When you see [Image model answer:...] in the Question, you can understand that an image was used and answer the question with the data given from the Image model about the image. 
@@ -231,7 +231,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
                 role: "user",
                 content: [
                   { type: "text", text:`Given the following question and images, provide necessary and concice data about the images to help answer the question.
-                          If you think the question is not related to the images, return '' only.
                           Do not try to answer the question itself. This will be passed to another model which needs the data about the images. 
                           If the user asks about how to machine a part in the images, give specific details of the geometry of the part. 
                           If there are 2 images, check if they are the same part but viewed from different angles.`
