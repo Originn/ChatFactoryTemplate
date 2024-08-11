@@ -235,7 +235,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       type ChatModel =  'gpt-4o' | 'gpt-4o-mini';
       const IMAGE_MODEL_NAME: ChatModel = (process.env.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
 
-      if (imageUrls && imageUrls.length > 0) {
+      if (processedImageUrls && processedImageUrls.length > 0) {
         try {
           const response = await openai.chat.completions.create({
             model: IMAGE_MODEL_NAME,
@@ -318,7 +318,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
 
       // Update the chat memory with the new interaction
-      await MemoryService.updateChatMemory(roomId, input, ragResponse.answer, imageUrls);
+      await MemoryService.updateChatMemory(roomId, input, ragResponse.answer, processedImageUrls);
 
 
       const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
