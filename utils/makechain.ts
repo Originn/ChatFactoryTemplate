@@ -157,7 +157,7 @@ const qaSystemPrompt = `You are a multilingual helpful and friendly assistant. Y
 - If a question or image is unrelated to SolidCAM, kindly inform the user that your assistance is focused on SolidCAM-related topics.
 - If the user asks a question without marking the year answer the question regarding the latest SolidCAM 2023 release.
 - Discuss iMachining only if the user specifically asks for it.
-- When you see [Image model answer:...] in the Question, you can understand that an image was used and answer the question with the data given from the Image model about the image. 
+- If a question includes "[Image model answer:...]," it means an image was analyzed. Use the Image model's data to answer. If the image lacks relevant details, inform the user.
 - Always add links if the link appear in the context and it is relevant to the answer. 
 - show .jpg images directly in the answer if they are in the context and are relevant per the image description. You can explain the image only if you have the full image description, but don't give the image description verbatim.
 - If the user's questions is valid and there is no documentation or context about it, let him know that he can leave a comment and we will do our best to include it at a later stage.
@@ -209,15 +209,28 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     ["human", "{input}"],
   ]);
 
+  // Retrieve and process image URLs
+  const getImageUrls = (imageUrls: string[] | undefined, roomId: string): string[] => {
+    if (imageUrls && imageUrls.length > 0) {
+      return imageUrls;
+    }
+
+    const memory = MemoryService.getChatMemory(roomId);
+    if (memory.metadata.imageUrl) {
+      const memoryImageUrls = Array.isArray(memory.metadata.imageUrl) 
+        ? memory.metadata.imageUrl 
+        : [memory.metadata.imageUrl];
+      return memoryImageUrls;
+    }
+
+    return [];
+  };
+
   return {
     call: async (input: string, Documents: MyDocument[], roomId: string, userEmail: string, imageUrls: string[]) => {
       const qaId = generateUniqueId();
       
-      // Retrieve the memory for this room
-      const memory = MemoryService.getChatMemory(roomId);
-      if (memory.metadata.imageUrl) {
-        imageUrls = memory.metadata.imageUrl;
-      }
+      const processedImageUrls = getImageUrls(imageUrls, roomId);
 
       type ChatModel =  'gpt-4o' | 'gpt-4o-mini';
       const IMAGE_MODEL_NAME: ChatModel = (process.env.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
@@ -231,6 +244,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
                 role: "user",
                 content: [
                   { type: "text", text:`Given the following question and images, provide necessary and concice data about the images to help answer the question.
+                          If the question is not related to the images, return that the image does not contains information about this specific question.
                           Do not try to answer the question itself. This will be passed to another model which needs the data about the images. 
                           If the user asks about how to machine a part in the images, give specific details of the geometry of the part. 
                           If there are 2 images, check if they are the same part but viewed from different angles.`
@@ -244,7 +258,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
                     type: "text",
                     text: `Question: ${input}`
                   },
-                  ...imageUrls.map(url => ({
+                  ...processedImageUrls.map(url => ({
                     type: "image_url",
                     image_url: {
                       url: url
