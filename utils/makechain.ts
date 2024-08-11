@@ -386,7 +386,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         });
       }
 
-      await insertQA(input, ragResponse.answer, ragResponse.context, Documents, qaId, roomId, userEmail, imageUrls);
+      await insertQA(input, ragResponse.answer, ragResponse.context, Documents, qaId, roomId, userEmail, processedImageUrls);
 
       let totalScore = 0;
       let count = 0;
