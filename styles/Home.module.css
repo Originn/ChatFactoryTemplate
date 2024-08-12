@@ -34,6 +34,7 @@
   background: #ffffff;
   color: #000;
   outline: none;
+  padding-right: 120px; /* Ensures it stps before the icons */
 }
 
 .textarea {
