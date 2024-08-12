@@ -35,16 +35,16 @@ const useFileUploadFromHome = (
         const fileNameWithTimestamp = `${uuidv4()}-${timestamp}.jpg`;
         const formData = new FormData();
         formData.append("file", file, fileNameWithTimestamp);
-
+  
         const now = new Date();
         const dateTimeString = now.toISOString();
-
+  
         formData.append("header", dateTimeString);
-
+  
         try {
           const xhr = new XMLHttpRequest();
           xhr.open('POST', '/api/upload', true);
-
+  
           xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) {
               const percentComplete = (event.loaded / event.total) * 100;
@@ -54,7 +54,7 @@ const useFileUploadFromHome = (
               }));
             }
           };
-
+  
           await new Promise<void>((resolve, reject) => {
             xhr.onload = () => {
               if (xhr.status === 200) {
@@ -69,6 +69,13 @@ const useFileUploadFromHome = (
                           fileName: fileName
                         }))
                       ];
+  
+                      if (newPreviews.length > 2) {
+                        alert('Only 2 images are allowed per message');
+                        reject(new Error('Exceeded maximum number of images'));
+                        return prevPreviews; // Keep the previous state
+                      }
+  
                       console.log("Updated homeImagePreviews:", newPreviews);
                       return newPreviews;
                     });
@@ -98,34 +105,23 @@ const useFileUploadFromHome = (
                 reject(new Error(errorMessage));
               }
             };
-
+  
             xhr.onerror = () => {
               console.error('XHR error occurred');
               reject(new Error('Network error occurred during upload'));
             };
-
+  
             xhr.send(formData);
           });
-        } catch (error: any) {
-          console.error('Error uploading file:', error);
+        } catch (error:any) {
+          console.error('Upload error:', error);
           setFileErrors(prev => ({
             ...prev,
             [fileNameWithTimestamp]: error.message
           }));
         }
       }
-      if (Object.keys(fileErrors).length > 0) {
-        setUploadStatus('Some files failed to upload. Check individual file errors.');
-      } else {
-        setUploadStatus('Upload and processing complete.');
-      }
-      setTimeout(() => {
-        setUploadStatus(null);
-      }, 5000);
-    }
-    // Reset the file input
-    if (event.target) {
-      event.target.value = '';
+      setUploadStatus(null);
     }
   };
 
