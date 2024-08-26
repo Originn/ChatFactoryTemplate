@@ -34,7 +34,6 @@ const CustomLoginForm = () => {
   const [cookiesConsentGiven, setCookiesConsentGiven] = useState(false);
   const [dataConsentGiven, setDataConsentGiven] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
-  const [showDataConsentModal, setShowDataConsentModal] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
 
@@ -107,6 +106,9 @@ const CustomLoginForm = () => {
         break;
       case 'auth/user-not-found':
         setErrorMessage('No account found with this email. Please sign up.');
+        setIsSignIn(false); // Toggle to sign-up form
+        setShowSignInModal(false); // Close sign-in modal
+        setShowModal(true); // Open sign-up modal
         break;
       case 'auth/too-many-requests':
         setErrorMessage('We have detected too many requests from your device. It seems you might have forgotten your password. Click here to reset your password, or please wait a while then try again.');
@@ -376,6 +378,11 @@ const CustomLoginForm = () => {
     </div>
   );
 
+  const handleSignUpClick = () => {
+    setShowSignInModal(false); // Close sign-in modal
+    setShowModal(true); // Open sign-up modal
+  };
+
   return (
     <>
       <Head>
@@ -550,7 +557,7 @@ const CustomLoginForm = () => {
                     )}
                   </div>
                   <div className="signin-popup-footer">
-                    Don't have an account? <a href="#" className="create-account-link" onClick={toggleForm}>Sign up</a>
+                    Don't have an account? <a href="#" className="create-account-link" onClick={handleSignUpClick}>Sign up</a>
                   </div>
                 </div>
               </div>
