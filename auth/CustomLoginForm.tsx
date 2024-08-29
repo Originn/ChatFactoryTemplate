@@ -335,18 +335,8 @@ useEffect(() => {
     <div className="backdropStyle">
         <div className="modalStyle">
             <h2 className="headerStyle">Your Privacy Matters</h2>
-            <p>To enhance your experience and create your account, we securely store your email and interaction history. By agreeing, you acknowledge and consent to this use.</p>
-            <div style={{ margin: '20px 0' }}>
-                <input
-                    type="checkbox"
-                    id="user-consent-checkbox"
-                    checked={consentGiven}
-                    onChange={(e) => setConsentGiven(e.target.checked)}
-                    style={{ marginRight: '10px' }}
-                />
-                <label htmlFor="user-consent-checkbox">I agree</label>
-            </div>
-            <button onClick={acceptConsent} className="agreeButtonStyle" disabled={!consentGiven}>
+            <p>To enhance your experience and create your account, we securely store your email and interaction history. By clicking 'Agree', you acknowledge and consent to this use.</p>
+            <button onClick={acceptConsent} className="agreeButtonStyle">
                 Agree
             </button>
             <button onClick={declineConsent} className="cancelButtonStyle">
@@ -357,18 +347,18 @@ useEffect(() => {
 );
   
   
-    const acceptConsent = () => {
-      setShowConsentModal(false);
-      setConsentGiven(true);
-      setConsentDeclined(false);
-      Cookies.set('userConsent', 'true', { expires: 365 });
-  
-      if (selectedProvider) {
-          proceedWithProviderSignIn(selectedProvider);
-      } else {
-          createAccountWithEmail();
-      }
-  };
+const acceptConsent = () => {
+  setShowConsentModal(false);
+  setConsentGiven(true);
+  setConsentDeclined(false);
+  Cookies.set('userConsent', 'true', { expires: 365 });
+
+  if (selectedProvider) {
+      proceedWithProviderSignIn(selectedProvider);
+  } else {
+      createAccountWithEmail();
+  }
+};
 
   useEffect(() => {
     document.body.className = theme;
