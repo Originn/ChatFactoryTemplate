@@ -61,9 +61,6 @@ const ActionHandlerPage = () => {
               if (error.code === 'auth/invalid-action-code') {
                   console.error('The action code is invalid or expired.');
                   setConfirmationMessage('The verification link is invalid or expired. Please request a new one.');
-                  setTimeout(() => {
-                      router.push('/request-new-link'); // Redirect to a page to request a new link
-                  }, 3000);
               } else {
                   setConfirmationMessage('An unexpected error occurred. Please try again later.');
               }
