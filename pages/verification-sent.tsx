@@ -16,10 +16,10 @@ const VerificationSent: React.FC = () => {
       </div>
       <h1 className={styles.header}>Check Your Email</h1>
       <p className={styles.paragraph}>
-        We've sent an email to the address you provided. Please click on the verification link in the email to complete your registration.
+        We&apos;ve sent an email to the address you provided. Please click on the verification link in the email to complete your registration.
       </p>
       <p className={styles.paragraph}>
-        If you don't see our email shortly, please check your junk or spam folder.
+        If you don&apos;t see our email shortly, please check your junk or spam folder.
       </p>
     </div>
   );
