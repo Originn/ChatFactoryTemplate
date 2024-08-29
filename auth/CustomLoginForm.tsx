@@ -25,6 +25,8 @@ const CustomLoginForm = () => {
     const [showConsentModal, setShowConsentModal] = useState(false);
     const [selectedProvider, setSelectedProvider] = useState(null);
     const passwordInputRef = useRef<HTMLInputElement>(null);
+    const [consentDeclined, setConsentDeclined] = useState(false);
+
 
     const router = useRouter();
 
@@ -148,31 +150,22 @@ const CustomLoginForm = () => {
         }
       };
 
-      const createAccountWithEmail = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        setIsSubmitting(true); // Indicate that submission has started
-        setErrorMessage(''); // Clear any existing error messages
-      
-        if (selectedProvider) {
-            // If a provider is selected, handle the provider sign up
-            acceptConsent();
-        } else {
-            // If no provider is selected, proceed with email/password registration
-            try {
-              const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-              await sendEmailVerification(userCredential.user);
-              router.push('/verification-sent');
-            } catch (error: any) {
-                if (error.code === 'auth/email-already-in-use') {
-                    setErrorMessage('The email address is already in use by another account.');
-                } else {
-                    // Error message formatting can be improved as needed
-                    const formattedError = error.message.replace('Firebase: ', '');
-                    setErrorMessage(formattedError);
-                }
-            } finally {
-                setIsSubmitting(false); // Indicate that submission has ended
+      const createAccountWithEmail = async () => {
+        setIsSubmitting(true);
+        setErrorMessage('');
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            await sendEmailVerification(userCredential.user);
+            router.push('/verification-sent');
+        } catch (error: any) {
+            if (error.code === 'auth/email-already-in-use') {
+                setErrorMessage('The email address is already in use by another account.');
+            } else {
+                const formattedError = error.message.replace('Firebase: ', '');
+                setErrorMessage(formattedError);
             }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 const backToSignInPopup = () => {
@@ -181,8 +174,7 @@ const backToSignInPopup = () => {
 };
 
 const isFormValid = () => {
-  // Check if email and password are not empty and also check for consent if a provider is selected.
-  return email.trim() && password.trim() && (!selectedProvider || consentGiven);
+  return email.trim() !== '' && password.trim() !== '';
 };
 
 const toggleForm = () => {
@@ -317,14 +309,13 @@ useEffect(() => {
   const handleProviderSignUp = (provider: any) => {
     setSelectedProvider(provider);
     
-    // Check consent before showing the modal
     const consentCookie = Cookies.get('userConsent');
-    if (consentCookie === 'true') {
-      proceedWithProviderSignIn(provider);
+    if (consentCookie !== 'true') {
+        setShowConsentModal(true);
     } else {
-      setShowConsentModal(true);
+        proceedWithProviderSignIn(provider);
     }
-  };
+};
 
   const proceedWithProviderSignIn = (provider: string | null) => {
     if (!provider) {
@@ -340,43 +331,44 @@ useEffect(() => {
   };
 
 
-const ConsentModal = () => (
-  <div className="backdropStyle">
-  <div className="modalStyle">
-      <h2 className="headerStyle">Your Privacy Matters</h2>
-          <p>To enhance your experience, we securely store your email and interaction history. By agreeing, you acknowledge and consent to this use.</p>
-          <div style={{ margin: '20px 0' }}>
-              <input
-                  type="checkbox"
-                  id="user-consent-checkbox"
-                  checked={consentGiven}
-                  onChange={(e) => setConsentGiven(e.target.checked)}
-                  style={{ marginRight: '10px' }}
-              />
-              <label htmlFor="user-consent-checkbox">I agree</label>
-          </div>
-          <button onClick={acceptConsent} className="agreeButtonStyle" disabled={!consentGiven}>
-                    Agree
-                </button>
-                <button onClick={() => setShowConsentModal(false)} className="cancelButtonStyle">
-                    Cancel
-                </button>
+  const ConsentModal = () => (
+    <div className="backdropStyle">
+        <div className="modalStyle">
+            <h2 className="headerStyle">Your Privacy Matters</h2>
+            <p>To enhance your experience and create your account, we securely store your email and interaction history. By agreeing, you acknowledge and consent to this use.</p>
+            <div style={{ margin: '20px 0' }}>
+                <input
+                    type="checkbox"
+                    id="user-consent-checkbox"
+                    checked={consentGiven}
+                    onChange={(e) => setConsentGiven(e.target.checked)}
+                    style={{ marginRight: '10px' }}
+                />
+                <label htmlFor="user-consent-checkbox">I agree</label>
             </div>
+            <button onClick={acceptConsent} className="agreeButtonStyle" disabled={!consentGiven}>
+                Agree
+            </button>
+            <button onClick={declineConsent} className="cancelButtonStyle">
+                Decline
+            </button>
         </div>
-    );
+    </div>
+);
   
   
     const acceptConsent = () => {
       setShowConsentModal(false);
       setConsentGiven(true);
-      Cookies.set('userConsent', 'true', { expires: 365 }); // Set a cookie for 1 year
-    
+      setConsentDeclined(false);
+      Cookies.set('userConsent', 'true', { expires: 365 });
+  
       if (selectedProvider) {
-        proceedWithProviderSignIn(selectedProvider);
+          proceedWithProviderSignIn(selectedProvider);
       } else {
-        console.error("No provider selected, cannot proceed with sign-in.");
+          createAccountWithEmail();
       }
-    };
+  };
 
   useEffect(() => {
     document.body.className = theme;
@@ -388,16 +380,23 @@ const ConsentModal = () => (
     }
   }, []);
   
+  const declineConsent = () => {
+    setShowConsentModal(false);
+    setConsentDeclined(true);
+    setSelectedProvider(null);
+};
 
-    const handleCreateAccountClick = () => {
-      if (isFormValid() && !isSubmitting) {
-          if (!consentGiven) {
-              setShowConsentModal(true);  // Only show the consent modal
-          } else {
-              createAccountWithEmail();  // If already consented, proceed to create account
-          }
+const handleCreateAccountClick = (e: React.FormEvent) => {
+  e.preventDefault();
+  if (isFormValid()) {
+      if (!consentGiven) {
+          setShowConsentModal(true);
+      } else {
+          createAccountWithEmail();
       }
-  };
+  }
+};
+
 
   return (
     <>
@@ -449,50 +448,48 @@ const ConsentModal = () => (
                         Sign in with Email
                     </button>
                     {showModal && (
-                        <div className="signup-popup-backdrop">
-                            <div className="signup-popup">
-                                <div className="signup-popup-header">
-                                    <button onClick={closePopup} className="signup-popup-close">&times;</button>
-                                    <h2>Create Your Account</h2>
-                                </div>
-                                <form onSubmit={createAccountWithEmail} className="signup-popup-body">
-                                  <input
-                                    type="email"
-                                    placeholder="Email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => {
-                                      setEmail(e.target.value);
-                                      setErrorMessage('');
-                                    }}
-                                    className="signup-popup-body-input"
-                                    onKeyDown={(e) => e.key === 'Enter' && isFormValid() && createAccountWithEmail(e)}
-                                  />
-                                  <input
-                                    type="password"
-                                    placeholder="Password"
-                                    required
-                                    value={password}
-                                    onChange={(e) => {
-                                      setPassword(e.target.value);
-                                      setErrorMessage('');
-                                    }}
-                                    className="signup-popup-body-input"
-                                    ref={passwordInputRef}
-                                    onKeyDown={(e) => e.key === 'Enter' && isFormValid() && createAccountWithEmail(e)}
-                                  />
-                                  {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                  <button
-                                    type="submit"  // This makes the button the default submitter of the form
-                                    className={`btn ${isFormValid() && !isSubmitting ? 'btn-enabled' : ''}`}
-                                    disabled={!isFormValid() || isSubmitting}
-                                  >
-                                    Create account
-                                  </button>
-                                </form>
-                            </div>
+                <div className="signup-popup-backdrop">
+                    <div className="signup-popup">
+                        <div className="signup-popup-header">
+                            <button onClick={closePopup} className="signup-popup-close">&times;</button>
+                            <h2>Create Your Account</h2>
                         </div>
-                    )}
+                        <form onSubmit={handleCreateAccountClick} className="signup-popup-body">
+                            <input
+                                type="email"
+                                placeholder="Email"
+                                required
+                                value={email}
+                                onChange={(e) => {
+                                    setEmail(e.target.value);
+                                    setErrorMessage('');
+                                }}
+                                className="signup-popup-body-input"
+                            />
+                            <input
+                                type="password"
+                                placeholder="Password"
+                                required
+                                value={password}
+                                onChange={(e) => {
+                                    setPassword(e.target.value);
+                                    setErrorMessage('');
+                                }}
+                                className="signup-popup-body-input"
+                                ref={passwordInputRef}
+                            />
+                            {errorMessage && <div className="error-message">{errorMessage}</div>}
+                            <button
+                                type="submit"
+                                className={`btn ${isFormValid() ? 'btn-enabled' : ''}`}
+                                disabled={!isFormValid() || isSubmitting}
+                            >
+                                Create account
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
                     {showSignInModal && (
                     <div className="signin-popup-backdrop">
                         <div className="signin-popup">
