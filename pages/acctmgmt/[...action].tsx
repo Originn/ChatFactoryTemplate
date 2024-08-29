@@ -23,46 +23,53 @@ const ActionHandlerPage = () => {
         setActionCode(code);
 
         const verifyEmail = async () => {
-            try {
-                const user = auth.currentUser;
-                if (user?.emailVerified) {
-                    setConfirmationMessage('Your email is already verified.');
-                    router.push('/'); // Redirect to the homepage
-                    return;
-                }
-
-                await checkActionCode(auth, code); // Ensure the code is valid
-                await applyActionCode(auth, code); // Apply the action code
-
-                auth.onAuthStateChanged((user) => {
-                    if (user) {
-                        reload(user)
-                            .then(() => {
-                                router.push('/');
-                            })
-                            .catch((error) => {
-                                console.error('Error reloading user:', error);
-                                setConfirmationMessage('Error reloading user information. Please sign in again.');
-                            });
-                    } else {
-                        setConfirmationMessage('No user is currently signed in. Please sign in to verify your email.');
-                    }
-                });
-            } catch (error:any) {
-                console.error('Error verifying email:', error);
-                setConfirmationMessage(error.message);
-                
-                if (error.code === 'auth/invalid-action-code') {
-                    console.error('The action code is invalid or expired.');
-                    setConfirmationMessage('The verification link is invalid or expired. Please request a new one.');
-                    setTimeout(() => {
-                        router.push('/request-new-link'); // Redirect to a page to request a new link
-                    }, 3000);
-                } else {
-                    setConfirmationMessage('An unexpected error occurred. Please try again later.');
-                }
-            }
-        };
+          try {
+              const user = auth.currentUser;
+              if (user?.emailVerified) {
+                  console.log('Email is already verified.');
+                  setConfirmationMessage('Your email is already verified.');
+                  router.push('/'); // Redirect to the homepage
+                  return;
+              }
+      
+              console.log('Checking action code...');
+              await checkActionCode(auth, actionCode); // Ensure the code is valid
+              console.log('Action code is valid, applying...');
+              await applyActionCode(auth, actionCode); // Apply the action code
+      
+              auth.onAuthStateChanged((user) => {
+                  if (user) {
+                      console.log('User is signed in, reloading...');
+                      reload(user)
+                          .then(() => {
+                              console.log('User reloaded successfully, redirecting...');
+                              router.push('/');
+                          })
+                          .catch((error) => {
+                              console.error('Error reloading user:', error);
+                              setConfirmationMessage('Error reloading user information. Please sign in again.');
+                          });
+                  } else {
+                      console.log('No user is signed in.');
+                      setConfirmationMessage('No user is currently signed in. Please sign in to verify your email.');
+                  }
+              });
+          } catch (error:any) {
+              console.error('Error verifying email:', error);
+              setConfirmationMessage(error.message);
+              
+              if (error.code === 'auth/invalid-action-code') {
+                  console.error('The action code is invalid or expired.');
+                  setConfirmationMessage('The verification link is invalid or expired. Please request a new one.');
+                  setTimeout(() => {
+                      router.push('/request-new-link'); // Redirect to a page to request a new link
+                  }, 3000);
+              } else {
+                  setConfirmationMessage('An unexpected error occurred. Please try again later.');
+              }
+          }
+      };
+      
 
         const handleAction = async () => {
             switch (mode) {
