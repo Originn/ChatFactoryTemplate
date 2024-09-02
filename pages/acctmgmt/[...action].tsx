@@ -24,32 +24,32 @@ const ActionHandlerPage = () => {
 
         const verifyEmail = async () => {
           try {
-              console.log('Checking action code...');
-              const actionCodeInfo = await checkActionCode(auth, actionCode); // Ensure the code is valid
-              console.log('Action code is valid:', actionCodeInfo);
-      
-              // Check that the operation associated with this code is email verification
-              if (actionCodeInfo.operation === 'VERIFY_EMAIL') {
-                  // Apply the action code (verify the email)
-                  console.log('Applying action code...');
-                  await applyActionCode(auth, actionCode); // Apply the action code
-      
-                  console.log('Redirecting to confirmation page...');
-                  router.push('/account-created-confirmation'); // Redirect to the confirmation page after verification
-              } else {
-                  console.error('Unexpected operation type:', actionCodeInfo.operation);
-                  setConfirmationMessage('The action code is not for email verification. Please request a new link.');
-              }
-          } catch (error:any) {
-              console.error('Error verifying email:', error);
-      
-              if (error.code === 'auth/invalid-action-code') {
-                  setConfirmationMessage('The verification link is invalid or expired. Please request a new one.');
-              } else {
-                  setConfirmationMessage('An unexpected error occurred. Please try again later.');
-              }
+            console.log('Checking action code...');
+            const actionCodeInfo = await checkActionCode(auth, actionCode); // Ensure the code is valid
+            console.log('Action code is valid:', actionCodeInfo);
+        
+            console.log('Applying action code...');
+            await applyActionCode(auth, actionCode); // Apply the action code
+        
+            console.log('Redirecting to confirmation page...');
+            router.push('/account-created-confirmation'); // Redirect to the confirmation page after verification
+          } catch (error: any) {
+            console.error('Error verifying email:', error);
+        
+            if (error.code === 'auth/invalid-action-code') {
+              console.error('The action code is invalid or expired.');
+              const email = auth.currentUser?.email || 'unknown@example.com'; // Get the user's email or use a fallback
+              router.push({
+                pathname: '/verification-failed',
+                query: { email }, // Pass the correct user's email to the failure page
+              });
+            } else {
+              console.error('An unexpected error occurred.');
+              setConfirmationMessage('An unexpected error occurred. Please try again later.');
+            }
           }
-      };
+        };
+        
       
         const handleAction = async () => {
             switch (mode) {
