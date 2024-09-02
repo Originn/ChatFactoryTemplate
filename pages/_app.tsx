@@ -8,7 +8,7 @@ import Head from 'next/head';
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
-  const noAuthRequired = ['/verify-email', '/verification-sent', '/password-reset-confirmation', '/acctmgmt','/privacy-policy'];
+  const noAuthRequired = ['/verify-email', '/verification-sent', '/account-created-confirmation', '/password-reset-confirmation', '/acctmgmt','/privacy-policy'];
   const isAuthRequired = !noAuthRequired.some(path => router.pathname.startsWith(path));
 
   return (

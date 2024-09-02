@@ -1,16 +1,12 @@
+import React from 'react';
 import styles from '@/styles/PasswordResetConfirmation.module.css';
 import Image from 'next/image';
 
-const PRODUCTION_ENV = 'production';
-const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
+const AccountCreatedConfirmation: React.FC = () => {
+  const scimageIcon = process.env.NODE_ENV === 'production'
+    ? 'https://solidcam.herokuapp.com/solidcam.png'
+    : '/solidcam.png';
 
-let scimageIcon = '/solidcam.png';
-
-if (process.env.NODE_ENV === PRODUCTION_ENV) {
-  scimageIcon = `${PRODUCTION_URL}solidcam.png`;
-}
-
-export default function AccountCreatedConfirmation() {
   return (
     <div className={styles.passwordResetContainer}>
       <div className={styles.imageContainer}>
@@ -40,3 +36,5 @@ export default function AccountCreatedConfirmation() {
     </div>
   );
 }
+
+export default AccountCreatedConfirmation;
