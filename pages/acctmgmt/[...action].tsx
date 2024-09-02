@@ -24,42 +24,26 @@ const ActionHandlerPage = () => {
 
         const verifyEmail = async () => {
           try {
-              const user = auth.currentUser;
-              if (user?.emailVerified) {
-                  console.log('Email is already verified.');
-                  setConfirmationMessage('Your email is already verified.');
-                  router.push('/'); // Redirect to the homepage
-                  return;
-              }
-      
               console.log('Checking action code...');
-              await checkActionCode(auth, actionCode); // Ensure the code is valid
-              console.log('Action code is valid, applying...');
-              await applyActionCode(auth, actionCode); // Apply the action code
+              const actionCodeInfo = await checkActionCode(auth, actionCode); // Ensure the code is valid
+              console.log('Action code is valid:', actionCodeInfo);
       
-              auth.onAuthStateChanged((user) => {
-                  if (user) {
-                      console.log('User is signed in, reloading...');
-                      reload(user)
-                          .then(() => {
-                              console.log('User reloaded successfully, redirecting...');
-                              router.push('/');
-                          })
-                          .catch((error) => {
-                              console.error('Error reloading user:', error);
-                              setConfirmationMessage('Error reloading user information. Please sign in again.');
-                          });
-                  } else {
-                      console.log('No user is signed in.');
-                      setConfirmationMessage('No user is currently signed in. Please sign in to verify your email.');
-                  }
-              });
+              // Check that the operation associated with this code is email verification
+              if (actionCodeInfo.operation === 'VERIFY_EMAIL') {
+                  // Apply the action code (verify the email)
+                  console.log('Applying action code...');
+                  await applyActionCode(auth, actionCode); // Apply the action code
+      
+                  console.log('Redirecting to confirmation page...');
+                  router.push('/account-created-confirmation'); // Redirect to the confirmation page after verification
+              } else {
+                  console.error('Unexpected operation type:', actionCodeInfo.operation);
+                  setConfirmationMessage('The action code is not for email verification. Please request a new link.');
+              }
           } catch (error:any) {
               console.error('Error verifying email:', error);
-              setConfirmationMessage(error.message);
-              
+      
               if (error.code === 'auth/invalid-action-code') {
-                  console.error('The action code is invalid or expired.');
                   setConfirmationMessage('The verification link is invalid or expired. Please request a new one.');
               } else {
                   setConfirmationMessage('An unexpected error occurred. Please try again later.');
@@ -67,7 +51,6 @@ const ActionHandlerPage = () => {
           }
       };
       
-
         const handleAction = async () => {
             switch (mode) {
                 case 'verifyEmail':
@@ -89,7 +72,7 @@ const ActionHandlerPage = () => {
             await confirmPasswordReset(auth, actionCode, newPassword);
             setConfirmationMessage('Your password has been reset successfully.');
             setTimeout(() => {
-                router.push('/'); // Redirect to the homepage
+              window.location.href = 'https://www.solidcamchat.com/';
             }, 2000);
         } catch (error) {
             console.error('Error resetting password:', error);
