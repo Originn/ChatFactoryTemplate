@@ -27,28 +27,23 @@ const ActionHandlerPage = () => {
             console.log('Checking action code...');
             const actionCodeInfo = await checkActionCode(auth, actionCode); // Ensure the code is valid
             console.log('Action code is valid:', actionCodeInfo);
+            await applyActionCode(auth, actionCode);
         
-            console.log('Applying action code...');
-            await applyActionCode(auth, actionCode); // Apply the action code
-        
-            console.log('Redirecting to confirmation page...');
-            router.push('/account-created-confirmation'); // Redirect to the confirmation page after verification
+            router.replace('/account-created-confirmation');
           } catch (error: any) {
             console.error('Error verifying email:', error);
+            const email = auth.currentUser?.email || 'unknown@example.com';
         
-            if (error.code === 'auth/invalid-action-code') {
-              console.error('The action code is invalid or expired.');
-              const email = auth.currentUser?.email || 'unknown@example.com'; // Get the user's email or use a fallback
-              router.push({
-                pathname: '/verification-failed',
-                query: { email }, // Pass the correct user's email to the failure page
-              });
-            } else {
-              console.error('An unexpected error occurred.');
-              setConfirmationMessage('An unexpected error occurred. Please try again later.');
+            // Store email in sessionStorage
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('verificationFailedEmail', email);
             }
+        
+            // Redirect to the base URL
+            router.replace('/verification-failed'); // or router.push('/') if you want to redirect to the home page
           }
         };
+        
         
       
         const handleAction = async () => {

@@ -1,22 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from '@/styles/PasswordResetConfirmation.module.css';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 
 const VerificationFailed: React.FC = () => {
+  const [email, setEmail] = useState<string | null>(null);
   const router = useRouter();
-  const { email } = router.query;
 
-  const scimageIcon = process.env.NODE_ENV === 'production'
-    ? 'https://solidcam.herokuapp.com/solidcam.png'
-    : '/solidcam.png';
+  useEffect(() => {
+    // Retrieve the email from sessionStorage
+    const storedEmail = sessionStorage.getItem('verificationFailedEmail');
+    if (storedEmail) {
+      setEmail(storedEmail);
+    } else {
+      // If no email is found, redirect to the homepage or handle appropriately
+      router.replace('/');
+    }
+  }, [router]);
 
   const handleResendVerification = () => {
     if (email) {
       // Example: Make an API call or use Firebase to resend the verification email
       console.log(`Resending verification email to ${email}`);
       alert(`A new verification email has been sent to ${email}.`);
-      // Optionally, you could also redirect the user or provide further feedback
     }
   };
 
@@ -24,7 +30,9 @@ const VerificationFailed: React.FC = () => {
     <div className={styles.passwordResetContainer}>
       <div className={styles.imageContainer}>
         <Image 
-          src={scimageIcon}
+          src={process.env.NODE_ENV === 'production' 
+              ? 'https://solidcam.herokuapp.com/solidcam.png' 
+              : '/solidcam.png'}
           alt="SolidCAM Logo"
           width={100}
           height={100}
