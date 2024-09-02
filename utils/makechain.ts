@@ -235,6 +235,14 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       type ChatModel =  'gpt-4o' | 'gpt-4o-mini';
       const IMAGE_MODEL_NAME: ChatModel = (process.env.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
 
+      
+      // Use enhancedInput instead of input in the rest of the function
+      const language = await detectLanguageWithOpenAI(input, nonStreamingModel);
+      
+      if (language !== 'English') {
+        input = await translateToEnglish(input, translationModel);
+      }
+
       if (processedImageUrls && processedImageUrls.length > 0) {
         try {
           const response = await openai.chat.completions.create({
@@ -278,13 +286,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         // Handle the error appropriately
       }
     }
-      
-      // Use enhancedInput instead of input in the rest of the function
-      const language = await detectLanguageWithOpenAI(input, nonStreamingModel);
-      
-      if (language !== 'English') {
-        input = await translateToEnglish(input, translationModel);
-      }
 
       const customRetriever = new CustomRetriever(vectorstore);
 
