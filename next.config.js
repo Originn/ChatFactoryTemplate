@@ -6,8 +6,8 @@ const nextConfig = {
     domains: ['solidcam.herokuapp.com', 'localhost'],
   },
   webpack(config, { dev, isServer }) {
-    if (dev && isServer) {
-      config.devtool = 'source-map';  // Ensures source maps are created for server-side code
+    if (dev) {
+      config.devtool = isServer ? 'source-map' : 'inline-source-map';
     }
     config.experiments = { ...config.experiments, topLevelAwait: true };
     return config;
