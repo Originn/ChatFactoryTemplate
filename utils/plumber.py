@@ -1121,6 +1121,69 @@ def extract_and_format_api_examples(folder_path):
         return []
 
 
+def extract_and_format_pdf_whats_new(folder_path):
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            pages_content = []
+            first_header_part = ""
+            second_header_part = ""
+            combined_header = ""
+            header_found = False
+            header_to_use = ""
+
+            for page_number, page in enumerate(pdf.pages, start=1):
+                chars = page.chars
+
+                for char in chars:
+                    if not header_found:
+                        if char['size'] > 37 and "Roboto-Regular" in char['fontname']:
+                            first_header_part += char['text']
+                        
+                    if char['size'] >= 24 and "Roboto-Bold" in char['fontname']:
+                        second_header_part += char['text']
+
+                # Set the combined header if it has not been set yet
+                if first_header_part and second_header_part:
+                    # Ensure there's a space between "SolidCAM 2024" and "New Functionalities"
+                    first_header_part = first_header_part.replace("SolidCAM 2024New", "SolidCAM 2024 New")
+
+                    formatted_second_header = format_header(second_header_part)
+                    combined_header = f'{first_header_part} | {formatted_second_header}'
+                    header_found = True
+                    second_header_part = ""
+
+                # The header for the current page includes the combined header and the third header if present
+                header_text = f'{combined_header}'
+
+                header_text = ' | '.join(part.strip() for part in header_text.split('|'))
+                
+                # Because header is empty on the first 3 pages, replace it with the true header from page 4
+                if page_number == 4:
+                    header_to_use = header_text
+
+                rest_of_page = page.extract_text() or ""
+                page_content = rest_of_page
+
+                pages_content.append({
+                    'page_number': page.page_number,
+                    'header': header_text,
+                    'pageContent': page_content
+                })
+
+            # Replace empty headers with the header from page 003
+            if header_to_use:
+                for page in pages_content:
+                    if not page['header']:
+                        page['header'] = header_to_use
+
+            return pages_content
+
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        return []
+
+
+
 
 
 def extract_font_details_first_page(pdf_path, page_number):
@@ -1186,6 +1249,10 @@ if __name__ == "__main__":
                 # first_page = extract_font_details_first_page(pdf_path, 1)
                 # print(first_page)
                 pages_ = extract_and_format_api_examples(pdf_path)
+            elif 'whats_new' in pdf_path.lower():
+                #first_page = extract_font_details_first_page(pdf_path, 1)
+                pages_ = extract_and_format_pdf_whats_new(pdf_path)
+                #print(first_page)
         # print(pages_with_home)
         # input()
 
