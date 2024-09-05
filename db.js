@@ -79,4 +79,83 @@ const insertQuestionEmbedderDetails = async (embeddedText, timestamp, email) => 
   }
 };
 
-export { pool, insertQA, updateFeedback, insertQuestionEmbedderDetails };
+const insertChatHistory = async (userEmail, conversationTitle, roomId, messages) => {
+  const query = `
+    INSERT INTO user_chat_history (useremail, conversation_title, "roomId", conversation_json)
+    VALUES ($1, $2, $3, $4::jsonb)
+    ON CONFLICT ("roomId")
+    DO UPDATE SET
+      conversation_json = $4::jsonb,
+      date = CURRENT_TIMESTAMP
+    RETURNING *;
+  `;
+
+  try {
+    // Ensure messages is in the correct format
+    let messagesJson;
+    if (typeof messages === 'string') {
+      // If it's already a string, assume it's valid JSON
+      messagesJson = messages;
+    } else if (Array.isArray(messages) || typeof messages === 'object') {
+      // If it's an array or object, stringify it
+      messagesJson = JSON.stringify(messages);
+    } else {
+      throw new Error('Invalid messages format');
+    }
+
+    const res = await pool.query(query, [userEmail, conversationTitle, roomId, messagesJson]);
+    return res.rows[0];
+  } catch (err) {
+    console.error('Error in insertChatHistory:', err);
+    throw err;
+  }
+};
+
+const getChatHistory = async (userEmail, range) => {
+  let dateCondition = '';
+
+  if (range === 'today') {
+    dateCondition = "AND date::date = CURRENT_DATE";
+  } else if (range === 'yesterday') {
+    dateCondition = "AND date::date = CURRENT_DATE - INTERVAL '1 day'";
+  } else if (range === '7days') {
+    dateCondition = "AND date >= NOW() - INTERVAL '7 days'";
+  } else if (range === '30days') {
+    dateCondition = "AND date >= NOW() - INTERVAL '30 days'";
+  } else if (range === 'all') {
+    dateCondition = ''; // No date condition for 'all'
+  }
+
+  const query = `
+    SELECT * FROM user_chat_history 
+    WHERE useremail = $1 ${dateCondition}
+    ORDER BY date DESC;
+  `;
+
+  try {
+    const res = await pool.query(query, [userEmail]);
+    return res.rows; // Return all chat history rows
+  } catch (err) {
+    console.error('Error fetching chat history:', err);
+    throw err;
+  }
+};
+
+const getChatHistoryByRoomId = async (roomId) => {
+  const query = `
+    SELECT * FROM user_chat_history 
+    WHERE "roomId" = $1;
+  `;
+
+  try {
+    const res = await pool.query(query, [roomId]);
+    return res.rows[0]; // Return the chat history for this roomId
+  } catch (err) {
+    console.error('Error fetching chat history:', err);
+    throw err;
+  }
+};
+
+
+
+export { pool, insertQA, updateFeedback, insertQuestionEmbedderDetails, insertChatHistory, getChatHistory, getChatHistoryByRoomId };

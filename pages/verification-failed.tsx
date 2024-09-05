@@ -21,7 +21,6 @@ const VerificationFailed: React.FC = () => {
   const handleResendVerification = () => {
     if (email) {
       // Example: Make an API call or use Firebase to resend the verification email
-      console.log(`Resending verification email to ${email}`);
       alert(`A new verification email has been sent to ${email}.`);
     }
   };

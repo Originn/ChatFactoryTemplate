@@ -1,0 +1,67 @@
+.container {
+    position: relative;
+  }
+  
+.hamburgerButton {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.hamburgerIcon {
+    width: 30px;
+    height: 30px;
+}
+
+.historyMenu {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    width: 300px;
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.categories {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.categoryButton {
+    background-color: #f8f9fa;
+    border: 1px solid #ccc;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.categoryButton:hover {
+    background-color: #e2e6ea;
+}
+
+.historyList {
+    padding: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.historyItem {
+    margin-bottom: 10px;
+}
+
+.historyItem h3 {
+    font-size: 1rem;
+    margin: 0 0 5px 0;
+}
+
+.historyItem p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+  

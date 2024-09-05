@@ -95,7 +95,6 @@ const CustomLoginForm = () => {
 
     const signInWithMicrosoft = async () => {
         // Pre-attempt log: you might want to log the current state before attempting to sign in.
-        console.log(`Attempting to sign in with Microsoft. Current email: ${email}`);
       
         try {
           const provider = new OAuthProvider('microsoft.com');

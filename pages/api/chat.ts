@@ -1,3 +1,4 @@
+//pages\api\chat.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';

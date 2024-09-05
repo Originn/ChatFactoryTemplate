@@ -29,7 +29,6 @@ export const initSocket = () => {
     });
     
     // Assuming roomId is known and stored in state or similar
-    const roomId = "yourRoomId"; // Replace with actual roomId
     socket.on(`fullResponse-${roomId}`, (message) => {
         console.log(`Message for room ${roomId}:`, message);
         // Handle incoming message for the room

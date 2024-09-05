@@ -1,26 +1,43 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { DocumentWithMetadata } from '@/interfaces/index_interface';
 import { measureFirstTokenTime } from '@/utils/tracking';
 
 const useSocket = (
   serverUrl: string,
-  roomId: string | null,
+  initialRoomId: string | null,
   setRequestsInProgress: (requests: any) => void,
   setMessageState: (state: any) => void,
   setCurrentStage: (stage: number | null) => void,
   setRoomId: (roomId: string) => void
 ) => {
-  const roomIdRef = useRef<string | null>(roomId);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const roomIdRef = useRef<string | null>(initialRoomId);
   const firstTokenCalculatedRef = useRef<{ [key: string]: boolean }>({});
   const submitTimeRef = useRef<number | null>(null);
   const [firstTokenTimes, setFirstTokenTimes] = useState<{ [key: string]: number | null }>({});
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
+  const changeRoom = useCallback((newRoomId: string) => {
+    if (socket) {
+      // Leave the current room
+      if (roomIdRef.current) {
+        socket.emit('leave', roomIdRef.current);
+      }
+      // Join the new room
+      socket.emit('join', newRoomId);
+      roomIdRef.current = newRoomId;
+      setRoomId(newRoomId);
+      setRequestsInProgress((prev: any) => ({ ...prev, [newRoomId]: false }));
+    }
+  }, [socket, setRoomId, setRequestsInProgress]);
+
   useEffect(() => {
-    const socket: Socket = io(serverUrl, {
+    const newSocket: Socket = io(serverUrl, {
       transports: ['websocket'],
     });
+
+    setSocket(newSocket);
 
     // Event handler for 'assignedRoom'
     const handleAssignedRoom = (assignedRoomId: string) => {
@@ -63,40 +80,40 @@ const useSocket = (
         firstTokenCalculatedRef.current[assignedRoomId] = false;
       };
 
-      socket.on(responseEventName, handleFullResponse);
-      return () => socket.off(responseEventName, handleFullResponse);
+      newSocket.on(responseEventName, handleFullResponse);
+      return () => newSocket.off(responseEventName, handleFullResponse);
     };
 
     if (!roomIdRef.current) {
-      socket.emit('requestRoom');
+      newSocket.emit('requestRoom');
     }
 
-    socket.on('assignedRoom', handleAssignedRoom);
-    socket.on('connect_error', (error: any) => console.error('Connection Error:', error));
-    socket.on('connect_timeout', (timeout: any) => console.error('Connection Timeout:', timeout));
-    socket.on('error', (error: any) => console.error('Error:', error));
-    socket.on('disconnect', (reason: any) => console.warn('Disconnected:', reason));
+    newSocket.on('assignedRoom', handleAssignedRoom);
+    newSocket.on('connect_error', (error: any) => console.error('Connection Error:', error));
+    newSocket.on('connect_timeout', (timeout: any) => console.error('Connection Timeout:', timeout));
+    newSocket.on('error', (error: any) => console.error('Error:', error));
+    newSocket.on('disconnect', (reason: any) => console.warn('Disconnected:', reason));
 
-    socket.on('stageUpdate', (newStage: number) => {
+    newSocket.on('stageUpdate', (newStage: number) => {
       setCurrentStage(newStage);
     });
 
-    socket.on('storeHeader', (header: string) => {
+    newSocket.on('storeHeader', (header: string) => {
       sessionStorage.setItem('header', header);
     });
 
-    socket.on("removeThumbnails", () => {
+    newSocket.on("removeThumbnails", () => {
       const thumbnailElement = document.querySelector('.image-container-image-thumb');
       if (thumbnailElement) {
         thumbnailElement.remove();
       }
     });
 
-    socket.on("resetStages", () => {
+    newSocket.on("resetStages", () => {
       setCurrentStage(null);
     });
 
-    socket.on("newToken", (token, isLastToken) => {
+    newSocket.on("newToken", (token, isLastToken) => {
       setMessageState((state: any) => {
         const lastMessage = state.messages[state.messages.length - 1];
         if (lastMessage && lastMessage.type === 'apiMessage') {
@@ -128,30 +145,30 @@ const useSocket = (
       }
     });
 
-    socket.on('uploadStatus', (status: string) => {
+    newSocket.on('uploadStatus', (status: string) => {
       setUploadStatus(status);
     });
 
     return () => {
-      socket.off('assignedRoom', handleAssignedRoom);
-      socket.off('connect_error');
-      socket.off('newToken');
-      socket.off('stageUpdate');
-      socket.off('storeHeader');
-      socket.off('resetStages');
-      socket.off('uploadStatus');
-      if (roomId) {
+      newSocket.off('assignedRoom', handleAssignedRoom);
+      newSocket.off('connect_error');
+      newSocket.off('newToken');
+      newSocket.off('stageUpdate');
+      newSocket.off('storeHeader');
+      newSocket.off('resetStages');
+      newSocket.off('uploadStatus');
+      if (roomIdRef.current) {
         setRequestsInProgress((prev: any) => {
           const updated = { ...prev };
-          delete updated[roomId];
+          delete updated[roomIdRef.current!];
           return updated;
         });
       }
-      socket.disconnect();
+      newSocket.disconnect();
     };
-  }, [serverUrl]);
+  }, [serverUrl, setRequestsInProgress, setMessageState, setCurrentStage, setRoomId]);
 
-  return { submitTimeRef, uploadStatus };
+  return { submitTimeRef, uploadStatus, changeRoom };
 };
 
 export default useSocket;
