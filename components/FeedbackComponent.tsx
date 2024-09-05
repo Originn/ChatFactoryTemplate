@@ -1,9 +1,7 @@
-//components/FeedbackComponent.tsx
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Tooltip from './Tooltip';
 import RemarksModal from './RemarksModal';
-
 
 let thumbUpIcon = '/icons8-thumbs-up-30.png'
 let thumbDownIcon = '/icons8-thumbs-down-30.png'
@@ -15,102 +13,105 @@ if (process.env.NODE_ENV === PRODUCTION_ENV) {
     thumbUpIcon = `${PRODUCTION_URL}icons8-thumbs-up-30.png`
     thumbDownIcon = `${PRODUCTION_URL}icons8-thumbs-down-30.png`
     commentIcon = `${PRODUCTION_URL}icons8-message-30.png`
-  }
+}
 
-  interface FeedbackComponentProps {
-    messageIndex: number;
-    qaId: string | undefined;
-    roomId: string | null;  // Ensure this prop is added and handled
-  }
+interface FeedbackComponentProps {
+  messageIndex: number;
+  qaId: string | undefined;  // Keep this as string | undefined
+  roomId: string | null;
+}
 
-// FeedbackComponent.tsx
 const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ messageIndex, qaId, roomId }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [feedbackType, setFeedbackType] = useState('');
-  
-    const handleOpenModal = (type: string) => {
-      setFeedbackType(type);
-      setIsModalOpen(true);
-    };
-  
-    const handleCloseModal = () => {
-      setIsModalOpen(false);
-    };
-  
-    const handleSubmitFeedback = async (remark : string) => { // Modify to take remark as an argument
-      if (!qaId) {
-        console.error("No qaId found for message index " + messageIndex);
-        return;
-      }
-      if (!roomId) {
-        console.error("No roomId found for feedback submission");
-        return;
-      }
-  
-      try {
-        const response = await fetch('/api/submit-feedback', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            qaId,
-            thumb: feedbackType,
-            comment: remark,
-            roomId,
-          }),
-        });
-  
-        if (response.ok) {
-          handleCloseModal();
-        } else {
-          const errorText = await response.text();
-          console.error('Failed to submit feedback:', errorText);
-        }
-      } catch (error) {
-        console.error('Network error when submitting feedback:', error);
-      }
-    };
-  
-    return (
-      <div className="feedback-container">
-        {/* Buttons to open the modal with different feedback types */}
-        <div className="tooltip-container up">
-          <Tooltip message="Give positive feedback">
-            <button onClick={() => handleOpenModal('up')}>
-              <Image src={thumbUpIcon} alt="Thumb Up" width={25} height={25} />
-            </button>
-          </Tooltip>
-        </div>
-        <div className="tooltip-container down">
-          <Tooltip message="Give negative feedback">
-            <button onClick={() => handleOpenModal('down')}>
-              <Image src={thumbDownIcon} alt="Thumb Down" width={25} height={25} />
-            </button>
-          </Tooltip>
-        </div>
-        <div className="tooltip-container comment">
-          <Tooltip message="Add a comment">
-            <button onClick={() => handleOpenModal('comment')}>
-              <Image src={commentIcon} alt="Comment" width={25} height={25} />
-            </button>
-          </Tooltip>
-        </div>
-  
-        {/* Remarks Modal for feedback submission */}
-        {isModalOpen && (
-          <RemarksModal
-            isOpen={isModalOpen}
-            onClose={handleCloseModal}
-            messageIndex={messageIndex}
-            onSubmit={(msgIndex, remarkValue) => {
-              handleSubmitFeedback(remarkValue); // Pass remark directly to the submission function
-            }}
-            feedbackType={feedbackType}
-          />
-        )}
-      </div>
-    );  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [feedbackType, setFeedbackType] = useState('');
+
+  const handleOpenModal = (type: string) => {
+    setFeedbackType(type);
+    setIsModalOpen(true);
   };
-  
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleSubmitFeedback = async (remark: string) => {
+    if (!qaId) {
+      console.error("No qaId found for message index " + messageIndex);
+      return;
+    }
+    if (!roomId) {
+      console.error("No roomId found for feedback submission");
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/submit-feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          qaId,
+          thumb: feedbackType,
+          comment: remark,
+          roomId,
+        }),
+      });
+
+      if (response.ok) {
+        handleCloseModal();
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to submit feedback:', errorText);
+      }
+    } catch (error) {
+      console.error('Network error when submitting feedback:', error);
+    }
+  };
+
+  if (!qaId) {
+    return null; // Don't render the component if qaId is undefined
+  }
+
+  return (
+    <div className="feedback-container">
+      {/* Buttons to open the modal with different feedback types */}
+      <div className="tooltip-container up">
+        <Tooltip message="Give positive feedback">
+          <button onClick={() => handleOpenModal('up')}>
+            <Image src={thumbUpIcon} alt="Thumb Up" width={25} height={25} />
+          </button>
+        </Tooltip>
+      </div>
+      <div className="tooltip-container down">
+        <Tooltip message="Give negative feedback">
+          <button onClick={() => handleOpenModal('down')}>
+            <Image src={thumbDownIcon} alt="Thumb Down" width={25} height={25} />
+          </button>
+        </Tooltip>
+      </div>
+      <div className="tooltip-container comment">
+        <Tooltip message="Add a comment">
+          <button onClick={() => handleOpenModal('comment')}>
+            <Image src={commentIcon} alt="Comment" width={25} height={25} />
+          </button>
+        </Tooltip>
+      </div>
+
+      {/* Remarks Modal for feedback submission */}
+      {isModalOpen && (
+        <RemarksModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          messageIndex={messageIndex}
+          onSubmit={(msgIndex, remarkValue) => {
+            handleSubmitFeedback(remarkValue);
+          }}
+          feedbackType={feedbackType}
+        />
+      )}
+    </div>
+  );  
+};
+
 export default FeedbackComponent;

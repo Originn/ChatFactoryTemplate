@@ -437,7 +437,8 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           type: 'apiMessage',
           message: ragResponse.answer,
           isComplete: true,
-          sourceDocs: Documents
+          sourceDocs: Documents,
+          qaId: qaId  // Add this line
         };
       
         let messages;
