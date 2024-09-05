@@ -156,6 +156,23 @@ const getChatHistoryByRoomId = async (roomId) => {
   }
 };
 
+const deleteOldChatHistory = async () => {
+  const query = `
+    DELETE FROM user_chat_history
+    WHERE date < NOW() - INTERVAL '30 days'
+    RETURNING *;
+  `;
+
+  try {
+    const res = await pool.query(query);
+    console.log(`Deleted ${res.rowCount} old chat history entries`);
+    return res.rowCount;
+  } catch (err) {
+    console.error('Error deleting old chat history:', err);
+    throw err;
+  }
+};
 
 
-export { pool, insertQA, updateFeedback, insertQuestionEmbedderDetails, insertChatHistory, getChatHistory, getChatHistoryByRoomId };
+
+export { pool, insertQA, updateFeedback, insertQuestionEmbedderDetails, insertChatHistory, getChatHistory, getChatHistoryByRoomId, deleteOldChatHistory };

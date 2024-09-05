@@ -13,7 +13,8 @@
     "lint": "eslint --ignore-path .gitignore \"**/*.+(ts|js|tsx)\"",
     "format": "prettier --ignore-path .gitignore \"**/*.+(ts|js|tsx)\" --write",
     "ingest": "tsx -r dotenv/config scripts/ingest-data.ts",
-    "export": "next export"
+    "export": "next export",
+    "delete-old-chat-history": "node scripts/deleteOldChatHistory.js"
   },
   "dependencies": {
     "@google-cloud/storage": "^6.12.0",
