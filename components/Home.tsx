@@ -334,52 +334,52 @@ const Home: FC = () => {
     }
   };
 
-  const handleHistoryItemClick = (conversation: ChatHistoryItem) => {
-    setSelectedConversation(conversation);
-  
-    let parsedConversation;
-    if (typeof conversation.conversation_json === 'string') {
-      try {
-        parsedConversation = JSON.parse(conversation.conversation_json);
-      } catch (error) {
-        console.error('Error parsing conversation_json:', error);
-        return;
-      }
-    } else if (Array.isArray(conversation.conversation_json)) {
-      parsedConversation = conversation.conversation_json;
-    } else {
-      console.error('Unexpected conversation_json type:', typeof conversation.conversation_json);
+const handleHistoryItemClick = (conversation: ChatHistoryItem) => {
+  setSelectedConversation(conversation);
+
+  let parsedConversation;
+  if (typeof conversation.conversation_json === 'string') {
+    try {
+      parsedConversation = JSON.parse(conversation.conversation_json);
+    } catch (error) {
+      console.error('Error parsing conversation_json:', error);
       return;
     }
-  
-    if (!Array.isArray(parsedConversation)) {
-      console.error('Invalid conversation format:', parsedConversation);
-      return;
-    }
-  
-    // Update the message state
-    setMessageState({
-      messages: parsedConversation.map(msg => ({
-        ...msg,
-        sourceDocs: msg.sourceDocs || [],
-      })),
-      history: parsedConversation
-        .filter(msg => msg.type === 'userMessage')
-        .map(msg => [msg.message, '']),
-    });
-  
-    // Load the full conversation history into MemoryService
-    MemoryService.loadFullConversationHistory(conversation.roomId, parsedConversation);
-  
-    if (socket) {
-      socket.emit('joinRoom', conversation.roomId);
-    }
-  
-    changeRoom(conversation.roomId);
-  
-    // Log the memory state for debugging
-    MemoryService.logMemoryState(conversation.roomId);
-  };
+  } else if (Array.isArray(conversation.conversation_json)) {
+    parsedConversation = conversation.conversation_json;
+  } else {
+    console.error('Unexpected conversation_json type:', typeof conversation.conversation_json);
+    return;
+  }
+
+  if (!Array.isArray(parsedConversation)) {
+    console.error('Invalid conversation format:', parsedConversation);
+    return;
+  }
+
+  // Update the message state
+  setMessageState({
+    messages: parsedConversation.map(msg => ({
+      ...msg,
+      sourceDocs: msg.sourceDocs || [],
+    })),
+    history: parsedConversation
+      .filter(msg => msg.type === 'userMessage')
+      .map(msg => [msg.message, '']),
+  });
+
+  // Load the full conversation history into MemoryService
+  MemoryService.loadFullConversationHistory(conversation.roomId, parsedConversation);
+
+  if (socket) {
+    socket.emit('joinRoom', conversation.roomId);
+  }
+
+  changeRoom(conversation.roomId);
+
+  // Log the memory state for debugging
+  MemoryService.logMemoryState(conversation.roomId);
+};
   
   
 
