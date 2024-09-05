@@ -43,6 +43,15 @@ class MemoryService {
     console.log('Messages:', memory.messages);
     console.log('Metadata:', memory.metadata);
   }
+
+  // New method to load a full conversation history
+  static loadFullConversationHistory(roomId: string, conversationHistory: any[]): void {
+    const memory = this.getChatMemory(roomId);
+    memory.messages = conversationHistory.map(msg => 
+      msg.type === 'userMessage' ? new HumanMessage(msg.message) : new AIMessage(msg.message)
+    );
+    // You may want to handle metadata (like imageUrls) here as well
+  }
 }
 
 export default MemoryService;

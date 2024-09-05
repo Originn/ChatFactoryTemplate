@@ -1,3 +1,4 @@
+//utils\makechain.ts
 import { OpenAI as LangchainOpenAI, ChatOpenAI } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
 import { MyDocument } from 'utils/GCSLoader';
@@ -16,6 +17,7 @@ import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retriever";
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import OpenAIChat from "openai"; // Import OpenAI without aliasing
+import { insertChatHistory, getChatHistoryByRoomId } from '../db';
 
 
 const openai = new OpenAIChat(); // Initialize OpenAI
@@ -100,9 +102,9 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
   
   private getMMRSettings(): { k: number, fetchK: number, lambda: number } {
     return {
-      k: this.getEnvironmentSetting('K_EMBEDDINGS', 6),
+      k: this.getEnvironmentSetting('K_EMBEDDINGS', 8),
       fetchK: this.getEnvironmentSetting('FETCH_K_EMBEDDINGS', 12),
-      lambda: parseFloat(process.env['LAMBDA_EMBEDDINGS'] || '0.2')
+      lambda: parseFloat(process.env['LAMBDA_EMBEDDINGS'] || '0.1')
     };
   }
 
@@ -172,22 +174,10 @@ const TRANSLATION_PROMPT = `Translate the following text to English. Try to tran
 const LANGUAGE_DETECTION_PROMPT = `Detect the language of the following text and respond with the language name only, nothing else:\n\nText: "{text}"`;
 const TEMPERATURE = parseFloat(process.env.TEMPERATURE || "0");
 
+
+
 export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void, userEmail: string) => {
-  const streamingModel = new ChatOpenAI({
-    streaming: true,
-    modelName: MODEL_NAME,
-    temperature: TEMPERATURE,
-    modelKwargs: {
-      seed: 1,
-    },
-    callbacks: [
-      {
-        handleLLMNewToken: (token) => {
-          onTokenStream(token); // Forward the streamed token to the front-end
-        },
-      },
-    ],
-  });
+
 
   const nonStreamingModel = new ChatOpenAI({
     modelName: 'gpt-4o',
@@ -228,7 +218,33 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
   return {
     call: async (input: string, Documents: MyDocument[], roomId: string, userEmail: string, imageUrls: string[]) => {
+      
       const qaId = generateUniqueId();
+
+      const onTokenStream = (token: string) => {
+        if (roomId) {
+          // Emit the token to the specific room
+          io.to(roomId).emit(`tokenStream-${roomId}`, token);
+        } else {
+          console.error('No roomId available for token stream');
+        }
+      };
+
+      const streamingModel = new ChatOpenAI({
+        streaming: true,
+        modelName: MODEL_NAME,
+        temperature: TEMPERATURE,
+        modelKwargs: {
+          seed: 1,
+        },
+        callbacks: [
+          {
+            handleLLMNewToken: (token) => {
+              onTokenStream(token); // Forward the streamed token to the front-end
+            },
+          },
+        ],
+      });
       
       const processedImageUrls = getImageUrls(imageUrls, roomId);
 
@@ -297,7 +313,8 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         ["human", "{input}"],
       ]);
 
-      // Create the RAG chain
+      const chatHistory = await MemoryService.getChatHistory(roomId);
+
       const ragChain = await createRetrievalChain({
         retriever: await createHistoryAwareRetriever({
           llm: nonStreamingModel,
@@ -310,8 +327,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         }),
       });
 
-      const chatHistory = await MemoryService.getChatHistory(roomId);
-
       const ragResponse = await ragChain.invoke({
         input,
         chat_history: chatHistory,
@@ -320,7 +335,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       // Update the chat memory with the new interaction
       await MemoryService.updateChatMemory(roomId, input, ragResponse.answer, processedImageUrls);
-
 
       const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
       let embeddingsStore;
@@ -388,6 +402,65 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       }
 
       await insertQA(input, ragResponse.answer, ragResponse.context, Documents, qaId, roomId, userEmail, processedImageUrls);
+
+      try {
+        let existingHistory;
+        try {
+          existingHistory = await getChatHistoryByRoomId(roomId);
+        } catch (error) {
+          console.error('Error fetching chat history:', error);
+        }
+      
+        let conversationTitle = '';
+        if (!existingHistory) {
+          // Generate a conversation title only for new conversations
+          const titleResponse = await nonStreamingModel.generate([[new HumanMessage(
+            `Given this conversation:
+            Human: ${input}
+            AI: ${ragResponse.answer}
+            
+            Generate a short, descriptive title for this conversation (max 50 characters).`
+          )]]);
+          conversationTitle = titleResponse.generations[0][0].text.trim();
+        } else {
+          conversationTitle = existingHistory.conversation_title;
+        }
+      
+        const newHumanMessage = {
+          type: 'userMessage',
+          message: input,
+          isComplete: true,
+          imageUrls: processedImageUrls
+        };
+        
+        const newAIMessage = {
+          type: 'apiMessage',
+          message: ragResponse.answer,
+          isComplete: true,
+          sourceDocs: Documents
+        };
+      
+        let messages;
+        if (existingHistory) {
+          let existingMessages;
+          try {
+            existingMessages = typeof existingHistory.conversation_json === 'string' 
+              ? JSON.parse(existingHistory.conversation_json) 
+              : existingHistory.conversation_json;
+          } catch (parseError) {
+            console.error('Error parsing existing conversation_json:', parseError);
+            existingMessages = [];
+          }
+          messages = Array.isArray(existingMessages) ? [...existingMessages, newHumanMessage, newAIMessage] : [newHumanMessage, newAIMessage];
+        } else {
+          messages = [newHumanMessage, newAIMessage];
+        }
+  
+        // Pass messages directly to insertChatHistory
+        await insertChatHistory(userEmail, conversationTitle, roomId, messages);
+      } catch (error) {
+        console.error('Error in chat history:', error);
+      }
 
       let totalScore = 0;
       let count = 0;

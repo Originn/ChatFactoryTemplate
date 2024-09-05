@@ -21,6 +21,10 @@ import ImageUpload from './ImageUploadFromHome';
 import useFileUploadFromHome from '@/hooks/useFileUploadFromHome';
 import { ImagePreview, ImagePreviewData } from './ImagePreview';
 import EnlargedImageView from './EnlargedImageView';
+import { ChatHistoryItem } from './ChatHistory';
+import { io, Socket } from 'socket.io-client';
+import MemoryService from '@/utils/memoryService';
+
 
 
 const PRODUCTION_ENV = 'production';
@@ -43,6 +47,7 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
   );
 };
 
+
 const Home: FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [query, setQuery] = useState<string>('');
@@ -64,19 +69,19 @@ const Home: FC = () => {
   const { messages, history } = messageState;
   const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : LOCAL_URL;
 
-  const roomIdRef = useRef<string | null>(roomId);
   const answerStartRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [textAreaHeight, setTextAreaHeight] = useState<string>('auto');
-  const { submitTimeRef } = useSocket(serverUrl, roomId, setRequestsInProgress, setMessageState, setCurrentStage, setRoomId);
+  const { submitTimeRef, changeRoom } = useSocket(serverUrl, roomId, setRequestsInProgress, setMessageState, setCurrentStage, setRoomId);
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const [shouldSubmitAfterTranscription, setShouldSubmitAfterTranscription] = useState<boolean>(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [isMicActive, setIsMicActive] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState<ImagePreviewData | null>(null);
-
-
+  const userEmail = auth.currentUser ? auth.currentUser.email : null;
+  const [selectedConversation, setSelectedConversation] = useState<ChatHistoryItem | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const {
     imagePreviews,
     handleFileChange,
@@ -84,7 +89,6 @@ const Home: FC = () => {
     setImagePreviews,
     uploadProgress: internalUploadProgress
   } = useFileUpload(setQuery, roomId, auth, setUploadStatus);
-
   const {
     homeImagePreviews,
     handleHomeFileChange,
@@ -94,13 +98,28 @@ const Home: FC = () => {
     uploadProgress: homeUploadProgress,
     fileErrors
   } = useFileUploadFromHome(setQuery, roomId, auth, setUploadStatus);
-
   const { uploadProgress: pasteUploadProgress, clearPastedImagePreviews } = usePasteImageUpload(
     roomId,
     auth,
     textAreaRef,
     setHomeImagePreviews
   );
+
+  useEffect(() => {
+    const newSocket = io(serverUrl);
+    setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+    });
+
+    newSocket.on('roomJoined', (joinedRoomId) => {
+      setRoomId(joinedRoomId);
+    });
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [serverUrl]);
 
   useEffect(() => {
     if (shouldSubmitAfterTranscription) {
@@ -116,6 +135,79 @@ const Home: FC = () => {
   useEffect(() => {
     adjustTextAreaHeight();
   }, []);
+
+  useEffect(() => {
+    if (socket && roomId) {
+      const handleNewToken = (token: string) => {
+        setMessageState((prevState) => {
+          const lastMessageIndex = prevState.messages.length - 1;
+          const lastMessage = prevState.messages[lastMessageIndex];
+  
+          if (lastMessage && lastMessage.type === 'apiMessage' && !lastMessage.isComplete) {
+            // Merge the token with the last message
+            const updatedMessages = [...prevState.messages];
+            updatedMessages[lastMessageIndex] = {
+              ...lastMessage,
+              message: lastMessage.message + token,
+            };
+  
+            return { ...prevState, messages: updatedMessages };
+          } else {
+            // If there is no incomplete message, create a new apiMessage
+            return {
+              ...prevState,
+              messages: [
+                ...prevState.messages,
+                {
+                  type: 'apiMessage',
+                  message: token,
+                  sourceDocs: [],
+                  isComplete: false,
+                },
+              ],
+            };
+          }
+        });
+      };
+  
+      const handleFullResponse = (message: { answer: string, sourceDocs: any[] }) => {
+        setMessageState((prevState) => {
+          const lastMessageIndex = prevState.messages.length - 1;
+          const lastMessage = prevState.messages[lastMessageIndex];
+  
+          if (lastMessage && lastMessage.type === 'apiMessage' && !lastMessage.isComplete) {
+            const updatedMessages = [...prevState.messages];
+            updatedMessages[lastMessageIndex] = {
+              ...lastMessage,
+              sourceDocs: message.sourceDocs || [],
+              isComplete: true,
+            };
+  
+            return {
+              ...prevState,
+              messages: updatedMessages,
+            };
+          }
+  
+          return prevState; // If there's no incomplete message, don't change the state
+        });
+      };
+  
+      socket.on(`tokenStream-${roomId}`, handleNewToken);
+      socket.on(`fullResponse-${roomId}`, handleFullResponse);
+  
+      return () => {
+        socket.off(`tokenStream-${roomId}`, handleNewToken);
+        socket.off(`fullResponse-${roomId}`, handleFullResponse);
+      };
+    }
+  }, [socket, roomId]);
+  useEffect(() => {
+    if (socket && roomId) {
+      socket.emit('joinRoom', roomId); // Join the room when roomId changes
+    }
+  }, [socket, roomId]);
+  
 
   const adjustTextAreaHeight = () => {
     if (textAreaRef.current) {
@@ -186,24 +278,20 @@ const Home: FC = () => {
     setLoading(true);
     const question = query.trim();
   
-  
-    setMessageState((state) => ({
-      ...state,
-      messages: [
-        ...state.messages,
-        {
-          type: 'userMessage',
-          message: question,
-          isComplete: false,
-          images: homeImagePreviews.slice(0, 3),
-        },
-      ],
-      history: [...state.history, [question, ""]],
+    const newUserMessage: Message = {
+      type: 'userMessage', 
+      message: question,
+      isComplete: true,
+      images: homeImagePreviews.slice(0, 3),
+    };
+    
+    setMessageState((prevState) => ({
+      ...prevState,
+      messages: [...prevState.messages, newUserMessage],
+      history: [...prevState.history, [question, '']],
     }));
   
     setQuery('');
-  
-    const userEmail = auth.currentUser ? auth.currentUser.email : null;
   
     if (!userEmail) {
       console.error('User not authenticated');
@@ -213,7 +301,7 @@ const Home: FC = () => {
     }
   
     const imageUrls = homeImagePreviews.slice(0, 3).map(preview => preview.url);
-
+  
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -223,7 +311,7 @@ const Home: FC = () => {
         },
         body: JSON.stringify({
           question,
-          history,
+          history: messageState.history,
           roomId,
           imageUrls,
           userEmail,
@@ -234,7 +322,7 @@ const Home: FC = () => {
         throw new Error('Network response was not ok');
       }
   
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // The response will be handled by the socket event listeners
     } catch (error) {
       setError('An error occurred while fetching the data. Please try again.');
       console.error('error', error);
@@ -243,9 +331,57 @@ const Home: FC = () => {
       setLoading(false);
       setHomeImagePreviews([]);
       clearPastedImagePreviews();
-
     }
   };
+
+  const handleHistoryItemClick = (conversation: ChatHistoryItem) => {
+    setSelectedConversation(conversation);
+  
+    let parsedConversation;
+    if (typeof conversation.conversation_json === 'string') {
+      try {
+        parsedConversation = JSON.parse(conversation.conversation_json);
+      } catch (error) {
+        console.error('Error parsing conversation_json:', error);
+        return;
+      }
+    } else if (Array.isArray(conversation.conversation_json)) {
+      parsedConversation = conversation.conversation_json;
+    } else {
+      console.error('Unexpected conversation_json type:', typeof conversation.conversation_json);
+      return;
+    }
+  
+    if (!Array.isArray(parsedConversation)) {
+      console.error('Invalid conversation format:', parsedConversation);
+      return;
+    }
+  
+    // Update the message state
+    setMessageState({
+      messages: parsedConversation.map(msg => ({
+        ...msg,
+        sourceDocs: msg.sourceDocs || [],
+      })),
+      history: parsedConversation
+        .filter(msg => msg.type === 'userMessage')
+        .map(msg => [msg.message, '']),
+    });
+  
+    // Load the full conversation history into MemoryService
+    MemoryService.loadFullConversationHistory(conversation.roomId, parsedConversation);
+  
+    if (socket) {
+      socket.emit('joinRoom', conversation.roomId);
+    }
+  
+    changeRoom(conversation.roomId);
+  
+    // Log the memory state for debugging
+    MemoryService.logMemoryState(conversation.roomId);
+  };
+  
+  
 
   useEffect(() => {
     const handleScrollToTop = () => {
@@ -256,10 +392,6 @@ const Home: FC = () => {
 
     return () => {};
   }, []);
-
-  useEffect(() => {
-    roomIdRef.current = roomId;
-  }, [roomId]);
 
   useEffect(() => {
     if (messageListRef.current && !userHasScrolled) {
@@ -286,7 +418,7 @@ const Home: FC = () => {
   return (
     <>
       <GoogleAnalytics /> {}
-      <Layout theme={theme} toggleTheme={toggleTheme}>
+      <Layout theme={theme} toggleTheme={toggleTheme} onHistoryItemClick={handleHistoryItemClick}>
         <div className="mx-auto flex flex-col gap-4">
           {/* For internal embedding */}
           {imagePreviews.length > 0 && (
@@ -343,169 +475,155 @@ const Home: FC = () => {
               <div className="content-container">
                 <div className={`${styles.cloud} auto-height`}>
                   <div ref={messageListRef} className={styles.messagelist}>
-                    {messages.map((message, index) => {
-                      let webinarCount = 1;
-                      let documentCount = 1;
-                      let icon;
-                      let className;
-                      if (message.type === 'apiMessage') {
-                        icon = (
-                          <Image
-                            key={index}
-                            src={botimageIcon}
-                            alt="AI"
-                            width="40"
-                            height="40"
-                            className={styles.boticon}
-                            priority
-                          />
-                        );
-                        className = styles.apimessage;
-                      } else {
-                        icon = (
-                          <Image
-                            key={index}
-                            src={imageUrlUserIcon}
-                            alt="Me"
-                            width="30"
-                            height="30"
-                            className={styles.usericon}
-                            priority
-                          />
-                        );
-                        className =
-                          loading && index === messages.length - 1
-                            ? styles.usermessagewaiting
-                            : styles.usermessage;
-                      }
-                      const hasSources = message.sourceDocs && message.sourceDocs.length > 0;
-                      const totalWebinars = message.sourceDocs?.filter(doc => doc.metadata.type === 'youtube').length ?? 0;
-                      const totalDocuments = message.sourceDocs?.length ?? 0 - totalWebinars;
-                      return (
-                        <React.Fragment key={`chatMessageFragment-${index}`}>
+                  {messages.map((message, index) => {
+                    let icon;
+                    let className;
+
+                    if (message.type === 'apiMessage') {
+                      icon = (
+                        <Image
+                          key={index}
+                          src={botimageIcon}
+                          alt="AI"
+                          width="40"
+                          height="40"
+                          className={styles.boticon}
+                          priority
+                        />
+                      );
+                      className = styles.apimessage;
+                    } else {
+                      icon = (
+                        <Image
+                          key={index}
+                          src={imageUrlUserIcon}
+                          alt="Me"
+                          width="30"
+                          height="30"
+                          className={styles.usericon}
+                          priority
+                        />
+                      );
+                      className =
+                        loading && index === messages.length - 1
+                          ? styles.usermessagewaiting
+                          : styles.usermessage;
+                    }
+
+                    // Remove "[Image model answer: ]" from the message text
+                    const formattedMessage = message.message.replace(/\[Image model answer:[\s\S]*?\]/g, '').trim();
+
+                    // Map imageUrls from JSON to images expected by the Message interface
+
+                    const images = message.imageUrls
+                    ? message.imageUrls.map((url: string, imgIndex: number) => ({ url, fileName: `Uploaded Image ${imgIndex + 1}` }))
+                    : message.images
+                    ? message.images.map((image, imgIndex) => ({ url: image.url, fileName: image.fileName }))
+                    : [];
+                    return (
+                      <React.Fragment key={`chatMessageFragment-${index}`}>
                         <div className={className}>
                           {icon}
                           <div className={styles.markdownanswer} ref={answerStartRef}>
-                          {message.images && message.images.length > 0 && (
-                            <div className="image-container" style={{ 
-                              marginBottom: '10px', 
-                              display: 'flex', 
-                              flexWrap: 'wrap', 
-                              gap: '10px',
-                              justifyContent: 'start'
-                            }}>
-                              {message.images.map((image, imgIndex) => (
-                                <div key={imgIndex} style={{ 
-                                  width: '150px', 
-                                  height: '150px', 
-                                  overflow: 'hidden',
-                                  position: 'relative'
-                                }}>
-                                  <img 
-                                    src={image.url} 
-                                    alt={`User uploaded: ${image.fileName}`} 
-                                    style={{ 
-                                      width: '100%', 
-                                      height: '100%', 
-                                      objectFit: 'cover',
-                                      cursor: 'pointer'
-                                    }}
-                                    onClick={() => setEnlargedImage(image)}
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                            
+                            {/* Render the images for userMessage */}
+                            {images.length > 0 && (
+                              <div className="image-container" style={{ 
+                                marginBottom: '10px', 
+                                display: 'flex', 
+                                flexWrap: 'wrap', 
+                                gap: '10px',
+                                justifyContent: 'start'
+                              }}>
+                                {images.map((image, imgIndex) => (
+                                  <div key={imgIndex} style={{ 
+                                    width: '150px', 
+                                    height: '150px', 
+                                    overflow: 'hidden',
+                                    position: 'relative'
+                                  }}>
+                                    <img 
+                                      src={image.url} // Fix here: Access the `url` property of `ImagePreviewData`
+                                      alt={`User uploaded: ${image.fileName}`} 
+                                      style={{ 
+                                        width: '100%', 
+                                        height: '100%', 
+                                        objectFit: 'cover',
+                                        cursor: 'pointer'
+                                      }}
+                                      onClick={() => setEnlargedImage(image)}  // Fix here: Pass `image`, not an object with `url`
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Render the message text (formatted) */}
                             <ReactMarkdown
                               components={{
                                 a: (props: ComponentProps<'a'>) => <CustomLink {...props} />,
                               }}
                             >
-                              {message.message}
+                              {formattedMessage}
                             </ReactMarkdown>
                           </div>
                         </div>
-                          {message.sourceDocs && (
-                            <div key={`sourceDocsAccordion-${index}`}>
-                              <Accordion type="single" collapsible className="flex-col">
-                                {message.sourceDocs.map((doc, docIndex) => {
-                                  let title;
-                                  let currentCount;
-                                  if (doc.metadata.type === 'youtube') {
-                                    title = 'Webinar';
-                                    currentCount = webinarCount++;
-                                  } else {
-                                    title = 'Document';
-                                    currentCount = documentCount++;
-                                  }
 
-                                  return (
-                                    <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
-                                      <AccordionTrigger>
-                                        <h3>{`${title} ${currentCount}`}</h3>
-                                      </AccordionTrigger>
-                                      <AccordionContent>
-                                        {
-                                          doc.metadata.type === 'youtube' ? (
-                                            <p>
-                                              <b>Source:</b>
-                                              {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleWebinarClick(doc.metadata.source)}>View Webinar</a> : 'Unavailable'}
-                                            </p>
-                                          ) : doc.metadata.type === 'sentinel' ? (
-                                            <p>
-                                              <b>Source:</b>
-                                              {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(doc.metadata.source)}>View</a> : 'Unavailable'}
-                                            </p>
+                        {/* Render the sources (webinars, documents) */}
+                        {message.sourceDocs && message.sourceDocs.length > 0 && (
+                          <div key={`sourceDocsAccordion-${index}`}>
+                            <Accordion type="single" collapsible className="flex-col">
+                              {message.sourceDocs.map((doc, docIndex) => {
+                                let title = doc.metadata.type === 'youtube' ? 'Webinar' : 'Document';
+                                return (
+                                  <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
+                                    <AccordionTrigger>
+                                      <h3>{`${title} ${docIndex + 1}`}</h3>
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                      {doc.metadata.type === 'youtube' ? (
+                                        <p>
+                                          <b>Source:</b>
+                                          {doc.metadata.source ? (
+                                            <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">
+                                              View Webinar
+                                            </a>
                                           ) : (
-                                            <>
-                                              <ReactMarkdown
-                                                components={{
-                                                  a: (props: ComponentProps<'a'>) => <CustomLink {...props} />,
-                                                }}
-                                              >
-                                                {doc.pageContent.split('\n')[0]}
-                                              </ReactMarkdown>
-                                              <p className="mt-2">
-                                                <b>Source:</b>
-                                                {
-                                                  doc.metadata && doc.metadata.source
-                                                    ? (() => {
-                                                      const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
+                                            'Unavailable'
+                                          )}
+                                        </p>
+                                      ) : (
+                                        <>
+                                          <ReactMarkdown>
+                                            {doc.pageContent.split('\n')[0]}
+                                          </ReactMarkdown>
+                                          <p className="mt-2">
+                                            <b>Source:</b>
+                                            {doc.metadata.source ? (
+                                              <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">
+                                                View Document
+                                              </a>
+                                            ) : (
+                                              'Unavailable'
+                                            )}
+                                          </p>
+                                        </>
+                                      )}
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                );
+                              })}
+                            </Accordion>
+                          </div>
+                        )}
 
-                                                      const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
-
-                                                      let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
-
-                                                      let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
-
-                                                      if (smallestPageNumberInRange === null && largestPageNumber !== null) {
-                                                        smallestPageNumberInRange = largestPageNumber;
-                                                      }
-                                                      const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
-
-                                                      const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-
-                                                      const iosPageLink = isiOS ? pageLink.replace('#page=', '#page') : pageLink;
-
-                                                      return <a href={iosPageLink} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(pageLink)}>View Page</a>;
-                                                    })()
-                                                    : 'Unavailable'
-                                                }
-                                              </p>
-                                            </>
-                                          )
-                                        }
-                                      </AccordionContent>
-                                    </AccordionItem>
-                                  );
-                                })}
-                              </Accordion>
-                            </div>
-                          )}
-                          {message.isComplete && <FeedbackComponent key={index} messageIndex={index} qaId={message.qaId} roomId={roomId} />}
-                        </React.Fragment>
-                      );
-                    })}
+                        {/* Render feedback only for apiMessage */}
+                        {message.type === 'apiMessage' && message.isComplete && (
+                          <FeedbackComponent key={index} messageIndex={index} qaId={message.qaId} roomId={roomId} />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                   </div>
                 </div>
               </div>

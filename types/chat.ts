@@ -9,4 +9,5 @@ export type Message = {
   qaId?: string;
   isComplete: boolean;
   images?: ImagePreviewData[];
+  imageUrls?: string[];  // Add imageUrls here
 };

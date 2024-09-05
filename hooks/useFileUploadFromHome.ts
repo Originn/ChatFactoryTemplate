@@ -76,7 +76,6 @@ const useFileUploadFromHome = (
                         return prevPreviews; // Keep the previous state
                       }
   
-                      console.log("Updated homeImagePreviews:", newPreviews);
                       return newPreviews;
                     });
                     // Clear progress for uploaded files
