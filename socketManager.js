@@ -1,7 +1,7 @@
 // socketManager.js
 import { io } from 'socket.io-client';
 
-const serverUrl = process.env.NODE_ENV === 'production' ? 'https://your-production-url.com' : 'http://localhost:3000';
+const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam-staging-d58dfa13bbb6.herokuapp.com/' : 'http://localhost:3000';
 let socket = null;
 
 export const initSocket = () => {
