@@ -7,7 +7,8 @@ module.exports.init = (httpServer) => {
   if (!global.io) {
     global.io = new Server(httpServer, {
       cors: {
-        origin: "*",
+        origin: "https://solidcam-staging-d58dfa13bbb6.herokuapp.com",
+        methods: ["GET", "POST"]
       },
     });
 
