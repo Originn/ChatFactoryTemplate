@@ -1,49 +1,37 @@
-// socketManager.js
 import { io } from 'socket.io-client';
 
-const serverUrl = process.env.NODE_ENV === 'production' ? 'https://solidcam-staging-d58dfa13bbb6.herokuapp.com/' : 'http://localhost:3000';
+const serverUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://solidcam-staging-d58dfa13bbb6.herokuapp.com/';
 let socket = null;
 
 export const initSocket = () => {
   if (!socket) {
-    socket = io(serverUrl);
-    console.log('Connecting socket...');
+    socket = io(serverUrl, {
+      transports: ['websocket', 'polling'],
+    });
+    console.log('Connecting socket to:', serverUrl);
+
+    socket.on("connect", () => {
+      console.log('Socket connected:', socket.id);
+    });
+
     socket.on("assignedRoom", (roomId) => {
-        console.log('Assigned to room:', roomId);
-        // Handle room assignment (e.g., store roomId in state)
+      console.log('Assigned to room:', roomId);
     });
 
     socket.on("userJoined", (message) => {
-        console.log('User joined room:', message);
-        // Handle new user joining (e.g., update UI)
+      console.log('User joined room:', message);
     });
     
     socket.on("userLeft", (message) => {
-        console.log('User left room:', message);
-        // Handle user leaving (e.g., update UI)
-    });
-
-    socket.on("userLeft", (message) => {
-        console.log('User left room:', message);
-        // Handle user leaving (e.g., update UI)
+      console.log('User left room:', message);
     });
     
-    // Assuming roomId is known and stored in state or similar
-    socket.on(`fullResponse-${roomId}`, (message) => {
-        console.log(`Message for room ${roomId}:`, message);
-        // Handle incoming message for the room
-    });
-
-    socket.on("connect", () => {
-    console.log('Socket connected:', socket.id);
-    });
-      
     socket.on("disconnect", (reason) => {
-    console.log('Disconnected:', reason);
+      console.log('Disconnected:', reason);
     });
       
     socket.on("connect_error", (error) => {
-    console.error('Connection Error:', error);
+      console.error('Connection Error:', error);
     });
   }
 };
@@ -58,4 +46,22 @@ export const disconnectSocket = () => {
 
 export const getSocket = () => {
   return socket;
+};
+
+export const joinRoom = (roomId) => {
+  if (socket) {
+    socket.emit('joinRoom', roomId);
+  }
+};
+
+export const leaveRoom = () => {
+  if (socket) {
+    socket.emit('leaveRoom');
+  }
+};
+
+export const sendMessage = (roomId, message) => {
+  if (socket) {
+    socket.emit('message', roomId, message);
+  }
 };
