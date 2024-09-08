@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-const serverUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://solidcam-staging-d58dfa13bbb6.herokuapp.com/';
+const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000');
 let socket = null;
 
 export const initSocket = () => {
