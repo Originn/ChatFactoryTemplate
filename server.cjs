@@ -1,48 +1,60 @@
-//server.cjs
-
 require('dotenv').config();
 const express = require('express');
 const { parse } = require('url');
 const next = require('next');
-const { init } = require('./socketServer.cjs'); // Import the init method
+const { init } = require('./socketServer.cjs');
 const path = require('path');
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
+console.error('Starting server initialization...');
+
 app.prepare().then(() => {
+  console.error('Next.js app prepared.');
   const server = express();
 
-  // Redirect from Heroku domain to custom domain
+  console.error('Express server created.');
+
   server.use((req, res, next) => {
     const host = req.header("Host");
+    console.error(`Received request for host: ${host}`);
     
     if (host === "solidcam.herokuapp.com") {
-      // Redirect from Heroku domain to custom domain
+      console.error('Redirecting from Heroku domain to custom domain');
       return res.redirect(301, `https://www.solidcamchat.com${req.url}`);
     } else if (host === "solidcamchat.com") {
-      // Redirect from apex domain to 'www' subdomain
+      console.error('Redirecting from apex domain to www subdomain');
       return res.redirect(301, `https://www.solidcamchat.com${req.url}`);
     }
   
     next();
   });
 
-  // Serve static files from the 'public' directory
+  console.error('Static file serving set up.');
   server.use(express.static(path.join(__dirname, 'public')));
 
-  // All other requests are forwarded to Next.js
   server.all('*', (req, res) => {
+    console.error(`Handling request for: ${req.url}`);
     const parsedUrl = parse(req.url, true);
     handle(req, res, parsedUrl);
   });
 
-  const httpServer = server.listen(process.env.PORT || 3000, err => {
-    if (err) throw err;
-    console.log(`> Ready on http://localhost:${process.env.PORT || 3000}`);
+  const port = process.env.PORT || 3000;
+  const httpServer = server.listen(port, (err) => {
+    if (err) {
+      console.error('Error starting server:', err);
+      throw err;
+    }
+    console.error(`> Server ready on port ${port}`);
+    console.error(`> Environment: ${process.env.NODE_ENV}`);
   });
 
-  // Initialize Socket.io
-  init(httpServer);
+  console.error('Initializing Socket.io...');
+  const io = init(httpServer);
+  console.error('Socket.io initialized. Server instance created:', !!io);
+}).catch(err => {
+  console.error('Error during app preparation:', err);
+  process.exit(1);
 });
