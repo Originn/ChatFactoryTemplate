@@ -1,3 +1,5 @@
+//pages\api\chat-history.ts
+
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getChatHistory } from '../../db'
 

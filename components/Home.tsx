@@ -434,6 +434,51 @@ const Home: FC = () => {
   }
 };
 
+  // Function to load the user's latest chat history
+  // Function to load the user's latest chat history
+  const loadChatHistory = async () => {
+    if (!userEmail) return;
+
+    try {
+      const response = await fetch(`/api/chat-history?userEmail=${userEmail}&range=all`); // Fetch full chat history for the user
+      if (response.ok) {
+        const history = await response.json();
+        if (history.length > 0) {
+          const latestConversation = history[0].conversation_json;
+
+          // Parse the conversation and update the message state
+          setMessageState({
+            messages: latestConversation.map((msg: any) => ({
+              ...msg,
+              sourceDocs: msg.sourceDocs || [],
+              isComplete: msg.type === 'apiMessage' ? true : msg.isComplete,
+              qaId: msg.type === 'apiMessage' ? msg.qaId : undefined,
+            })),
+            history: latestConversation
+              .filter((msg: any) => msg.type === 'userMessage')
+              .map((msg: any) => [msg.message, '']),
+          });
+
+          // Optionally set the roomId if necessary
+          const fetchedRoomId = history[0]?.roomId || null;
+          setRoomId(fetchedRoomId);
+
+          // Load the full conversation into MemoryService for context in follow-up questions
+          MemoryService.loadFullConversationHistory(fetchedRoomId, latestConversation);
+        }
+      } else {
+        console.error('Failed to load chat history');
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    }
+  };
+
+  // Load chat history on component mount (page refresh)
+  useEffect(() => {
+    loadChatHistory();
+  }, [userEmail]);
+
   return (
     <>
       <GoogleAnalytics /> {}
