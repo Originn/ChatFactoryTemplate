@@ -416,10 +416,28 @@ const Home: FC = () => {
     return () => messageListElement?.removeEventListener('scroll', handleScroll);
   }, []);
 
+ // Function to handle starting a new chat
+ const handleNewChat = () => {
+  // Clear the previous chat messages
+  setMessageState({
+    messages: [],
+    history: [],
+  });
+
+  // Create a new room ID
+  const newRoomId = `room-${Date.now()}`;
+  setRoomId(newRoomId);
+
+  // Tell the socket to join the new room
+  if (socket) {
+    socket.emit('joinRoom', newRoomId);
+  }
+};
+
   return (
     <>
       <GoogleAnalytics /> {}
-      <Layout theme={theme} toggleTheme={toggleTheme} onHistoryItemClick={handleHistoryItemClick}>
+      <Layout theme={theme} toggleTheme={toggleTheme} onHistoryItemClick={handleHistoryItemClick} handleNewChat={handleNewChat}>
         <div className="mx-auto flex flex-col gap-4">
           {/* For internal embedding */}
           {imagePreviews.length > 0 && (
