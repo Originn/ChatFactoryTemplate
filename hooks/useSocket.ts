@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { DocumentWithMetadata } from '@/interfaces/index_interface';
 import { measureFirstTokenTime } from '@/utils/tracking';
+import MemoryService from '@/utils/memoryService'; // Make sure MemoryService is imported if you're using it for memory
 
 const useSocket = (
   serverUrl: string,
@@ -18,6 +19,7 @@ const useSocket = (
   const [firstTokenTimes, setFirstTokenTimes] = useState<{ [key: string]: number | null }>({});
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
+  // Function to change rooms
   const changeRoom = useCallback((newRoomId: string) => {
     if (socket) {
       // Leave the current room
@@ -31,6 +33,39 @@ const useSocket = (
       setRequestsInProgress((prev: any) => ({ ...prev, [newRoomId]: false }));
     }
   }, [socket, setRoomId, setRequestsInProgress]);
+
+  // Function to load chat history
+  const loadChatHistory = useCallback(async (roomId: string | null) => {
+    if (!roomId) return;
+
+    try {
+      const response = await fetch(`/api/chat-history?roomId=${roomId}`);
+      if (response.ok) {
+        const history = await response.json();
+        const latestConversation = history[0]?.conversation_json || [];
+
+        // Update message state with the loaded conversation
+        setMessageState({
+          messages: latestConversation.map((msg: any) => ({
+            ...msg,
+            sourceDocs: msg.sourceDocs || [],
+            isComplete: msg.type === 'apiMessage' ? true : msg.isComplete,
+            qaId: msg.type === 'apiMessage' ? msg.qaId : undefined,
+          })),
+          history: latestConversation
+            .filter((msg: any) => msg.type === 'userMessage')
+            .map((msg: any) => [msg.message, '']),
+        });
+
+        // Restore memory with the full conversation
+        MemoryService.loadFullConversationHistory(roomId, latestConversation);
+      } else {
+        console.error('Failed to load chat history');
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    }
+  }, [setMessageState]);
 
   useEffect(() => {
     const newSocket: Socket = io(serverUrl, {
@@ -52,6 +87,7 @@ const useSocket = (
         setMessageState((state: any) => {
           const { sourceDocs, qaId } = response;
 
+          // Deduplicate source documents based on URL timestamps
           const deduplicatedDocs = sourceDocs.reduce((acc: DocumentWithMetadata[], doc: DocumentWithMetadata) => {
             const sourceURL = doc.metadata.source;
             if (sourceURL) {
@@ -67,6 +103,7 @@ const useSocket = (
             return acc;
           }, []);
 
+          // Update the last message with source documents
           const updatedMessages = state.messages.map((message: any, index: number, arr: any[]) => {
             if (index === arr.length - 1 && message.type === 'apiMessage') {
               return { ...message, sourceDocs: deduplicatedDocs, qaId, isComplete: true };
@@ -92,7 +129,12 @@ const useSocket = (
     newSocket.on('connect_error', (error: any) => console.error('Connection Error:', error));
     newSocket.on('connect_timeout', (timeout: any) => console.error('Connection Timeout:', timeout));
     newSocket.on('error', (error: any) => console.error('Error:', error));
-    newSocket.on('disconnect', (reason: any) => console.warn('Disconnected:', reason));
+    newSocket.on('disconnect', (reason: any) => {
+      console.warn('Disconnected:', reason);
+      if (roomIdRef.current) {
+        loadChatHistory(roomIdRef.current); // Reload chat history on disconnect
+      }
+    });
 
     newSocket.on('stageUpdate', (newStage: number) => {
       setCurrentStage(newStage);
@@ -166,7 +208,7 @@ const useSocket = (
       }
       newSocket.disconnect();
     };
-  }, [serverUrl, setRequestsInProgress, setMessageState, setCurrentStage, setRoomId]);
+  }, [serverUrl, setRequestsInProgress, setMessageState, setCurrentStage, setRoomId, loadChatHistory]);
 
   return { submitTimeRef, uploadStatus, changeRoom };
 };
