@@ -107,20 +107,30 @@ const Home: FC = () => {
   );
 
   useEffect(() => {
-    const newSocket = io(serverUrl);
-    setSocket(newSocket);
-
-    newSocket.on('connect', () => {
+    const newSocket = io(serverUrl, {
+      secure: true,
+      transports: ['websocket'],
     });
-
+  
+    newSocket.on('connect', () => {
+      console.log('Socket connected');
+    });
+  
+    newSocket.on('connect_error', (err) => {
+      console.error('Socket connection error:', err);
+    });
+  
     newSocket.on('roomJoined', (joinedRoomId) => {
       setRoomId(joinedRoomId);
     });
-
+  
+    setSocket(newSocket);
+  
     return () => {
       newSocket.disconnect();
     };
   }, [serverUrl]);
+  
 
   useEffect(() => {
     if (shouldSubmitAfterTranscription) {
@@ -381,7 +391,34 @@ const Home: FC = () => {
     MemoryService.logMemoryState(conversation.roomId);
   };
   
+  useEffect(() => {
+    if (socket) {
+      socket.on('disconnect', (reason) => {
+        console.warn('Socket disconnected:', reason);
+      });
   
+      socket.io.on('reconnect_attempt', (attemptNumber) => {
+        console.log('Attempting to reconnect:', attemptNumber);
+      });
+  
+      socket.io.on('reconnect', (attemptNumber) => {
+        console.log('Socket reconnected after', attemptNumber, 'attempts');
+        // Option 1: Automatically refresh the page
+        window.location.reload();
+  
+        // Option 2: Prompt the user to refresh
+        // setUpdateAvailable(true);
+      });
+    }
+  
+    return () => {
+      if (socket) {
+        socket.off('disconnect');
+        socket.io.off('reconnect_attempt');
+        socket.io.off('reconnect');
+      }
+    };
+  }, [socket]);
 
   useEffect(() => {
     const handleScrollToTop = () => {
