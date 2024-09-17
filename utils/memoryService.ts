@@ -14,11 +14,20 @@ class MemoryService {
     return this.chatMemory[roomId];
   }
 
-  static async updateChatMemory(roomId: string, input: string, output: string, imageUrl: string[]): Promise<void> {
+  static async updateChatMemory(
+    roomId: string,
+    input: string,
+    output: string,
+    imageUrl: string[]
+  ): Promise<void> {
     const memory = this.getChatMemory(roomId);
-    memory.messages.push(new HumanMessage(input));
-    memory.messages.push(new AIMessage(output));
-    
+    if (input) {
+      memory.messages.push(new HumanMessage(input));
+    }
+    if (output) {
+      memory.messages.push(new AIMessage(output));
+    }
+  
     // Save the imageUrl in metadata if provided
     if (imageUrl && imageUrl.length > 0) {
       memory.metadata.imageUrl = imageUrl;
