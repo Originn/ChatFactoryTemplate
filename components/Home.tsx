@@ -1,4 +1,5 @@
 // components/Home.tsx
+
 import React, { useRef, useState, useEffect, ComponentProps, FC } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
@@ -14,7 +15,10 @@ import { Message } from '@/types/chat';
 import { auth } from '@/utils/firebase';
 import FeedbackComponent from './FeedbackComponent';
 import Link from 'next/link';
-import { RequestsInProgressType, CustomLinkProps } from '@/interfaces/index_interface';
+import {
+  RequestsInProgressType,
+  CustomLinkProps,
+} from '@/interfaces/index_interface';
 import Layout from './layout';
 import GoogleAnalytics from './GoogleAnalytics';
 import useSocket from '@/hooks/useSocket';
@@ -53,7 +57,9 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
 const Home: FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [query, setQuery] = useState<string>('');
-  const [requestsInProgress, setRequestsInProgress] = useState<RequestsInProgressType>({});
+  const [requestsInProgress, setRequestsInProgress] = useState<
+    RequestsInProgressType
+  >({});
   const [loading, setLoading] = useState<boolean>(false);
   const [errorreact, setError] = useState<string | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -71,7 +77,9 @@ const Home: FC = () => {
   const { messages, history } = messageState;
   const serverUrl =
     process.env.NEXT_PUBLIC_SERVER_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+    (typeof window !== 'undefined'
+      ? window.location.origin
+      : 'http://localhost:3000');
 
   const answerStartRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -90,7 +98,9 @@ const Home: FC = () => {
     useState<boolean>(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [isMicActive, setIsMicActive] = useState(false);
-  const [enlargedImage, setEnlargedImage] = useState<ImagePreviewData | null>(null);
+  const [enlargedImage, setEnlargedImage] = useState<ImagePreviewData | null>(
+    null,
+  );
   const userEmail = auth.currentUser ? auth.currentUser.email : null;
   const [selectedConversation, setSelectedConversation] =
     useState<ChatHistoryItem | null>(null);
@@ -189,7 +199,11 @@ const Home: FC = () => {
           const lastMessageIndex = prevState.messages.length - 1;
           const lastMessage = prevState.messages[lastMessageIndex];
 
-          if (lastMessage && lastMessage.type === 'apiMessage' && !lastMessage.isComplete) {
+          if (
+            lastMessage &&
+            lastMessage.type === 'apiMessage' &&
+            !lastMessage.isComplete
+          ) {
             // Merge the token with the last message
             const updatedMessages = [...prevState.messages];
             updatedMessages[lastMessageIndex] = {
@@ -226,14 +240,22 @@ const Home: FC = () => {
           const lastMessageIndex = prevState.messages.length - 1;
           const lastMessage = prevState.messages[lastMessageIndex];
 
-          if (lastMessage && lastMessage.type === 'apiMessage' && !lastMessage.isComplete) {
+          if (
+            lastMessage &&
+            lastMessage.type === 'apiMessage' &&
+            !lastMessage.isComplete
+          ) {
             const updatedMessages = [...prevState.messages];
             updatedMessages[lastMessageIndex] = {
               ...lastMessage,
+              message: message.answer, // Update the message with the full answer
               sourceDocs: message.sourceDocs || [],
               isComplete: true,
               qaId: message.qaId, // Set the qaId here
             };
+
+            // Update MemoryService with the AI's response
+            MemoryService.updateChatMemory(roomId!, '', message.answer, []);
 
             return {
               ...prevState,
@@ -296,7 +318,10 @@ const Home: FC = () => {
       textAreaRef.current.style.transform = `translateY(-${offset}px)`;
       setTextAreaHeight(`${newHeight}px`);
 
-      document.documentElement.style.setProperty('--textarea-height', `${newHeight}px`);
+      document.documentElement.style.setProperty(
+        '--textarea-height',
+        `${newHeight}px`,
+      );
     }
   };
 
@@ -340,7 +365,11 @@ const Home: FC = () => {
     setError(null);
     const trimmedQuery = query.trim();
 
-    if (!trimmedQuery && currentStage !== 4 && homeImagePreviews.length === 0) {
+    if (
+      !trimmedQuery &&
+      currentStage !== 4 &&
+      homeImagePreviews.length === 0
+    ) {
       alert('Please input a question or upload an image');
       return;
     }
@@ -349,7 +378,7 @@ const Home: FC = () => {
       return;
     }
 
-    setRequestsInProgress((prev) => ({ ...prev, [roomId]: true }));
+    setRequestsInProgress((prev) => ({ ...prev, [roomId!]: true }));
     setUserHasScrolled(false);
     setLoading(true);
     const question = query.trim();
@@ -361,22 +390,36 @@ const Home: FC = () => {
       images: homeImagePreviews.slice(0, 3),
     };
 
-    setMessageState((prevState) => ({
-      ...prevState,
-      messages: [...prevState.messages, newUserMessage],
-      history: [...prevState.history, [question, '']],
-    }));
+    setMessageState((prevState) => {
+      const updatedMessages = [...prevState.messages, newUserMessage];
+      const updatedHistory = [...prevState.history, [question, ''] as [string, string]];
+    
+      // Update MemoryService
+      MemoryService.updateChatMemory(roomId!, question, '', []);
+    
+      return {
+        ...prevState,
+        messages: updatedMessages,
+        history: updatedHistory,
+      };
+    });
+    
 
     setQuery('');
 
     if (!userEmail) {
       console.error('User not authenticated');
       setLoading(false);
-      setRequestsInProgress((prev) => ({ ...prev, [roomId]: false }));
+      setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
       return;
     }
 
     const imageUrls = homeImagePreviews.slice(0, 3).map((preview) => preview.url);
+
+    // Get the full history from MemoryService
+    const fullHistory = (await MemoryService.getChatHistory(roomId!)).map(
+      (msg) => [msg.content, ''] as [string, string],
+    );
 
     try {
       const response = await fetch('/api/chat', {
@@ -387,7 +430,7 @@ const Home: FC = () => {
         },
         body: JSON.stringify({
           question,
-          history: messageState.history,
+          history: fullHistory,
           roomId,
           imageUrls,
           userEmail,
@@ -403,7 +446,7 @@ const Home: FC = () => {
       setError('An error occurred while fetching the data. Please try again.');
       console.error('error', error);
     } finally {
-      setRequestsInProgress((prev) => ({ ...prev, [roomId]: false }));
+      setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
       setLoading(false);
       setHomeImagePreviews([]);
       clearPastedImagePreviews();
@@ -422,7 +465,10 @@ const Home: FC = () => {
     } else if (Array.isArray(conversation.conversation_json)) {
       parsedConversation = conversation.conversation_json;
     } else {
-      console.error('Unexpected conversation_json type:', typeof conversation.conversation_json);
+      console.error(
+        'Unexpected conversation_json type:',
+        typeof conversation.conversation_json,
+      );
       return;
     }
 
@@ -440,10 +486,13 @@ const Home: FC = () => {
       })),
       history: parsedConversation
         .filter((msg) => msg.type === 'userMessage')
-        .map((msg) => [msg.message, '']),
+        .map((msg) => [msg.message, ''] as [string, string]),
     });
 
-    MemoryService.loadFullConversationHistory(conversation.roomId, parsedConversation);
+    MemoryService.loadFullConversationHistory(
+      conversation.roomId,
+      parsedConversation,
+    );
 
     setRoomId(conversation.roomId);
     localStorage.setItem('roomId', conversation.roomId);
@@ -464,6 +513,9 @@ const Home: FC = () => {
       history: [],
     });
 
+    // Clear MemoryService
+    MemoryService.clearChatMemory(roomId!);
+
     // Create a new room ID
     const newRoomId = `room-${Date.now()}`;
     setRoomId(newRoomId);
@@ -477,35 +529,32 @@ const Home: FC = () => {
 
   // Function to load the user's latest chat history
   const loadChatHistory = async () => {
-    if (!userEmail) return;
+    if (!userEmail || !roomId) return;
 
     try {
-      const response = await fetch(`/api/chat-history?userEmail=${userEmail}&range=all`);
+      const response = await fetch(
+        `/api/chat-history?userEmail=${userEmail}&roomId=${roomId}`,
+      );
       if (response.ok) {
-        const history = await response.json();
-        if (history.length > 0) {
-          const latestConversation = history[0].conversation_json;
+        const historyData = await response.json();
+        if (historyData && historyData.conversation_json) {
+          const conversation = historyData.conversation_json;
 
           // Parse the conversation and update the message state
           setMessageState({
-            messages: latestConversation.map((msg: any) => ({
+            messages: conversation.map((msg: any) => ({
               ...msg,
               sourceDocs: msg.sourceDocs || [],
               isComplete: msg.type === 'apiMessage' ? true : msg.isComplete,
               qaId: msg.type === 'apiMessage' ? msg.qaId : undefined,
             })),
-            history: latestConversation
+            history: conversation
               .filter((msg: any) => msg.type === 'userMessage')
-              .map((msg: any) => [msg.message, '']),
+              .map((msg: any) => [msg.message, ''] as [string, string]),
           });
 
-          // Set the roomId and store it in localStorage
-          const fetchedRoomId = history[0]?.roomId || null;
-          setRoomId(fetchedRoomId);
-          localStorage.setItem('roomId', fetchedRoomId);
-
           // Load the full conversation into MemoryService
-          MemoryService.loadFullConversationHistory(fetchedRoomId, latestConversation);
+          MemoryService.loadFullConversationHistory(roomId, conversation);
         }
       } else {
         console.error('Failed to load chat history');
@@ -517,8 +566,10 @@ const Home: FC = () => {
 
   // Load chat history on component mount (page refresh)
   useEffect(() => {
-    loadChatHistory();
-  }, [userEmail]);
+    if (userEmail && roomId) {
+      loadChatHistory();
+    }
+  }, [userEmail, roomId]);
 
   useEffect(() => {
     const handleScrollToTop = () => {
@@ -540,7 +591,8 @@ const Home: FC = () => {
     const handleScroll = () => {
       if (messageListRef.current) {
         const isAtBottom =
-          messageListRef.current.scrollHeight - messageListRef.current.scrollTop ===
+          messageListRef.current.scrollHeight -
+            messageListRef.current.scrollTop ===
           messageListRef.current.clientHeight;
         if (!isAtBottom) {
           setUserHasScrolled(true);
@@ -609,7 +661,10 @@ const Home: FC = () => {
           {Object.entries(fileErrors).length > 0 && (
             <div className="error-container">
               {Object.entries(fileErrors).map(([fileName, error]) => (
-                <div key={fileName} className="border border-red-400 rounded-md p-2 mt-2">
+                <div
+                  key={fileName}
+                  className="border border-red-400 rounded-md p-2 mt-2"
+                >
                   <p className="text-red-500 text-sm">{`Error uploading: ${error}`}</p>
                 </div>
               ))}
@@ -665,10 +720,12 @@ const Home: FC = () => {
 
                       // Map imageUrls from JSON to images expected by the Message interface
                       const images = message.imageUrls
-                        ? message.imageUrls.map((url: string, imgIndex: number) => ({
-                            url,
-                            fileName: `Uploaded Image ${imgIndex + 1}`,
-                          }))
+                        ? message.imageUrls.map(
+                            (url: string, imgIndex: number) => ({
+                              url,
+                              fileName: `Uploaded Image ${imgIndex + 1}`,
+                            }),
+                          )
                         : message.images
                         ? message.images.map((image, imgIndex) => ({
                             url: image.url,
@@ -679,7 +736,10 @@ const Home: FC = () => {
                         <React.Fragment key={`chatMessageFragment-${index}`}>
                           <div className={className}>
                             {icon}
-                            <div className={styles.markdownanswer} ref={answerStartRef}>
+                            <div
+                              className={styles.markdownanswer}
+                              ref={answerStartRef}
+                            >
                               {/* Render the images for userMessage */}
                               {images.length > 0 && (
                                 <div
@@ -711,7 +771,9 @@ const Home: FC = () => {
                                           objectFit: 'cover',
                                           cursor: 'pointer',
                                         }}
-                                        onClick={() => setEnlargedImage(image)}
+                                        onClick={() =>
+                                          setEnlargedImage(image)
+                                        }
                                       />
                                     </div>
                                   ))}
@@ -721,7 +783,9 @@ const Home: FC = () => {
                               {/* Render the message text (formatted) */}
                               <ReactMarkdown
                                 components={{
-                                  a: (props: ComponentProps<'a'>) => <CustomLink {...props} />,
+                                  a: (props: ComponentProps<'a'>) => (
+                                    <CustomLink {...props} />
+                                  ),
                                 }}
                               >
                                 {formattedMessage}
@@ -730,74 +794,94 @@ const Home: FC = () => {
                           </div>
 
                           {/* Render the sources (webinars, documents) */}
-                          {message.sourceDocs && message.sourceDocs.length > 0 && (
-                            <div key={`sourceDocsAccordion-${index}`}>
-                              <Accordion type="single" collapsible className="flex-col">
-                                {message.sourceDocs.map((doc, docIndex) => {
-                                  let title =
-                                    doc.metadata.type === 'youtube' ? 'Webinar' : 'Document';
-                                  return (
-                                    <AccordionItem
-                                      key={`messageSourceDocs-${docIndex}`}
-                                      value={`item-${docIndex}`}
-                                    >
-                                      <AccordionTrigger>
-                                        <h3>{`${title} ${docIndex + 1}`}</h3>
-                                      </AccordionTrigger>
-                                      <AccordionContent>
-                                        {doc.metadata.type === 'youtube' ? (
-                                          <p>
-                                            <b>Source:</b>
-                                            {doc.metadata.source ? (
-                                              <a
-                                                href={doc.metadata.source}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                              >
-                                                View Webinar
-                                              </a>
+                          {message.sourceDocs &&
+                            message.sourceDocs.length > 0 && (
+                              <div key={`sourceDocsAccordion-${index}`}>
+                                <Accordion
+                                  type="single"
+                                  collapsible
+                                  className="flex-col"
+                                >
+                                  {message.sourceDocs.map(
+                                    (doc, docIndex) => {
+                                      let title =
+                                        doc.metadata.type === 'youtube'
+                                          ? 'Webinar'
+                                          : 'Document';
+                                      return (
+                                        <AccordionItem
+                                          key={`messageSourceDocs-${docIndex}`}
+                                          value={`item-${docIndex}`}
+                                        >
+                                          <AccordionTrigger>
+                                            <h3>{`${title} ${
+                                              docIndex + 1
+                                            }`}</h3>
+                                          </AccordionTrigger>
+                                          <AccordionContent>
+                                            {doc.metadata.type === 'youtube' ? (
+                                              <p>
+                                                <b>Source:</b>
+                                                {doc.metadata.source ? (
+                                                  <a
+                                                    href={
+                                                      doc.metadata.source
+                                                    }
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                  >
+                                                    View Webinar
+                                                  </a>
+                                                ) : (
+                                                  'Unavailable'
+                                                )}
+                                              </p>
                                             ) : (
-                                              'Unavailable'
+                                              <>
+                                                <ReactMarkdown>
+                                                  {
+                                                    doc.pageContent.split(
+                                                      '\n',
+                                                    )[0]
+                                                  }
+                                                </ReactMarkdown>
+                                                <p className="mt-2">
+                                                  <b>Source:</b>
+                                                  {doc.metadata.source ? (
+                                                    <a
+                                                      href={
+                                                        doc.metadata.source
+                                                      }
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                    >
+                                                      View Document
+                                                    </a>
+                                                  ) : (
+                                                    'Unavailable'
+                                                  )}
+                                                </p>
+                                              </>
                                             )}
-                                          </p>
-                                        ) : (
-                                          <>
-                                            <ReactMarkdown>
-                                              {doc.pageContent.split('\n')[0]}
-                                            </ReactMarkdown>
-                                            <p className="mt-2">
-                                              <b>Source:</b>
-                                              {doc.metadata.source ? (
-                                                <a
-                                                  href={doc.metadata.source}
-                                                  target="_blank"
-                                                  rel="noopener noreferrer"
-                                                >
-                                                  View Document
-                                                </a>
-                                              ) : (
-                                                'Unavailable'
-                                              )}
-                                            </p>
-                                          </>
-                                        )}
-                                      </AccordionContent>
-                                    </AccordionItem>
-                                  );
-                                })}
-                              </Accordion>
-                            </div>
-                          )}
+                                          </AccordionContent>
+                                        </AccordionItem>
+                                      );
+                                    },
+                                  )}
+                                </Accordion>
+                              </div>
+                            )}
 
                           {/* Render feedback only for apiMessage */}
-                          {message.type === 'apiMessage' && message.isComplete && (
-                            <FeedbackComponent
-                              key={index}
-                              messageIndex={index}
-                              qaId={message.qaId}
-                              roomId={roomId}
-                            />
-                          )}
+                          {message.type === 'apiMessage' &&
+                            message.isComplete && (
+                              <FeedbackComponent
+                                key={index}
+                                messageIndex={index}
+                                qaId={message.qaId}
+                                roomId={roomId}
+                              />
+                            )}
                         </React.Fragment>
                       );
                     })}
@@ -807,7 +891,10 @@ const Home: FC = () => {
             </main>
             <div className={styles.center}>
               <div className={styles.cloudform}>
-                <form onSubmit={handleSubmit} className={styles.textareaContainer}>
+                <form
+                  onSubmit={handleSubmit}
+                  className={styles.textareaContainer}
+                >
                   <textarea
                     disabled={loading}
                     onKeyDown={handleEnter}
@@ -862,7 +949,10 @@ const Home: FC = () => {
 
                   {currentStage === 4 ? (
                     !loading && (
-                      <label htmlFor="fileInput" className={styles.fileUploadButton}>
+                      <label
+                        htmlFor="fileInput"
+                        className={styles.fileUploadButton}
+                      >
                         <input
                           id="fileInput"
                           type="file"
@@ -920,7 +1010,8 @@ const Home: FC = () => {
                 <div className="disclaimer-container">
                   <div className={styles.disclaimerText}>
                     <p style={{ fontSize: 'small', color: 'gray' }}>
-                      SolidCAM ChatBot may display inaccurate info so double-check its responses
+                      SolidCAM ChatBot may display inaccurate info so
+                      double-check its responses
                     </p>
                   </div>
                 </div>
