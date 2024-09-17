@@ -528,12 +528,10 @@ const Home: FC = () => {
 
   // Function to load the user's latest chat history
   const loadChatHistory = async () => {
-    if (!userEmail || !roomId) return;
-
+    if (!roomId) return;
+  
     try {
-      const response = await fetch(
-        `/api/chat-history?userEmail=${userEmail}&roomId=${roomId}`,
-      );
+      const response = await fetch(`/api/chat-history?roomId=${roomId}`);
       if (response.ok) {
         const historyData = await response.json();
         if (historyData && historyData.conversation_json) {
