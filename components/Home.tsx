@@ -1,5 +1,4 @@
 //components\Home.tsx
-
 import React, { useRef, useState, useEffect, ComponentProps, FC } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
