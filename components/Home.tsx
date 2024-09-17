@@ -1,16 +1,20 @@
-//components\Home.tsx
+// components/Home.tsx
 
 import React, { useRef, useState, useEffect, ComponentProps, FC } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import LoadingDots from './ui/LoadingDots';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from './ui/accordion';
 import styles from '@/styles/Home.module.css';
 import { Message } from '@/types/chat';
 import { auth } from '@/utils/firebase';
 import FeedbackComponent from './FeedbackComponent';
 import Link from 'next/link';
-import { handleWebinarClick, handleDocumentClick } from '@/utils/tracking';
 import { RequestsInProgressType, CustomLinkProps } from '@/interfaces/index_interface';
 import Layout from './layout';
 import GoogleAnalytics from './GoogleAnalytics';
@@ -26,8 +30,6 @@ import EnlargedImageView from './EnlargedImageView';
 import { ChatHistoryItem } from './ChatHistory';
 import { io, Socket } from 'socket.io-client';
 import MemoryService from '@/utils/memoryService';
-
-
 
 const PRODUCTION_ENV = 'production';
 const LOCAL_URL = 'http://localhost:3000';
@@ -49,7 +51,6 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
   );
 };
 
-
 const Home: FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [query, setQuery] = useState<string>('');
@@ -69,27 +70,38 @@ const Home: FC = () => {
   const [currentStage, setCurrentStage] = useState<number | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const { messages, history } = messageState;
-  const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000';
+  const serverUrl =
+    process.env.NEXT_PUBLIC_SERVER_URL ||
+    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 
   const answerStartRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [textAreaHeight, setTextAreaHeight] = useState<string>('auto');
-  const { submitTimeRef, changeRoom } = useSocket(serverUrl, roomId, setRequestsInProgress, setMessageState, setCurrentStage, setRoomId);
+  const { submitTimeRef, changeRoom } = useSocket(
+    serverUrl,
+    roomId,
+    setRequestsInProgress,
+    setMessageState,
+    setCurrentStage,
+    setRoomId,
+  );
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
-  const [shouldSubmitAfterTranscription, setShouldSubmitAfterTranscription] = useState<boolean>(false);
+  const [shouldSubmitAfterTranscription, setShouldSubmitAfterTranscription] =
+    useState<boolean>(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [isMicActive, setIsMicActive] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState<ImagePreviewData | null>(null);
   const userEmail = auth.currentUser ? auth.currentUser.email : null;
-  const [selectedConversation, setSelectedConversation] = useState<ChatHistoryItem | null>(null);
+  const [selectedConversation, setSelectedConversation] =
+    useState<ChatHistoryItem | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
   const {
     imagePreviews,
     handleFileChange,
     handleDeleteImage,
     setImagePreviews,
-    uploadProgress: internalUploadProgress
+    uploadProgress: internalUploadProgress,
   } = useFileUpload(setQuery, roomId, auth, setUploadStatus);
   const {
     homeImagePreviews,
@@ -98,40 +110,63 @@ const Home: FC = () => {
     setHomeImagePreviews,
     fileInputRef,
     uploadProgress: homeUploadProgress,
-    fileErrors
+    fileErrors,
   } = useFileUploadFromHome(setQuery, roomId, auth, setUploadStatus);
-  const { uploadProgress: pasteUploadProgress, clearPastedImagePreviews } = usePasteImageUpload(
-    roomId,
-    auth,
-    textAreaRef,
-    setHomeImagePreviews
-  );
+  const { uploadProgress: pasteUploadProgress, clearPastedImagePreviews } =
+    usePasteImageUpload(roomId, auth, textAreaRef, setHomeImagePreviews);
 
+  // Initialize roomId from localStorage or create a new one
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedRoomId = localStorage.getItem('roomId');
+      if (storedRoomId) {
+        setRoomId(storedRoomId);
+      } else {
+        const newRoomId = `room-${Date.now()}`;
+        setRoomId(newRoomId);
+        localStorage.setItem('roomId', newRoomId);
+      }
+    }
+  }, []);
+
+  // Update localStorage whenever roomId changes
+  useEffect(() => {
+    if (roomId) {
+      localStorage.setItem('roomId', roomId);
+    }
+  }, [roomId]);
+
+  // Initialize Socket.IO client
   useEffect(() => {
     const newSocket = io(serverUrl, {
       secure: true,
       transports: ['websocket'],
     });
-  
+
     newSocket.on('connect', () => {
       console.log('Socket connected');
+      if (roomId) {
+        newSocket.emit('joinRoom', roomId);
+      }
     });
-  
+
     newSocket.on('connect_error', (err) => {
       console.error('Socket connection error:', err);
     });
-  
-    newSocket.on('roomJoined', (joinedRoomId) => {
-      setRoomId(joinedRoomId);
-    });
-  
+
     setSocket(newSocket);
-  
+
     return () => {
       newSocket.disconnect();
     };
-  }, [serverUrl]);
-  
+  }, [serverUrl, roomId]); // Added roomId to dependencies
+
+  // Emit 'joinRoom' whenever socket or roomId changes
+  useEffect(() => {
+    if (socket && roomId) {
+      socket.emit('joinRoom', roomId);
+    }
+  }, [socket, roomId]);
 
   useEffect(() => {
     if (shouldSubmitAfterTranscription) {
@@ -154,7 +189,7 @@ const Home: FC = () => {
         setMessageState((prevState) => {
           const lastMessageIndex = prevState.messages.length - 1;
           const lastMessage = prevState.messages[lastMessageIndex];
-  
+
           if (lastMessage && lastMessage.type === 'apiMessage' && !lastMessage.isComplete) {
             // Merge the token with the last message
             const updatedMessages = [...prevState.messages];
@@ -162,7 +197,7 @@ const Home: FC = () => {
               ...lastMessage,
               message: lastMessage.message + token,
             };
-  
+
             return { ...prevState, messages: updatedMessages };
           } else {
             // If there is no incomplete message, create a new apiMessage
@@ -182,12 +217,16 @@ const Home: FC = () => {
           }
         });
       };
-  
-      const handleFullResponse = (message: { answer: string, sourceDocs: any[], qaId: string }) => {
+
+      const handleFullResponse = (message: {
+        answer: string;
+        sourceDocs: any[];
+        qaId: string;
+      }) => {
         setMessageState((prevState) => {
           const lastMessageIndex = prevState.messages.length - 1;
           const lastMessage = prevState.messages[lastMessageIndex];
-  
+
           if (lastMessage && lastMessage.type === 'apiMessage' && !lastMessage.isComplete) {
             const updatedMessages = [...prevState.messages];
             updatedMessages[lastMessageIndex] = {
@@ -196,20 +235,20 @@ const Home: FC = () => {
               isComplete: true,
               qaId: message.qaId, // Set the qaId here
             };
-  
+
             return {
               ...prevState,
               messages: updatedMessages,
             };
           }
-  
+
           return prevState; // If there's no incomplete message, don't change the state
         });
       };
-  
+
       socket.on(`tokenStream-${roomId}`, handleNewToken);
       socket.on(`fullResponse-${roomId}`, handleFullResponse);
-  
+
       return () => {
         socket.off(`tokenStream-${roomId}`, handleNewToken);
         socket.off(`fullResponse-${roomId}`, handleFullResponse);
@@ -217,12 +256,35 @@ const Home: FC = () => {
     }
   }, [socket, roomId]);
 
+  // Handle socket reconnection
   useEffect(() => {
-    if (socket && roomId) {
-      socket.emit('joinRoom', roomId); // Join the room when roomId changes
+    if (socket) {
+      socket.on('disconnect', (reason) => {
+        console.warn('Socket disconnected:', reason);
+      });
+
+      socket.io.on('reconnect_attempt', (attemptNumber) => {
+        console.log('Attempting to reconnect:', attemptNumber);
+      });
+
+      socket.io.on('reconnect', (attemptNumber) => {
+        console.log('Socket reconnected after', attemptNumber, 'attempts');
+        if (roomId) {
+          socket.emit('joinRoom', roomId);
+        }
+        // Optionally refresh the page
+        // window.location.reload();
+      });
     }
+
+    return () => {
+      if (socket) {
+        socket.off('disconnect');
+        socket.io.off('reconnect_attempt');
+        socket.io.off('reconnect');
+      }
+    };
   }, [socket, roomId]);
-  
 
   const adjustTextAreaHeight = () => {
     if (textAreaRef.current) {
@@ -269,60 +331,60 @@ const Home: FC = () => {
 
   const handleSubmit = async (e?: any) => {
     if (e) e.preventDefault();
-  
+
     if (!roomId) {
       console.error('No roomId available');
       setError('No roomId available');
       return;
     }
-  
+
     setError(null);
     const trimmedQuery = query.trim();
-  
+
     if (!trimmedQuery && currentStage !== 4 && homeImagePreviews.length === 0) {
       alert('Please input a question or upload an image');
       return;
     }
-  
+
     if (requestsInProgress[roomId]) {
       return;
     }
-  
-    setRequestsInProgress(prev => ({ ...prev, [roomId]: true }));
+
+    setRequestsInProgress((prev) => ({ ...prev, [roomId]: true }));
     setUserHasScrolled(false);
     setLoading(true);
     const question = query.trim();
-  
+
     const newUserMessage: Message = {
-      type: 'userMessage', 
+      type: 'userMessage',
       message: question,
       isComplete: true,
       images: homeImagePreviews.slice(0, 3),
     };
-    
+
     setMessageState((prevState) => ({
       ...prevState,
       messages: [...prevState.messages, newUserMessage],
       history: [...prevState.history, [question, '']],
     }));
-  
+
     setQuery('');
-  
+
     if (!userEmail) {
       console.error('User not authenticated');
       setLoading(false);
-      setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
+      setRequestsInProgress((prev) => ({ ...prev, [roomId]: false }));
       return;
     }
-  
-    const imageUrls = homeImagePreviews.slice(0, 3).map(preview => preview.url);
-  
+
+    const imageUrls = homeImagePreviews.slice(0, 3).map((preview) => preview.url);
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': userEmail,
+          Authorization: userEmail,
         },
         body: JSON.stringify({
           question,
@@ -332,17 +394,17 @@ const Home: FC = () => {
           userEmail,
         }),
       });
-  
+
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-  
+
       // The response will be handled by the socket event listeners
     } catch (error) {
       setError('An error occurred while fetching the data. Please try again.');
       console.error('error', error);
     } finally {
-      setRequestsInProgress(prev => ({ ...prev, [roomId]: false }));
+      setRequestsInProgress((prev) => ({ ...prev, [roomId]: false }));
       setLoading(false);
       setHomeImagePreviews([]);
       clearPastedImagePreviews();
@@ -371,18 +433,21 @@ const Home: FC = () => {
     }
 
     setMessageState({
-      messages: parsedConversation.map(msg => ({
+      messages: parsedConversation.map((msg) => ({
         ...msg,
         sourceDocs: msg.sourceDocs || [],
         isComplete: msg.type === 'apiMessage' ? true : msg.isComplete,
         qaId: msg.type === 'apiMessage' ? msg.qaId : undefined,
       })),
       history: parsedConversation
-        .filter(msg => msg.type === 'userMessage')
-        .map(msg => [msg.message, '']),
+        .filter((msg) => msg.type === 'userMessage')
+        .map((msg) => [msg.message, '']),
     });
 
     MemoryService.loadFullConversationHistory(conversation.roomId, parsedConversation);
+
+    setRoomId(conversation.roomId);
+    localStorage.setItem('roomId', conversation.roomId);
 
     if (socket) {
       socket.emit('joinRoom', conversation.roomId);
@@ -391,35 +456,70 @@ const Home: FC = () => {
     changeRoom(conversation.roomId);
     MemoryService.logMemoryState(conversation.roomId);
   };
-  
-  useEffect(() => {
+
+  // Function to handle starting a new chat
+  const handleNewChat = () => {
+    // Clear the previous chat messages
+    setMessageState({
+      messages: [],
+      history: [],
+    });
+
+    // Create a new room ID
+    const newRoomId = `room-${Date.now()}`;
+    setRoomId(newRoomId);
+    localStorage.setItem('roomId', newRoomId);
+
+    // Tell the socket to join the new room
     if (socket) {
-      socket.on('disconnect', (reason) => {
-        console.warn('Socket disconnected:', reason);
-      });
-  
-      socket.io.on('reconnect_attempt', (attemptNumber) => {
-        console.log('Attempting to reconnect:', attemptNumber);
-      });
-  
-      socket.io.on('reconnect', (attemptNumber) => {
-        console.log('Socket reconnected after', attemptNumber, 'attempts');
-        // Option 1: Automatically refresh the page
-        window.location.reload();
-  
-        // Option 2: Prompt the user to refresh
-        // setUpdateAvailable(true);
-      });
+      socket.emit('joinRoom', newRoomId);
     }
-  
-    return () => {
-      if (socket) {
-        socket.off('disconnect');
-        socket.io.off('reconnect_attempt');
-        socket.io.off('reconnect');
+  };
+
+  // Function to load the user's latest chat history
+  const loadChatHistory = async () => {
+    if (!userEmail) return;
+
+    try {
+      const response = await fetch(`/api/chat-history?userEmail=${userEmail}&range=all`);
+      if (response.ok) {
+        const history = await response.json();
+        if (history.length > 0) {
+          const latestConversation = history[0].conversation_json;
+
+          // Parse the conversation and update the message state
+          setMessageState({
+            messages: latestConversation.map((msg: any) => ({
+              ...msg,
+              sourceDocs: msg.sourceDocs || [],
+              isComplete: msg.type === 'apiMessage' ? true : msg.isComplete,
+              qaId: msg.type === 'apiMessage' ? msg.qaId : undefined,
+            })),
+            history: latestConversation
+              .filter((msg: any) => msg.type === 'userMessage')
+              .map((msg: any) => [msg.message, '']),
+          });
+
+          // Set the roomId and store it in localStorage
+          const fetchedRoomId = history[0]?.roomId || null;
+          setRoomId(fetchedRoomId);
+          localStorage.setItem('roomId', fetchedRoomId);
+
+          // Load the full conversation into MemoryService
+          MemoryService.loadFullConversationHistory(fetchedRoomId, latestConversation);
+        }
+      } else {
+        console.error('Failed to load chat history');
       }
-    };
-  }, [socket]);
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    }
+  };
+
+  // Load chat history on component mount (page refresh)
+  useEffect(() => {
+    loadChatHistory();
+  }, [userEmail]);
 
   useEffect(() => {
     const handleScrollToTop = () => {
@@ -440,7 +540,9 @@ const Home: FC = () => {
   useEffect(() => {
     const handleScroll = () => {
       if (messageListRef.current) {
-        const isAtBottom = messageListRef.current.scrollHeight - messageListRef.current.scrollTop === messageListRef.current.clientHeight;
+        const isAtBottom =
+          messageListRef.current.scrollHeight - messageListRef.current.scrollTop ===
+          messageListRef.current.clientHeight;
         if (!isAtBottom) {
           setUserHasScrolled(true);
         }
@@ -453,73 +555,15 @@ const Home: FC = () => {
     return () => messageListElement?.removeEventListener('scroll', handleScroll);
   }, []);
 
- // Function to handle starting a new chat
- const handleNewChat = () => {
-  // Clear the previous chat messages
-  setMessageState({
-    messages: [],
-    history: [],
-  });
-
-  // Create a new room ID
-  const newRoomId = `room-${Date.now()}`;
-  setRoomId(newRoomId);
-
-  // Tell the socket to join the new room
-  if (socket) {
-    socket.emit('joinRoom', newRoomId);
-  }
-};
-
-  // Function to load the user's latest chat history
-  // Function to load the user's latest chat history
-  const loadChatHistory = async () => {
-    if (!userEmail) return;
-
-    try {
-      const response = await fetch(`/api/chat-history?userEmail=${userEmail}&range=all`); // Fetch full chat history for the user
-      if (response.ok) {
-        const history = await response.json();
-        if (history.length > 0) {
-          const latestConversation = history[0].conversation_json;
-
-          // Parse the conversation and update the message state
-          setMessageState({
-            messages: latestConversation.map((msg: any) => ({
-              ...msg,
-              sourceDocs: msg.sourceDocs || [],
-              isComplete: msg.type === 'apiMessage' ? true : msg.isComplete,
-              qaId: msg.type === 'apiMessage' ? msg.qaId : undefined,
-            })),
-            history: latestConversation
-              .filter((msg: any) => msg.type === 'userMessage')
-              .map((msg: any) => [msg.message, '']),
-          });
-
-          // Optionally set the roomId if necessary
-          const fetchedRoomId = history[0]?.roomId || null;
-          setRoomId(fetchedRoomId);
-
-          // Load the full conversation into MemoryService for context in follow-up questions
-          MemoryService.loadFullConversationHistory(fetchedRoomId, latestConversation);
-        }
-      } else {
-        console.error('Failed to load chat history');
-      }
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-    }
-  };
-
-  // Load chat history on component mount (page refresh)
-  useEffect(() => {
-    loadChatHistory();
-  }, [userEmail]);
-
   return (
     <>
       <GoogleAnalytics /> {}
-      <Layout theme={theme} toggleTheme={toggleTheme} onHistoryItemClick={handleHistoryItemClick} handleNewChat={handleNewChat}>
+      <Layout
+        theme={theme}
+        toggleTheme={toggleTheme}
+        onHistoryItemClick={handleHistoryItemClick}
+        handleNewChat={handleNewChat}
+      >
         <div className="mx-auto flex flex-col gap-4">
           {/* For internal embedding */}
           {imagePreviews.length > 0 && (
@@ -552,13 +596,17 @@ const Home: FC = () => {
                   image={image}
                   index={index}
                   onDelete={handleHomeDeleteImage}
-                  uploadProgress={pasteUploadProgress[image.fileName] || homeUploadProgress[image.fileName] || null}
+                  uploadProgress={
+                    pasteUploadProgress[image.fileName] ||
+                    homeUploadProgress[image.fileName] ||
+                    null
+                  }
                 />
               ))}
             </div>
           )}
 
-          {/*section to display file errors */}
+          {/* Section to display file errors */}
           {Object.entries(fileErrors).length > 0 && (
             <div className="error-container">
               {Object.entries(fileErrors).map(([fileName, error]) => (
@@ -576,254 +624,295 @@ const Home: FC = () => {
               <div className="content-container">
                 <div className={`${styles.cloud} auto-height`}>
                   <div ref={messageListRef} className={styles.messagelist}>
-                  {messages.map((message, index) => {
-                    let icon;
-                    let className;
+                    {messages.map((message, index) => {
+                      let icon;
+                      let className;
 
-                    if (message.type === 'apiMessage') {
-                      icon = (
-                        <Image
-                          key={index}
-                          src={botimageIcon}
-                          alt="AI"
-                          width="40"
-                          height="40"
-                          className={styles.boticon}
-                          priority
-                        />
-                      );
-                      className = styles.apimessage;
-                    } else {
-                      icon = (
-                        <Image
-                          key={index}
-                          src={imageUrlUserIcon}
-                          alt="Me"
-                          width="30"
-                          height="30"
-                          className={styles.usericon}
-                          priority
-                        />
-                      );
-                      className =
-                        loading && index === messages.length - 1
-                          ? styles.usermessagewaiting
-                          : styles.usermessage;
-                    }
+                      if (message.type === 'apiMessage') {
+                        icon = (
+                          <Image
+                            key={index}
+                            src={botimageIcon}
+                            alt="AI"
+                            width="40"
+                            height="40"
+                            className={styles.boticon}
+                            priority
+                          />
+                        );
+                        className = styles.apimessage;
+                      } else {
+                        icon = (
+                          <Image
+                            key={index}
+                            src={imageUrlUserIcon}
+                            alt="Me"
+                            width="30"
+                            height="30"
+                            className={styles.usericon}
+                            priority
+                          />
+                        );
+                        className =
+                          loading && index === messages.length - 1
+                            ? styles.usermessagewaiting
+                            : styles.usermessage;
+                      }
 
-                    // Remove "[Image model answer: ]" from the message text
-                    const formattedMessage = message.message.replace(/\[Image model answer:[\s\S]*?\]/g, '').trim();
+                      // Remove "[Image model answer: ]" from the message text
+                      const formattedMessage = message.message
+                        .replace(/\[Image model answer:[\s\S]*?\]/g, '')
+                        .trim();
 
-                    // Map imageUrls from JSON to images expected by the Message interface
-
-                    const images = message.imageUrls
-                    ? message.imageUrls.map((url: string, imgIndex: number) => ({ url, fileName: `Uploaded Image ${imgIndex + 1}` }))
-                    : message.images
-                    ? message.images.map((image, imgIndex) => ({ url: image.url, fileName: image.fileName }))
-                    : [];
-                    return (
-                      <React.Fragment key={`chatMessageFragment-${index}`}>
-                        <div className={className}>
-                          {icon}
-                          <div className={styles.markdownanswer} ref={answerStartRef}>
-                            
-                            {/* Render the images for userMessage */}
-                            {images.length > 0 && (
-                              <div className="image-container" style={{ 
-                                marginBottom: '10px', 
-                                display: 'flex', 
-                                flexWrap: 'wrap', 
-                                gap: '10px',
-                                justifyContent: 'start'
-                              }}>
-                                {images.map((image, imgIndex) => (
-                                  <div key={imgIndex} style={{ 
-                                    width: '150px', 
-                                    height: '150px', 
-                                    overflow: 'hidden',
-                                    position: 'relative'
-                                  }}>
-                                    <img 
-                                      src={image.url} // Fix here: Access the `url` property of `ImagePreviewData`
-                                      alt={`User uploaded: ${image.fileName}`} 
-                                      style={{ 
-                                        width: '100%', 
-                                        height: '100%', 
-                                        objectFit: 'cover',
-                                        cursor: 'pointer'
+                      // Map imageUrls from JSON to images expected by the Message interface
+                      const images = message.imageUrls
+                        ? message.imageUrls.map((url: string, imgIndex: number) => ({
+                            url,
+                            fileName: `Uploaded Image ${imgIndex + 1}`,
+                          }))
+                        : message.images
+                        ? message.images.map((image, imgIndex) => ({
+                            url: image.url,
+                            fileName: image.fileName,
+                          }))
+                        : [];
+                      return (
+                        <React.Fragment key={`chatMessageFragment-${index}`}>
+                          <div className={className}>
+                            {icon}
+                            <div className={styles.markdownanswer} ref={answerStartRef}>
+                              {/* Render the images for userMessage */}
+                              {images.length > 0 && (
+                                <div
+                                  className="image-container"
+                                  style={{
+                                    marginBottom: '10px',
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    gap: '10px',
+                                    justifyContent: 'start',
+                                  }}
+                                >
+                                  {images.map((image, imgIndex) => (
+                                    <div
+                                      key={imgIndex}
+                                      style={{
+                                        width: '150px',
+                                        height: '150px',
+                                        overflow: 'hidden',
+                                        position: 'relative',
                                       }}
-                                      onClick={() => setEnlargedImage(image)}  // Fix here: Pass `image`, not an object with `url`
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                                    >
+                                      <img
+                                        src={image.url}
+                                        alt={`User uploaded: ${image.fileName}`}
+                                        style={{
+                                          width: '100%',
+                                          height: '100%',
+                                          objectFit: 'cover',
+                                          cursor: 'pointer',
+                                        }}
+                                        onClick={() => setEnlargedImage(image)}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
 
-                            {/* Render the message text (formatted) */}
-                            <ReactMarkdown
-                              components={{
-                                a: (props: ComponentProps<'a'>) => <CustomLink {...props} />,
-                              }}
-                            >
-                              {formattedMessage}
-                            </ReactMarkdown>
+                              {/* Render the message text (formatted) */}
+                              <ReactMarkdown
+                                components={{
+                                  a: (props: ComponentProps<'a'>) => <CustomLink {...props} />,
+                                }}
+                              >
+                                {formattedMessage}
+                              </ReactMarkdown>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Render the sources (webinars, documents) */}
-                        {message.sourceDocs && message.sourceDocs.length > 0 && (
-                          <div key={`sourceDocsAccordion-${index}`}>
-                            <Accordion type="single" collapsible className="flex-col">
-                              {message.sourceDocs.map((doc, docIndex) => {
-                                let title = doc.metadata.type === 'youtube' ? 'Webinar' : 'Document';
-                                return (
-                                  <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
-                                    <AccordionTrigger>
-                                      <h3>{`${title} ${docIndex + 1}`}</h3>
-                                    </AccordionTrigger>
-                                    <AccordionContent>
-                                      {doc.metadata.type === 'youtube' ? (
-                                        <p>
-                                          <b>Source:</b>
-                                          {doc.metadata.source ? (
-                                            <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">
-                                              View Webinar
-                                            </a>
-                                          ) : (
-                                            'Unavailable'
-                                          )}
-                                        </p>
-                                      ) : (
-                                        <>
-                                          <ReactMarkdown>
-                                            {doc.pageContent.split('\n')[0]}
-                                          </ReactMarkdown>
-                                          <p className="mt-2">
+                          {/* Render the sources (webinars, documents) */}
+                          {message.sourceDocs && message.sourceDocs.length > 0 && (
+                            <div key={`sourceDocsAccordion-${index}`}>
+                              <Accordion type="single" collapsible className="flex-col">
+                                {message.sourceDocs.map((doc, docIndex) => {
+                                  let title =
+                                    doc.metadata.type === 'youtube' ? 'Webinar' : 'Document';
+                                  return (
+                                    <AccordionItem
+                                      key={`messageSourceDocs-${docIndex}`}
+                                      value={`item-${docIndex}`}
+                                    >
+                                      <AccordionTrigger>
+                                        <h3>{`${title} ${docIndex + 1}`}</h3>
+                                      </AccordionTrigger>
+                                      <AccordionContent>
+                                        {doc.metadata.type === 'youtube' ? (
+                                          <p>
                                             <b>Source:</b>
                                             {doc.metadata.source ? (
-                                              <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer">
-                                                View Document
+                                              <a
+                                                href={doc.metadata.source}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                              >
+                                                View Webinar
                                               </a>
                                             ) : (
                                               'Unavailable'
                                             )}
                                           </p>
-                                        </>
-                                      )}
-                                    </AccordionContent>
-                                  </AccordionItem>
-                                );
-                              })}
-                            </Accordion>
-                          </div>
-                        )}
+                                        ) : (
+                                          <>
+                                            <ReactMarkdown>
+                                              {doc.pageContent.split('\n')[0]}
+                                            </ReactMarkdown>
+                                            <p className="mt-2">
+                                              <b>Source:</b>
+                                              {doc.metadata.source ? (
+                                                <a
+                                                  href={doc.metadata.source}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                >
+                                                  View Document
+                                                </a>
+                                              ) : (
+                                                'Unavailable'
+                                              )}
+                                            </p>
+                                          </>
+                                        )}
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  );
+                                })}
+                              </Accordion>
+                            </div>
+                          )}
 
-                        {/* Render feedback only for apiMessage */}
-                        {message.type === 'apiMessage' && message.isComplete && (
-                          <FeedbackComponent key={index} messageIndex={index} qaId={message.qaId} roomId={roomId} />
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
+                          {/* Render feedback only for apiMessage */}
+                          {message.type === 'apiMessage' && message.isComplete && (
+                            <FeedbackComponent
+                              key={index}
+                              messageIndex={index}
+                              qaId={message.qaId}
+                              roomId={roomId}
+                            />
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
             </main>
             <div className={styles.center}>
               <div className={styles.cloudform}>
-              <form onSubmit={handleSubmit} className={styles.textareaContainer}>
-                <textarea
-                  disabled={loading}
-                  onKeyDown={handleEnter}
-                  onChange={handleChange}
-                  ref={textAreaRef}
-                  autoFocus={false}
-                  rows={1}
-                  maxLength={50000}
-                  id="userInput"
-                  name="userInput"
-                  placeholder={
-                    loading
-                      ? 'Waiting for response...'
-                      : isMicActive
-                      ? ''
-                      : 'Message SolidCAM ChatBot...'
-                  }
-                  value={query}
-                  className={styles.textarea}
-                  readOnly={currentStage === 4}
-                />
-                
-                {/* Conditionally render the ImageUpload component */}
-                {!loading && (
-                  <ImageUpload handleFileChange={handleFileChange} />
-                )}
-                
-                {/* Conditionally render the general file input and label */}
-                {!loading && (
-                  <>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      onChange={handleHomeFileChange}
-                      accept="image/*"
-                      multiple
-                      style={{ display: 'none' }}
-                      id="generalFileInput"
-                    />
-                    <label htmlFor="generalFileInput" className={styles.fileUploadButton} title="Upload image">
-                      <Image src="/image-upload-48.png" alt="Upload JPG" width="30" height="30" />
-                    </label>
-                  </>
-                )}
-                
-                {currentStage === 4 ? (
-                  !loading && (
-                    <label htmlFor="fileInput" className={styles.fileUploadButton}>
-                      <input
-                        id="fileInput"
-                        type="file"
-                        accept="image/jpeg"
-                        style={{ display: 'none' }}
-                        onChange={handleFileChange}
-                        multiple
-                      />
-                      <Image src="/image-upload-48.png" alt="Upload JPG" width="30" height="30" />
-                    </label>
-                  )
-                ) : (
-                  <MicrophoneRecorder
-                    setQuery={setQuery}
-                    loading={loading}
-                    setIsTranscribing={setIsTranscribing}
-                    isTranscribing={isTranscribing}
-                    setIsMicActive={setIsMicActive}
+                <form onSubmit={handleSubmit} className={styles.textareaContainer}>
+                  <textarea
+                    disabled={loading}
+                    onKeyDown={handleEnter}
+                    onChange={handleChange}
+                    ref={textAreaRef}
+                    autoFocus={false}
+                    rows={1}
+                    maxLength={50000}
+                    id="userInput"
+                    name="userInput"
+                    placeholder={
+                      loading
+                        ? 'Waiting for response...'
+                        : isMicActive
+                        ? ''
+                        : 'Message SolidCAM ChatBot...'
+                    }
+                    value={query}
+                    className={styles.textarea}
+                    readOnly={currentStage === 4}
                   />
-                )}
-                
-                {!isMicActive && (
-                  <button
-                    type="submit"
-                    id="submitButton"
-                    disabled={loading || isTranscribing}
-                    className={styles.generatebutton}
-                  >
-                    {loading || isTranscribing ? (
-                      <div className={styles.loadingwheel}>
-                        <LoadingDots color="#000" />
-                      </div>
-                    ) : (
-                      <svg
-                        viewBox="0 0 20 20"
-                        className={styles.svgicon}
-                        xmlns="http://www.w3.org/2000/svg"
+
+                  {/* Conditionally render the ImageUpload component */}
+                  {!loading && <ImageUpload handleFileChange={handleFileChange} />}
+
+                  {/* Conditionally render the general file input and label */}
+                  {!loading && (
+                    <>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        onChange={handleHomeFileChange}
+                        accept="image/*"
+                        multiple
+                        style={{ display: 'none' }}
+                        id="generalFileInput"
+                      />
+                      <label
+                        htmlFor="generalFileInput"
+                        className={styles.fileUploadButton}
+                        title="Upload image"
                       >
-                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
-                      </svg>
-                    )}
-                  </button>
-                )}
-              </form>
+                        <Image
+                          src="/image-upload-48.png"
+                          alt="Upload JPG"
+                          width="30"
+                          height="30"
+                        />
+                      </label>
+                    </>
+                  )}
+
+                  {currentStage === 4 ? (
+                    !loading && (
+                      <label htmlFor="fileInput" className={styles.fileUploadButton}>
+                        <input
+                          id="fileInput"
+                          type="file"
+                          accept="image/jpeg"
+                          style={{ display: 'none' }}
+                          onChange={handleFileChange}
+                          multiple
+                        />
+                        <Image
+                          src="/image-upload-48.png"
+                          alt="Upload JPG"
+                          width="30"
+                          height="30"
+                        />
+                      </label>
+                    )
+                  ) : (
+                    <MicrophoneRecorder
+                      setQuery={setQuery}
+                      loading={loading}
+                      setIsTranscribing={setIsTranscribing}
+                      isTranscribing={isTranscribing}
+                      setIsMicActive={setIsMicActive}
+                    />
+                  )}
+
+                  {!isMicActive && (
+                    <button
+                      type="submit"
+                      id="submitButton"
+                      disabled={loading || isTranscribing}
+                      className={styles.generatebutton}
+                    >
+                      {loading || isTranscribing ? (
+                        <div className={styles.loadingwheel}>
+                          <LoadingDots color="#000" />
+                        </div>
+                      ) : (
+                        <svg
+                          viewBox="0 0 20 20"
+                          className={styles.svgicon}
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                </form>
                 {speechError && (
                   <div className="border border-red-400 rounded-md p-4">
                     <p className="text-red-500">{speechError}</p>
