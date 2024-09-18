@@ -544,7 +544,7 @@ const Home: FC = () => {
   const loadChatHistory = async () => {
     if (!roomId) return;
 
-    localStorage.setItem('roomId', roomId);
+    localStorage.GetItem('roomId', roomId);
     console.log('Loading chat history for roomId:', roomId);
   
     try {
