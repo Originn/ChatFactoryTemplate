@@ -38,6 +38,8 @@ const useSocket = (
   const loadChatHistory = useCallback(async (roomId: string | null) => {
     if (!roomId) return;
 
+    localStorage.setItem('roomId', roomId);
+
     try {
       const response = await fetch(`/api/chat-history?roomId=${roomId}`);
       if (response.ok) {
