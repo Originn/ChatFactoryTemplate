@@ -39,12 +39,9 @@ const useSocket = (
   // Function to load chat history
   const loadChatHistory = useCallback(async (roomId: string | null) => {
     if (!roomId) return;
-    console.log('Loading chat history for roomId before getItem:', roomId);
-    roomId = localStorage.getItem('roomId');
-    console.log('Loading chat history for roomId in useSockets:', roomId);
+    console.log('Loading chat history for roomId:', roomId);
     const userEmail = auth.currentUser ? auth.currentUser.email : null;
   
-    console.log('Set userEmail in local storage:', userEmail);
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
       if (response.ok) {
@@ -52,7 +49,6 @@ const useSocket = (
         if (historyData && historyData.conversation_json) {
           const conversation = historyData.conversation_json;
   
-          // Parse the conversation and update the message state
           setMessageState({
             messages: conversation.map((msg: any) => ({
               ...msg,
@@ -65,8 +61,8 @@ const useSocket = (
               .map((msg: any) => [msg.message, ''] as [string, string]),
           });
   
-          // Update the chat memory using MemoryService
           if (roomId !== null) {
+            await MemoryService.clearChatMemory(roomId); // Clear existing memory
             for (const msg of conversation) {
               if (msg.type === 'userMessage') {
                 await MemoryService.updateChatMemory(roomId, msg.message, '', msg.imageUrls || []);
@@ -74,10 +70,7 @@ const useSocket = (
                 await MemoryService.updateChatMemory(roomId, '', msg.message, []);
               }
             }
-            const updatedHistory = await MemoryService.getChatHistory(roomId);
-            console.log('Updated chat history in MemoryService1:', updatedHistory);
-            console.log('Chat memory updated in useSocket');
-
+            await MemoryService.logMemoryState(roomId);
           }
         }
       } else {
@@ -87,6 +80,8 @@ const useSocket = (
       console.error('Error loading chat history:', error);
     }
   }, [setMessageState]);
+  
+
   
 
   useEffect(() => {

@@ -2,6 +2,7 @@ import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
 import { InputValues } from "langchain/memory";
 import BufferMemory from "./BufferMemory";
 
+
 class MemoryService {
   private static chatMemory: Record<string, BufferMemory> = {};
 
@@ -33,6 +34,7 @@ class MemoryService {
       memory.metadata.imageUrl = imageUrl;
     }
   }
+  
 
   static async getChatHistory(roomId: string): Promise<BaseMessage[]> {
     const memory = this.getChatMemory(roomId);
@@ -52,6 +54,7 @@ class MemoryService {
     console.log('Messages:', memory.messages);
     console.log('Metadata:', memory.metadata);
   }
+  
 
   // New method to load a full conversation history
   static loadFullConversationHistory(roomId: string, conversationHistory: any[]): void {
@@ -63,5 +66,6 @@ class MemoryService {
     // You may want to handle metadata (like imageUrls) here as well
   }
 }
+
 
 export default MemoryService;
