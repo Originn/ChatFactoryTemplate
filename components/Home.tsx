@@ -33,6 +33,8 @@ import EnlargedImageView from './EnlargedImageView';
 import { ChatHistoryItem } from './ChatHistory';
 import { io, Socket } from 'socket.io-client';
 import MemoryService from '@/utils/memoryService';
+import { handleWebinarClick, handleDocumentClick } from '@/utils/tracking';
+
 
 const PRODUCTION_ENV = 'production';
 const LOCAL_URL = 'http://localhost:3000';
@@ -842,51 +844,57 @@ const Home: FC = () => {
                                             }`}</h3>
                                           </AccordionTrigger>
                                           <AccordionContent>
-                                            {doc.metadata.type === 'youtube' ? (
-                                              <p>
+                                        {
+                                          doc.metadata.type === 'youtube' ? (
+                                            <p>
+                                              <b>Source:</b>
+                                              {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleWebinarClick(doc.metadata.source)}>View Webinar</a> : 'Unavailable'}
+                                            </p>
+                                          ) : doc.metadata.type === 'sentinel' ? (
+                                            <p>
+                                              <b>Source:</b>
+                                              {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(doc.metadata.source)}>View</a> : 'Unavailable'}
+                                            </p>
+                                          ) : (
+                                            <>
+                                              <ReactMarkdown
+                                                components={{
+                                                  a: (props: ComponentProps<'a'>) => <CustomLink {...props} />,
+                                                }}
+                                              >
+                                                {doc.pageContent.split('\n')[0]}
+                                              </ReactMarkdown>
+                                              <p className="mt-2">
                                                 <b>Source:</b>
-                                                {doc.metadata.source ? (
-                                                  <a
-                                                    href={
-                                                      doc.metadata.source
-                                                    }
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                  >
-                                                    View Webinar
-                                                  </a>
-                                                ) : (
-                                                  'Unavailable'
-                                                )}
-                                              </p>
-                                            ) : (
-                                              <>
-                                                <ReactMarkdown>
-                                                  {
-                                                    doc.pageContent.split(
-                                                      '\n',
-                                                    )[0]
-                                                  }
-                                                </ReactMarkdown>
-                                                <p className="mt-2">
-                                                  <b>Source:</b>
-                                                  {doc.metadata.source ? (
-                                                    <a
-                                                      href={
-                                                        doc.metadata.source
+                                                {
+                                                  doc.metadata && doc.metadata.source
+                                                    ? (() => {
+                                                      const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
+
+                                                      const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
+
+                                                      let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
+
+                                                      let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
+
+                                                      if (smallestPageNumberInRange === null && largestPageNumber !== null) {
+                                                        smallestPageNumberInRange = largestPageNumber;
                                                       }
-                                                      target="_blank"
-                                                      rel="noopener noreferrer"
-                                                    >
-                                                      View Document
-                                                    </a>
-                                                  ) : (
-                                                    'Unavailable'
-                                                  )}
-                                                </p>
-                                              </>
-                                            )}
-                                          </AccordionContent>
+                                                      const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
+
+                                                      const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+
+                                                      const iosPageLink = isiOS ? pageLink.replace('#page=', '#page') : pageLink;
+
+                                                      return <a href={iosPageLink} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(pageLink)}>View Page</a>;
+                                                    })()
+                                                    : 'Unavailable'
+                                                }
+                                              </p>
+                                            </>
+                                          )
+                                        }
+                                      </AccordionContent>
                                         </AccordionItem>
                                       );
                                     },
