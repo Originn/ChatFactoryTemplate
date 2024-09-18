@@ -68,6 +68,7 @@ const useSocket = (
           // Load the full conversation into MemoryService
           if (roomId !== null) {
             MemoryService.loadFullConversationHistory(roomId, conversation);
+            console.log('loadFullConversationHistory activated in useSocket');
           }        }
       } else {
         console.error('Failed to load chat history');
