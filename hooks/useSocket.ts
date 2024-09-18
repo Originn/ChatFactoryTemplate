@@ -65,13 +65,16 @@ const useSocket = (
               .map((msg: any) => [msg.message, ''] as [string, string]),
           });
   
-          // Rebuild the memory structure using MemoryService
-          const rebuiltMemory = MemoryService.rebuildMemoryStructure(conversation);
-  
-          // Load the rebuilt memory into MemoryService
+          // Update the chat memory using MemoryService
           if (roomId !== null) {
-            MemoryService.loadFullConversationHistory(roomId, rebuiltMemory);
-            console.log('loadFullConversationHistory activated in useSocket');
+            for (const msg of conversation) {
+              if (msg.type === 'userMessage') {
+                await MemoryService.updateChatMemory(roomId, msg.message, '', msg.imageUrls || []);
+              } else if (msg.type === 'apiMessage') {
+                await MemoryService.updateChatMemory(roomId, '', msg.message, []);
+              }
+            }
+            console.log('Chat memory updated in useSocket');
           }
         }
       } else {

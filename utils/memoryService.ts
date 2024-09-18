@@ -53,16 +53,10 @@ class MemoryService {
     console.log('Metadata:', memory.metadata);
   }
 
-    // Rebuild memory structure from stored conversation data
-    static rebuildMemoryStructure(conversation: any[]): BaseMessage[] {
-      return conversation.map((msg) =>
-        msg.type === 'userMessage' ? new HumanMessage(msg.message) : new AIMessage(msg.message)
-      );
-    }
-
   // New method to load a full conversation history
   static loadFullConversationHistory(roomId: string, conversationHistory: any[]): void {
     const memory = this.getChatMemory(roomId);
+    console.log('loadFullConversationHistory activated in MemoryService:',memory);
     memory.messages = conversationHistory.map(msg => 
       msg.type === 'userMessage' ? new HumanMessage(msg.message) : new AIMessage(msg.message)
     );
