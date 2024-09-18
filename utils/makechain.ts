@@ -150,7 +150,7 @@ Chat History:
 {chat_history}
 Follow Up Input: {input}
 Standalone question:`;
-
+ 
 const qaSystemPrompt = `You are a multilingual helpful and friendly assistant that can recieve images but not files, and questions in every language. You focus on helping SolidCAM users with their questions.
 
 - If you do not have the information in the context to answer a question, admit it openly without fabricating responses.
