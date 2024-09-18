@@ -140,19 +140,6 @@ const Home: FC = () => {
   const { uploadProgress: pasteUploadProgress, clearPastedImagePreviews } =
     usePasteImageUpload(roomId, auth, textAreaRef, setHomeImagePreviews);
 
-  // Initialize roomId from localStorage or create a new one
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedRoomId = localStorage.getItem('roomId');
-      if (storedRoomId) {
-        setRoomId(storedRoomId);
-      } else {
-        const newRoomId = `room-${Date.now()}`;
-        setRoomId(newRoomId);
-        localStorage.setItem('roomId', newRoomId);
-      }
-    }
-  }, []);
 
   // Update localStorage whenever roomId changes
   useEffect(() => {
@@ -555,7 +542,6 @@ const Home: FC = () => {
 
   // Function to load the user's latest chat history
   const loadChatHistory = async () => {
-    localStorage.setItem('roomId', roomId);
     if (!roomId) return;
   
     try {
