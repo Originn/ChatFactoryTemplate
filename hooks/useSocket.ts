@@ -46,7 +46,6 @@ const useSocket = (
 
     console.log('Set userEmail in local storage:', userEmail);
 
-
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
       if (response.ok) {
