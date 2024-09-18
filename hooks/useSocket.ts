@@ -38,13 +38,13 @@ const useSocket = (
   // Function to load chat history
   const loadChatHistory = useCallback(async (roomId: string | null) => {
     if (!roomId) return;
-
+    console.log('Loading chat history for roomId before getItem:', roomId);
     roomId = localStorage.getItem('roomId');
-
+    console.log('Loading chat history for roomId:', roomId);
     const userEmail = auth.currentUser ? auth.currentUser.email : null;
 
     console.log('Set userEmail in local storage:', userEmail);
-    console.log('Loading chat history for roomId:', roomId);
+
 
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
