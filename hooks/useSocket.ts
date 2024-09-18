@@ -39,9 +39,10 @@ const useSocket = (
   const loadChatHistory = useCallback(async (roomId: string | null) => {
     if (!roomId) return;
 
+    roomId = localStorage.getItem('roomId');
+
     const userEmail = auth.currentUser ? auth.currentUser.email : null;
 
-    localStorage.GetItem('roomId', roomId);
     console.log('Set userEmail in local storage:', userEmail);
     console.log('Loading chat history for roomId:', roomId);
 
@@ -66,8 +67,9 @@ const useSocket = (
           });
   
           // Load the full conversation into MemoryService
-          MemoryService.loadFullConversationHistory(roomId, conversation);
-        }
+          if (roomId !== null) {
+            MemoryService.loadFullConversationHistory(roomId, conversation);
+          }        }
       } else {
         console.error('Failed to load chat history');
       }
