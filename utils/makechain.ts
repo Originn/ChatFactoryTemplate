@@ -393,11 +393,13 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           roomId: roomId,
           sourceDocs: Documents,
           qaId: qaId,
+          answer: ragResponse.answer,
         });
       } else {
         io.emit("fullResponse", {
           sourceDocs: Documents,
           qaId: qaId,
+          answer: ragResponse.answer,
         });
       }
 
