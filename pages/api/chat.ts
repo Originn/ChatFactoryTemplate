@@ -122,11 +122,9 @@ async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, 
 }
 
 async function syncChatHistory(roomId: string, clientHistory: any[]) {
-  console.log('Syncing chat history for room:', roomId);
-  console.log('Client history:', clientHistory);
+
 
   const serverHistory = await MemoryService.getChatHistory(roomId);
-  console.log('Server history before sync:', serverHistory);
 
   if (clientHistory.length > serverHistory.length) {
     // Clear existing server history
@@ -137,7 +135,6 @@ async function syncChatHistory(roomId: string, clientHistory: any[]) {
       await MemoryService.updateChatMemory(roomId, input, output, []);
     }
 
-    console.log('Server history after sync:', await MemoryService.getChatHistory(roomId));
   } else {
     console.log('Server history is up to date');
   }
