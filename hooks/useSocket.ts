@@ -75,7 +75,7 @@ const useSocket = (
               }
             }
             const updatedHistory = await MemoryService.getChatHistory(roomId);
-            console.log('Updated chat history in MemoryService:', updatedHistory);
+            console.log('Updated chat history in MemoryService1:', updatedHistory);
             console.log('Chat memory updated in useSocket');
 
           }
