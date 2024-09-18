@@ -8,6 +8,7 @@ import { PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { getIO } from "@/socketServer.cjs";
 import { QuestionEmbedder } from "@/scripts/QuestionEmbedder";
 import createClient from "openai";
+import MemoryService from '@/utils/memoryService';
 
 // Initialize OpenAI client
 const openAIClient = new createClient({
@@ -120,12 +121,34 @@ async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, 
   }
 }
 
+async function syncChatHistory(roomId: string, clientHistory: any[]) {
+  console.log('Syncing chat history for room:', roomId);
+  console.log('Client history:', clientHistory);
+
+  const serverHistory = await MemoryService.getChatHistory(roomId);
+  console.log('Server history before sync:', serverHistory);
+
+  if (clientHistory.length > serverHistory.length) {
+    // Clear existing server history
+    MemoryService.clearChatMemory(roomId);
+
+    // Reconstruct the history from client data
+    for (const [input, output] of clientHistory) {
+      await MemoryService.updateChatMemory(roomId, input, output, []);
+    }
+
+    console.log('Server history after sync:', await MemoryService.getChatHistory(roomId));
+  } else {
+    console.log('Server history is up to date');
+  }
+}
+
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { question, roomId, userEmail, imageUrls, history } = req.body;
+  const { question, history, roomId, imageUrls, userEmail } = req.body;
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -134,6 +157,8 @@ export default async function handler(
   if (!roomId) {
     return res.status(400).json({ message: 'No roomId in the request' });
   }
+
+  await syncChatHistory(roomId, history);
 
   const sanitizedQuestion = question?.trim().replaceAll('\n', ' ');
   const codePrefix = 'embed-4831-embed-4831';
