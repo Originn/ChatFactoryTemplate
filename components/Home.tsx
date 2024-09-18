@@ -555,6 +555,7 @@ const Home: FC = () => {
 
   // Function to load the user's latest chat history
   const loadChatHistory = async () => {
+    localStorage.setItem('roomId', roomId);
     if (!roomId) return;
   
     try {
