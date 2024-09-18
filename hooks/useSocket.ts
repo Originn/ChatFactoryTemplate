@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { DocumentWithMetadata } from '@/interfaces/index_interface';
 import { measureFirstTokenTime } from '@/utils/tracking';
 import MemoryService from '@/utils/memoryService'; // Make sure MemoryService is imported if you're using it for memory
+import { auth } from '@/utils/firebase';
 
 const useSocket = (
   serverUrl: string,
@@ -38,29 +39,33 @@ const useSocket = (
   const loadChatHistory = useCallback(async (roomId: string | null) => {
     if (!roomId) return;
 
+    const userEmail = auth.currentUser ? auth.currentUser.email : null;
+
     localStorage.setItem('roomId', roomId);
 
     try {
-      const response = await fetch(`/api/chat-history?roomId=${roomId}`);
+      const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
       if (response.ok) {
-        const history = await response.json();
-        const latestConversation = history[0]?.conversation_json || [];
-
-        // Update message state with the loaded conversation
-        setMessageState({
-          messages: latestConversation.map((msg: any) => ({
-            ...msg,
-            sourceDocs: msg.sourceDocs || [],
-            isComplete: msg.type === 'apiMessage' ? true : msg.isComplete,
-            qaId: msg.type === 'apiMessage' ? msg.qaId : undefined,
-          })),
-          history: latestConversation
-            .filter((msg: any) => msg.type === 'userMessage')
-            .map((msg: any) => [msg.message, '']),
-        });
-
-        // Restore memory with the full conversation
-        MemoryService.loadFullConversationHistory(roomId, latestConversation);
+        const historyData = await response.json();
+        if (historyData && historyData.conversation_json) {
+          const conversation = historyData.conversation_json;
+  
+          // Parse the conversation and update the message state
+          setMessageState({
+            messages: conversation.map((msg: any) => ({
+              ...msg,
+              sourceDocs: msg.sourceDocs || [],
+              isComplete: msg.type === 'apiMessage' ? true : msg.isComplete,
+              qaId: msg.type === 'apiMessage' ? msg.qaId : undefined,
+            })),
+            history: conversation
+              .filter((msg: any) => msg.type === 'userMessage')
+              .map((msg: any) => [msg.message, ''] as [string, string]),
+          });
+  
+          // Load the full conversation into MemoryService
+          MemoryService.loadFullConversationHistory(roomId, conversation);
+        }
       } else {
         console.error('Failed to load chat history');
       }
