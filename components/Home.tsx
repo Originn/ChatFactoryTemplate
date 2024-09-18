@@ -543,6 +543,8 @@ const Home: FC = () => {
   // Function to load the user's latest chat history
   const loadChatHistory = async () => {
     if (!roomId) return;
+
+    localStorage.setItem('roomId', roomId);
   
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
