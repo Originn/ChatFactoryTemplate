@@ -435,6 +435,8 @@ const Home: FC = () => {
     );
 
     console.log('fullHistory', fullHistory);
+    console.log('hi');
+
     console.log('roomId to send to /api/chat', roomId);
 
     try {
