@@ -1,5 +1,4 @@
 //utils\makechain.ts
-
 import { OpenAI as LangchainOpenAI, ChatOpenAI } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
 import { MyDocument } from 'utils/GCSLoader';
