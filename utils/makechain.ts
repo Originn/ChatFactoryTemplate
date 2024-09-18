@@ -315,7 +315,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       console.log('Get chatHistory for roomId in makechain:', roomId);
       const chatHistory = await MemoryService.getChatHistory(roomId);
-      console.log('chatHistory in makechain:', roomId);
+      console.log('chatHistory in makechain:', chatHistory);
 
       const ragChain = await createRetrievalChain({
         retriever: await createHistoryAwareRetriever({
