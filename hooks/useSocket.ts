@@ -41,7 +41,7 @@ const useSocket = (
 
     const userEmail = auth.currentUser ? auth.currentUser.email : null;
 
-    localStorage.setItem('roomId', roomId);
+    localStorage.GetItem('roomId', roomId);
     console.log('Set userEmail in local storage:', userEmail);
     console.log('Loading chat history for roomId:', roomId);
 
