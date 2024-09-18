@@ -63,7 +63,7 @@ const Home: FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [errorreact, setError] = useState<string | null>(null);
   // Initialize roomId using lazy initializer
-  const [roomId, setRoomId] = useState<string>(() => {
+  const [roomId, setRoomId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       const storedRoomId = localStorage.getItem('roomId');
       if (storedRoomId) {
@@ -544,7 +544,6 @@ const Home: FC = () => {
   const loadChatHistory = async () => {
     if (!roomId) return;
 
-    localStorage.GetItem('roomId', roomId);
     console.log('Loading chat history for roomId:', roomId);
   
     try {
