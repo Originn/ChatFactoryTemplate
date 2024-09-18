@@ -69,11 +69,9 @@ const Home: FC = () => {
     if (typeof window !== 'undefined') {
       const storedRoomId = localStorage.getItem('roomId');
       if (storedRoomId) {
-        console.log('Retrieved stored roomId:', storedRoomId);
         return storedRoomId;
       } else {
         const newRoomId = `room-${Date.now()}`;
-        console.log('Created new roomId:', newRoomId);
         localStorage.setItem('roomId', newRoomId);
         return newRoomId;
       }
@@ -237,8 +235,6 @@ const Home: FC = () => {
       };
 
       const handleFullResponse = (message: { answer: string; sourceDocs: any[]; qaId: string; }) => {
-        console.log('--- handleFullResponse Triggered ---');
-        console.log('Full Response Message:', message);
       
         const { answer, sourceDocs, qaId } = message;
       
@@ -249,11 +245,8 @@ const Home: FC = () => {
         }
       
         setMessageState((prevState) => {
-          console.log('Previous State:', JSON.stringify(prevState, null, 2));
-      
           const lastMessageIndex = prevState.messages.length - 1;
           const lastMessage = prevState.messages[lastMessageIndex];
-          console.log('Last Message Before Update:', JSON.stringify(lastMessage, null, 2));
       
           if (lastMessage && lastMessage.type === 'apiMessage' && !lastMessage.isComplete) {
             const updatedMessages = [...prevState.messages];
@@ -264,9 +257,7 @@ const Home: FC = () => {
               isComplete: true,
               qaId: qaId, // Set the qaId here
             };
-      
-            console.log('Updated messages after full response:', updatedMessages);
-      
+            
             // Update MemoryService
             MemoryService.updateChatMemory(roomId!, '', message.answer, []);
       
@@ -436,11 +427,6 @@ const Home: FC = () => {
       (msg) => [msg.content, ''] as [string, string],
     );
 
-    console.log('fullHistory', fullHistory);
-    console.log('hi');
-
-    console.log('roomId to send to /api/chat', roomId);
-
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -522,7 +508,6 @@ const Home: FC = () => {
     }
 
     changeRoom(conversation.roomId);
-    MemoryService.logMemoryState(conversation.roomId);
   };
 
   // Function to handle starting a new chat
@@ -551,7 +536,6 @@ const Home: FC = () => {
   const loadChatHistory = async () => {
     if (!roomId) return;
 
-    console.log('Loading chat history for roomId in Home:', roomId);
   
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);

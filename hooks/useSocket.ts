@@ -70,7 +70,6 @@ const useSocket = (
                 await MemoryService.updateChatMemory(roomId, '', msg.message, []);
               }
             }
-            await MemoryService.logMemoryState(roomId);
           }
         }
       } else {

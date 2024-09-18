@@ -314,11 +314,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       ]);
 
       // In your makeChain function, add logging:
-      console.log('Get chatHistory for roomId in makechain:', roomId);
-      await MemoryService.logMemoryState(roomId);
       const chatHistory = await MemoryService.getChatHistory(roomId);
-      console.log('chatHistory in makechain:', chatHistory);
-
       const ragChain = await createRetrievalChain({
         retriever: await createHistoryAwareRetriever({
           llm: nonStreamingModel,
