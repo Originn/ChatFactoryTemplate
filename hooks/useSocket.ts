@@ -68,6 +68,7 @@ const useSocket = (
                 await MemoryService.updateChatMemory(roomId, msg.message, '', msg.imageUrls || []);
               } else if (msg.type === 'apiMessage') {
                 await MemoryService.updateChatMemory(roomId, '', msg.message, []);
+                
               }
             }
             await MemoryService.logMemoryState(roomId);
