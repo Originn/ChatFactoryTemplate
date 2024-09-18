@@ -61,7 +61,23 @@ const Home: FC = () => {
   >({});
   const [loading, setLoading] = useState<boolean>(false);
   const [errorreact, setError] = useState<string | null>(null);
-  const [roomId, setRoomId] = useState<string | null>(null);
+  // Initialize roomId using lazy initializer
+  const [roomId, setRoomId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const storedRoomId = localStorage.getItem('roomId');
+      if (storedRoomId) {
+        console.log('Retrieved stored roomId:', storedRoomId);
+        return storedRoomId;
+      } else {
+        const newRoomId = `room-${Date.now()}`;
+        console.log('Created new roomId:', newRoomId);
+        localStorage.setItem('roomId', newRoomId);
+        return newRoomId;
+      }
+    }
+    // Fallback for SSR
+    return `room-${Date.now()}`;
+  });
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [messageState, setMessageState] = useState<{
     messages: Message[];
@@ -230,41 +246,51 @@ const Home: FC = () => {
         });
       };
 
-      const handleFullResponse = (message: {
-        answer: string;
-        sourceDocs: any[];
-        qaId: string;
-      }) => {
+      const handleFullResponse = (message: { answer: string; sourceDocs: any[]; qaId: string; }) => {
+        console.log('--- handleFullResponse Triggered ---');
+        console.log('Full Response Message:', message);
+      
+        const { answer, sourceDocs, qaId } = message;
+      
+        if (!answer) {
+          console.error('No answer found in the full response message.');
+          setError('Received an incomplete response from the server.');
+          return;
+        }
+      
         setMessageState((prevState) => {
+          console.log('Previous State:', JSON.stringify(prevState, null, 2));
+      
           const lastMessageIndex = prevState.messages.length - 1;
           const lastMessage = prevState.messages[lastMessageIndex];
-
-          if (
-            lastMessage &&
-            lastMessage.type === 'apiMessage' &&
-            !lastMessage.isComplete
-          ) {
+          console.log('Last Message Before Update:', JSON.stringify(lastMessage, null, 2));
+      
+          if (lastMessage && lastMessage.type === 'apiMessage' && !lastMessage.isComplete) {
             const updatedMessages = [...prevState.messages];
             updatedMessages[lastMessageIndex] = {
               ...lastMessage,
-              message: message.answer, // Update the message with the full answer
-              sourceDocs: message.sourceDocs || [],
+              message: answer, // Replace with the full answer
+              sourceDocs: sourceDocs || [],
               isComplete: true,
-              qaId: message.qaId, // Set the qaId here
+              qaId: qaId, // Set the qaId here
             };
-
-            // Update MemoryService with the AI's response
+      
+            console.log('Updated messages after full response:', updatedMessages);
+      
+            // Update MemoryService
             MemoryService.updateChatMemory(roomId!, '', message.answer, []);
-
+      
             return {
               ...prevState,
               messages: updatedMessages,
             };
+          } else {
+            console.warn('No incomplete apiMessage found to update.');
+            return prevState;
           }
-
-          return prevState; // If there's no incomplete message, don't change the state
         });
       };
+      
 
       socket.on(`tokenStream-${roomId}`, handleNewToken);
       socket.on(`fullResponse-${roomId}`, handleFullResponse);
@@ -531,12 +557,12 @@ const Home: FC = () => {
     if (!roomId) return;
   
     try {
-      const response = await fetch(`/api/chat-history?roomId=${roomId}`);
+      const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
       if (response.ok) {
         const historyData = await response.json();
         if (historyData && historyData.conversation_json) {
           const conversation = historyData.conversation_json;
-
+  
           // Parse the conversation and update the message state
           setMessageState({
             messages: conversation.map((msg: any) => ({
@@ -549,7 +575,7 @@ const Home: FC = () => {
               .filter((msg: any) => msg.type === 'userMessage')
               .map((msg: any) => [msg.message, ''] as [string, string]),
           });
-
+  
           // Load the full conversation into MemoryService
           MemoryService.loadFullConversationHistory(roomId, conversation);
         }
@@ -709,11 +735,16 @@ const Home: FC = () => {
                             ? styles.usermessagewaiting
                             : styles.usermessage;
                       }
-
-                      // Remove "[Image model answer: ]" from the message text
-                      const formattedMessage = message.message
-                        .replace(/\[Image model answer:[\s\S]*?\]/g, '')
-                        .trim();
+                      
+                      let formattedMessage = '';
+                      if (typeof message.message === 'string') {
+                        if (message.message.startsWith('[Image model answer:')) {
+                          formattedMessage = message.message.replace(/\[Image model answer:\s*([\s\S]*?)\]/g, '$1').trim();
+                        } else {
+                          formattedMessage = message.message.trim();
+                        }
+                      }
+                    
 
                       // Map imageUrls from JSON to images expected by the Message interface
                       const images = message.imageUrls
