@@ -434,6 +434,8 @@ const Home: FC = () => {
       (msg) => [msg.content, ''] as [string, string],
     );
 
+    console.log('fullHistory', fullHistory);
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
