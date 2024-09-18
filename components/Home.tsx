@@ -544,6 +544,7 @@ const Home: FC = () => {
     if (!roomId) return;
 
     localStorage.setItem('roomId', roomId);
+    console.log('Loading chat history for roomId:', roomId);
   
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
