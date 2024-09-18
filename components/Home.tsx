@@ -450,7 +450,7 @@ const Home: FC = () => {
         },
         body: JSON.stringify({
           question,
-          history: await MemoryService.getChatHistory(roomId),
+          history: fullHistory,
           roomId,
           imageUrls,
           userEmail,
