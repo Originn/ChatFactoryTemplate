@@ -549,7 +549,7 @@ const Home: FC = () => {
   const loadChatHistory = async () => {
     if (!roomId) return;
 
-    console.log('Loading chat history for roomId:', roomId);
+    console.log('Loading chat history for roomId in Home:', roomId);
   
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
