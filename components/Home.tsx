@@ -719,11 +719,9 @@ const Home: FC = () => {
                       
                       let formattedMessage = '';
                       if (typeof message.message === 'string') {
-                        if (message.message.startsWith('[Image model answer:')) {
-                          formattedMessage = message.message.replace(/\[Image model answer:\s*([\s\S]*?)\]/g, '$1').trim();
-                        } else {
-                          formattedMessage = message.message.trim();
-                        }
+                        formattedMessage = message.message
+                          .replace(/\[Image model answer:[\s\S]*?\]/g, '')
+                          .trim();
                       }
                     
 
