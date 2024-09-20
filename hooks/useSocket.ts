@@ -174,6 +174,7 @@ const useSocket = (
     newSocket.on("newToken", (token, isLastToken) => {
       setMessageState((state: any) => {
         const lastMessage = state.messages[state.messages.length - 1];
+        console.log('lastMessage', lastMessage);
         if (lastMessage && lastMessage.type === 'apiMessage') {
           return {
             ...state,
