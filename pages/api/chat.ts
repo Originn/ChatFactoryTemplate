@@ -233,7 +233,7 @@ export default async function handler(
       if (session.stage === 1) {
         const message = 'You have entered the internal embedding mode for SolidCAM ChatBot.\n\n Please provide a **header** for the content and include a **link** if relevant.';
         roomSessions[roomId] = { ...session, stage: 2 };
-        io.to(roomId).emit("newToken", message);
+        io.to(roomId).emit(`tokenStream-${roomId}`, message)
         return res.status(200).json({ message });
 
       } else if (session.stage === 2) {
@@ -241,14 +241,14 @@ export default async function handler(
         roomSessions[roomId] = { ...session, stage: 3 };
         io.to(roomId).emit("storeHeader", session.header);
         const message = 'Thank you! Now, please provide the **text** associated with the header.';
-        io.to(roomId).emit("newToken", message);
+        io.to(roomId).emit(`tokenStream-${roomId}`, message)
         return res.status(200).json({ message });
 
       } else if (session.stage === 3) {
         session.text = sanitizedQuestion;
         roomSessions[roomId] = { ...session, stage: 4 };
         const message = 'If you have an **image** to upload, please do so now. If image is not needed click submit.';
-        io.to(roomId).emit("newToken", message);
+        io.to(roomId).emit(`tokenStream-${roomId}`, message)
         io.to(roomId).emit("stageUpdate", 4);
         return res.status(200).json({ message });
 
