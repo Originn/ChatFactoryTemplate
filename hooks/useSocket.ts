@@ -2,9 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { DocumentWithMetadata } from '@/interfaces/index_interface';
 import { measureFirstTokenTime } from '@/utils/tracking';
-import MemoryService from '@/utils/memoryService'; // Make sure MemoryService is imported if you're using it for memory
+import MemoryService from '@/utils/memoryService'; 
 import { auth } from '@/utils/firebase';
-
 
 const useSocket = (
   serverUrl: string,
@@ -28,6 +27,7 @@ const useSocket = (
       if (roomIdRef.current) {
         socket.emit('leave', roomIdRef.current);
       }
+      
       // Join the new room
       socket.emit('join', newRoomId);
       roomIdRef.current = newRoomId;
@@ -41,14 +41,14 @@ const useSocket = (
     if (!roomId) return;
     console.log('Loading chat history for roomId:', roomId);
     const userEmail = auth.currentUser ? auth.currentUser.email : null;
-  
+
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
       if (response.ok) {
         const historyData = await response.json();
         if (historyData && historyData.conversation_json) {
           const conversation = historyData.conversation_json;
-  
+
           setMessageState({
             messages: conversation.map((msg: any) => ({
               ...msg,
@@ -60,7 +60,7 @@ const useSocket = (
               .filter((msg: any) => msg.type === 'userMessage')
               .map((msg: any) => [msg.message, ''] as [string, string]),
           });
-  
+
           if (roomId !== null) {
             await MemoryService.clearChatMemory(roomId); // Clear existing memory
             for (const msg of conversation) {
@@ -79,9 +79,6 @@ const useSocket = (
       console.error('Error loading chat history:', error);
     }
   }, [setMessageState]);
-  
-
-  
 
   useEffect(() => {
     const newSocket: Socket = io(serverUrl, {
@@ -95,7 +92,7 @@ const useSocket = (
       setRequestsInProgress((prev: any) => ({ ...prev, [assignedRoomId]: false }));
       if (!roomIdRef.current) {
         roomIdRef.current = assignedRoomId;
-        setRoomId(assignedRoomId); // Update the state in the parent component
+        setRoomId(assignedRoomId);
       }
 
       const responseEventName = `fullResponse-${assignedRoomId}`;
@@ -141,6 +138,10 @@ const useSocket = (
       newSocket.emit('requestRoom');
     }
 
+    newSocket.on('connect', () => {
+      console.log('NewSocket connected');
+    });
+
     newSocket.on('assignedRoom', handleAssignedRoom);
     newSocket.on('connect_error', (error: any) => console.error('Connection Error:', error));
     newSocket.on('connect_timeout', (timeout: any) => console.error('Connection Timeout:', timeout));
@@ -152,23 +153,8 @@ const useSocket = (
       }
     });
 
-    newSocket.on('stageUpdate', (newStage: number) => {
-      setCurrentStage(newStage);
-    });
-
     newSocket.on('storeHeader', (header: string) => {
       sessionStorage.setItem('header', header);
-    });
-
-    newSocket.on("removeThumbnails", () => {
-      const thumbnailElement = document.querySelector('.image-container-image-thumb');
-      if (thumbnailElement) {
-        thumbnailElement.remove();
-      }
-    });
-
-    newSocket.on("resetStages", () => {
-      setCurrentStage(null);
     });
 
     newSocket.on("newToken", (token, isLastToken) => {
@@ -191,6 +177,7 @@ const useSocket = (
       });
 
       const currentRoomId = roomIdRef.current as string;
+      console.log('currentRoomId', currentRoomId);
       if (!firstTokenTimes[currentRoomId] && !firstTokenCalculatedRef.current[currentRoomId]) {
         const currentTime = performance.now();
         setFirstTokenTimes((prevTimes: any) => ({ ...prevTimes, [currentRoomId]: currentTime }));
@@ -212,10 +199,9 @@ const useSocket = (
       newSocket.off('assignedRoom', handleAssignedRoom);
       newSocket.off('connect_error');
       newSocket.off('newToken');
-      newSocket.off('stageUpdate');
       newSocket.off('storeHeader');
-      newSocket.off('resetStages');
       newSocket.off('uploadStatus');
+      newSocket.off('removeThumbnails');
       if (roomIdRef.current) {
         setRequestsInProgress((prev: any) => {
           const updated = { ...prev };

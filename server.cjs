@@ -19,7 +19,6 @@ app.prepare().then(() => {
 
   server.use((req, res, next) => {
     const host = req.header("Host");
-    console.error(`Received request for host: ${host}`);
     
     if (host === "solidcam.herokuapp.com") {
       console.error('Redirecting from Heroku domain to custom domain');
@@ -36,7 +35,6 @@ app.prepare().then(() => {
   server.use(express.static(path.join(__dirname, 'public')));
 
   server.all('*', (req, res) => {
-    console.error(`Handling request for: ${req.url}`);
     const parsedUrl = parse(req.url, true);
     handle(req, res, parsedUrl);
   });

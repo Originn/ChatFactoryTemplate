@@ -90,11 +90,13 @@ async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, 
     const embedQuestionResult = await questionEmbedder.embedQuestion(headerAndText, userEmail);
     if (embedQuestionResult) {
       const message = '\n\n**Your text and images (if provided) have been successfully embedded.**';
-      io.to(roomId).emit("newToken", message);
+      io.to(roomId).emit(`tokenStream-${roomId}`, message)
   
       // Emit an event to remove the thumbnails from the frontend
       io.to(roomId).emit("removeThumbnails");
-      io.to(roomId).emit("resetStages");
+      console.log(`removeThumbnails event emitted for room: ${roomId}`);
+      io.to(roomId).emit(`resetStages-${roomId}`, 4);
+
   
       delete roomSessions[roomId];
       
@@ -104,7 +106,7 @@ async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, 
     } else {
       console.error(`Embedding failed for roomId: ${roomId}`);
       const message = 'Embedding failed. Please try again.';
-      io.to(roomId).emit("newToken", message);
+      io.to(roomId).emit(`tokenStream-${roomId}`, message)
       
       // Emit an event to hide the banner on failure
       io.to(roomId).emit("uploadStatus", "Upload and processing failed.");
@@ -113,7 +115,7 @@ async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, 
   } catch (error) {
     console.error(`Error during embedding for roomId: ${roomId}:`, error);
     const message = 'Embedding process encountered an error. Please try again.';
-    io.to(roomId).emit("newToken", message);
+    io.to(roomId).emit(`tokenStream-${roomId}`, message)
     
     // Emit an event to hide the banner on error
     io.to(roomId).emit("uploadStatus", "Upload and processing failed.");
@@ -146,6 +148,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const { question, history, roomId, imageUrls, userEmail } = req.body;
+  console.log('req.body:', req.body);
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -166,9 +169,12 @@ export default async function handler(
 
     // Check if the question is an image URL and history contains the codePrefix
     const isImageUrls = sanitizedQuestion?.startsWith('https://storage.googleapis.com/solidcam-chatbot-documents/');
-    const hasCodePrefixInHistory = history && history.length >= 3 && history[history.length - 3][0].includes(codePrefix);
+    const hasCodePrefixInHistory = history && history.length >= 8 && history[history.length - 8][0].includes(codePrefix);
+    console.log('history:', history);
+    console.log('hasCodePrefixInHistory:', hasCodePrefixInHistory);
 
     if (isImageUrls && hasCodePrefixInHistory) {
+      console.log('session:', session);
       session = session || { stage: 4, header: '', text: '', images: [] };
 
       // Ensure images array is initialized
@@ -177,12 +183,18 @@ export default async function handler(
       }
 
       // Extract header and text from history
-      const headerEntry = history[history.length - 2];
-      const textEntry = history[history.length - 1];
+      console.log('history:', history);
+      const headerEntry = history[history.length - 5];
+      console.log('headerEntry:', headerEntry);
+      const textEntry = history[history.length - 3];
+      console.log('textEntry:', textEntry);
 
       session.header = headerEntry ? headerEntry[0].replace(codePrefix, '').trim() : session.header;
+      console.log('session.header:', session.header);
       session.text = textEntry ? textEntry[0] : session.text;
+      console.log('session.text:', session.text);
       const imageUrls = sanitizedQuestion.split(' ');
+      console.log('imageUrls:', imageUrls);
       for (const url of imageUrls) {
         if (url.startsWith('https://storage.googleapis.com/solidcam-chatbot-documents/')) {
           session.images.push({ url });
@@ -190,6 +202,7 @@ export default async function handler(
       }
 
       roomSessions[roomId] = session;
+      console.log('session:', session);
 
       for (let img of session.images ?? []) {
         if (!img.description) {
@@ -207,18 +220,26 @@ export default async function handler(
       const result = await handleEmbeddingAndResponse(session, roomId, userEmail);
       return res.status(result.status).json({ message: result.message });
 
-    } else if (hasCodePrefixInHistory) {
+    } else if (session && session.stage==4) {
       // Handle cases where there is no image but hasCodePrefixInHistory is true
+      console.log('Handling cases where there is no image but hasCodePrefixInHistory is true');
       session = session || { stage: 4, header: '', text: '' };
+      console.log('session:', session);
 
       // Extract header and text from history
       const headerEntry = history[history.length - 2];
+      console.log('headerEntry:', headerEntry);
       const textEntry = history[history.length - 1];
-
+      console.log('textEntry:', textEntry);
       session.header = headerEntry ? headerEntry[0].replace(codePrefix, '').trim() : session.header;
+      console.log('session.header:', session.header);
       session.text = textEntry ? textEntry[0] : session.text;
+      console.log('session.text:', session.text);
+
+      console.log('session.stage:', session.stage);
 
       roomSessions[roomId] = session;
+      console.log('roomSessions[roomId]:', roomSessions[roomId]);
 
       const result = await handleEmbeddingAndResponse(session, roomId, userEmail);
       return res.status(result.status).json({ message: result.message });
@@ -245,11 +266,14 @@ export default async function handler(
         return res.status(200).json({ message });
 
       } else if (session.stage === 3) {
+        console.log('stage 3')
         session.text = sanitizedQuestion;
         roomSessions[roomId] = { ...session, stage: 4 };
+        console.log('roomSessions[roomId]:', roomSessions[roomId]);
         const message = 'If you have an **image** to upload, please do so now. If image is not needed click submit.';
         io.to(roomId).emit(`tokenStream-${roomId}`, message)
-        io.to(roomId).emit("stageUpdate", 4);
+        io.to(roomId).emit(`stageUpdate-${roomId}`, 4);
+        console.log('emitted stageUpdate: 4');
         return res.status(200).json({ message });
 
       }

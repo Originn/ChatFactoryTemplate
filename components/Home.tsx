@@ -148,11 +148,36 @@ const Home: FC = () => {
     }
   }, [roomId]);
 
+  useEffect(() => {
+  console.log('currentStage:', currentStage);
+}, [currentStage]);
+
   // Initialize Socket.IO client
   useEffect(() => {
     const newSocket = io(serverUrl, {
       secure: true,
       transports: ['websocket'],
+    });
+
+    newSocket.on(`stageUpdate-${roomId}`, (newStage: number) => {
+      console.log('Received stageUpdate:', newStage);
+      setCurrentStage(newStage);
+    });
+
+    newSocket.on(`resetStages-${roomId}`, (newStage: number) => {
+      console.log('Received stageUpdate:', newStage);
+      setCurrentStage(null);
+    });
+
+    newSocket.on("removeThumbnails", () => {
+      console.log("removeThumbnails event received");
+      const thumbnailElement = document.querySelector('.image-container-image-thumb');
+      if (!thumbnailElement) {
+        console.log('Thumbnail element not found');
+      } else {
+        console.log('Thumbnail element found and will be removed');
+        thumbnailElement.remove();
+      }
     });
 
     newSocket.on('connect', () => {
