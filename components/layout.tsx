@@ -25,7 +25,6 @@ const Layout: FC<LayoutProps> = ({ children, theme, toggleTheme, onHistoryItemCl
 
   const handleSignOut = () => {
     signOut(auth).then(() => {
-      console.log('Signed out');
     }).catch((error) => {
       console.error("Sign out error:", error);
     });

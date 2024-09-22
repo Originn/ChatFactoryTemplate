@@ -90,6 +90,7 @@ const Home: FC = () => {
   });
   const [currentStage, setCurrentStage] = useState<number | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [isNewChat, setIsNewChat] = useState(false);
   const { messages, history } = messageState;
   const serverUrl =
     process.env.NEXT_PUBLIC_SERVER_URL ||
@@ -148,10 +149,6 @@ const Home: FC = () => {
     }
   }, [roomId]);
 
-  useEffect(() => {
-  console.log('currentStage:', currentStage);
-}, [currentStage]);
-
   // Initialize Socket.IO client
   useEffect(() => {
     const newSocket = io(serverUrl, {
@@ -160,17 +157,14 @@ const Home: FC = () => {
     });
 
     newSocket.on(`stageUpdate-${roomId}`, (newStage: number) => {
-      console.log('Received stageUpdate:', newStage);
       setCurrentStage(newStage);
     });
 
     newSocket.on(`resetStages-${roomId}`, (newStage: number) => {
-      console.log('Received stageUpdate:', newStage);
       setCurrentStage(null);
     });
 
     newSocket.on("removeThumbnails", () => {
-      console.log("removeThumbnails event received");
       const thumbnailElement = document.querySelector('.image-container-image-thumb');
       if (!thumbnailElement) {
         console.log('Thumbnail element not found');
@@ -181,7 +175,7 @@ const Home: FC = () => {
     });
 
     newSocket.on('connect', () => {
-      console.log('Socket connected');
+      //console.log('Socket connected');
       if (roomId) {
         newSocket.emit('joinRoom', roomId);
       }
@@ -316,11 +310,11 @@ const Home: FC = () => {
       });
 
       socket.io.on('reconnect_attempt', (attemptNumber) => {
-        console.log('Attempting to reconnect:', attemptNumber);
+        //console.log('Attempting to reconnect:', attemptNumber);
       });
 
       socket.io.on('reconnect', (attemptNumber) => {
-        console.log('Socket reconnected after', attemptNumber, 'attempts');
+        //console.log('Socket reconnected after', attemptNumber, 'attempts');
         if (roomId) {
           socket.emit('joinRoom', roomId);
         }
@@ -555,21 +549,22 @@ const Home: FC = () => {
     if (socket) {
       socket.emit('joinRoom', newRoomId);
     }
+
+    setIsNewChat(true)
   };
 
   // Function to load the user's latest chat history
   const loadChatHistory = async () => {
     if (!roomId) return;
-
   
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
+      
       if (response.ok) {
         const historyData = await response.json();
         if (historyData && historyData.conversation_json) {
           const conversation = historyData.conversation_json;
   
-          // Parse the conversation and update the message state
           setMessageState({
             messages: conversation.map((msg: any) => ({
               ...msg,
@@ -582,23 +577,28 @@ const Home: FC = () => {
               .map((msg: any) => [msg.message, ''] as [string, string]),
           });
   
-          // Load the full conversation into MemoryService
           MemoryService.loadFullConversationHistory(roomId, conversation);
         }
+      } else if (response.status === 404) {
+        // Handle 404 by returning without logging anything
+        //console.log('No chat history found for room:', roomId); // Optional: Only for debugging
+        return; // Avoid error or further processing
       } else {
-        console.error('Failed to load chat history');
+        throw new Error('Failed to load chat history.');
       }
     } catch (error) {
-      console.error('Error loading chat history:', error);
+      // Handle any other errors, if necessary
+      setError('Error loading chat history. Please try again later.');
     }
   };
+  
 
   // Load chat history on component mount (page refresh)
   useEffect(() => {
-    if (userEmail && roomId) {
+    if (userEmail && roomId && !isNewChat) {
       loadChatHistory();
     }
-  }, [userEmail, roomId]);
+  }, [userEmail, roomId, isNewChat]);
 
   useEffect(() => {
     const handleScrollToTop = () => {

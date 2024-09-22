@@ -39,16 +39,16 @@ const useSocket = (
   // Function to load chat history
   const loadChatHistory = useCallback(async (roomId: string | null) => {
     if (!roomId) return;
-    console.log('Loading chat history for roomId:', roomId);
+    
     const userEmail = auth.currentUser ? auth.currentUser.email : null;
-
+  
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
       if (response.ok) {
         const historyData = await response.json();
         if (historyData && historyData.conversation_json) {
           const conversation = historyData.conversation_json;
-
+  
           setMessageState({
             messages: conversation.map((msg: any) => ({
               ...msg,
@@ -60,7 +60,7 @@ const useSocket = (
               .filter((msg: any) => msg.type === 'userMessage')
               .map((msg: any) => [msg.message, ''] as [string, string]),
           });
-
+  
           if (roomId !== null) {
             await MemoryService.clearChatMemory(roomId); // Clear existing memory
             for (const msg of conversation) {
@@ -72,13 +72,12 @@ const useSocket = (
             }
           }
         }
-      } else {
-        console.error('Failed to load chat history');
       }
     } catch (error) {
-      console.error('Error loading chat history:', error);
+      // Silently fail without logging
     }
   }, [setMessageState]);
+  
 
   useEffect(() => {
     const newSocket: Socket = io(serverUrl, {
