@@ -306,7 +306,7 @@ const Home: FC = () => {
   useEffect(() => {
     if (socket) {
       socket.on('disconnect', (reason) => {
-        console.warn('Socket disconnected:', reason);
+        //console.warn('Socket disconnected:', reason);
       });
 
       socket.io.on('reconnect_attempt', (attemptNumber) => {
