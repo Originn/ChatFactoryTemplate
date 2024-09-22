@@ -15,7 +15,7 @@ export const initSocket = () => {
 
     // Event when socket is connected
     socket.on("connect", () => {
-      console.log('Socket connected:', socket.id);
+      //console.log('Socket connected:', socket.id);
     });
 
     // Event when the server assigns a room to the client

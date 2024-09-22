@@ -59,7 +59,6 @@ class MemoryService {
   // New method to load a full conversation history
   static loadFullConversationHistory(roomId: string, conversationHistory: any[]): void {
     const memory = this.getChatMemory(roomId);
-    console.log('loadFullConversationHistory activated in MemoryService:',memory);
     memory.messages = conversationHistory.map(msg => 
       msg.type === 'userMessage' ? new HumanMessage(msg.message) : new AIMessage(msg.message)
     );
