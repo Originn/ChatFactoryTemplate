@@ -380,72 +380,71 @@ const Home: FC = () => {
 
   const handleSubmit = async (e?: any) => {
     if (e) e.preventDefault();
-
+  
     if (!roomId) {
       console.error('No roomId available');
       setError('No roomId available');
       return;
     }
-
+  
     setError(null);
     const trimmedQuery = query.trim();
-
-    if (
-      !trimmedQuery &&
-      currentStage !== 4 &&
-      homeImagePreviews.length === 0
-    ) {
+  
+    if (!trimmedQuery && currentStage !== 4 && homeImagePreviews.length === 0) {
       alert('Please input a question or upload an image');
       return;
     }
-
+  
     if (requestsInProgress[roomId]) {
       return;
     }
-
+  
     setRequestsInProgress((prev) => ({ ...prev, [roomId!]: true }));
     setUserHasScrolled(false);
     setLoading(true);
     const question = query.trim();
-
+  
     const newUserMessage: Message = {
       type: 'userMessage',
       message: question,
       isComplete: true,
       images: homeImagePreviews.slice(0, 3),
     };
-
+  
     setMessageState((prevState) => {
       const updatedMessages = [...prevState.messages, newUserMessage];
       const updatedHistory = [...prevState.history, [question, ''] as [string, string]];
-    
+  
       // Update MemoryService
       MemoryService.updateChatMemory(roomId!, question, '', []);
-    
+  
       return {
         ...prevState,
         messages: updatedMessages,
         history: updatedHistory,
       };
     });
-    
-
+  
     setQuery('');
-
+  
     if (!userEmail) {
       console.error('User not authenticated');
       setLoading(false);
       setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
       return;
     }
-
+  
+    // Fetch full history
+    let fullHistory: [string, string][] = [];
+    try {
+      const history = await MemoryService.getChatHistory(roomId!);
+      fullHistory = history.map((msg) => [msg.content, ''] as [string, string]);
+    } catch (error) {
+      console.error('Failed to fetch chat history:', error);
+    }
+  
     const imageUrls = homeImagePreviews.slice(0, 3).map((preview) => preview.url);
-
-    // Get the full history from MemoryService
-    const fullHistory = (await MemoryService.getChatHistory(roomId!)).map(
-      (msg) => [msg.content, ''] as [string, string],
-    );
-
+  
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -461,11 +460,11 @@ const Home: FC = () => {
           userEmail,
         }),
       });
-
+  
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-
+  
       // The response will be handled by the socket event listeners
     } catch (error) {
       setError('An error occurred while fetching the data. Please try again.');
@@ -477,6 +476,7 @@ const Home: FC = () => {
       clearPastedImagePreviews();
     }
   };
+  
 
   const handleHistoryItemClick = (conversation: ChatHistoryItem) => {
     let parsedConversation;
