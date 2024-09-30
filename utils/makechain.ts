@@ -47,7 +47,9 @@ async function detectLanguageWithOpenAI(text: string, nonStreamingModel: ChatOpe
 async function filteredSimilaritySearch(vectorStore: any, queryVector: number[], type: string, limit: number, minScore: number): Promise<SearchResult[]> {
   try {
     const results: SearchResult[] = await vectorStore.similaritySearchVectorWithScore(queryVector, limit, { type: type });
+    console.log("Raw results and scores:", results);
     const filteredResults = results.filter(([document, score]: SearchResult) => score >= minScore);
+    console.log("Filtered Results:", filteredResults);
     return filteredResults;
   } catch (error) {
     console.error("Error in filteredSimilaritySearch:", error);
@@ -116,6 +118,7 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
   async storeEmbeddings(query: string, minScoreSourcesThreshold: number) {
     const embedder = new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 });
     const embeddingsResponse = await embedder.embedQuery(query);
+    console.log("Embeddings Response:", embeddingsResponse);
     const pdfResults = await filteredSimilaritySearch(
       this.vectorStore, embeddingsResponse, 'pdf', 2, minScoreSourcesThreshold
     );
@@ -339,15 +342,12 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       // Update the chat memory with the new interaction
       await MemoryService.updateChatMemory(roomId, originalInput, ragResponse.answer, processedImageUrls);
 
-      const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
+      let minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
       let embeddingsStore;
 
       if (language !== 'English') {
-        embeddingsStore = await customRetriever.storeEmbeddings(ragResponse.answer, minScoreSourcesThreshold);
-        Documents = [...ragResponse.context];
-
-        // Apply filtering after combining sources
-        Documents = Documents.filter(doc => doc.metadata.type !== 'other' && doc.metadata.type !== "txt" && doc.metadata.type !== "user_input");
+        minScoreSourcesThreshold = 0.45;
+        embeddingsStore = await customRetriever.storeEmbeddings(input, minScoreSourcesThreshold);
 
         for (const [doc, score] of embeddingsStore) {
           if (doc.metadata.type !== "txt" && doc.metadata.type !== "user_input") {
