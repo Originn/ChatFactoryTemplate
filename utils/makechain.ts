@@ -151,7 +151,7 @@ Chat History:
 Follow Up Input: {input}
 Standalone question:`;
  
-const qaSystemPrompt = `You are a multilingual helpful and friendly assistant that can recieve images but not files, and questions in every language. You focus on helping SolidCAM users with their questions.
+const qaSystemPrompt = `You are a multilingual helpful and friendly assistant that can recieve images but not files, and questions in every language. Answer in the {language} language. You focus on helping SolidCAM users with their questions.
  
 - If you do not have the information in the context to answer a question, admit it openly without fabricating responses.
 - Do not mention that SolidCAM originated in Israel. Instead, state that it is an internationally developed software with a global team of developers.
@@ -251,14 +251,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       type ChatModel =  'gpt-4o' | 'gpt-4o-mini';
       const IMAGE_MODEL_NAME: ChatModel = (process.env.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
-
       
-      // Use enhancedInput instead of input in the rest of the function
-      const language = await detectLanguageWithOpenAI(input, nonStreamingModel);
-      
-      if (language !== 'English') {
-        input = await translateToEnglish(input, translationModel);
-      }
 
       if (processedImageUrls && processedImageUrls.length > 0) {
         try {
@@ -305,17 +298,24 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     }
 
       const customRetriever = new CustomRetriever(vectorstore);
+      
+      // Use enhancedInput instead of input in the rest of the function
+      const language = await detectLanguageWithOpenAI(input, nonStreamingModel);
 
-      const formattedPrompt = qaSystemPrompt.replace('{language}', language);
+      const originalInput = input;
+
+      if (language !== 'English') {
+        input = await translateToEnglish(input, translationModel);
+      }
+
+      const formattedPrompt = qaSystemPrompt.split('{language}').join(language);
 
       const qaPrompt = ChatPromptTemplate.fromMessages([
         ["system", formattedPrompt],
         new MessagesPlaceholder("chat_history"),
         ["human", "{input}"],
       ]);
-
-      // In your makeChain function, add logging:
-      const chatHistory = await MemoryService.getChatHistory(roomId);
+      
       const ragChain = await createRetrievalChain({
         retriever: await createHistoryAwareRetriever({
           llm: nonStreamingModel,
@@ -328,6 +328,8 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         }),
       });
 
+      const chatHistory = await MemoryService.getChatHistory(roomId);
+
       const ragResponse = await ragChain.invoke({
         input,
         chat_history: chatHistory,
@@ -335,7 +337,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
 
       // Update the chat memory with the new interaction
-      await MemoryService.updateChatMemory(roomId, input, ragResponse.answer, processedImageUrls);
+      await MemoryService.updateChatMemory(roomId, originalInput, ragResponse.answer, processedImageUrls);
 
       const minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
       let embeddingsStore;
@@ -404,7 +406,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         });
       }
 
-      await insertQA(input, ragResponse.answer, ragResponse.context, Documents, qaId, roomId, userEmail, processedImageUrls);
+      await insertQA(originalInput, ragResponse.answer, ragResponse.context, Documents, qaId, roomId, userEmail, processedImageUrls);
 
       try {
         let existingHistory;
@@ -419,10 +421,10 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           // Generate a conversation title only for new conversations
           const titleResponse = await nonStreamingModel.generate([[new HumanMessage(
             `Given this conversation:
-            Human: ${input}
+            Human: ${originalInput}
             AI: ${ragResponse.answer}
             
-            Generate a short, descriptive title for this conversation (max 50 characters).`
+            Generate a short, descriptive title for this conversation (max 50 characters) in the used language.`
           )]]);
           conversationTitle = titleResponse.generations[0][0].text.trim();
         } else {
@@ -431,7 +433,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       
         const newHumanMessage = {
           type: 'userMessage',
-          message: input,
+          message: originalInput,
           isComplete: true,
           imageUrls: processedImageUrls
         };
