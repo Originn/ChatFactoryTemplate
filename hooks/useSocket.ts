@@ -100,6 +100,7 @@ const useSocket = (
     // Event handler for 'assignedRoom'
     const handleAssignedRoom = (assignedRoomId: string) => {
       setRequestsInProgress((prev: any) => ({ ...prev, [assignedRoomId]: false }));
+      console.log('roomIdRef.current:', roomIdRef.current);
       if (!roomIdRef.current) {
         roomIdRef.current = assignedRoomId;
         setRoomId(assignedRoomId);
