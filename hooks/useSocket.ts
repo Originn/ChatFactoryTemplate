@@ -78,9 +78,15 @@ const useSocket = (
       // Silently fail without logging
     }
   }, [setMessageState]);
-  
 
   useEffect(() => {
+    // Check if there's a roomId stored in localStorage
+    const storedRoomId = localStorage.getItem('roomId');
+    if (storedRoomId) {
+      roomIdRef.current = storedRoomId;
+      setRoomId(storedRoomId);  // Set the roomId in the state as well
+    }
+
     const newSocket: Socket = io(serverUrl, {
       transports: ['websocket'],
     });
