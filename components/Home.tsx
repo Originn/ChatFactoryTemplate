@@ -559,7 +559,7 @@ const Home: FC = () => {
   
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
-      
+      console.log('Latest chat history response in Home:', response);
       if (response.ok) {
         const historyData = await response.json();
         if (historyData && historyData.conversation_json) {

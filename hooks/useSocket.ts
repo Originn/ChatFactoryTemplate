@@ -44,6 +44,7 @@ const useSocket = (
   
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
+      console.log('Latest chat history response in use socket:', response);
       if (response.ok) {
         const historyData = await response.json();
         if (historyData && historyData.conversation_json) {
