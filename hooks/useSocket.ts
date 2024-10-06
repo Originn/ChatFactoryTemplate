@@ -43,12 +43,10 @@ const useSocket = (
     if (!roomId) return;
     
     const userEmail = auth.currentUser ? auth.currentUser.email : null;
-    console.log(`in room ${roomId}`);
   
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${localStorage.getItem('roomId')}`);  
       
-      console.log('Latest chat history response in use socket', response);
       if (response.ok) {
         const historyData = await response.json();
         if (historyData && historyData.conversation_json) {
@@ -100,7 +98,6 @@ const useSocket = (
     // Event handler for 'assignedRoom'
     const handleAssignedRoom = (assignedRoomId: string) => {
       setRequestsInProgress((prev: any) => ({ ...prev, [assignedRoomId]: false }));
-      console.log('roomIdRef.current:', roomIdRef.current);
       if (!roomIdRef.current) {
         roomIdRef.current = assignedRoomId;
         setRoomId(assignedRoomId);
@@ -172,7 +169,6 @@ const useSocket = (
     newSocket.on("newToken", (token, isLastToken) => {
       setMessageState((state: any) => {
         const lastMessage = state.messages[state.messages.length - 1];
-        console.log('lastMessage', lastMessage);
         if (lastMessage && lastMessage.type === 'apiMessage') {
           return {
             ...state,
@@ -189,7 +185,6 @@ const useSocket = (
       });
 
       const currentRoomId = roomIdRef.current as string;
-      console.log('currentRoomId', currentRoomId);
       if (!firstTokenTimes[currentRoomId] && !firstTokenCalculatedRef.current[currentRoomId]) {
         const currentTime = performance.now();
         setFirstTokenTimes((prevTimes: any) => ({ ...prevTimes, [currentRoomId]: currentTime }));
