@@ -43,10 +43,10 @@ const useSocket = (
     if (!roomId) return;
     
     const userEmail = auth.currentUser ? auth.currentUser.email : null;
-    console.log(`in room: ${roomId}`);
+    console.log(`in room ${roomId}`);
   
     try {
-      const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
+      const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${localStorage.getItem('roomId')}`);  
       
       console.log('Latest chat history response in use socket', response);
       if (response.ok) {
