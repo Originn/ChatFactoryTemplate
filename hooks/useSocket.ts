@@ -27,20 +27,23 @@ const useSocket = (
       if (roomIdRef.current) {
         socket.emit('leave', roomIdRef.current);
       }
-      
+  
       // Join the new room
       socket.emit('join', newRoomId);
       roomIdRef.current = newRoomId;
       setRoomId(newRoomId);
+      localStorage.setItem('roomId', newRoomId); // Store roomId in localStorage
       setRequestsInProgress((prev: any) => ({ ...prev, [newRoomId]: false }));
     }
   }, [socket, setRoomId, setRequestsInProgress]);
+  
 
   // Function to load chat history
   const loadChatHistory = useCallback(async (roomId: string | null) => {
     if (!roomId) return;
     
     const userEmail = auth.currentUser ? auth.currentUser.email : null;
+    console.log(`in room: ${roomId}`);
   
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
@@ -100,6 +103,7 @@ const useSocket = (
       if (!roomIdRef.current) {
         roomIdRef.current = assignedRoomId;
         setRoomId(assignedRoomId);
+        localStorage.setItem('roomId', assignedRoomId);
       }
 
       const responseEventName = `fullResponse-${assignedRoomId}`;
