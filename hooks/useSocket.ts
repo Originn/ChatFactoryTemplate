@@ -157,6 +157,7 @@ const useSocket = (
     newSocket.on('error', (error: any) => console.error('Error:', error));
     newSocket.on('disconnect', (reason: any) => {
       console.warn('Disconnected:', reason);
+      console.warn('test');
       window.location.reload();
       if (roomIdRef.current) {
         loadChatHistory(roomIdRef.current); // Reload chat history on disconnect
