@@ -17,19 +17,23 @@ export interface ChatHistoryItem {
   conversation_json: string | Message[];
 }
 
-const ChatHistory: React.FC<ChatHistoryProps> = ({ userEmail, className, onHistoryItemClick }) => {
+const ChatHistory: React.FC<ChatHistoryProps> = ({
+  userEmail,
+  className,
+  onHistoryItemClick,
+}) => {
   const [history, setHistory] = useState<ChatHistoryItem[]>([]);
   const [category, setCategory] = useState<'today' | 'yesterday' | '7days' | '30days'>('today');
   const [showMenu, setShowMenu] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const fetchChatHistory = async (range: string) => {
-    setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/chat-history?userEmail=${encodeURIComponent(userEmail)}&range=${range}`);
+      const response = await fetch(
+        `/api/chat-history?userEmail=${encodeURIComponent(userEmail)}&range=${range}`
+      );
       if (!response.ok) {
         throw new Error('Failed to fetch chat history');
       }
@@ -38,18 +42,14 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ userEmail, className, onHisto
     } catch (err) {
       console.error('Error fetching chat history:', err);
       setError('Failed to fetch chat history. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     if (showMenu) {
-      // Fetch chat history with a small delay when the menu is opened
       const timer = setTimeout(() => {
         fetchChatHistory(category);
       }, 300); // 300ms delay
-
       return () => clearTimeout(timer);
     }
   }, [showMenu, category]);
@@ -90,9 +90,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ userEmail, className, onHisto
         <Menu size={24} />
       </button>
 
-      {showMenu && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40" aria-hidden="true" />
-      )}
+      {showMenu && <div className="fixed inset-0 bg-black bg-opacity-50 z-40" aria-hidden="true" />}
 
       <div
         ref={sidebarRef}
@@ -103,7 +101,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ userEmail, className, onHisto
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold">Chat History</h2>
         </div>
-        
+
         <div className="flex flex-col p-4 space-y-2">
           {(['today', 'yesterday', '7days', '30days'] as const).map((cat) => (
             <button
@@ -115,22 +113,18 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ userEmail, className, onHisto
                   : 'text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
               }`}
             >
-              {cat === 'today' ? 'Today' :
-               cat === 'yesterday' ? 'Yesterday' :
-               cat === '7days' ? 'Previous 7 Days' : 'Previous 30 Days'}
+              {cat === 'today' ? 'Today' : cat === 'yesterday' ? 'Yesterday' : cat === '7days' ? 'Previous 7 Days' : 'Previous 30 Days'}
             </button>
           ))}
         </div>
-        
-        <div className="p-4 overflow-y-auto h-[calc(100vh-150px)] pb-4]">
-          {isLoading ? (
-            <p className="text-gray-500 dark:text-gray-400">Loading...</p>
-          ) : error ? (
+
+        <div className="p-4 overflow-y-auto h-[calc(100vh-150px)]">
+          {error ? (
             <p className="text-red-500">{error}</p>
           ) : history.length > 0 ? (
             history.map((chat) => (
-              <div 
-                key={chat.id} 
+              <div
+                key={chat.id}
                 className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                 onClick={() => handleHistoryItemClick(chat)}
               >
