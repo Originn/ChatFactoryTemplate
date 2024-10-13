@@ -47,13 +47,6 @@ class MemoryService {
     memory.messages = [];
     memory.metadata = {};
   }
-
-  static async logMemoryState(roomId: string): Promise<void> {
-    const memory = this.getChatMemory(roomId);
-    console.log(`Memory state for room ${roomId}:`);
-    console.log('Messages:', memory.messages);
-    console.log('Metadata:', memory.metadata);
-  }
   
 
   // New method to load a full conversation history
