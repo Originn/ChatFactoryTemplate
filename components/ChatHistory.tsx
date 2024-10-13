@@ -118,14 +118,14 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
           ))}
         </div>
 
-        <div className="p-4 overflow-y-auto h-[calc(100vh-150px)] pb-4]">
+        <div className="p-4 overflow-y-scroll h-[calc(100vh-150px)] pb-4">
           {error ? (
             <p className="text-red-500">{error}</p>
           ) : history.length > 0 ? (
             history.map((chat) => (
               <div
                 key={chat.id}
-                className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 flex flex-col"
                 onClick={() => handleHistoryItemClick(chat)}
               >
                 <h3 className="text-sm font-semibold">{chat.conversation_title}</h3>
@@ -139,6 +139,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
           )}
         </div>
       </div>
+
     </div>
   );
 };
