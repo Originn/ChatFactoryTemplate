@@ -118,7 +118,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
           ))}
         </div>
 
-        <div className="p-4 overflow-y-auto h-[calc(100vh-150px)]">
+        <div className="p-4 overflow-y-auto h-[calc(100vh-150px)] pb-4]">
           {error ? (
             <p className="text-red-500">{error}</p>
           ) : history.length > 0 ? (
