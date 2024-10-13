@@ -1,3 +1,4 @@
+//utils/tracking.ts
 import Cookies from 'js-cookie';
 import { auth } from "@/utils/firebase";
 
@@ -52,3 +53,14 @@ export const handleMicClickEvent = () => {
     });
   }
 };
+
+export const handleSubmitClick = () => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'submit_click', {
+      event_category: 'ChatBot',
+      event_label: 'User Submission',
+      user_id: auth.currentUser?.email,
+    });
+  }
+};
+

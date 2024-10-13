@@ -47,9 +47,9 @@ async function detectLanguageWithOpenAI(text: string, nonStreamingModel: ChatOpe
 async function filteredSimilaritySearch(vectorStore: any, queryVector: number[], type: string, limit: number, minScore: number): Promise<SearchResult[]> {
   try {
     const results: SearchResult[] = await vectorStore.similaritySearchVectorWithScore(queryVector, limit, { type: type });
-    console.log("Raw results and scores:", results);
+    //console.log("Raw results and scores:", results);
     const filteredResults = results.filter(([document, score]: SearchResult) => score >= minScore);
-    console.log("Filtered Results:", filteredResults);
+    //console.log("Filtered Results:", filteredResults);
     return filteredResults;
   } catch (error) {
     console.error("Error in filteredSimilaritySearch:", error);
@@ -118,7 +118,7 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
   async storeEmbeddings(query: string, minScoreSourcesThreshold: number) {
     const embedder = new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 });
     const embeddingsResponse = await embedder.embedQuery(query);
-    console.log("Embeddings Response:", embeddingsResponse);
+    //console.log("Embeddings Response:", embeddingsResponse);
     const pdfResults = await filteredSimilaritySearch(
       this.vectorStore, embeddingsResponse, 'pdf', 2, minScoreSourcesThreshold
     );
@@ -338,6 +338,8 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         input,
         chat_history: chatHistory,
       });
+
+      //console.log('ragResponse.context',ragResponse.context);
 
 
       // Update the chat memory with the new interaction

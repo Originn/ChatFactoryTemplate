@@ -33,7 +33,7 @@ import EnlargedImageView from './EnlargedImageView';
 import { ChatHistoryItem } from './ChatHistory';
 import { io, Socket } from 'socket.io-client';
 import MemoryService from '@/utils/memoryService';
-import { handleWebinarClick, handleDocumentClick } from '@/utils/tracking';
+import { handleWebinarClick, handleDocumentClick, handleSubmitClick } from '@/utils/tracking';
 
 
 const PRODUCTION_ENV = 'production';
@@ -167,9 +167,9 @@ const Home: FC = () => {
     newSocket.on("removeThumbnails", () => {
       const thumbnailElement = document.querySelector('.image-container-image-thumb');
       if (!thumbnailElement) {
-        console.log('Thumbnail element not found');
+        //'Thumbnail element not found');
       } else {
-        console.log('Thumbnail element found and will be removed');
+        //console.log('Thumbnail element found and will be removed');
         thumbnailElement.remove();
       }
     });
@@ -380,6 +380,9 @@ const Home: FC = () => {
 
   const handleSubmit = async (e?: any) => {
     if (e) e.preventDefault();
+
+    //for Google Analytics
+    handleSubmitClick();
   
     if (!roomId) {
       console.error('No roomId available');
@@ -828,86 +831,81 @@ const Home: FC = () => {
                           {message.sourceDocs &&
                             message.sourceDocs.length > 0 && (
                               <div key={`sourceDocsAccordion-${index}`}>
-                                <Accordion
-                                  type="single"
-                                  collapsible
-                                  className="flex-col"
-                                >
-                                  {message.sourceDocs.map(
-                                    (doc, docIndex) => {
-                                      let title =
-                                        doc.metadata.type === 'youtube'
-                                          ? 'Webinar'
-                                          : 'Document';
+                                <Accordion type="single" collapsible className="flex-col">
+                                  {(() => {
+                                    let webinarCount = 0;
+                                    let documentCount = 0;
+
+                                    return message.sourceDocs.map((doc, docIndex) => {
+                                      let title;
+                                      if (doc.metadata.type === 'youtube') {
+                                        webinarCount++;
+                                        title = `Webinar ${webinarCount}`;
+                                      } else {
+                                        documentCount++;
+                                        title = `Document ${documentCount}`;
+                                      }
+
                                       return (
-                                        <AccordionItem
-                                          key={`messageSourceDocs-${docIndex}`}
-                                          value={`item-${docIndex}`}
-                                        >
+                                        <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
                                           <AccordionTrigger>
-                                            <h3>{`${title} ${
-                                              docIndex + 1
-                                            }`}</h3>
+                                            <h3>{title}</h3>
                                           </AccordionTrigger>
                                           <AccordionContent>
-                                        {
-                                          doc.metadata.type === 'youtube' ? (
-                                            <p>
-                                              <b>Source:</b>
-                                              {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleWebinarClick(doc.metadata.source)}>View Webinar</a> : 'Unavailable'}
-                                            </p>
-                                          ) : doc.metadata.type === 'sentinel' ? (
-                                            <p>
-                                              <b>Source:</b>
-                                              {doc.metadata.source ? <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(doc.metadata.source)}>View</a> : 'Unavailable'}
-                                            </p>
-                                          ) : (
-                                            <>
-                                              <ReactMarkdown
-                                                components={{
-                                                  a: (props: ComponentProps<'a'>) => <CustomLink {...props} />,
-                                                }}
-                                              >
-                                                {doc.pageContent.split('\n')[0]}
-                                              </ReactMarkdown>
-                                              <p className="mt-2">
-                                                <b>Source:</b>
-                                                {
-                                                  doc.metadata && doc.metadata.source
-                                                    ? (() => {
-                                                      const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
-
-                                                      const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
-
-                                                      let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
-
-                                                      let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
-
-                                                      if (smallestPageNumberInRange === null && largestPageNumber !== null) {
-                                                        smallestPageNumberInRange = largestPageNumber;
-                                                      }
-                                                      const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
-
-                                                      const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-
-                                                      const iosPageLink = isiOS ? pageLink.replace('#page=', '#page') : pageLink;
-
-                                                      return <a href={iosPageLink} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(pageLink)}>View Page</a>;
-                                                    })()
-                                                    : 'Unavailable'
-                                                }
-                                              </p>
-                                            </>
-                                          )
-                                        }
-                                      </AccordionContent>
+                                            {
+                                              doc.metadata.type === 'youtube' ? (
+                                                <p>
+                                                  <b>Source:</b>
+                                                  {doc.metadata.source ? (
+                                                    <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleWebinarClick(doc.metadata.source)}>
+                                                      View Webinar
+                                                    </a>
+                                                  ) : 'Unavailable'}
+                                                </p>
+                                              ) : doc.metadata.type === 'sentinel' ? (
+                                                <p>
+                                                  <b>Source:</b>
+                                                  {doc.metadata.source ? (
+                                                    <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(doc.metadata.source)}>
+                                                      View
+                                                    </a>
+                                                  ) : 'Unavailable'}
+                                                </p>
+                                              ) : (
+                                                <>
+                                                  <ReactMarkdown components={{ a: (props: ComponentProps<'a'>) => <CustomLink {...props} /> }}>
+                                                    {doc.pageContent.split('\n')[0]}
+                                                  </ReactMarkdown>
+                                                  <p className="mt-2">
+                                                    <b>Source:</b>
+                                                    {doc.metadata && doc.metadata.source
+                                                      ? (() => {
+                                                          const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
+                                                          const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
+                                                          let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
+                                                          let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
+                                                          if (smallestPageNumberInRange === null && largestPageNumber !== null) {
+                                                            smallestPageNumberInRange = largestPageNumber;
+                                                          }
+                                                          const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
+                                                          const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+                                                          const iosPageLink = isiOS ? pageLink.replace('#page=', '#page') : pageLink;
+                                                          return <a href={iosPageLink} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(pageLink)}>View Page</a>;
+                                                        })()
+                                                      : 'Unavailable'}
+                                                  </p>
+                                                </>
+                                              )
+                                            }
+                                          </AccordionContent>
                                         </AccordionItem>
                                       );
-                                    },
-                                  )}
+                                    });
+                                  })()}
                                 </Accordion>
                               </div>
                             )}
+
 
                           {/* Render feedback only for apiMessage */}
                           {message.type === 'apiMessage' &&
