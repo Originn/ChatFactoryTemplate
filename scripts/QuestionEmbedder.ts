@@ -1,7 +1,7 @@
 import { PineconeStore } from '@langchain/pinecone';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { insertQuestionEmbedderDetails } from '@/db';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import { Document } from 'langchain/document'; // Import Document
 
 const codePrefix = 'embed-4831-embed-4831';
 
@@ -9,22 +9,14 @@ export class QuestionEmbedder {
   private vectorStore: PineconeStore;
   private embeddings: OpenAIEmbeddings;
   private userEmail: any;
-  private textSplitter: RecursiveCharacterTextSplitter;
 
   constructor(vectorStore: PineconeStore, embeddings: OpenAIEmbeddings, userEmail: any) {
     this.vectorStore = vectorStore;
     this.embeddings = embeddings;
     this.userEmail = userEmail;
-    this.textSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 1000,
-      chunkOverlap: 200,
-      separators: ["\n\n", "\n", " ", ""]
-    });
   }
 
   async embedQuestion(sanitizedQuestion: string, userEmail: any): Promise<boolean> {
-
-
     if (!sanitizedQuestion.startsWith(codePrefix)) {
       console.error('Error: Question does not start with the required code prefix.');
       return false;
@@ -42,25 +34,27 @@ export class QuestionEmbedder {
     const header = questionBody.substring(headerIndex + 'header:'.length, textIndex).trim();
     const text = questionBody.substring(textIndex + ' text:'.length).trim();
 
-    const documentChunks = await this.textSplitter.createDocuments([text], [{
-      file: header,
-      loc: { lines: { from: 0, to: 0 } },
-      source: userEmail,
-      type: 'user_input',
-    }], {
-      chunkHeader: `${header}\n\n---\n\n`,
-      appendChunkOverlapHeader: true
+    // Construct the full content in the desired format
+    const fullContent = `${header}\n\n---\n\n${text}\n`;
+
+    // Create a single document with the full content
+    const document = new Document({
+      pageContent: fullContent,
+      metadata: {
+        file: header,
+        loc: { lines: { from: 0, to: 0 } },
+        source: userEmail,
+        type: 'user_input',
+      },
     });
 
-    const embeddingsPromises = documentChunks.map(doc => this.embeddings.embedDocuments([doc.pageContent]));
-    const embeddings = await Promise.all(embeddingsPromises);
-
-    const addVectorsPromises = embeddings.map((embedding, index) => 
-      this.vectorStore.addVectors(embedding, [documentChunks[index]])
-    );
-
     try {
-      await Promise.all(addVectorsPromises);
+      // Embed the document
+      const embedding = await this.embeddings.embedDocuments([document.pageContent]);
+
+      // Add the vector to the vector store
+      await this.vectorStore.addVectors(embedding, [document]);
+
       const timestamp = new Date().toISOString();
       await insertQuestionEmbedderDetails(questionBody, timestamp, userEmail);
       return true;

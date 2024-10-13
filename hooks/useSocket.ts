@@ -148,7 +148,7 @@ const useSocket = (
     }
 
     newSocket.on('connect', () => {
-      console.log('NewSocket connected');
+      //console.log('NewSocket connected');
     });
 
     newSocket.on('assignedRoom', handleAssignedRoom);

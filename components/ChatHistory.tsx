@@ -122,7 +122,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ userEmail, className, onHisto
           ))}
         </div>
         
-        <div className="p-4 overflow-y-auto h-[calc(100vh-150px)]">
+        <div className="p-4 overflow-y-auto h-[calc(100vh-150px)] pb-4]">
           {isLoading ? (
             <p className="text-gray-500 dark:text-gray-400">Loading...</p>
           ) : error ? (
