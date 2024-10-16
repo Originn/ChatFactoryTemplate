@@ -828,41 +828,50 @@ const Home: FC = () => {
                           </div>
 
                           {/* Render the sources (webinars, documents) */}
-                          {message.sourceDocs &&
-                            message.sourceDocs.length > 0 && (
-                              <div key={`sourceDocsAccordion-${index}`}>
-                                <Accordion type="single" collapsible className="flex-col">
-                                  {(() => {
-                                    let webinarCount = 0;
-                                    let documentCount = 0;
+                          {message.sourceDocs && message.sourceDocs.length > 0 && (
+                          <div key={`sourceDocsAccordion-${index}`}>
+                            <Accordion type="single" collapsible className="flex-col">
+                              {(() => {
+                                let webinarCount = 0;
+                                let documentCount = 0;
+                                const webinarTimestamps = new Set();
 
-                                    return message.sourceDocs.map((doc, docIndex) => {
-                                      let title;
-                                      if (doc.metadata.type === 'youtube') {
-                                        webinarCount++;
-                                        title = `Webinar ${webinarCount}`;
-                                      } else {
-                                        documentCount++;
-                                        title = `Document ${documentCount}`;
-                                      }
+                                return message.sourceDocs.map((doc, docIndex) => {
+                                  let title;
+                                  if (doc.metadata.type === 'youtube') {
+                                    // Check if this webinar timestamp has already been processed
+                                    if (!webinarTimestamps.has(doc.metadata.timestamp)) {
+                                      webinarCount++;
+                                      webinarTimestamps.add(doc.metadata.timestamp);
+                                      title = `Webinar ${webinarCount}`;
+                                    } else {
+                                      // Skip this webinar as it's a duplicate
+                                      return null;
+                                    }
+                                  } else {
+                                    documentCount++;
+                                    title = `Document ${documentCount}`;
+                                  }
 
-                                      return (
-                                        <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
-                                          <AccordionTrigger>
-                                            <h3>{title}</h3>
-                                          </AccordionTrigger>
-                                          <AccordionContent>
-                                            {
-                                              doc.metadata.type === 'youtube' ? (
-                                                <p>
-                                                  <b>Source:</b>
-                                                  {doc.metadata.source ? (
-                                                    <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleWebinarClick(doc.metadata.source)}>
-                                                      View Webinar
-                                                    </a>
-                                                  ) : 'Unavailable'}
-                                                </p>
-                                              ) : doc.metadata.type === 'sentinel' ? (
+                                  // If the webinar was skipped, don't render anything
+                                  if (!title) return null;
+
+                                  return (
+                                    <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
+                                      <AccordionTrigger>
+                                        <h3>{title}</h3>
+                                      </AccordionTrigger>
+                                      <AccordionContent>
+                                        {doc.metadata.type === 'youtube' ? (
+                                          <p>
+                                            <b>Source:</b>
+                                            {doc.metadata.source ? (
+                                              <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleWebinarClick(doc.metadata.source)}>
+                                                View Webinar
+                                              </a>
+                                            ) : 'Unavailable'}
+                                          </p>
+                                        ) : ( doc.metadata.type === 'sentinel' ? (
                                                 <p>
                                                   <b>Source:</b>
                                                   {doc.metadata.source ? (
@@ -896,7 +905,7 @@ const Home: FC = () => {
                                                   </p>
                                                 </>
                                               )
-                                            }
+                                            )}
                                           </AccordionContent>
                                         </AccordionItem>
                                       );
