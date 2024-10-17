@@ -4,12 +4,18 @@ import type { AppProps } from 'next/app';
 import AuthWrapper from '../auth/AuthWrapper';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { useEffect } from 'react';
+import { setUserIdForAnalytics } from '@/utils/tracking';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
   const noAuthRequired = ['/verify-email', '/verification-sent', '/verification-failed', '/account-created-confirmation', '/password-reset-confirmation', '/acctmgmt','/privacy-policy'];
   const isAuthRequired = !noAuthRequired.some(path => router.pathname.startsWith(path));
+
+  useEffect(() => {
+    setUserIdForAnalytics();
+  }, []);
 
   return (
     <>
