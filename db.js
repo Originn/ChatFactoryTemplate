@@ -1,5 +1,5 @@
-import { Pool } from 'pg';
-import dotenv from 'dotenv';
+const { Pool } = require('pg');
+const dotenv = require('dotenv');
 
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
@@ -166,7 +166,6 @@ const deleteOldChatHistory = async () => {
 
   try {
     const res = await pool.query(query);
-    console.log(`Deleted ${res.rowCount} old chat history entries`);
     return res.rowCount;
   } catch (err) {
     console.error('Error deleting old chat history:', err);
@@ -176,4 +175,13 @@ const deleteOldChatHistory = async () => {
 
 
 
-export { pool, insertQA, updateFeedback, insertQuestionEmbedderDetails, insertChatHistory, getChatHistory, getChatHistoryByRoomId, deleteOldChatHistory };
+module.exports = { 
+  pool, 
+  insertQA, 
+  updateFeedback, 
+  insertQuestionEmbedderDetails, 
+  insertChatHistory, 
+  getChatHistory, 
+  getChatHistoryByRoomId, 
+  deleteOldChatHistory 
+};
