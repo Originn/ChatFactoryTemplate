@@ -12,7 +12,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const { fileName, isPrivate } = req.body; // Include `isPrivate` to determine bucket
-  console.log('isPrivate:', isPrivate);
 
   if (!fileName) {
     return res.status(400).json({ error: 'No fileName provided' });
@@ -23,7 +22,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const bucketName = isPrivate ? privateBucketName : publicBucketName;
     const bucket = storage.bucket(bucketName);
     const file = bucket.file(fileName);
-    console.log('Deleting file from GCP:', fileName);
 
     await file.delete();
     return res.status(200).json({ message: 'File deleted successfully' });
