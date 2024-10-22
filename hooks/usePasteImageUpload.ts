@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ImagePreview {
@@ -15,7 +15,8 @@ const usePasteImageUpload = (
   auth: any,
   textAreaRef: React.RefObject<HTMLTextAreaElement>,
   setHomeImagePreviews: React.Dispatch<React.SetStateAction<ImagePreview[]>>,
-  currentStage: number | null // Pass the current stage here
+  currentStage: number | null, // Pass the current stage here
+  setQuery: (query: string | ((prevQuery: string) => string)) => void // Include setQuery here
 ) => {
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({});
   const [pastedImagePreviews, setPastedImagePreviews] = useState<ImagePreview[]>([]);
@@ -27,19 +28,19 @@ const usePasteImageUpload = (
         reject(new Error('User not authenticated'));
         return;
       }
-  
+
       const formData = new FormData();
       formData.append("file", blob, fileName);
       formData.append("header", sessionStorage.getItem('header') || 'default-header');
-  
+
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/upload', true);
       xhr.setRequestHeader('Authorization', userEmail);
-  
-      // Determine upload type based on the current stage
+
+      // Use currentStage to decide if it's a public or private upload
       const isPublicUpload = currentStage === 4;
       xhr.setRequestHeader('x-upload-type', isPublicUpload ? 'public' : 'private');
-  
+
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
           const percentComplete = (event.loaded / event.total) * 100;
@@ -49,7 +50,7 @@ const usePasteImageUpload = (
           }));
         }
       };
-  
+
       xhr.onload = () => {
         if (xhr.status === 200) {
           resolve(JSON.parse(xhr.responseText));
@@ -57,7 +58,7 @@ const usePasteImageUpload = (
           reject(new Error('Upload failed'));
         }
       };
-  
+
       xhr.onerror = () => reject(new Error('Network error'));
       xhr.send(formData);
     });
@@ -78,7 +79,7 @@ const usePasteImageUpload = (
 
           const timestamp = Date.now();
           const fileName = `${uuidv4()}-${timestamp}.jpg`;
-          
+
           try {
             const data = await uploadImage(blob, fileName);
             if (data.imageUrls) {
@@ -86,6 +87,9 @@ const usePasteImageUpload = (
                 const newPreview = { url, fileName };
                 setHomeImagePreviews(prev => [...prev, newPreview]);
                 setPastedImagePreviews(prev => [...prev, newPreview]);
+
+                // Insert the URL of the image into the textarea (update query)
+                setQuery(prevQuery => `${prevQuery}\n${url}`);
                 setUploadProgress(prev => ({
                   ...prev,
                   [fileName]: 100
@@ -112,7 +116,7 @@ const usePasteImageUpload = (
       textArea.addEventListener('paste', handlePaste);
       return () => textArea.removeEventListener('paste', handlePaste);
     }
-  }, [setHomeImagePreviews, roomId, auth, textAreaRef, currentStage]); // Add currentStage to dependencies
+  }, [setHomeImagePreviews, roomId, auth, textAreaRef, currentStage, setQuery]);  // Ensure setQuery is included in the dependencies
 
   const clearPastedImagePreviews = () => {
     setPastedImagePreviews([]);
