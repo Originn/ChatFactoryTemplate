@@ -11,7 +11,7 @@ interface UploadProgress {
 }
 
 const useFileUploadFromHome = (
-  setQuery: (query: string | ((prevQuery: string) => string)) => void, 
+  setQuery: (query: string) => void, 
   roomId: string | null, 
   auth: any,
   setUploadStatus: (status: string | null) => void
@@ -23,132 +23,119 @@ const useFileUploadFromHome = (
 
   const handleHomeFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files && files.length > 2) {
+    if (!files || files.length > 2) {
       alert('Only 2 images are allowed per upload');
       return;
     }
-    if (files && files.length > 0) {
-      setUploadStatus('Uploading and processing...');
-      setFileErrors({});
-      for (const file of Array.from(files)) {
-        const timestamp = Date.now();
-        const fileNameWithTimestamp = `${uuidv4()}-${timestamp}.jpg`;
-        const formData = new FormData();
-        formData.append("file", file, fileNameWithTimestamp);
-  
-        const now = new Date();
-        const dateTimeString = now.toISOString();
-  
-        formData.append("header", dateTimeString);
-  
-        try {
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', '/api/upload', true);
-  
-          xhr.upload.onprogress = (event) => {
-            if (event.lengthComputable) {
-              const percentComplete = (event.loaded / event.total) * 100;
-              setUploadProgress(prev => ({
-                ...prev,
-                [fileNameWithTimestamp]: percentComplete
-              }));
+
+    const userEmail = auth.currentUser?.email;
+    if (!userEmail) {
+      alert('Please sign in to upload images');
+      return;
+    }
+
+    setUploadStatus('Uploading and processing...');
+    setFileErrors({});
+
+    for (const file of Array.from(files)) {
+      const timestamp = Date.now();
+      const fileNameWithTimestamp = `${uuidv4()}-${timestamp}.jpg`;
+      const formData = new FormData();
+      formData.append("file", file, fileNameWithTimestamp);
+      formData.append("header", new Date().toISOString());
+
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/upload', true);
+        xhr.setRequestHeader('Authorization', userEmail);
+        // Add this header to indicate private upload
+        xhr.setRequestHeader('x-upload-type', 'private');
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = (event.loaded / event.total) * 100;
+            setUploadProgress(prev => ({
+              ...prev,
+              [fileNameWithTimestamp]: percentComplete
+            }));
+          }
+        };
+
+        await new Promise<void>((resolve, reject) => {
+          xhr.onload = () => {
+            if (xhr.status === 200) {
+              const data = JSON.parse(xhr.responseText);
+              if (data.imageUrls) {
+                setHomeImagePreviews(prevPreviews => {
+                  const newPreviews = [
+                    ...prevPreviews,
+                    ...data.imageUrls.map(({ url, fileName }: { url: string, fileName: string }) => ({
+                      url: url,
+                      fileName: fileName
+                    }))
+                  ];
+
+                  if (newPreviews.length > 2) {
+                    reject(new Error('Exceeded maximum number of images'));
+                    return prevPreviews;
+                  }
+
+                  return newPreviews;
+                });
+                data.imageUrls.forEach(({ fileName }: { fileName: string }) => {
+                  setUploadProgress(prev => ({
+                    ...prev,
+                    [fileName]: null
+                  }));
+                });
+              }
+              resolve();
+            } else {
+              reject(new Error(xhr.responseText));
             }
           };
-  
-          await new Promise<void>((resolve, reject) => {
-            xhr.onload = () => {
-              if (xhr.status === 200) {
-                try {
-                  const data = JSON.parse(xhr.responseText);
-                  if (data.imageUrls) {
-                    setHomeImagePreviews((prevPreviews: ImagePreview[]) => {
-                      const newPreviews = [
-                        ...prevPreviews,
-                        ...data.imageUrls.map(({ url, fileName }: { url: string, fileName: string }) => ({
-                          url: `${url}`,
-                          fileName: fileName
-                        }))
-                      ];
-  
-                      if (newPreviews.length > 2) {
-                        alert('Only 2 images are allowed per message');
-                        reject(new Error('Exceeded maximum number of images'));
-                        return prevPreviews; // Keep the previous state
-                      }
-  
-                      return newPreviews;
-                    });
-                    // Clear progress for uploaded files
-                    data.imageUrls.forEach(({ fileName }: { fileName: string }) => {
-                      setUploadProgress(prev => ({
-                        ...prev,
-                        [fileName]: null  // Set to null instead of 100
-                      }));
-                    });
-                  }
-                  resolve();
-                } catch (error) {
-                  console.error('Error parsing response:', error);
-                  reject(new Error('Error parsing server response'));
-                }
-              } else {
-                console.error('Upload failed with status:', xhr.status);
-                console.error('Response:', xhr.responseText);
-                let errorMessage = 'Upload failed';
-                try {
-                  const errorData = JSON.parse(xhr.responseText);
-                  errorMessage = errorData.details || errorData.error || errorMessage;
-                } catch (parseError) {
-                  console.error('Error parsing error response:', parseError);
-                }
-                reject(new Error(errorMessage));
-              }
-            };
-  
-            xhr.onerror = () => {
-              console.error('XHR error occurred');
-              reject(new Error('Network error occurred during upload'));
-            };
-  
-            xhr.send(formData);
-          });
-        } catch (error:any) {
-          console.error('Upload error:', error);
-          setFileErrors(prev => ({
-            ...prev,
-            [fileNameWithTimestamp]: error.message
-          }));
-        }
+
+          xhr.onerror = () => reject(new Error('Network error'));
+          xhr.send(formData);
+        });
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        setFileErrors(prev => ({
+          ...prev,
+          [fileNameWithTimestamp]: error.message
+        }));
       }
-      setUploadStatus(null);
     }
+    setUploadStatus(null);
   };
 
-  const handleHomeDeleteImage = async (fileName: string, index: number) => {
+  const handleHomeDeleteImage = async (fileName: string, index: number, isPrivate: boolean) => {
+    const userEmail = auth.currentUser?.email;
+    if (!userEmail) return;
+  
     try {
       const response = await fetch('/api/delete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': userEmail
+        },
+        body: JSON.stringify({ fileName, isPrivate }),  // Pass isPrivate to determine the bucket
       });
+      
       if (!response.ok) throw new Error('Failed to delete image');
       
+      // Filter out the deleted image from the state
       setHomeImagePreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
-      // Remove the progress for the deleted image
-      setUploadProgress(prev => {
-        const newProgress = { ...prev };
-        delete newProgress[fileName];
-        return newProgress;
-      });
-    } catch (error) {
-      console.error('Error deleting general user image:', error);
-    } finally {
-      // Reset the file input using the ref
+  
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    } catch (error) {
+      console.error('Error deleting image:', error);
     }
   };
+  
 
   return {
     homeImagePreviews,

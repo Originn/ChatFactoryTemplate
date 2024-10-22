@@ -21,19 +21,18 @@ class MemoryService {
     output: string,
     imageUrl: string[]
   ): Promise<void> {
-    const memory = this.getChatMemory(roomId);
+    const memory = this.getChatMemory(roomId);  
     if (input) {
       memory.messages.push(new HumanMessage(input));
     }
     if (output) {
       memory.messages.push(new AIMessage(output));
     }
-  
-    // Save the imageUrl in metadata if provided
     if (imageUrl && imageUrl.length > 0) {
       memory.metadata.imageUrl = imageUrl;
     }
   }
+  
   
 
   static async getChatHistory(roomId: string): Promise<BaseMessage[]> {

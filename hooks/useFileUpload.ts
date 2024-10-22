@@ -21,79 +21,86 @@ const useFileUpload = (
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files && files.length > 0) {
-      setUploadStatus('Uploading and processing...');
-      for (const file of Array.from(files)) {
-        const timestamp = Date.now();
-        const fileNameWithTimestamp = `${uuidv4()}-${timestamp}.jpg`;
-        const formData = new FormData();
-        formData.append("file", file, fileNameWithTimestamp);
+    if (!files || files.length === 0) return;
 
-        const header = sessionStorage.getItem('header') || 'default-header';
-        formData.append("header", header);
-
-        try {
-          // Create a new XMLHttpRequest to track progress
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', '/api/upload', true);
-
-          xhr.upload.onprogress = (event) => {
-            if (event.lengthComputable) {
-              const percentComplete = (event.loaded / event.total) * 100;
-              setUploadProgress(prev => ({
-                ...prev,
-                [fileNameWithTimestamp]: percentComplete
-              }));
-            }
-          };
-
-          xhr.onload = async () => {
-            if (xhr.status === 200) {
-              const data = JSON.parse(xhr.responseText);
-              if (data.imageUrls) {
-                data.imageUrls.forEach(({ url, fileName }: { url: string, fileName: string }) => {
-                  const cacheBustedUrl = `${url}?${uuidv4()}`;
-                  setImagePreviews((prevPreviews: ImagePreview[]) => [...prevPreviews, { url: cacheBustedUrl, fileName }]);
-                  setQuery((prevQuery: string) => `${prevQuery}\n${cacheBustedUrl}`);
-                });
-              }
-              // Remove progress after successful upload
-              setUploadProgress(prev => {
-                const newProgress = { ...prev };
-                delete newProgress[fileNameWithTimestamp];
-                return newProgress;
-              });
-            } else {
-              throw new Error('Upload failed');
-            }
-          };
-
-          xhr.onerror = () => {
-            throw new Error('Upload failed');
-          };
-
-          xhr.send(formData);
-        } catch (error) {
-          console.error('Error uploading file:', error);
-          setUploadStatus('Upload and processing failed.');
-          setTimeout(() => {
-            setUploadStatus(null);
-          }, 3000);
-          return;
-        }
-      }
-      setUploadStatus('Upload and processing complete.');
-      setTimeout(() => {
-        setUploadStatus(null);
-      }, 3000);
+    const userEmail = auth.currentUser?.email;
+    if (!userEmail) {
+      alert('Please sign in to upload images');
+      return;
     }
+
+    setUploadStatus('Uploading and processing...');
+    
+    for (const file of Array.from(files)) {
+      const timestamp = Date.now();
+      const fileNameWithTimestamp = `${uuidv4()}-${timestamp}.jpg`;
+      const formData = new FormData();
+      formData.append("file", file, fileNameWithTimestamp);
+      formData.append("header", sessionStorage.getItem('header') || 'default-header');
+
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/upload', true);
+        xhr.setRequestHeader('Authorization', userEmail);
+        // Add this line to explicitly indicate it's a public upload
+        xhr.setRequestHeader('x-upload-type', 'public');
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = (event.loaded / event.total) * 100;
+            setUploadProgress(prev => ({
+              ...prev,
+              [fileNameWithTimestamp]: percentComplete
+            }));
+          }
+        };
+
+        xhr.onload = async () => {
+          if (xhr.status === 200) {
+            const data = JSON.parse(xhr.responseText);
+            if (data.imageUrls) {
+              data.imageUrls.forEach(({ url, fileName }: { url: string, fileName: string }) => {
+                setImagePreviews(prevPreviews => [...prevPreviews, { url, fileName }]);
+                setQuery(prevQuery => `${prevQuery}\n${url}`);
+              });
+            }
+            setUploadProgress(prev => {
+              const newProgress = { ...prev };
+              delete newProgress[fileNameWithTimestamp];
+              return newProgress;
+            });
+          } else {
+            throw new Error('Upload failed');
+          }
+        };
+
+        xhr.onerror = () => {
+          throw new Error('Upload failed');
+        };
+
+        xhr.send(formData);
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        setUploadStatus('Upload and processing failed.');
+        setTimeout(() => setUploadStatus(null), 3000);
+        return;
+      }
+    }
+    setUploadStatus('Upload and processing complete.');
+    setTimeout(() => setUploadStatus(null), 3000);
   };
 
   const handleDeleteImage = async (fileName: string, index: number) => {
+    const userEmail = auth.currentUser?.email;
+    if (!userEmail) return;
+
     try {
       const response = await fetch('/api/delete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': userEmail
+        },
         body: JSON.stringify({ fileName }),
       });
       
@@ -102,17 +109,14 @@ const useFileUpload = (
       setImagePreviews(prevPreviews => {
         const newPreviews = prevPreviews.filter((_, i) => i !== index);
         const urlToDelete = prevPreviews[index].url;
-        
-        // Remove the URL from the textarea
-        setQuery((prevQuery: string) => {
+        setQuery(prevQuery => {
           const lines = prevQuery.split('\n');
           return lines.filter(line => !line.includes(urlToDelete)).join('\n');
         });
-        
         return newPreviews;
       });
     } catch (error) {
-      console.error('Error deleting internal image:', error);
+      console.error('Error deleting image:', error);
     }
   };
 

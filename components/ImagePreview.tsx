@@ -1,5 +1,7 @@
-import React from 'react';
+// components/ImagePreview.tsx
+import React, { useState, useEffect } from 'react';
 import CircularProgressBar from './CircularProgressBar';
+import { auth } from '@/utils/firebase';
 
 interface ImagePreviewData {
   url: string;
@@ -13,63 +15,96 @@ interface ImagePreviewProps {
   uploadProgress: number | null;
 }
 
-const ImagePreview: React.FC<ImagePreviewProps> = ({ image, index, onDelete, uploadProgress }) => {
+export const ImagePreview: React.FC<ImagePreviewProps> = ({ 
+  image, 
+  index, 
+  onDelete, 
+  uploadProgress 
+}) => {
+  const [imageUrl, setImageUrl] = useState(image.url);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const refreshImageUrl = async () => {
+    const userEmail = auth.currentUser?.email;
+    if (!userEmail) return;
+
+    setIsRefreshing(true);
+    try {
+      const response = await fetch('/api/refresh-image-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': userEmail
+        },
+        body: JSON.stringify({ fileName: image.fileName })
+      });
+
+      if (!response.ok) throw new Error('Failed to refresh URL');
+
+      const data = await response.json();
+      setImageUrl(data.url);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load image');
+      console.error('Error refreshing image URL:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleImageError = () => {
+    refreshImageUrl();
+  };
+
   return (
-    <div className="image-wrapper" style={{ 
-      position: 'relative', 
-      width: '150px', 
-      height: '150px', 
-      marginBottom: '10px',
-      overflow: 'hidden',
-      borderRadius: '8px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-    }}>
-      <img
-        src={image.url}
-        alt={`Image Preview ${index + 1}`}
-        className="image-preview"
-        style={{ 
-          width: '100%', 
-          height: '100%', 
-          objectFit: 'cover'
-        }}
-      />
+    <div className="image-wrapper relative">
+      {isRefreshing ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900" />
+        </div>
+      ) : (
+        <>
+          <img
+            src={imageUrl}
+            alt={`Preview ${index + 1}`}
+            className="image-preview"
+            onError={handleImageError}
+            style={{ 
+              width: '150px', 
+              height: '150px', 
+              objectFit: 'cover',
+              borderRadius: '8px'
+            }}
+          />
+          
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-red-100 bg-opacity-75">
+              <button 
+                onClick={refreshImageUrl}
+                className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
       <button 
-        onClick={() => {
-          onDelete(image.fileName, index);
-        }} 
-        className="delete-button" 
-        style={{ 
-          position: 'absolute', 
-          top: '5px', 
-          right: '5px',
-          background: 'rgba(255, 255, 255, 0.7)',
-          border: 'none',
-          borderRadius: '50%',
-          width: '24px',
-          height: '24px',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          color: '#333',
-          transition: 'all 0.2s ease',
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)')}
-        onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.7)')}
+        onClick={() => onDelete(image.fileName, index)}
+        className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md hover:bg-red-100"
       >
         ×
       </button>
-      {uploadProgress !== null && !isNaN(uploadProgress) && uploadProgress < 100 && (
-        <div style={{ position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(255,255,255,0.7)', padding: '2px', borderRadius: '50%' }}>
-          <CircularProgressBar progress={Math.round(uploadProgress)} />
+
+      {uploadProgress !== null && uploadProgress < 100 && (
+        <div className="absolute bottom-2 right-2">
+          <CircularProgressBar progress={uploadProgress} />
         </div>
       )}
     </div>
   );
 };
 
-export { ImagePreview };
 export type { ImagePreviewData };
