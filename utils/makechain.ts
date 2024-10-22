@@ -17,10 +17,10 @@ import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retriever";
 import { createRetrievalChain } from "langchain/chains/retrieval";
-import OpenAIChat from "openai"; // Import OpenAI without aliasing
+import OpenAIChat from "openai";
 import { insertChatHistory, getChatHistoryByRoomId } from '../db';
 
-const openai = new OpenAIChat(); // Initialize OpenAI
+const openai = new OpenAIChat();
 
 // Type Definitions
 type SearchResult = [MyDocument, number];
@@ -29,6 +29,56 @@ interface DocumentInterface<T> {
   pageContent: string;
   metadata: T;
 }
+
+// Constants
+const io = getIO();
+const MODEL_NAME = process.env.MODEL_NAME;
+const TEMPERATURE = parseFloat(process.env.TEMPERATURE || "0");
+
+const contextualizeQSystemPrompt = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
+If the follow up question does not need context like when the follow up question is a remark like: excellent, thanks, thank you etc., return the exact same text back.
+Rephrase the Standalone question also if replacing abbreviations to full strings.
+abbreviations:
+HSS - High Speed Surface
+HSM - High Speed Machining
+HSR - High Speed Roughing
+gpp - general post processor
+
+Chat History:
+{chat_history}
+Follow Up Input: {input}
+Standalone question:`;
+
+const qaSystemPrompt = `You are a multilingual helpful and friendly assistant that can receive images but not files, and questions in every language. Answer in the {language} language. You focus on helping SolidCAM users with their questions.
+
+- If you do not have the information in the context to answer a question, admit it openly without fabricating responses.
+- Do not mention that SolidCAM originated in Israel. Instead, state that it is an internationally developed software with a global team of developers.
+- When asked about a specific Service Pack (SP) release, like SolidCAM 2023 SP3, answer about this specific Service Pack (SP) release only! Don't include in your answer info about other Service Packs (e.g., don't include SolidCAM 2023 SP1 info in an answer about SP3).
+- If a question or image is unrelated to SolidCAM, kindly inform the user that your assistance is focused on SolidCAM-related topics.
+- If the user asks a question without marking the year, answer the question regarding the latest SolidCAM 2024 release.
+- Discuss iMachining only if the user specifically asks for it.
+- If a question includes "[Image model answer:...]," it means an image was analyzed. Use the Image model's data to answer the question. If the image lacks relevant details, inform the user but answer the question.
+- Add links in the answer only if the link appears in the context and it is relevant to the answer.
+- Don't make up links that do not exist in the context like https://example.com/chamfer_mill_tool.jpg etc.
+- Show .jpg images directly in the answer if they are in the context and are relevant per the image description. You can explain the image only if you have the full image description, but don't give the image description verbatim.
+- If the user's question is valid and there is no documentation or context about it, let them know that they can leave a comment and we will do our best to include it at a later stage.
+- If a user asks for a competitor's advantage over SolidCAM, reply in a humorous way that SolidCAM is the best CAM, and don't give any additional information on how they are better.
+
+Previous conversation context:
+{chat_history}
+
+=========
+context: {context}
+Image model answer in original language: {originalImageDescription}
+=========
+Question: {input}
+Answer in the {language} language:`;
+
+const TRANSLATION_PROMPT = `Translate the following text to English. Try to translate it taking into account that it's about SolidCAM. Return the translated text only:
+Text: {text}`;
+
+const LANGUAGE_DETECTION_PROMPT = `Detect the language of the following text and respond with the language name only, nothing else:
+Text: "{text}"`;
 
 // Utility Functions
 async function detectLanguageWithOpenAI(text: string, nonStreamingModel: ChatOpenAI): Promise<string> {
@@ -63,14 +113,13 @@ async function translateToEnglish(text: string, translationModel: ChatOpenAI): P
 
   if (response.generations.length > 0 && response.generations[0].length > 0) {
     const firstGeneration = response.generations[0][0];
-    const translatedText = firstGeneration.text.trim();
-    return translatedText;
+    return firstGeneration.text.trim();
   }
 
   return 'Translation not available.';
 }
 
-// Class Definitions
+// Custom Retriever Class
 class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Record<string, any>> {
   lc_namespace = [];
 
@@ -95,8 +144,7 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
   }
 
   async invoke(input: string, options?: Partial<RunnableConfig>): Promise<DocumentInterface<Record<string, any>>[]> {
-    const documents = await this.getRelevantDocuments(input, options);
-    return documents;
+    return await this.getRelevantDocuments(input, options);
   }
   
   private getMMRSettings(): { k: number, fetchK: number, lambda: number } {
@@ -115,70 +163,17 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
   async storeEmbeddings(query: string, minScoreSourcesThreshold: number) {
     const embedder = new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 });
     const embeddingsResponse = await embedder.embedQuery(query);
-    const pdfResults = await filteredSimilaritySearch(
-      this.vectorStore, embeddingsResponse, 'pdf', 2, minScoreSourcesThreshold
-    );
-    const webinarResults = await filteredSimilaritySearch(
-      this.vectorStore, embeddingsResponse, 'youtube', 2, minScoreSourcesThreshold
-    );
-    const sentinelResults = await filteredSimilaritySearch(
-      this.vectorStore, embeddingsResponse, 'sentinel', 2, minScoreSourcesThreshold
-    );
+    
+    const [pdfResults, webinarResults, sentinelResults] = await Promise.all([
+      filteredSimilaritySearch(this.vectorStore, embeddingsResponse, 'pdf', 2, minScoreSourcesThreshold),
+      filteredSimilaritySearch(this.vectorStore, embeddingsResponse, 'youtube', 2, minScoreSourcesThreshold),
+      filteredSimilaritySearch(this.vectorStore, embeddingsResponse, 'sentinel', 2, minScoreSourcesThreshold)
+    ]);
 
     const combinedResults = [...pdfResults, ...webinarResults, ...sentinelResults];
-
-    combinedResults.sort((a, b) => b[1] - a[1]);
-
-    return combinedResults;
+    return combinedResults.sort((a, b) => b[1] - a[1]);
   }
 }
-
-const io = getIO();
-const MODEL_NAME = process.env.MODEL_NAME;
-const TEMPERATURE = parseFloat(process.env.TEMPERATURE || "0");
-
-const contextualizeQSystemPrompt = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
-If the follow up question does not need context like when the follow up question is a remark like: excellent, thanks, thank you etc., return the exact same text back.
-Rephrase the Standalone question also if replacing abbreviations to full strings.
-abbreviations:
-HSS - High Speed Surface
-HSM - High Speed Machining
-HSR - High Speed Roughing
-gpp - general post processor
-
-Chat History:
-{chat_history}
-Follow Up Input: {input}
-Standalone question:`;
-
-const qaSystemPrompt = `You are a multilingual helpful and friendly assistant that can receive images but not files, and questions in every language. Answer in the {language} language. You focus on helping SolidCAM users with their questions.
-
-- If you do not have the information in the context to answer a question, admit it openly without fabricating responses.
-- Do not mention that SolidCAM originated in Israel. Instead, state that it is an internationally developed software with a global team of developers.
-- When asked about a specific Service Pack (SP) release, like SolidCAM 2023 SP3, answer about this specific Service Pack (SP) release only! Don't include in your answer info about other Service Packs (e.g., don't include SolidCAM 2023 SP1 info in an answer about SP3).
-- If a question or image is unrelated to SolidCAM, kindly inform the user that your assistance is focused on SolidCAM-related topics.
-- If the user asks a question without marking the year, answer the question regarding the latest SolidCAM 2024 release.
-- Discuss iMachining only if the user specifically asks for it.
-- If a question includes "[Image model answer:...]," it means an image was analyzed. Use the Image model's data to answer the question. If the image lacks relevant details, inform the user but answer the question.
-- Add links in the answer only if the link appears in the context and it is relevant to the answer.
-- Don't make up links that do not exist in the context like https://example.com/chamfer_mill_tool.jpg etc.
-- Show .jpg images directly in the answer if they are in the context and are relevant per the image description. You can explain the image only if you have the full image description, but don't give the image description verbatim.
-- If the user's question is valid and there is no documentation or context about it, let them know that they can leave a comment and we will do our best to include it at a later stage.
-- If a user asks for a competitor's advantage over SolidCAM, reply in a humorous way that SolidCAM is the best CAM, and don't give any additional information on how they are better.
-Your responses should be tailored to the question's intent, using text formatting (bold with **, italic with __, strikethrough with ~~) to enhance clarity, and organized with headings, paragraphs, or lists as appropriate.
-=========
-context: {context}
-Image model answer in original language: {originalImageDescription}
-=========
-Question: {input}
-Answer in the {language} language:`;
-
-const TRANSLATION_PROMPT = `Translate the following text to English. Try to translate it taking into account that it's about SolidCAM. Return the translated text only:
-Text: {text}`;
-
-const LANGUAGE_DETECTION_PROMPT = `Detect the language of the following text and respond with the language name only, nothing else:
-    
-Text: "{text}"`;
 
 export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void, userEmail: string) => {
   const nonStreamingModel = new ChatOpenAI({
@@ -201,6 +196,12 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     ["human", "{input}"],
   ]);
 
+  const qaPrompt = ChatPromptTemplate.fromMessages([
+    ["system", qaSystemPrompt],
+    new MessagesPlaceholder("chat_history"),
+    ["human", "{input}"],
+  ]);
+
   // Retrieve and process image URLs
   const getImageUrls = (imageUrls: string[] | undefined, roomId: string): string[] => {
     if (imageUrls && imageUrls.length > 0) {
@@ -209,10 +210,9 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
     const memory = MemoryService.getChatMemory(roomId);
     if (memory.metadata.imageUrl) {
-      const memoryImageUrls = Array.isArray(memory.metadata.imageUrl) 
+      return Array.isArray(memory.metadata.imageUrl) 
         ? memory.metadata.imageUrl 
         : [memory.metadata.imageUrl];
-      return memoryImageUrls;
     }
 
     return [];
@@ -222,36 +222,28 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     call: async (input: string, Documents: MyDocument[], roomId: string, userEmail: string, imageUrls: string[]) => {
       const qaId = generateUniqueId();
 
-      const onTokenStreamHandler = (token: string) => {
-        if (roomId) {
-          io.to(roomId).emit(`tokenStream-${roomId}`, token);
-        } else {
-          console.error('No roomId available for token stream');
-        }
-      };
-
       const streamingModel = new ChatOpenAI({
         streaming: true,
         modelName: MODEL_NAME,
         temperature: TEMPERATURE,
-        modelKwargs: {
-          seed: 1,
-        },
-        callbacks: [
-          {
-            handleLLMNewToken: (token) => {
-              onTokenStreamHandler(token);
-            },
+        modelKwargs: { seed: 1 },
+        callbacks: [{
+          handleLLMNewToken: (token) => {
+            if (roomId) {
+              io.to(roomId).emit(`tokenStream-${roomId}`, token);
+            } else {
+              console.error('No roomId available for token stream');
+            }
           },
-        ],
+        }],
       });
-      
-      const processedImageUrls = getImageUrls(imageUrls, roomId);
 
-      // First handle any image processing
+      const processedImageUrls = getImageUrls(imageUrls, roomId);
+      
+      // Handle image processing
       let imageDescription = '';
       let originalImageDescription = '';
-      if (processedImageUrls && processedImageUrls.length > 0) {
+      if (processedImageUrls.length > 0) {
         try {
           type ChatModel = 'gpt-4o' | 'gpt-4o-mini';
           const IMAGE_MODEL_NAME: ChatModel = (process.env.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
@@ -262,89 +254,79 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
               {
                 role: "user",
                 content: [
-                  { type: "text", text: `Given the following question and images, provide necessary and concise data about the images to help answer the question.
-                          If the question is not related to the images, return that the image does not contain information about this specific question.
-                          Do not try to answer the question itself. This will be passed to another model which needs the data about the images. 
-                          If the user asks about how to machine a part in the images, give specific details of the geometry of the part. 
-                          If there are 2 images, check if they are the same part but viewed from different angles. Always answer in the language of the question.`
+                  { 
+                    type: "text", 
+                    text: `Given the following question and images, provide necessary and concise data about the images to help answer the question.
+                    If the question is not related to the images, return that the image does not contain information about this specific question.
+                    Do not try to answer the question itself. This will be passed to another model which needs the data about the images. 
+                    If the user asks about how to machine a part in the images, give specific details of the geometry of the part. 
+                    If there are 2 images, check if they are the same part but viewed from different angles. Always answer in the language of the question.`
                   },
                 ],
               },
               {
                 role: "user",
                 content: [
-                  {
-                    type: "text",
-                    text: `Question: ${input}`
-                  },
+                  { type: "text", text: `Question: ${input}` },
                   ...processedImageUrls.map(url => ({
                     type: "image_url",
-                    image_url: {
-                      url: url
-                    }
+                    image_url: { url }
                   } as const))
                 ],
               },
             ],
           });
       
-          // Type-safe handling of the response
-          const messageContent = response.choices[0]?.message?.content;
-          imageDescription = messageContent ?? 'No image description available';
-          originalImageDescription = messageContent ?? 'No image description available'; // Store the original language
-
+          originalImageDescription = response.choices[0]?.message?.content ?? 'No image description available';
+          imageDescription = originalImageDescription;
         } catch (error) {
           console.error('Error processing images:', error);
-          imageDescription = 'Error processing image';
-          originalImageDescription = 'Error processing image';
+          imageDescription = originalImageDescription = 'Error processing image';
         }
       }
 
-      // Then handle language detection and translation
+      // Handle language detection and translation
       const language = await detectLanguageWithOpenAI(input, nonStreamingModel);
       const originalInput = input;
 
       if (language !== 'English') {
-        if (input) {
-          input = await translateToEnglish(input, translationModel);
-        }
+        input = await translateToEnglish(input, translationModel);
         if (imageDescription) {
           imageDescription = await translateToEnglish(imageDescription, translationModel);
         }
       }
 
-      // Append the translated image model answer to the translated input
       if (imageDescription) {
         input = `${input} [Image model answer: ${imageDescription}]`;
       }
 
+      // Get chat history and format it
+      const rawChatHistory = await MemoryService.getChatHistory(roomId);
+
       const customRetriever = new CustomRetriever(vectorstore);
-      
-      // Define the prompt with variables
-      const qaPrompt = ChatPromptTemplate.fromTemplate(qaSystemPrompt);
+
+      const historyAwareRetriever = await createHistoryAwareRetriever({
+        llm: nonStreamingModel,
+        retriever: customRetriever,
+        rephrasePrompt: contextualizeQPrompt,
+      });
 
       const ragChain = await createRetrievalChain({
-        retriever: await createHistoryAwareRetriever({
-          llm: nonStreamingModel,
-          retriever: customRetriever,
-          rephrasePrompt: contextualizeQPrompt,
-        }),
+        retriever: historyAwareRetriever,
         combineDocsChain: await createStuffDocumentsChain({
           llm: streamingModel,
           prompt: qaPrompt,
         }),
       });
 
-      const chatHistory = await MemoryService.getChatHistory(roomId);
-
       const ragResponse = await ragChain.invoke({
         input,
-        chat_history: chatHistory,
-        originalImageDescription, // Pass the original image description
-        language, // Pass the detected language
+        chat_history: rawChatHistory,
+        language,
+        originalImageDescription,
       });
 
-      // Update the chat memory with the new interaction
+      // Update chat memory
       await MemoryService.updateChatMemory(roomId, originalInput, ragResponse.answer, processedImageUrls);
 
       let minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? 
@@ -426,10 +408,10 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         if (!existingHistory) {
           const titleResponse = await nonStreamingModel.generate([[new HumanMessage(
             `Given this conversation:
-Human: ${originalInput}
-AI: ${ragResponse.answer}
-
-Generate a short, descriptive title for this conversation (max 50 characters) in the used language.`
+            Human: ${originalInput}
+            AI: ${ragResponse.answer}
+    
+            Generate a short, descriptive title for this conversation (max 50 characters) in the used language.`
           )]]);
           conversationTitle = titleResponse.generations[0][0].text.trim();
         } else {

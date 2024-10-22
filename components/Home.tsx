@@ -129,6 +129,7 @@ const Home: FC = () => {
     setImagePreviews,
     uploadProgress: internalUploadProgress,
   } = useFileUpload(setQuery, roomId, auth, setUploadStatus);
+
   const {
     homeImagePreviews,
     handleHomeFileChange,
@@ -139,7 +140,7 @@ const Home: FC = () => {
     fileErrors,
   } = useFileUploadFromHome(setQuery, roomId, auth, setUploadStatus);
   const { uploadProgress: pasteUploadProgress, clearPastedImagePreviews } =
-    usePasteImageUpload(roomId, auth, textAreaRef, setHomeImagePreviews);
+    usePasteImageUpload(roomId, auth, textAreaRef, setHomeImagePreviews, currentStage);
 
 
   // Update localStorage whenever roomId changes
@@ -148,6 +149,10 @@ const Home: FC = () => {
       localStorage.setItem('roomId', roomId);
     }
   }, [roomId]);
+
+  useEffect(() => {
+    console.log("Current stage value:", currentStage);  // Log the currentStage to see its value
+  }, [currentStage]);
 
   // Initialize Socket.IO client
   useEffect(() => {
@@ -637,6 +642,9 @@ const Home: FC = () => {
     return () => messageListElement?.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const isPrivateDelete = currentStage !== 4;
+  console.log('isPrivateDelete',isPrivateDelete)
+
   return (
     <>
       <GoogleAnalytics /> {}
@@ -669,6 +677,7 @@ const Home: FC = () => {
               onClose={() => setEnlargedImage(null)}
             />
           )}
+          
 
           {homeImagePreviews.length > 0 && !loading && (
             <div className="image-container-image-thumb">
@@ -677,7 +686,7 @@ const Home: FC = () => {
                   key={index}
                   image={image}
                   index={index}
-                  onDelete={handleHomeDeleteImage}
+                  onDelete={() => handleHomeDeleteImage(image.fileName, index, isPrivateDelete)}
                   uploadProgress={
                     pasteUploadProgress[image.fileName] ||
                     homeUploadProgress[image.fileName] ||

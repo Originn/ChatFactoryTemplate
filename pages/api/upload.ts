@@ -5,7 +5,8 @@ import formidable from 'formidable';
 import fs from 'fs';
 
 const storage = new Storage();
-const bucketName = process.env.GCLOUD_STORAGE_BUCKET || 'solidcam-chatbot-documents';
+const publicBucket = process.env.GCLOUD_STORAGE_BUCKET || 'solidcam-chatbot-documents';
+const privateBucket = process.env.GCLOUD_PRIVATE_STORAGE_BUCKET || 'solidcam-chatbot-private-images';
 
 export const config = {
   api: {
@@ -15,7 +16,26 @@ export const config = {
 
 const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
+async function generateSignedUrl(file: any, userEmail: string): Promise<string> {
+  const options = {
+    version: 'v4',
+    action: 'read',
+    expires: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days
+  };
+
+  const [signedUrl] = await file.getSignedUrl(options);
+  return signedUrl;
+}
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+  const userEmail = req.headers.authorization;
+  // Check if this is a private upload (from useFileUploadFromHome)
+  const isPrivateUpload = req.headers['x-upload-type'] === 'private';
+  
+  if (isPrivateUpload && !userEmail) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   const form = formidable({ multiples: true, keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
@@ -30,12 +50,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const fileArray = Array.isArray(files.file) ? files.file : [files.file];
 
-    // Check if more than 2 files are being uploaded
     if (fileArray.length > 2) {
       return res.status(400).json({ error: 'Only 2 images are allowed per upload' });
     }
 
-    // Check if all files are images
     const invalidFiles = fileArray.filter(file => !file.mimetype || !allowedMimeTypes.includes(file.mimetype));
     if (invalidFiles.length > 0) {
       return res.status(400).json({ 
@@ -48,6 +66,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const sanitizedHeader = (header || 'default').replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
     try {
+      const bucket = storage.bucket(isPrivateUpload ? privateBucket : publicBucket);
+      
       const uploadPromises = fileArray.map(async (file, index) => {
         if (!file) {
           throw new Error('File is undefined');
@@ -57,24 +77,27 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const fileExtension = file.originalFilename ? file.originalFilename.split('.').pop() : 'jpg';
         const safeFileExtension = fileExtension ? fileExtension.toLowerCase() : 'jpg';
         
-        let fileName = `${sanitizedHeader}.${safeFileExtension}`;
-        let fileExists = await storage.bucket(bucketName).file(fileName).exists();
-        let fileIndex = index;
+        // For private uploads, include user email in path
+        const fileName = isPrivateUpload 
+          ? `${userEmail}/${sanitizedHeader}_${Date.now()}_${index}.${safeFileExtension}`
+          : `${sanitizedHeader}_${Date.now()}_${index}.${safeFileExtension}`;
 
-        while (fileExists[0]) {
-          fileName = `${sanitizedHeader}_${fileIndex}.${safeFileExtension}`;
-          fileExists = await storage.bucket(bucketName).file(fileName).exists();
-          fileIndex++;
-        }
-
-        const bucket = storage.bucket(bucketName);
         const blob = bucket.file(fileName);
+        
+        // Set metadata for private uploads
+        const metadata = {
+          contentType: file.mimetype || 'application/octet-stream',
+          metadata: isPrivateUpload ? {
+            userEmail,
+            uploadDate: new Date().toISOString(),
+            expirationDate: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)).toISOString()
+          } : undefined
+        };
+
         const blobStream = blob.createWriteStream({
           resumable: false,
           gzip: true,
-          metadata: {
-            contentType: file.mimetype || 'application/octet-stream',
-          },
+          metadata
         });
 
         await new Promise((resolve, reject) => {
@@ -83,14 +106,27 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           fs.createReadStream(filePath).pipe(blobStream);
         });
 
-        await blob.makePublic();
-        const publicUrl = `https://storage.googleapis.com/${bucketName}/${blob.name}`;
-        return { url: publicUrl, fileName };
+        let url: string;
+        if (isPrivateUpload && userEmail) {
+          // Generate signed URL for private uploads
+          url = await generateSignedUrl(blob, userEmail);
+        } else {
+          // Make file public and use public URL
+          await blob.makePublic();
+          url = `https://storage.googleapis.com/${publicBucket}/${blob.name}`;
+        }
+
+        return { 
+          url,
+          fileName,
+          uploadDate: isPrivateUpload ? metadata.metadata?.uploadDate : undefined,
+          expirationDate: isPrivateUpload ? metadata.metadata?.expirationDate : undefined
+        };
       });
 
       const uploadResults = await Promise.all(uploadPromises);
       return res.status(200).json({ imageUrls: uploadResults });
-    } catch (error:any) {
+    } catch (error: any) {
       console.error('Error uploading image: ', error);
       return res.status(500).json({ error: 'Failed to upload image', details: error.message });
     }
