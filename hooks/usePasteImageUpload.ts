@@ -88,8 +88,11 @@ const usePasteImageUpload = (
                 setHomeImagePreviews(prev => [...prev, newPreview]);
                 setPastedImagePreviews(prev => [...prev, newPreview]);
 
-                // Insert the URL of the image into the textarea (update query)
-                setQuery(prevQuery => `${prevQuery}\n${url}`);
+                // Only insert the image URL into the textarea when the stage is 4
+                if (currentStage === 4) {
+                  setQuery(prevQuery => `${prevQuery}\n${url}`);
+                }
+                
                 setUploadProgress(prev => ({
                   ...prev,
                   [fileName]: 100
@@ -116,7 +119,7 @@ const usePasteImageUpload = (
       textArea.addEventListener('paste', handlePaste);
       return () => textArea.removeEventListener('paste', handlePaste);
     }
-  }, [setHomeImagePreviews, roomId, auth, textAreaRef, currentStage, setQuery]);  // Ensure setQuery is included in the dependencies
+  }, [setHomeImagePreviews, roomId, auth, textAreaRef, currentStage, setQuery]);  // Ensure setQuery and currentStage are included in the dependencies
 
   const clearPastedImagePreviews = () => {
     setPastedImagePreviews([]);

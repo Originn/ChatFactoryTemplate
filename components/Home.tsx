@@ -118,7 +118,7 @@ const Home: FC = () => {
   const [enlargedImage, setEnlargedImage] = useState<ImagePreviewData | null>(
     null,
   );
-  const userEmail = auth.currentUser ? auth.currentUser.email : null;
+  const userEmail = auth.currentUser ? auth.currentUser.email : 'testuser@example.com'; // Use a mock email if auth is not set
   const [selectedConversation, setSelectedConversation] =
     useState<ChatHistoryItem | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
