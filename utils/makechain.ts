@@ -56,6 +56,7 @@ const qaSystemPrompt = `You are a multilingual helpful and friendly assistant th
 - When asked about a specific Service Pack (SP) release, like SolidCAM 2023 SP3, answer about this specific Service Pack (SP) release only! Don't include in your answer info about other Service Packs (e.g., don't include SP1 info in an answer about SP3).
 - If a question or image is unrelated to SolidCAM, kindly inform the user that your assistance is focused on SolidCAM-related topics.
 - If the user asks a question without marking the year, answer the question regarding the latest SolidCAM 2024 release.
+- If Image Description is included, it means an image was analyzed. Taking the description into account when answering the question.
 - Discuss iMachining only if the user specifically asks for it.
 - Add links in the answer only if the link appears in the context and it is relevant to the answer.
 - Don't make up links that do not exist in the context like https://example.com/chamfer_mill_tool.jpg etc.
@@ -63,12 +64,9 @@ const qaSystemPrompt = `You are a multilingual helpful and friendly assistant th
 - If the user's question is valid and there is no documentation or context about it, let them know that they can leave a comment and we will do our best to include it at a later stage.
 - If a user asks for a competitor's advantage over SolidCAM, reply in a humorous way that SolidCAM is the best CAM, and don't give any additional information on how they are better.
 
-Previous conversation context:
-{chat_history}
-
 =========
 context: {context}
-Image model answer in original language: {originalImageDescription}
+Image Description: {imageDescription}
 =========
 Question: {input}
 Answer in the {language} language:`;
@@ -76,7 +74,7 @@ Answer in the {language} language:`;
 const TRANSLATION_PROMPT = `Translate the following text to English. Try to translate it taking into account that it's about SolidCAM. Return the translated text only:
 Text: {text}`;
 
-const LANGUAGE_DETECTION_PROMPT = `Detect the language of the following text and respond with the language name only, nothing else:
+const LANGUAGE_DETECTION_PROMPT = `Detect the language of the following text and respond with the language name only, nothing else. If the language cannot be detected, respond with "English".:
 Text: "{text}"`;
 
 // Utility Functions
@@ -224,6 +222,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       const streamingModel = new ChatOpenAI({
         streaming: true,
         modelName: MODEL_NAME,
+        verbose: true,
         temperature: TEMPERATURE,
         modelKwargs: { seed: 1 },
         callbacks: [{
@@ -241,7 +240,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       
       // Handle image processing
       let imageDescription = '';
-      let originalImageDescription = '';
       if (processedImageUrls.length > 0) {
         try {
           type ChatModel = 'gpt-4o' | 'gpt-4o-mini';
@@ -256,10 +254,9 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
                   { 
                     type: "text", 
                     text: `Given the following question and images, provide necessary and concise data about the images to help answer the question.
-                    If the question is not related to the images, return that the image does not contain information about this specific question.
                     Do not try to answer the question itself. This will be passed to another model which needs the data about the images. 
                     If the user asks about how to machine a part in the images, give specific details of the geometry of the part. 
-                    If there are 2 images, check if they are the same part but viewed from different angles. Always answer in the language of the question.`
+                    If there are 2 images, check if they are the same part but viewed from different angles.`
                   },
                 ],
               },
@@ -276,11 +273,10 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
             ],
           });
       
-          originalImageDescription = response.choices[0]?.message?.content ?? 'No image description available';
-          imageDescription = originalImageDescription;
+          imageDescription = response.choices[0]?.message?.content ?? 'No image description available';
         } catch (error) {
           console.error('Error processing images:', error);
-          imageDescription = originalImageDescription = 'Error processing image';
+          imageDescription = imageDescription = 'Error processing image';
         }
       }
 
@@ -290,9 +286,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       if (language !== 'English') {
         input = await translateToEnglish(input, translationModel);
-        if (imageDescription) {
-          imageDescription = await translateToEnglish(imageDescription, translationModel);
-        }
       }
 
       if (imageDescription) {
@@ -322,7 +315,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         input,
         chat_history: rawChatHistory,
         language,
-        originalImageDescription,
+        imageDescription,
       });
 
       // Update chat memory
