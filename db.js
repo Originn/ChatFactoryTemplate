@@ -81,6 +81,36 @@ const insertQuestionEmbedderDetails = async (embeddedText, timestamp, email) => 
 };
 
 const insertChatHistory = async (userEmail, conversationTitle, roomId, messages) => {
+  // Helper function to get all previous image URLs
+  const getPreviousImageUrls = (messages) => {
+    const imageUrls = new Set();
+    for (const message of messages) {
+      if (message.imageUrls && Array.isArray(message.imageUrls)) {
+        message.imageUrls.forEach(url => imageUrls.add(url));
+      }
+    }
+    return imageUrls;
+  };
+
+  // Process messages to deduplicate image URLs
+  const processedMessages = messages.map((message, index) => {
+    if (message.type !== 'userMessage' || !message.imageUrls) {
+      return message;
+    }
+
+    // Get all image URLs from previous messages
+    const previousMessages = messages.slice(0, index);
+    const previousImageUrls = getPreviousImageUrls(previousMessages);
+
+    // Filter out duplicate image URLs
+    const uniqueImageUrls = message.imageUrls.filter(url => !previousImageUrls.has(url));
+
+    return {
+      ...message,
+      imageUrls: uniqueImageUrls
+    };
+  });
+
   const query = `
     INSERT INTO user_chat_history (useremail, conversation_title, "roomId", conversation_json)
     VALUES ($1, $2, $3, $4::jsonb)
@@ -92,23 +122,16 @@ const insertChatHistory = async (userEmail, conversationTitle, roomId, messages)
   `;
 
   try {
-    // Ensure messages is in the correct format
-    let messagesJson;
-    if (typeof messages === 'string') {
-      // If it's already a string, assume it's valid JSON
-      messagesJson = messages;
-    } else if (Array.isArray(messages) || typeof messages === 'object') {
-      // If it's an array or object, stringify it
-      messagesJson = JSON.stringify(messages);
-    } else {
-      throw new Error('Invalid messages format');
-    }
-
-    const res = await pool.query(query, [userEmail, conversationTitle, roomId, messagesJson]);
-    return res.rows[0];
-  } catch (err) {
-    console.error('Error in insertChatHistory:', err);
-    throw err;
+    const result = await pool.query(query, [
+      userEmail,
+      conversationTitle,
+      roomId,
+      JSON.stringify(processedMessages)
+    ]);
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error inserting chat history:', error);
+    throw error;
   }
 };
 

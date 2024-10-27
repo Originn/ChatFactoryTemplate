@@ -35,25 +35,31 @@ const io = getIO();
 const MODEL_NAME = process.env.MODEL_NAME;
 const TEMPERATURE = parseFloat(process.env.TEMPERATURE || "0");
 
-const contextualizeQSystemPrompt = `Given the history of the conversation and a follow up question, rephrase the follow up question to be a standalone question.
-If the follow up question does not need context like when the follow up question is a remark like: excellent, thanks, thank you etc., return the exact same text back.
-Rephrase the Standalone question also if replacing abbreviations to full strings.
-abbreviations:
-HSS - High Speed Surface
-HSM - High Speed Machining
-HSR - High Speed Roughing
-gpp - general post processor
+const contextualizeQSystemPrompt = `
+Given the conversation history and a follow-up question, rephrase the follow-up question to be a standalone question focused on SolidCAM-specific content. 
+
+- If the follow-up question includes a year (like "2023"), assume the user is asking about SolidCAM features or updates for that specific year. For example, if the follow-up question is "and in 2023?", rephrase it to "What are the steps for creating a pocket operation in SolidCAM 2023?".
+- If the follow-up question does not need context (e.g., it's a remark like "thanks"), return the exact same text back.
+
+Replace any abbreviations with their full names:
+- HSS - High Speed Surface
+- HSM - High Speed Machining
+- HSR - High Speed Roughing
+- gpp - general post processor
 
 Chat History:
 {chat_history}
 Follow Up Input: {input}
-Standalone question:`;
+Standalone question:
+`;
 
-const qaSystemPrompt = `You are a multilingual helpful and friendly assistant that can receive images but not files, and questions in every language. Answer in the {language} language. You focus on helping SolidCAM users with their questions.
+
+const qaSystemPrompt = `You are a multilingual helpful and friendly assistant that can receive images but not files, and questions and answers in every language. Answer in the {language} language. You focus on helping SolidCAM users with their questions.
 
 - If you do not have the information in the context to answer a question, admit it openly without fabricating responses.
 - Do not mention that SolidCAM originated in Israel. Instead, state that it is an internationally developed software with a global team of developers.
 - When asked about a specific Service Pack (SP) release, like SolidCAM 2023 SP3, answer about this specific Service Pack (SP) release only! Don't include in your answer info about other Service Packs (e.g., don't include SP1 info in an answer about SP3).
+- In the answers to questions, always include the year of the SolidCAM release referred to in the answer.
 - If a question or image is unrelated to SolidCAM, kindly inform the user that your assistance is focused on SolidCAM-related topics.
 - If the user asks a question without marking the year, answer the question regarding the latest SolidCAM 2024 release.
 - If Image Description is included, it means an image was analyzed. Taking the description into account when answering the question.
@@ -176,6 +182,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
   const nonStreamingModel = new ChatOpenAI({
     modelName: 'gpt-4o',
     temperature: TEMPERATURE,
+    //verbose:true,
   });
 
   const translationModel = new ChatOpenAI({
@@ -206,6 +213,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     }
 
     const memory = MemoryService.getChatMemory(roomId);
+    console.log('Memory:', memory);
     if (memory.metadata.imageUrl) {
       return Array.isArray(memory.metadata.imageUrl) 
         ? memory.metadata.imageUrl 
@@ -222,7 +230,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       const streamingModel = new ChatOpenAI({
         streaming: true,
         modelName: MODEL_NAME,
-        verbose: true,
+        //verbose: true,
         temperature: TEMPERATURE,
         modelKwargs: { seed: 1 },
         callbacks: [{
@@ -237,6 +245,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       });
 
       const processedImageUrls = getImageUrls(imageUrls, roomId);
+      console.log('Image URLs:', processedImageUrls);
       
       // Handle image processing
       let imageDescription = '';
@@ -297,18 +306,27 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       const customRetriever = new CustomRetriever(vectorstore);
 
+
+
       const historyAwareRetriever = await createHistoryAwareRetriever({
         llm: nonStreamingModel,
         retriever: customRetriever,
         rephrasePrompt: contextualizeQPrompt,
       });
 
+
+      const questionAnswerChain = await createStuffDocumentsChain({
+        llm: streamingModel,
+        prompt: qaPrompt,
+      });
+
+
+      //const standaloneQuestion = contextualizedResponse.slice(0, contextualizedResponse.indexOf('\n\n'));
+      console.log('historyAwareRetriever:', historyAwareRetriever);
+
       const ragChain = await createRetrievalChain({
         retriever: historyAwareRetriever,
-        combineDocsChain: await createStuffDocumentsChain({
-          llm: streamingModel,
-          prompt: qaPrompt,
-        }),
+        combineDocsChain: questionAnswerChain,
       });
 
       const ragResponse = await ragChain.invoke({
@@ -319,6 +337,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       });
 
       // Update chat memory
+      console.log('Updating chat memory in makechain:', originalInput, ragResponse.answer, processedImageUrls);
       await MemoryService.updateChatMemory(roomId, originalInput, ragResponse.answer, processedImageUrls);
 
       let minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? 
