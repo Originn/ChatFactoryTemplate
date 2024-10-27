@@ -19,6 +19,7 @@ import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retr
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import OpenAIChat from "openai";
 import { insertChatHistory, getChatHistoryByRoomId } from '../db';
+import { rawListeners } from 'process';
 
 const openai = new OpenAIChat();
 
@@ -131,6 +132,7 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
   }
 
   async getRelevantDocuments(query: string, options?: Partial<RunnableConfig>): Promise<DocumentInterface<Record<string, any>>[]> {
+    console.log(`Query: ${query}`);
     const { k, fetchK, lambda } = this.getMMRSettings();
 
     const mmrOptions: MaxMarginalRelevanceSearchOptions<any> = {
@@ -140,6 +142,7 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     };
 
     const results = await this.vectorStore.maxMarginalRelevanceSearch(query, mmrOptions);
+    
     return results.map(doc => new MyDocument({
       ...doc,
       metadata: { ...doc.metadata }
@@ -178,6 +181,11 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
   }
 }
 
+function initializeChatHistory(roomId: any) {
+  // Directly call updateChatMemory with "Hi" as the initial input
+  MemoryService.updateChatMemory(roomId, "Hi", "", []);
+}
+
 export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void, userEmail: string) => {
   const nonStreamingModel = new ChatOpenAI({
     modelName: 'gpt-4o',
@@ -192,6 +200,11 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
   function generateUniqueId(): string {
     return uuidv4();
+  }
+
+  async function isNewChatSession(roomId: any): Promise<boolean> {
+    const chatHistory = await MemoryService.getChatHistory(roomId);
+    return chatHistory.length === 0;
   }
 
   const contextualizeQPrompt = ChatPromptTemplate.fromMessages([
@@ -213,7 +226,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     }
 
     const memory = MemoryService.getChatMemory(roomId);
-    console.log('Memory:', memory);
     if (memory.metadata.imageUrl) {
       return Array.isArray(memory.metadata.imageUrl) 
         ? memory.metadata.imageUrl 
@@ -225,6 +237,10 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
   return {
     call: async (input: string, Documents: MyDocument[], roomId: string, userEmail: string, imageUrls: string[]) => {
+      if (await isNewChatSession(roomId)) {
+        initializeChatHistory(roomId);
+      }
+
       const qaId = generateUniqueId();
 
       const streamingModel = new ChatOpenAI({
@@ -245,7 +261,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       });
 
       const processedImageUrls = getImageUrls(imageUrls, roomId);
-      console.log('Image URLs:', processedImageUrls);
       
       // Handle image processing
       let imageDescription = '';
@@ -333,7 +348,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       });
 
       // Update chat memory
-      console.log('Updating chat memory in makechain:', originalInput, ragResponse.answer, processedImageUrls);
       await MemoryService.updateChatMemory(roomId, originalInput, ragResponse.answer, processedImageUrls);
 
       let minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? 
