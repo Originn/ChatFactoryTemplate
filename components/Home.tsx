@@ -279,7 +279,7 @@ const Home: FC = () => {
             };
             
             // Update MemoryService
-            MemoryService.updateChatMemory(roomId!, '', message.answer, []);
+            //MemoryService.updateChatMemory(roomId!, '', message.answer, []);
       
             return {
               ...prevState,
@@ -420,7 +420,7 @@ const Home: FC = () => {
       const updatedHistory = [...prevState.history, [question, ''] as [string, string]];
   
       // Update MemoryService
-      MemoryService.updateChatMemory(roomId!, question, '', []);
+      //MemoryService.updateChatMemory(roomId!, question, '', []);
   
       return {
         ...prevState,
@@ -518,6 +518,8 @@ const Home: FC = () => {
         .map((msg) => [msg.message, ''] as [string, string]),
     });
 
+    console.log('conversation.roomId:', conversation.roomId);
+    console.log('parsedConversation:', parsedConversation);
     MemoryService.loadFullConversationHistory(
       conversation.roomId,
       parsedConversation,

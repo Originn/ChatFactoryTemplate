@@ -156,7 +156,7 @@ export default async function handler(
     return res.status(400).json({ message: 'No roomId in the request' });
   }
 
-  await syncChatHistory(roomId, history);
+  //await syncChatHistory(roomId, history);
 
   const sanitizedQuestion = question?.trim().replaceAll('\n', ' ');
   const codePrefix = 'embed-4831-embed-4831';
