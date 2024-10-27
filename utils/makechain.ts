@@ -320,10 +320,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         prompt: qaPrompt,
       });
 
-
-      //const standaloneQuestion = contextualizedResponse.slice(0, contextualizedResponse.indexOf('\n\n'));
-      console.log('historyAwareRetriever:', historyAwareRetriever);
-
       const ragChain = await createRetrievalChain({
         retriever: historyAwareRetriever,
         combineDocsChain: questionAnswerChain,
