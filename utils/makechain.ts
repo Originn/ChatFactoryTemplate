@@ -19,7 +19,6 @@ import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retr
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import OpenAIChat from "openai";
 import { insertChatHistory, getChatHistoryByRoomId } from '../db';
-import { rawListeners } from 'process';
 
 const openai = new OpenAIChat();
 
