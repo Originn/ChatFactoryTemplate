@@ -3,6 +3,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/utils/firebase';
 import ChatHistory, { ChatHistoryItem } from './ChatHistory';
 import { FC } from 'react';
+import Tooltip from './Tooltip';
 
 interface LayoutProps {
   children?: React.ReactNode;
@@ -41,33 +42,38 @@ const Layout: FC<LayoutProps> = ({ children, theme, toggleTheme, onHistoryItemCl
           <nav className="ml-4 pl-6 flex items-center justify-start">
             {userEmail && (
               <div className={iconButtonClass}>
-                <ChatHistory
-                  userEmail={userEmail}
-                  className="relative z-50"
-                  onHistoryItemClick={onHistoryItemClick}
-                />
+                <Tooltip message="View chat history">
+                  <ChatHistory
+                    userEmail={userEmail}
+                    className="relative z-50"
+                    onHistoryItemClick={onHistoryItemClick}
+                  />
+                </Tooltip>
               </div>
             )}
             
             {/* Start New Chat Icon Button */}
-            <button onClick={handleNewChat} className={newChatButtonClass}>
-              <Image
-                src="/new-chat.png"
-                alt="Start New Chat"
-                title="Start New Chat"
-                width={24}
-                height={24} // Adjust the size of the icon to fit the button
-              />
-            </button>
+            <Tooltip message="Start a new chat">
+              <button onClick={handleNewChat} className={newChatButtonClass}>
+                <Image
+                  src="/new-chat.png"
+                  alt="Start New Chat"
+                  width={24}
+                  height={24}
+                />
+              </button>
+            </Tooltip>
 
-            {/* Theme Toggle Button */}
-            <button onClick={toggleTheme} className={iconButtonClass}>
-              {theme === 'dark' ? (
-                <Image src="icons8-sun.svg" alt="Sun Icon" width={24} height={24} />
-              ) : (
-                <Image src={moonIcon} alt="Moon Icon" width={24} height={24} />
-              )}
-            </button>
+            {/* Theme Toggle Button with dynamic tooltip */}
+            <Tooltip message={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+              <button onClick={toggleTheme} className={iconButtonClass}>
+                {theme === 'dark' ? (
+                  <Image src="icons8-sun.svg" alt="Sun Icon" width={24} height={24} />
+                ) : (
+                  <Image src={moonIcon} alt="Moon Icon" width={24} height={24} />
+                )}
+              </button>
+            </Tooltip>
 
             {/* Logout Button */}
             <button onClick={handleSignOut} className={logoutButtonClass}>
