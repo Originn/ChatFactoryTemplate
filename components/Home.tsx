@@ -388,7 +388,7 @@ const Home: FC = () => {
     setQuery(value);
   };
 
-  const codePrefix = 'embed-4831-embed-4831';
+  const codePrefix = process.env.NEXT_PUBLIC_CODE_PREFIX ?? "";
 
   const handleSubmit = async (e?: any) => {
     if (e) e.preventDefault();
