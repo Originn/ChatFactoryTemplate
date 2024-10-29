@@ -40,18 +40,17 @@ const Layout: FC<LayoutProps> = ({ children, theme, toggleTheme, onHistoryItemCl
       <header className={`sticky top-0 z-40 w-full ${theme === 'light' ? 'bg-white' : 'bg-dark-header'}`}>
         <div className="h-16 border-b border-b-slate-200 py-4">
           <nav className="ml-4 pl-6 flex items-center justify-start">
-            {userEmail && (
-              <div className={iconButtonClass}>
-                <Tooltip message="View chat history">
-                  <ChatHistory
-                    userEmail={userEmail}
-                    className="relative z-50"
-                    onHistoryItemClick={onHistoryItemClick}
-                  />
-                </Tooltip>
-              </div>
-            )}
-            
+          {userEmail && (
+            <div className={iconButtonClass}>
+              <Tooltip message="View chat history" hideOnClick={true}>
+                <ChatHistory
+                  userEmail={userEmail}
+                  className="relative z-50"
+                  onHistoryItemClick={onHistoryItemClick}
+                />
+              </Tooltip>
+            </div>
+          )} 
             {/* Start New Chat Icon Button */}
             <Tooltip message="Start a new chat">
               <button onClick={handleNewChat} className={newChatButtonClass}>
