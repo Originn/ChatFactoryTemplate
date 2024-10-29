@@ -141,6 +141,8 @@ const Home: FC = () => {
   } = useFileUploadFromHome(setQuery, roomId, auth, setUploadStatus);
   const { uploadProgress: pasteUploadProgress, clearPastedImagePreviews } =
     usePasteImageUpload(roomId, auth, textAreaRef, setHomeImagePreviews, currentStage, setQuery);
+  const [isEmbeddingMode, setIsEmbeddingMode] = useState(false);
+
 
 
   // Update localStorage whenever roomId changes
@@ -173,6 +175,11 @@ const Home: FC = () => {
         //console.log('Thumbnail element found and will be removed');
         thumbnailElement.remove();
       }
+    });
+
+    newSocket.on("embeddingComplete", () => {
+      setIsEmbeddingMode(false);
+      //console.log('Embedding complete');
     });
 
     newSocket.on('connect', () => {
@@ -279,7 +286,7 @@ const Home: FC = () => {
             };
             
             // Update MemoryService
-            //MemoryService.updateChatMemory(roomId!, '', message.answer, []);
+            MemoryService.updateChatMemory(roomId!, '', message.answer, []);
       
             return {
               ...prevState,
@@ -302,6 +309,8 @@ const Home: FC = () => {
       };
     }
   }, [socket, roomId]);
+
+
 
   // Handle socket reconnection
   useEffect(() => {
@@ -379,10 +388,12 @@ const Home: FC = () => {
     setQuery(value);
   };
 
+  const codePrefix = 'embed-4831-embed-4831';
+
   const handleSubmit = async (e?: any) => {
     if (e) e.preventDefault();
-
-    //for Google Analytics
+  
+    // For Google Analytics
     handleSubmitClick();
   
     if (!roomId) {
@@ -406,7 +417,7 @@ const Home: FC = () => {
     setRequestsInProgress((prev) => ({ ...prev, [roomId!]: true }));
     setUserHasScrolled(false);
     setLoading(true);
-    const question = query.trim();
+    const question = trimmedQuery;
   
     const newUserMessage: Message = {
       type: 'userMessage',
@@ -419,15 +430,14 @@ const Home: FC = () => {
       const updatedMessages = [...prevState.messages, newUserMessage];
       const updatedHistory = [...prevState.history, [question, ''] as [string, string]];
   
-      // Update MemoryService
-      //MemoryService.updateChatMemory(roomId!, question, '', []);
-  
       return {
         ...prevState,
         messages: updatedMessages,
         history: updatedHistory,
       };
     });
+
+    MemoryService.updateChatMemory(roomId!, question, '', []);
   
     setQuery('');
   
@@ -447,32 +457,44 @@ const Home: FC = () => {
       console.error('Failed to fetch chat history:', error);
     }
   
-    const imageUrls = homeImagePreviews.slice(0, 3).map((preview) => preview.url);
+    // Set embedding mode if codePrefix is detected
+    if (trimmedQuery.startsWith(codePrefix)) {
+      setIsEmbeddingMode(true);
+    }
+  
+    const isEmbedding = isEmbeddingMode || trimmedQuery.startsWith(codePrefix);
+  
+    // **Determine which image previews to use based on the mode**
+    const imagePreviewsToUse = isEmbedding ? imagePreviews : homeImagePreviews;
+    const imageUrls = imagePreviewsToUse.slice(0, 3).map((preview) => preview.url);
   
     try {
-      const response = await fetch('/api/chat', {
+      // Choose the endpoint based on embedding mode
+      const endpoint = isEmbedding ? '/api/userEmbed' : '/api/chat';
+  
+      const requestBody = JSON.stringify({
+        question,
+        history: fullHistory,
+        roomId,
+        imageUrls,
+        userEmail,
+      });
+  
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: userEmail,
         },
-        body: JSON.stringify({
-          question,
-          history: fullHistory,
-          roomId,
-          imageUrls,
-          userEmail,
-        }),
+        body: requestBody,
       });
   
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-  
-      // The response will be handled by the socket event listeners
     } catch (error) {
+      console.error('Error sending request:', error);
       setError('An error occurred while fetching the data. Please try again.');
-      console.error('error', error);
     } finally {
       setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
       setLoading(false);
@@ -481,25 +503,12 @@ const Home: FC = () => {
     }
   };
   
+  
 
   const handleHistoryItemClick = (conversation: ChatHistoryItem) => {
-    let parsedConversation;
-    if (typeof conversation.conversation_json === 'string') {
-      try {
-        parsedConversation = JSON.parse(conversation.conversation_json);
-      } catch (error) {
-        console.error('Error parsing conversation_json:', error);
-        return;
-      }
-    } else if (Array.isArray(conversation.conversation_json)) {
-      parsedConversation = conversation.conversation_json;
-    } else {
-      console.error(
-        'Unexpected conversation_json type:',
-        typeof conversation.conversation_json,
-      );
-      return;
-    }
+    const parsedConversation = Array.isArray(conversation.conversation_json)
+      ? conversation.conversation_json
+      : JSON.parse(conversation.conversation_json || '[]');
 
     if (!Array.isArray(parsedConversation)) {
       console.error('Invalid conversation format:', parsedConversation);
@@ -518,8 +527,6 @@ const Home: FC = () => {
         .map((msg) => [msg.message, ''] as [string, string]),
     });
 
-    console.log('conversation.roomId:', conversation.roomId);
-    console.log('parsedConversation:', parsedConversation);
     MemoryService.loadFullConversationHistory(
       conversation.roomId,
       parsedConversation,

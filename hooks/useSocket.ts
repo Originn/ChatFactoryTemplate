@@ -211,6 +211,7 @@ const useSocket = (
       newSocket.off('storeHeader');
       newSocket.off('uploadStatus');
       newSocket.off('removeThumbnails');
+      newSocket.off('embeddingComplete');
       if (roomIdRef.current) {
         setRequestsInProgress((prev: any) => {
           const updated = { ...prev };

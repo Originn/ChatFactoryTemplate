@@ -131,7 +131,6 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
   }
 
   async getRelevantDocuments(query: string, options?: Partial<RunnableConfig>): Promise<DocumentInterface<Record<string, any>>[]> {
-    console.log(`Query: ${query}`);
     const { k, fetchK, lambda } = this.getMMRSettings();
 
     const mmrOptions: MaxMarginalRelevanceSearchOptions<any> = {

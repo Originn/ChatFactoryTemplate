@@ -21,7 +21,6 @@ class MemoryService {
     imageUrl: string[]
   ): Promise<void> {
     const memory = this.getChatMemory(roomId);
-    console.log('Updating chat memory:', input, output, imageUrl);
     if (input) {
       const humanMessage = new HumanMessage(input);
       if (imageUrl && imageUrl.length > 0) {
@@ -37,7 +36,6 @@ class MemoryService {
     if (imageUrl && imageUrl.length > 0) {
       memory.metadata.imageUrl = imageUrl;
     }
-    console.log('Updated chat memory:', memory);
   }
 
   static async getChatHistory(roomId: string): Promise<BaseMessage[]> {
@@ -61,7 +59,6 @@ class MemoryService {
 
   static loadFullConversationHistory(roomId: string, conversationHistory: any[]): void {
     const memory = this.getChatMemory(roomId);
-    console.log('Loading full conversation history:', conversationHistory);
     
     // Keep track of all image URLs in the conversation
     const allImageUrls: string[] = [];
@@ -102,8 +99,6 @@ class MemoryService {
         imageUrl: []
       };
     }
-    
-    console.log('Memory state after loading full conversation history:', memory);
   }
 }
 
