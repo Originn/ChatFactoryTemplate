@@ -1,3 +1,4 @@
+// components/Tooltip.tsx
 import React from 'react';
 
 interface TooltipProps {
@@ -9,7 +10,7 @@ const Tooltip: React.FC<TooltipProps> = ({ message, children }) => {
   return (
     <div className="tooltip-container" style={{ position: 'relative', display: 'inline-block' }}>
         {children}
-        <div className="tooltip-content">
+        <div className="tooltip-content" style={{ left: '30px' }}> {/* Add left offset here */}
             {message}
         </div>
     </div>
