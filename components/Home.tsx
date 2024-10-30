@@ -342,18 +342,6 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
       });
     }
 
-    useEffect(() => {
-      const unsubscribe = auth.onAuthStateChanged((user) => {
-        if (user?.email) {
-          // User is signed in with email
-          localStorage.removeItem('stagingBrowserId'); // Clear staging ID
-          setIsFromStagingState(false); // Update staging state
-        }
-      });
-    
-      return () => unsubscribe(); // Cleanup subscription
-    }, []);
-
     return () => {
       if (socket) {
         socket.off('disconnect');
@@ -362,6 +350,18 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
       }
     };
   }, [socket, roomId]);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user?.email) {
+        // User is signed in with email
+        localStorage.removeItem('stagingBrowserId'); // Clear staging ID
+        setIsFromStagingState(false); // Update staging state
+      }
+    });
+  
+    return () => unsubscribe(); // Cleanup subscription
+  }, []);
 
   const adjustTextAreaHeight = () => {
     if (textAreaRef.current) {
