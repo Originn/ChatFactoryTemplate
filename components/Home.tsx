@@ -405,106 +405,108 @@ const Home: FC = () => {
     setError(null);
     const trimmedQuery = query.trim();
   
+    // Check for empty input when not in stage 4 and no images
     if (!trimmedQuery && currentStage !== 4 && homeImagePreviews.length === 0) {
       alert('Please input a question or upload an image');
       return;
     }
   
+    // Prevent multiple submissions for same room
     if (requestsInProgress[roomId]) {
       return;
     }
   
+    // Set loading states
     setRequestsInProgress((prev) => ({ ...prev, [roomId!]: true }));
     setUserHasScrolled(false);
     setLoading(true);
-    const question = trimmedQuery;
   
-    const newUserMessage: Message = {
-      type: 'userMessage',
-      message: question,
-      isComplete: true,
-      images: homeImagePreviews.slice(0, 3),
-    };
+    // Get user identifier - either staging ID or regular email
+    const stagingBrowserId = localStorage.getItem('stagingBrowserId');
+    const userIdentifier = stagingBrowserId || userEmail || 'anonymous';
   
-    setMessageState((prevState) => {
-      const updatedMessages = [...prevState.messages, newUserMessage];
-      const updatedHistory = [...prevState.history, [question, ''] as [string, string]];
-  
-      return {
-        ...prevState,
-        messages: updatedMessages,
-        history: updatedHistory,
+    try {
+      // Add user message to state
+      const newUserMessage: Message = {
+        type: 'userMessage',
+        message: trimmedQuery,
+        isComplete: true,
+        images: homeImagePreviews.slice(0, 3),
       };
-    });
-
-    MemoryService.updateChatMemory(roomId!, question, '', []);
   
-    setQuery('');
+      // Update message state
+      setMessageState((prevState) => ({
+        ...prevState,
+        messages: [...prevState.messages, newUserMessage],
+        history: [...prevState.history, [trimmedQuery, ''] as [string, string]],
+      }));
   
-    if (!userEmail) {
-      console.error('User not authenticated');
-      setLoading(false);
-      setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
-      return;
-    }
+      // Update memory service
+      await MemoryService.updateChatMemory(roomId!, trimmedQuery, '', []);
   
-    // Fetch full history
-    let fullHistory: [string, string][] = [];
-    try {
-      const history = await MemoryService.getChatHistory(roomId!);
-      fullHistory = history.map((msg) => [msg.content, ''] as [string, string]);
-    } catch (error) {
-      console.error('Failed to fetch chat history:', error);
-    }
+      // Clear input
+      setQuery('');
   
-    // Set embedding mode if codePrefix is detected
-    if (trimmedQuery.startsWith(codePrefix)) {
-      setIsEmbeddingMode(true);
-    }
+      // Get chat history
+      let fullHistory: [string, string][] = [];
+      try {
+        const history = await MemoryService.getChatHistory(roomId!);
+        fullHistory = history.map((msg) => [msg.content, ''] as [string, string]);
+      } catch (error) {
+        console.error('Failed to fetch chat history:', error);
+      }
   
-    const isEmbedding = isEmbeddingMode || trimmedQuery.startsWith(codePrefix);
+      // Determine if we're in embedding mode
+      const isEmbedding = isEmbeddingMode || trimmedQuery.startsWith(codePrefix);
   
-    // **Determine which image previews to use based on the mode**
-    const imagePreviewsToUse = isEmbedding ? imagePreviews : homeImagePreviews;
-    const imageUrls = imagePreviewsToUse.slice(0, 3).map((preview) => preview.url);
+      // Get appropriate image previews based on mode
+      const imagePreviewsToUse = isEmbedding ? imagePreviews : homeImagePreviews;
+      const imageUrls = imagePreviewsToUse.slice(0, 3).map((preview) => preview.url);
   
-    try {
-      // Choose the endpoint based on embedding mode
+      // Choose endpoint based on mode
       const endpoint = isEmbedding ? '/api/userEmbed' : '/api/chat';
   
+      // Prepare request
       const requestBody = JSON.stringify({
-        question,
+        question: trimmedQuery,
         history: fullHistory,
         roomId,
         imageUrls,
-        userEmail,
+        userEmail: userIdentifier,
       });
   
+      // Send request
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: userEmail,
+          Authorization: userIdentifier,
         },
         body: requestBody,
       });
   
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error(`Server responded with status: ${response.status}`);
       }
+  
+      // Response handling is done by socket listeners
+  
     } catch (error) {
-      console.error('Error sending request:', error);
+      console.error('Error in submit:', error);
       setError('An error occurred while fetching the data. Please try again.');
     } finally {
+      // Cleanup
       setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
       setLoading(false);
       setHomeImagePreviews([]);
       clearPastedImagePreviews();
+  
+      if (isEmbeddingMode && !trimmedQuery.startsWith(codePrefix)) {
+        setIsEmbeddingMode(false);
+      }
     }
   };
   
-  
-
   const handleHistoryItemClick = (conversation: ChatHistoryItem) => {
     const parsedConversation = Array.isArray(conversation.conversation_json)
       ? conversation.conversation_json
