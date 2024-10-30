@@ -10,6 +10,9 @@ import { signInAnonymously } from 'firebase/auth';
 import { auth } from '@/utils/firebase';
 import { v4 as uuidv4 } from 'uuid';
 
+const STAGING_ID_KEY = 'stagingBrowserId';
+const ROOM_ID_KEY = 'roomId';
+
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [isFromStaging, setIsFromStaging] = useState(false);
@@ -31,30 +34,36 @@ function MyApp({ Component, pageProps }: AppProps) {
       
       if (isStaging) {
         try {
-          // Sign in anonymously if from staging
-          await signInAnonymously(auth);
+          // First, ensure we have a unique browser ID for this staging user
+          let browserStagingId = localStorage.getItem(STAGING_ID_KEY);
+          const isNewUser = !browserStagingId;
           
-          // Check for existing staging UUID in localStorage
-          let stagingUUID = localStorage.getItem('stagingUUID');
-          const isNewUser = !stagingUUID;
-          
-          if (!stagingUUID) {
-            // Generate new UUID only if one doesn't exist
-            stagingUUID = uuidv4();
-            localStorage.setItem('stagingUUID', stagingUUID);
+          if (!browserStagingId) {
+            browserStagingId = `staging-${uuidv4()}`;
+            localStorage.setItem(STAGING_ID_KEY, browserStagingId);
           }
+
+          // Sign in anonymously - this might return an existing or new anonymous user
+          const userCredential = await signInAnonymously(auth);
           
-          // Set room ID based on the UUID
-          const roomId = `room-${stagingUUID.slice(0, 8)}`;
-          localStorage.setItem('roomId', roomId);
+          // Combine Firebase UID with browser staging ID for the room
+          const roomId = `room-${browserStagingId.slice(0, 8)}`;
+          localStorage.setItem(ROOM_ID_KEY, roomId);
           
           setIsFromStaging(true);
 
-          // Track the staging user
-          trackStagingUser(stagingUUID, isNewUser);
+          // Track the staging user using the browser staging ID
+          trackStagingUser(browserStagingId, isNewUser);
+
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Browser Staging ID:', browserStagingId);
+            console.log('Firebase UID:', userCredential.user.uid);
+            console.log('Room ID:', roomId);
+            console.log('User type:', isNewUser ? 'New User' : 'Returning User');
+          }
 
         } catch (error) {
-          console.error('Error in anonymous sign-in:', error);
+          console.error('Error in staging setup:', error);
           setIsFromStaging(false);
         }
       }
