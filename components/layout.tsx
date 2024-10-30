@@ -11,6 +11,7 @@ interface LayoutProps {
   toggleTheme: () => void;
   onHistoryItemClick: (conversation: ChatHistoryItem) => void;
   handleNewChat: () => void;
+  isFromStaging?: boolean; // Add this prop
 }
 
 const PRODUCTION_ENV = 'production';
@@ -21,7 +22,14 @@ if (process.env.NODE_ENV === PRODUCTION_ENV) {
   moonIcon = `${PRODUCTION_URL}icons8-moon-50.png`;
 }
 
-const Layout: FC<LayoutProps> = ({ children, theme, toggleTheme, onHistoryItemClick, handleNewChat }) => {
+const Layout: FC<LayoutProps> = ({ 
+  children, 
+  theme, 
+  toggleTheme, 
+  onHistoryItemClick, 
+  handleNewChat,
+  isFromStaging 
+}) => {
   const userEmail = auth.currentUser ? auth.currentUser.email : '';
 
   const handleSignOut = () => {
@@ -33,37 +41,41 @@ const Layout: FC<LayoutProps> = ({ children, theme, toggleTheme, onHistoryItemCl
 
   const iconButtonClass = "w-10 h-10 flex items-center justify-center bg-gray-200 dark:bg-gray-600 rounded-full mr-4";
   const logoutButtonClass = "px-4 h-10 flex items-center justify-center bg-gray-200 dark:bg-gray-600 rounded-full";
-  const newChatButtonClass = "w-10 h-10 flex items-center justify-center bg-blue-500 text-white rounded-full mr-4"; // Same size as Chat History button
+  const newChatButtonClass = "w-10 h-10 flex items-center justify-center bg-blue-500 text-white rounded-full mr-4";
 
   return (
     <div className={`flex flex-col min-h-screen mx-auto ${theme === 'dark' ? 'dark' : ''}`}>
       <header className={`sticky top-0 z-40 w-full ${theme === 'light' ? 'bg-white' : 'bg-dark-header'}`}>
         <div className="h-16 border-b border-b-slate-200 py-4">
           <nav className="ml-4 pl-6 flex items-center justify-start">
-          {userEmail && (
-            <div className={iconButtonClass}>
-              <Tooltip message="View chat history" hideOnClick={true}>
-                <ChatHistory
-                  userEmail={userEmail}
-                  className="relative z-50"
-                  onHistoryItemClick={onHistoryItemClick}
-                />
-              </Tooltip>
-            </div>
-          )} 
-            {/* Start New Chat Icon Button */}
-            <Tooltip message="Start a new chat">
-              <button onClick={handleNewChat} className={newChatButtonClass}>
-                <Image
-                  src="/new-chat.png"
-                  alt="Start New Chat"
-                  width={24}
-                  height={24}
-                />
-              </button>
-            </Tooltip>
+            {/* Only show Chat History for non-staging users */}
+            {userEmail && !isFromStaging && (
+              <div className={iconButtonClass}>
+                <Tooltip message="View chat history" hideOnClick={true}>
+                  <ChatHistory
+                    userEmail={userEmail}
+                    className="relative z-50"
+                    onHistoryItemClick={onHistoryItemClick}
+                  />
+                </Tooltip>
+              </div>
+            )}
 
-            {/* Theme Toggle Button with dynamic tooltip */}
+            {/* Only show New Chat button for non-staging users */}
+            {!isFromStaging && (
+              <Tooltip message="Start a new chat">
+                <button onClick={handleNewChat} className={newChatButtonClass}>
+                  <Image
+                    src="/new-chat.png"
+                    alt="Start New Chat"
+                    width={24}
+                    height={24}
+                  />
+                </button>
+              </Tooltip>
+            )}
+
+            {/* Theme Toggle Button - show for all users */}
             <Tooltip message={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
               <button onClick={toggleTheme} className={iconButtonClass}>
                 {theme === 'dark' ? (
@@ -74,10 +86,12 @@ const Layout: FC<LayoutProps> = ({ children, theme, toggleTheme, onHistoryItemCl
               </button>
             </Tooltip>
 
-            {/* Logout Button */}
-            <button onClick={handleSignOut} className={logoutButtonClass}>
-              Logout
-            </button>
+            {/* Only show Logout Button for non-staging users */}
+            {!isFromStaging && (
+              <button onClick={handleSignOut} className={logoutButtonClass}>
+                Logout
+              </button>
+            )}
           </nav>
         </div>
       </header>
