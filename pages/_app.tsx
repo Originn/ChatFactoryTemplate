@@ -43,6 +43,11 @@ useEffect(() => {
           stagingBrowserId = uuidv4();
           localStorage.setItem('stagingBrowserId', stagingBrowserId);
         }
+
+        // Create room ID without duplicate "staging-" prefix
+        // Just use the first 8 characters of the UUID for the room ID
+        const roomId = `room-${stagingBrowserId.slice(0, 10)}`;
+        localStorage.setItem('roomId', roomId);
         
         setIsFromStaging(true);
 
