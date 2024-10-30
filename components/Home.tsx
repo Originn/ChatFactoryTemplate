@@ -57,7 +57,11 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
   );
 };
 
-const Home: FC = () => {
+interface HomeProps {
+  isFromStaging?: boolean;
+}
+
+const Home: FC<HomeProps> = ({ isFromStaging }) => {
   const { theme, toggleTheme } = useTheme();
   const [query, setQuery] = useState<string>('');
   const [requestsInProgress, setRequestsInProgress] = useState<
@@ -658,11 +662,12 @@ const Home: FC = () => {
     <>
       <GoogleAnalytics /> {}
       <Layout
-        theme={theme}
-        toggleTheme={toggleTheme}
-        onHistoryItemClick={handleHistoryItemClick}
-        handleNewChat={handleNewChat}
-      >
+      theme={theme}
+      toggleTheme={toggleTheme}
+      onHistoryItemClick={handleHistoryItemClick}
+      handleNewChat={handleNewChat}
+      isFromStaging={isFromStaging}
+    >
         <div className="mx-auto flex flex-col gap-4">
           {/* For internal embedding */}
           {imagePreviews.length > 0 && (

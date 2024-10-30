@@ -27,47 +27,50 @@ function MyApp({ Component, pageProps }: AppProps) {
     '/privacy-policy'
   ];
 
-// In _app.tsx where we set up the staging user
-useEffect(() => {
-  const checkStaging = async () => {
-    const referrer = document.referrer;
-    const isStaging = referrer.includes('staging.solidcam.com');
-    
-    if (isStaging) {
-      try {
-        // Generate or get staging browser ID
-        let stagingBrowserId = localStorage.getItem('stagingBrowserId');
-        const isNewUser = !stagingBrowserId;
-        
-        if (!stagingBrowserId) {
-          stagingBrowserId = uuidv4();
-          localStorage.setItem('stagingBrowserId', stagingBrowserId);
+  useEffect(() => {
+    const checkStaging = async () => {
+      const referrer = document.referrer;
+      const isStaging = referrer.includes('staging.solidcam.com');
+      
+      if (isStaging) {
+        try {
+          // Generate or get staging browser ID
+          let stagingBrowserId = localStorage.getItem('stagingBrowserId');
+          const isNewUser = !stagingBrowserId;
+          
+          if (!stagingBrowserId) {
+            stagingBrowserId = uuidv4();
+            localStorage.setItem('stagingBrowserId', stagingBrowserId);
+          }
+
+          const roomId = `room-${stagingBrowserId.slice(0, 10)}`;
+          localStorage.setItem('roomId', roomId);
+          
+          setIsFromStaging(true);
+
+          // Track the staging user
+          trackStagingUser(stagingBrowserId, isNewUser);
+
+        } catch (error) {
+          console.error('Error in staging setup:', error);
+          setIsFromStaging(false);
         }
-
-        // Create room ID without duplicate "staging-" prefix
-        // Just use the first 8 characters of the UUID for the room ID
-        const roomId = `room-${stagingBrowserId.slice(0, 10)}`;
-        localStorage.setItem('roomId', roomId);
-        
-        setIsFromStaging(true);
-
-        // Track the staging user
-        trackStagingUser(stagingBrowserId, isNewUser);
-
-      } catch (error) {
-        console.error('Error in staging setup:', error);
-        setIsFromStaging(false);
       }
-    }
-  };
+    };
 
-  checkStaging();
-  setUserIdForAnalytics();
-}, []);
+    checkStaging();
+    setUserIdForAnalytics();
+  }, []);
 
   const isAuthRequired = !noAuthRequired.some(path => 
     router.pathname.startsWith(path)
   ) && !isFromStaging;
+
+  // Combine the existing pageProps with our new prop
+  const enhancedProps = {
+    ...pageProps,
+    isFromStaging
+  };
 
   return (
     <>
@@ -81,10 +84,10 @@ useEffect(() => {
       </Head>
       {isAuthRequired ? (
         <AuthWrapper>
-          <Component {...pageProps} />
+          <Component {...enhancedProps} />
         </AuthWrapper>
       ) : (
-        <Component {...pageProps} />
+        <Component {...enhancedProps} />
       )}
     </>
   );
