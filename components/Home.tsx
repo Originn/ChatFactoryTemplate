@@ -61,7 +61,8 @@ interface HomeProps {
   isFromStaging?: boolean;
 }
 
-const Home: FC<HomeProps> = ({ isFromStaging }) => {
+const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
+  const [isFromStagingState, setIsFromStagingState] = useState(isFromStagingProp);
   const { theme, toggleTheme } = useTheme();
   const [query, setQuery] = useState<string>('');
   const [requestsInProgress, setRequestsInProgress] = useState<
@@ -341,6 +342,18 @@ const Home: FC<HomeProps> = ({ isFromStaging }) => {
       });
     }
 
+    useEffect(() => {
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        if (user?.email) {
+          // User is signed in with email
+          localStorage.removeItem('stagingBrowserId'); // Clear staging ID
+          setIsFromStagingState(false); // Update staging state
+        }
+      });
+    
+      return () => unsubscribe(); // Cleanup subscription
+    }, []);
+
     return () => {
       if (socket) {
         socket.off('disconnect');
@@ -413,25 +426,35 @@ const Home: FC<HomeProps> = ({ isFromStaging }) => {
     setError(null);
     const trimmedQuery = query.trim();
   
-    // Check for empty input when not in stage 4 and no images
     if (!trimmedQuery && currentStage !== 4 && homeImagePreviews.length === 0) {
       alert('Please input a question or upload an image');
       return;
     }
   
-    // Prevent multiple submissions for same room
     if (requestsInProgress[roomId]) {
       return;
     }
   
-    // Set loading states
     setRequestsInProgress((prev) => ({ ...prev, [roomId!]: true }));
     setUserHasScrolled(false);
     setLoading(true);
   
-    // Get user identifier - either staging ID or regular email
-    const stagingBrowserId = localStorage.getItem('stagingBrowserId');
-    const userIdentifier = stagingBrowserId || userEmail || 'anonymous';
+    // Check if user is now authenticated
+    const currentUser = auth.currentUser;
+    
+    // Get user identifier
+    let userIdentifier;
+    if (currentUser?.email) {
+      // If user is authenticated, use their email
+      userIdentifier = currentUser.email;
+      // Optionally clear staging ID if user is now authenticated
+      localStorage.removeItem('stagingBrowserId');
+      setIsFromStagingState(false);
+    } else {
+      // Fall back to staging ID or anonymous
+      const stagingBrowserId = localStorage.getItem('stagingBrowserId');
+      userIdentifier = stagingBrowserId || 'anonymous';
+    }
   
     try {
       // Add user message to state
@@ -442,20 +465,16 @@ const Home: FC<HomeProps> = ({ isFromStaging }) => {
         images: homeImagePreviews.slice(0, 3),
       };
   
-      // Update message state
       setMessageState((prevState) => ({
         ...prevState,
         messages: [...prevState.messages, newUserMessage],
         history: [...prevState.history, [trimmedQuery, ''] as [string, string]],
       }));
   
-      // Update memory service
       await MemoryService.updateChatMemory(roomId!, trimmedQuery, '', []);
   
-      // Clear input
       setQuery('');
   
-      // Get chat history
       let fullHistory: [string, string][] = [];
       try {
         const history = await MemoryService.getChatHistory(roomId!);
@@ -464,17 +483,12 @@ const Home: FC<HomeProps> = ({ isFromStaging }) => {
         console.error('Failed to fetch chat history:', error);
       }
   
-      // Determine if we're in embedding mode
       const isEmbedding = isEmbeddingMode || trimmedQuery.startsWith(codePrefix);
-  
-      // Get appropriate image previews based on mode
       const imagePreviewsToUse = isEmbedding ? imagePreviews : homeImagePreviews;
       const imageUrls = imagePreviewsToUse.slice(0, 3).map((preview) => preview.url);
   
-      // Choose endpoint based on mode
       const endpoint = isEmbedding ? '/api/userEmbed' : '/api/chat';
   
-      // Prepare request
       const requestBody = JSON.stringify({
         question: trimmedQuery,
         history: fullHistory,
@@ -483,7 +497,6 @@ const Home: FC<HomeProps> = ({ isFromStaging }) => {
         userEmail: userIdentifier,
       });
   
-      // Send request
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -497,13 +510,10 @@ const Home: FC<HomeProps> = ({ isFromStaging }) => {
         throw new Error(`Server responded with status: ${response.status}`);
       }
   
-      // Response handling is done by socket listeners
-  
     } catch (error) {
       console.error('Error in submit:', error);
       setError('An error occurred while fetching the data. Please try again.');
     } finally {
-      // Cleanup
       setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
       setLoading(false);
       setHomeImagePreviews([]);
@@ -666,7 +676,7 @@ const Home: FC<HomeProps> = ({ isFromStaging }) => {
       toggleTheme={toggleTheme}
       onHistoryItemClick={handleHistoryItemClick}
       handleNewChat={handleNewChat}
-      isFromStaging={isFromStaging}
+      isFromStaging={isFromStagingState}
     >
         <div className="mx-auto flex flex-col gap-4">
           {/* For internal embedding */}
