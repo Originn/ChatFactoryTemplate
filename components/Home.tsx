@@ -34,6 +34,7 @@ import { ChatHistoryItem } from './ChatHistory';
 import { io, Socket } from 'socket.io-client';
 import MemoryService from '@/utils/memoryService';
 import { handleWebinarClick, handleDocumentClick, handleSubmitClick } from '@/utils/tracking';
+import { v4 as uuidv4 } from 'uuid';
 
 
 const PRODUCTION_ENV = 'production';
@@ -71,13 +72,16 @@ const Home: FC = () => {
       if (storedRoomId) {
         return storedRoomId;
       } else {
-        const newRoomId = `room-${Date.now()}`;
+        // Only add staging- prefix if it's a staging user
+        const isStaging = document.referrer.includes('staging.solidcam.com');
+        const newRoomId = isStaging ? 
+          `staging-${uuidv4().slice(0, 8)}` : 
+          `room-${Date.now()}`;
         localStorage.setItem('roomId', newRoomId);
         return newRoomId;
       }
     }
-    // Fallback for SSR
-    return `room-${Date.now()}`;
+    return `room-${Date.now()}`; // Fallback for SSR
   });
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [messageState, setMessageState] = useState<{

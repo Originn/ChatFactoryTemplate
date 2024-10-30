@@ -27,51 +27,43 @@ function MyApp({ Component, pageProps }: AppProps) {
     '/privacy-policy'
   ];
 
-  useEffect(() => {
-    const checkStaging = async () => {
-      const referrer = document.referrer;
-      const isStaging = referrer.includes('staging.solidcam.com');
-      
-      if (isStaging) {
-        try {
-          // First, ensure we have a unique browser ID for this staging user
-          let browserStagingId = localStorage.getItem(STAGING_ID_KEY);
-          const isNewUser = !browserStagingId;
-          
-          if (!browserStagingId) {
-            browserStagingId = `staging-${uuidv4()}`;
-            localStorage.setItem(STAGING_ID_KEY, browserStagingId);
-          }
-
-          // Sign in anonymously - this might return an existing or new anonymous user
-          const userCredential = await signInAnonymously(auth);
-          
-          // Combine Firebase UID with browser staging ID for the room
-          const roomId = `room-${browserStagingId.slice(0, 8)}`;
-          localStorage.setItem(ROOM_ID_KEY, roomId);
-          
-          setIsFromStaging(true);
-
-          // Track the staging user using the browser staging ID
-          trackStagingUser(browserStagingId, isNewUser);
-
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Browser Staging ID:', browserStagingId);
-            console.log('Firebase UID:', userCredential.user.uid);
-            console.log('Room ID:', roomId);
-            console.log('User type:', isNewUser ? 'New User' : 'Returning User');
-          }
-
-        } catch (error) {
-          console.error('Error in staging setup:', error);
-          setIsFromStaging(false);
+// In _app.tsx where we set up the staging user
+useEffect(() => {
+  const checkStaging = async () => {
+    const referrer = document.referrer;
+    const isStaging = referrer.includes('staging.solidcam.com');
+    
+    if (isStaging) {
+      try {
+        // Generate or get staging browser ID
+        let stagingBrowserId = localStorage.getItem('stagingBrowserId');
+        const isNewUser = !stagingBrowserId;
+        
+        if (!stagingBrowserId) {
+          stagingBrowserId = uuidv4();
+          localStorage.setItem('stagingBrowserId', stagingBrowserId);
         }
-      }
-    };
 
-    checkStaging();
-    setUserIdForAnalytics();
-  }, []);
+        // Create room ID without duplicate "staging-" prefix
+        // Just use the first 8 characters of the UUID for the room ID
+        const roomId = `staging-${stagingBrowserId.slice(0, 8)}`;
+        localStorage.setItem('roomId', roomId);
+        
+        setIsFromStaging(true);
+
+        // Track the staging user
+        trackStagingUser(stagingBrowserId, isNewUser);
+
+      } catch (error) {
+        console.error('Error in staging setup:', error);
+        setIsFromStaging(false);
+      }
+    }
+  };
+
+  checkStaging();
+  setUserIdForAnalytics();
+}, []);
 
   const isAuthRequired = !noAuthRequired.some(path => 
     router.pathname.startsWith(path)
