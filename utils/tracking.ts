@@ -64,6 +64,36 @@ export const handleSubmitClick = () => {
   }
 };
 
+export const trackStagingUser = (stagingUUID: string, isNewUser: boolean) => {
+  // Track staging user visit
+  window.gtag('event', 'staging_user_visit', {
+    event_category: 'User Source',
+    event_label: 'Staging User',
+    user_id: stagingUUID, // Use stagingUUID as user_id for consistency
+    staging_uuid: stagingUUID,
+    user_type: isNewUser ? 'new_user' : 'returning_user',
+    referrer: document.referrer
+  });
+
+  // Set user properties for staging users
+  window.gtag('set', 'user_properties', {
+    is_staging_user: true,
+    staging_uuid: stagingUUID,
+    user_source: 'staging'
+  });
+
+  // Track new user separately
+  if (isNewUser) {
+    window.gtag('event', 'new_staging_user', {
+      event_category: 'User Acquisition',
+      event_label: 'New Staging User',
+      user_id: stagingUUID,
+      staging_uuid: stagingUUID
+    });
+  }
+};
+
+
 export const setUserIdForAnalytics = () => {
   if (typeof window !== 'undefined' && window.gtag) {
     auth.onAuthStateChanged((user) => {

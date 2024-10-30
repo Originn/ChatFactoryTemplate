@@ -5,9 +5,10 @@ import AuthWrapper from '../auth/AuthWrapper';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
-import { setUserIdForAnalytics } from '@/utils/tracking';
+import { setUserIdForAnalytics, trackStagingUser } from '@/utils/tracking';
 import { signInAnonymously } from 'firebase/auth';
 import { auth } from '@/utils/firebase';
+import { v4 as uuidv4 } from 'uuid';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -25,7 +26,6 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     const checkStaging = async () => {
-      // Check if the referrer is from staging.solidcam.com
       const referrer = document.referrer;
       const isStaging = referrer.includes('staging.solidcam.com');
       
@@ -34,14 +34,25 @@ function MyApp({ Component, pageProps }: AppProps) {
           // Sign in anonymously if from staging
           await signInAnonymously(auth);
           
-          // Generate a consistent roomId based on browser fingerprint
-          const browserFingerprint = `${navigator.userAgent}_${navigator.language}_${window.screen.width}x${window.screen.height}`;
-          const roomId = `room-${btoa(browserFingerprint).slice(0, 8)}`;
+          // Check for existing staging UUID in localStorage
+          let stagingUUID = localStorage.getItem('stagingUUID');
+          const isNewUser = !stagingUUID;
           
-          // Store roomId in localStorage
+          if (!stagingUUID) {
+            // Generate new UUID only if one doesn't exist
+            stagingUUID = uuidv4();
+            localStorage.setItem('stagingUUID', stagingUUID);
+          }
+          
+          // Set room ID based on the UUID
+          const roomId = `room-${stagingUUID.slice(0, 8)}`;
           localStorage.setItem('roomId', roomId);
           
           setIsFromStaging(true);
+
+          // Track the staging user
+          trackStagingUser(stagingUUID, isNewUser);
+
         } catch (error) {
           console.error('Error in anonymous sign-in:', error);
           setIsFromStaging(false);
@@ -55,7 +66,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   const isAuthRequired = !noAuthRequired.some(path => 
     router.pathname.startsWith(path)
-  ) && !isFromStaging; // Add isFromStaging check
+  ) && !isFromStaging;
 
   return (
     <>
