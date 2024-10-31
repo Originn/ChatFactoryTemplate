@@ -3,7 +3,6 @@ import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 import CustomLoginForm from './CustomLoginForm'; 
 import Cookies from 'js-cookie';
-import InitialDisclaimerModal from 'components/InitialDisclaimerModal';
 
 interface AuthWrapperProps {
   children: ReactNode;
@@ -75,7 +74,6 @@ const AuthWrapper = ({ children }: AuthWrapperProps): ReactElement | null => {
     return <CustomLoginForm />;
   } else {
     // If the user is signed in and the email is verified, render the children
-    <InitialDisclaimerModal />
     return <>{children}</>;
   }
 };
