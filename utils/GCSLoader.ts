@@ -66,6 +66,8 @@ class GCSLoader {
     private callPythonScript(pdfPath: string): Promise<string> {
         return new Promise((resolve, reject) => {
             let output = "";
+
+            console.log('pdfPath', pdfPath);
     
             const pythonProcess = spawn('python', ['utils\\plumber.py', pdfPath]);
             
@@ -107,12 +109,12 @@ class GCSLoader {
     
                 for (const fileName of fileNames) {
                     const filePath = path.join(folderPath, fileName);
-                    if (!fileName.endsWith('.pdf') && !fileName.endsWith('.txt') && !fileName.endsWith('vbs') && !fileName.endsWith('python')) {
+                    if (!fileName.endsWith('.pdf') && !fileName.endsWith('.txt') && !fileName.endsWith('vbs') && !fileName.endsWith('python')&& !fileName.endsWith('.gpp')) {
                         continue;
                     }
     
                     let contentString: string;
-                    if (fileName.endsWith('.pdf') || fileName.endsWith('.txt') || fileName.endsWith('vbs') || fileName.endsWith('python')) {
+                    if (fileName.endsWith('.pdf') || fileName.endsWith('.txt') || fileName.endsWith('vbs') || fileName.endsWith('python')|| fileName.endsWith('.gpp')) {
                         contentString = await this.parse(filePath);
                     } else {
                         console.log(`Unsupported file type for ${fileName}`);
@@ -149,12 +151,12 @@ class GCSLoader {
                     for (let pageInfoGroup of contentData) {
                         for (let content of pageInfoGroup.contents) {
                             const pageNumber = content.page_number;
-                            const pageContent = content.PageContent + ` (${pageNumber})`; // append page number
+                            const pageContent = pageNumber !== undefined ? content.PageContent + ` (${pageNumber})` : content.PageContent; // Append page number only if defined
                     
                             if (pageInfoGroup.header in groupedContent) {
                                 groupedContent[pageInfoGroup.header].contents.push(pageContent);
                             } else {
-                                let cleanedFile = file.replace(/\*+/g, '').replace(/^\s+|\s+$/g, '');
+                                let cleanedFile = file.replace(/\*+/g, '').trim();
                                 groupedContent[pageInfoGroup.header] = {
                                     contents: [pageContent],
                                     source: existingYouTubeSource || existingSentinalSource || DocCloudUrl || "",

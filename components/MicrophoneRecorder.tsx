@@ -5,6 +5,7 @@ import WaveSurfer from 'wavesurfer.js';
 import RecordPlugin from 'wavesurfer.js/dist/plugins/record.js';
 import styles from '@/styles/Home.module.css';
 import { handleMicClickEvent } from '@/utils/tracking';
+import Tooltip from './Tooltip';
 
 interface MicrophoneRecorderProps {
   setQuery: React.Dispatch<React.SetStateAction<string>>;
@@ -194,6 +195,7 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({
             onClick={handleMicClick}
             disabled={isTranscribing}
           />
+          <Tooltip message="Start recording" hideOnClick={true}>
           <Image
             src="/icons8-mic-50.png"
             alt="Mic"
@@ -202,6 +204,7 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({
             height='30'
             style={{ opacity: listening || isTranscribing ? 0.5 : 1 }}
           />
+          </Tooltip>
         </label>
       )}
       {speechError && (
