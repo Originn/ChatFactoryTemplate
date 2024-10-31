@@ -35,6 +35,9 @@ import { io, Socket } from 'socket.io-client';
 import MemoryService from '@/utils/memoryService';
 import { handleWebinarClick, handleDocumentClick, handleSubmitClick } from '@/utils/tracking';
 import { v4 as uuidv4 } from 'uuid';
+import Tooltip from './Tooltip';
+import InitialDisclaimerModal from './InitialDisclaimerModal';
+import Cookies from 'js-cookie';
 
 
 const PRODUCTION_ENV = 'production';
@@ -151,9 +154,25 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
   const { uploadProgress: pasteUploadProgress, clearPastedImagePreviews } =
     usePasteImageUpload(roomId, auth, textAreaRef, setHomeImagePreviews, currentStage, setQuery);
   const [isEmbeddingMode, setIsEmbeddingMode] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
 
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const hasAcceptedDisclaimer = Cookies.get('disclaimer_accepted');
+      if (!hasAcceptedDisclaimer) {
+        setShowDisclaimer(true);
+      }
+    }, 1000); // Show after 1 second delay for better UX
 
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Add this handler function
+  const handleDisclaimerAccept = () => {
+    Cookies.set('disclaimer_accepted', 'true', { expires: 365 }); // Cookie expires in 1 year
+    setShowDisclaimer(false);
+  };
   // Update localStorage whenever roomId changes
   useEffect(() => {
     if (roomId) {
@@ -482,6 +501,10 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
       } catch (error) {
         console.error('Failed to fetch chat history:', error);
       }
+
+      if (trimmedQuery.startsWith(codePrefix)) {
+        setIsEmbeddingMode(true);
+      }
   
       const isEmbedding = isEmbeddingMode || trimmedQuery.startsWith(codePrefix);
       const imagePreviewsToUse = isEmbedding ? imagePreviews : homeImagePreviews;
@@ -518,10 +541,6 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
       setLoading(false);
       setHomeImagePreviews([]);
       clearPastedImagePreviews();
-  
-      if (isEmbeddingMode && !trimmedQuery.startsWith(codePrefix)) {
-        setIsEmbeddingMode(false);
-      }
     }
   };
   
@@ -671,6 +690,7 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
   return (
     <>
       <GoogleAnalytics /> {}
+      {showDisclaimer && <InitialDisclaimerModal onAccept={handleDisclaimerAccept} />}
       <Layout
       theme={theme}
       toggleTheme={toggleTheme}
@@ -1014,12 +1034,14 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
                         className={styles.fileUploadButton}
                         title="Upload image"
                       >
+                        <Tooltip message="Upload image" hideOnClick={true}>
                         <Image
                           src="/image-upload-48.png"
                           alt="Upload JPG"
                           width="30"
                           height="30"
                         />
+                        </Tooltip>
                       </label>
                     </>
                   )}
@@ -1038,12 +1060,14 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
                           onChange={handleFileChange}
                           multiple
                         />
+                        <Tooltip message="Upload image" hideOnClick={true}>
                         <Image
                           src="/image-upload-48.png"
                           alt="Upload JPG"
                           width="30"
                           height="30"
                         />
+                        </Tooltip>
                       </label>
                     )
                   ) : (

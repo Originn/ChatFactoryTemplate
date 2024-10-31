@@ -348,6 +348,83 @@ def process_solidcam_licence_text(text_file_path):
 
     return results
 
+def process_solidcam_postprocessor_text(text_file_path):
+    results = []
+    try:
+        with open(text_file_path, 'r', encoding='utf-8', errors='replace') as text_file:
+            lines = text_file.readlines()
+
+            # Extract the first line as the link
+            link = lines[0].strip()
+
+            # Find the second line of text to use as the main header
+            text_lines = [line.strip() for line in lines[1:] if line.strip()]
+            main_header = text_lines[0] if text_lines else None
+
+            # Initialize variables for splitting into chunks
+            current_chunk = []
+            current_header = None
+            sub_header = None
+
+            for line in text_lines[1:]:
+                # Remove tabs for cleaner text
+                line = line.replace("\t", " ")
+
+                # Detect a new @ block to start a new main chunk
+                if line.startswith("@"):
+                    # Save the previous chunk if it exists
+                    if current_chunk and current_header:
+                        header_context = f"{main_header} | {current_header} | {sub_header or ''} | {link}"
+                        results.append({
+                            "header": header_context,
+                            "contents": [
+                                {
+                                    "PageContent": " ".join(current_chunk)
+                                }
+                            ]
+                        })
+                    # Start a new chunk for the new @ block
+                    current_header = line
+                    sub_header = None  # Reset sub-header for new @ block
+                    current_chunk = []  # Reset chunk content
+                    if current_chunk and current_header:
+                        header_context = f"{main_header} | {current_header} | {sub_header or ''} | {link}"
+                        results.append({
+                            "header": header_context,
+                            "contents": [
+                                {
+                                    "PageContent": " ".join(current_chunk)
+                                }
+                            ]
+                        })
+                    # Update sub-header and reset chunk content for this new sub-section
+                    sub_header = line
+                    current_chunk = []
+
+                # Add line to the current chunk without tabs
+                current_chunk.append(line)
+
+            # Append the final chunk if any content remains
+            if current_chunk and current_header:
+                header_context = f"{main_header} | {current_header} | {sub_header or ''} | {link}"
+                results.append({
+                    "header": header_context,
+                    "contents": [
+                        {
+                            "PageContent": " ".join(current_chunk)
+                        }
+                    ]
+                })
+
+    except FileNotFoundError:
+        print(f"Text file {text_file_path} not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    return results
+
+
+
 def process_solidcam_general_faq_webinars(text_file_path):
     results = []
     try:
@@ -1207,12 +1284,15 @@ if __name__ == "__main__":
     pdf_path = sys.argv[1]  # Get the PDF path from the command line argument
     folder_name = os.path.basename(os.path.dirname(pdf_path))
     # Check if 'webinar' is in the file name
-    if pdf_path.endswith('.txt'):
+    if pdf_path.endswith(('.txt', '.gpp')):
         if re.search(r'\bWebinar\b', pdf_path, re.IGNORECASE):
             results = process_webinar_text(pdf_path)
             sys.stdout.write(json.dumps(results))
         elif 'SolidCAM_licensing' in pdf_path:
             results = process_solidcam_licence_text(pdf_path)
+            sys.stdout.write(json.dumps(results))
+        elif 'postprocessors' in pdf_path:
+            results = process_solidcam_postprocessor_text(pdf_path)
             sys.stdout.write(json.dumps(results))
         elif 'General_FAQ_Webinars' in pdf_path:
             results = process_solidcam_general_faq_webinars(pdf_path)

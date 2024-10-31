@@ -6,7 +6,7 @@
       "type": "python",
       "request": "launch",
       "program": "${workspaceFolder}/utils/plumber.py",
-      "args": ["C:/Users/ori.somekh/Desktop/SolidcamChat_uploads/whats_new/SolidCAM 2024 - New Functionalities.pdf"],
+      "args": ["C:\\Users\\ori.somekh\\Desktop\\SolidcamChat_uploads\\postprocessors\\M_4X_Tongtai_HB_630_Fanuc_31i.txt"],
       "console": "integratedTerminal"
     },
     {
@@ -57,7 +57,7 @@
       "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/.next/**/*.js"],
       "env": {
-        "NODE_OPTIONS": "--inspect"
+        "NODE_OPTIONS": "--inspect=127.0.0.1:9230"
       }
     }    
   ]
