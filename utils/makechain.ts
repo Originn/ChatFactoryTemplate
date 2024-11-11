@@ -2,7 +2,7 @@
 
 import { OpenAI as LangchainOpenAI, ChatOpenAI } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
-import { MyDocument } from 'utils/GCSLoader';
+import { MyDocument } from 'interfaces/Document';
 import { BaseRetriever } from "@langchain/core/retrievers";
 import { getIO } from "@/socketServer.cjs";
 import { v4 as uuidv4 } from 'uuid';

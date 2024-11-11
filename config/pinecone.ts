@@ -1,13 +1,18 @@
-/**
- * Change the namespace to the namespace on Pinecone you'd like to store your embeddings.
- */
+//config/pinecone.ts
 
 if (!process.env.PINECONE_INDEX_NAME) {
   throw new Error('Missing Pinecone index name in .env file');
 }
 
 const PINECONE_INDEX_NAME = process.env.PINECONE_INDEX_NAME ?? 'solidcam';
+const PINECONE_INDEX_NAME_JINA = process.env.PINECONE_INDEX_NAME_JINA ?? 'gpp-vmid';
 
 const PINECONE_NAME_SPACE = 'default'; //namespace is optional for your vectors
+const PINECONE_NAMESPACE_JINA = 'solidcam-jina'; //namespace for Jina vectors
 
-export { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE };
+export { 
+    PINECONE_INDEX_NAME, 
+    PINECONE_NAME_SPACE,
+    PINECONE_INDEX_NAME_JINA,
+    PINECONE_NAMESPACE_JINA 
+};

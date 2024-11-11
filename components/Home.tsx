@@ -155,6 +155,7 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
     usePasteImageUpload(roomId, auth, textAreaRef, setHomeImagePreviews, currentStage, setQuery);
   const [isEmbeddingMode, setIsEmbeddingMode] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [gppQuestionMode, setGppQuestionMode] = useState(false);
 
 
   useEffect(() => {
@@ -429,6 +430,7 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
   };
 
   const codePrefix = process.env.NEXT_PUBLIC_CODE_PREFIX ?? "";
+  const gppKeyword = process.env.NEXT_PUBLIC_GPP_KEYWORD ?? "";
 
   const handleSubmit = async (e?: any) => {
     if (e) e.preventDefault();
@@ -464,13 +466,10 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
     // Get user identifier
     let userIdentifier;
     if (currentUser?.email) {
-      // If user is authenticated, use their email
       userIdentifier = currentUser.email;
-      // Optionally clear staging ID if user is now authenticated
       localStorage.removeItem('stagingBrowserId');
       setIsFromStagingState(false);
     } else {
-      // Fall back to staging ID or anonymous
       const stagingBrowserId = localStorage.getItem('stagingBrowserId');
       userIdentifier = stagingBrowserId || 'anonymous';
     }
@@ -501,17 +500,24 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
       } catch (error) {
         console.error('Failed to fetch chat history:', error);
       }
-
+  
+      // Activate embedding or GPP mode if the query starts with respective keyword
       if (trimmedQuery.startsWith(codePrefix)) {
         setIsEmbeddingMode(true);
       }
+      if (trimmedQuery.startsWith(gppKeyword)) {
+        setGppQuestionMode(true);
+      }
   
+      // Determine the endpoint based on the active mode
       const isEmbedding = isEmbeddingMode || trimmedQuery.startsWith(codePrefix);
+      const isGppQuestion = gppQuestionMode || trimmedQuery.startsWith(gppKeyword);
+      
+      const endpoint = isEmbedding ? '/api/userEmbed' : isGppQuestion ? '/api/gppQuestions' : '/api/chat';
       const imagePreviewsToUse = isEmbedding ? imagePreviews : homeImagePreviews;
       const imageUrls = imagePreviewsToUse.slice(0, 3).map((preview) => preview.url);
   
-      const endpoint = isEmbedding ? '/api/userEmbed' : '/api/chat';
-  
+      // Prepare the request body
       const requestBody = JSON.stringify({
         question: trimmedQuery,
         history: fullHistory,
@@ -520,6 +526,7 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
         userEmail: userIdentifier,
       });
   
+      // Send the request
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -583,26 +590,23 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
 
   // Function to handle starting a new chat
   const handleNewChat = () => {
-    // Clear the previous chat messages
     setMessageState({
       messages: [],
       history: [],
     });
-
-    // Clear MemoryService
+  
     MemoryService.clearChatMemory(roomId!);
-
-    // Create a new room ID
     const newRoomId = `room-${Date.now()}`;
     setRoomId(newRoomId);
     localStorage.setItem('roomId', newRoomId);
-
-    // Tell the socket to join the new room
+  
     if (socket) {
       socket.emit('joinRoom', newRoomId);
     }
-
-    setIsNewChat(true)
+  
+    setIsNewChat(true);
+    setIsEmbeddingMode(false); // Reset embedding mode
+    setGppQuestionMode(false); // Reset gppQuestion mode
   };
 
   // Function to load the user's latest chat history

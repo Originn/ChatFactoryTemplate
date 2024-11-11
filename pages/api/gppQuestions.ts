@@ -1,0 +1,82 @@
+// pages/api/gppQuestions.ts
+
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { getIO } from "@/socketServer.cjs";
+
+const gppKeyword = process.env.NEXT_PUBLIC_GPP_KEYWORD ?? "gpp-keyword";
+const RAG_API_URL = process.env.RAG_API_URL ?? "https://gppvmidlightrag-a4cb027319f5.herokuapp.com";
+
+const roomSessions: { [key: string]: boolean } = {}; // Track whether greeting was sent
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  const { question, roomId, userEmail } = req.body;
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  
+  if (!roomId) {
+    return res.status(400).json({ message: 'No roomId in the request' });
+  }
+
+  const sanitizedQuestion = question?.trim().replaceAll('\n', ' ');
+  console.log('In gppQuestions:', sanitizedQuestion);
+  const io = getIO();
+
+  try {
+    if (!question) {
+      return res.status(400).json({ message: 'No question in the request' });
+    }
+
+    // Handle initial greeting
+    if (sanitizedQuestion.startsWith(gppKeyword) && !roomSessions[roomId]) {
+      const greetingMessage = 'Welcome to GPP Questions Mode! Feel free to ask any question.';
+      io.to(roomId).emit(`tokenStream-${roomId}`, greetingMessage);
+      roomSessions[roomId] = true;
+      return res.status(200).json({ message: 'Greeting sent successfully.' });
+    }
+
+    // Make request to RAG API
+    const queryBody = {
+      query: sanitizedQuestion,
+      mode: "hybrid"  // or "semantic" based on your needs
+    };
+
+    console.log('Sending query to RAG API:', queryBody);
+
+    const response = await fetch(`${RAG_API_URL}/query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(queryBody)
+    });
+
+    if (!response.ok) {
+      throw new Error(`RAG API responded with status ${response.status}`);
+    }
+
+    const ragResponse = await response.json();
+    
+    // Send response to client through socket
+    if (ragResponse.data) {
+      io.to(roomId).emit(`tokenStream-${roomId}`, ragResponse.data);
+    }
+
+    return res.status(200).json({ 
+      message: 'Question processed successfully.',
+      answer: 'ragResponse.data '
+    });
+
+  } catch (error: any) {
+    console.error('Error in GPP Questions Handler:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
+    return res.status(500).json({ error: error.message || 'Something went wrong' });
+  }
+}
