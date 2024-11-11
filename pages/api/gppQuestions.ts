@@ -2,11 +2,13 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getIO } from "@/socketServer.cjs";
+import { v4 as uuidv4 } from 'uuid';
+import { insertQA } from '../../db';  // Import only insertQA
 
 const gppKeyword = process.env.NEXT_PUBLIC_GPP_KEYWORD ?? "gpp-keyword";
 const RAG_API_URL = process.env.RAG_API_URL ?? "https://gppvmidlightrag-a4cb027319f5.herokuapp.com";
 
-const roomSessions: { [key: string]: boolean } = {}; // Track whether greeting was sent
+const roomSessions: { [key: string]: boolean } = {};
 
 export default async function handler(
   req: NextApiRequest,
@@ -42,7 +44,7 @@ export default async function handler(
     // Make request to RAG API
     const queryBody = {
       query: sanitizedQuestion,
-      mode: "hybrid"  // or "semantic" based on your needs
+      mode: "hybrid"
     };
 
     console.log('Sending query to RAG API:', queryBody);
@@ -61,6 +63,20 @@ export default async function handler(
 
     const ragResponse = await response.json();
     
+    // Generate QA ID
+    const qaId = uuidv4();
+
+    // Insert into database
+    await insertQA(
+      sanitizedQuestion,
+      ragResponse.data,
+      'gppQuestion',  // Using answer as context
+      [],  // Empty source docs
+      qaId,
+      roomId,
+      userEmail
+    );
+    
     // Send response to client through socket
     if (ragResponse.data) {
       io.to(roomId).emit(`tokenStream-${roomId}`, ragResponse.data);
@@ -68,7 +84,8 @@ export default async function handler(
 
     return res.status(200).json({ 
       message: 'Question processed successfully.',
-      answer: 'ragResponse.data '
+      answer: ragResponse.data,
+      qaId: qaId
     });
 
   } catch (error: any) {
