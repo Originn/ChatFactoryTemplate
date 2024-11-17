@@ -9,16 +9,19 @@ import { PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { getIO } from "@/socketServer.cjs";
 import MemoryService from '@/utils/memoryService';
 
-async function syncChatHistory(roomId: string, clientHistory: any[]) {
+async function syncChatHistory(roomId: string, clientHistory: any[], userEmail: string | null) {
   const serverHistory = await MemoryService.getChatHistory(roomId);
+  console.log('Server history:', serverHistory);
 
   if (clientHistory.length > serverHistory.length) {
     // Clear existing server history
     MemoryService.clearChatMemory(roomId);
 
     // Reconstruct the history from client data
-    for (const [input, output] of clientHistory) {
-      await MemoryService.updateChatMemory(roomId, input, output, []);
+    for (const [input, output, image] of clientHistory) {
+      console.log('clientHistory:', clientHistory);
+      console.log('Syncing chat history:', input, output);
+      await MemoryService.updateChatMemory(roomId, input, output, image, userEmail);
     }
   } else {
     console.log('Server history is up to date');
@@ -39,7 +42,7 @@ export default async function handler(
     return res.status(400).json({ message: 'No roomId in the request' });
   }
 
-  await syncChatHistory(roomId, history);
+  //await syncChatHistory(roomId, history, userEmail);
 
   const sanitizedQuestion = question?.trim().replaceAll('\n', ' ');
   const io = getIO();

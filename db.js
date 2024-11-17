@@ -1,28 +1,39 @@
-const { Pool } = require('pg');
-const dotenv = require('dotenv');
+let pool;
 
-if (process.env.NODE_ENV !== 'production') {
-  dotenv.config();
+if (typeof window === 'undefined') {
+  // Import dotenv only in server environment
+  const dotenv = require('dotenv');
+  if (process.env.NODE_ENV !== 'production') {
+    dotenv.config();
+  }
+
+  const { Pool } = require('pg');
+
+  console.log(process.env.NODE_ENV);
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  const poolConfig = isProduction
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+          rejectUnauthorized: false, // Required for Heroku Postgres
+        },
+      }
+    : {
+        connectionString: process.env.DATABASE_URL, // In non-production environments, do not use SSL
+        ssl: false,
+      };
+
+  pool = new Pool(poolConfig);
+} else {
+  pool = null; // On the client side, pool should be null to prevent usage
 }
 
-console.log(process.env.NODE_ENV)
-const isProduction = process.env.NODE_ENV === 'production';
-const poolConfig = isProduction
-  ? {
-      connectionString: process.env.DATABASE_URL,
-      ssl: {
-        rejectUnauthorized: false // Required for Heroku Postgres
-      }
-    }
-  : {
-      connectionString: process.env.DATABASE_URL, // In non-production environments, do not use SSL
-      ssl: false
-    };
-
-const pool = new Pool(poolConfig);
+// Continue defining your functions below, with checks for `pool` availability
 
 const insertQA = async (question, answer, embeddings, sources, qaId, roomId, userEmail, imageurl) => {
-  // Remove the Unicode escape sequence from the answerRaw string
+  if (!pool) throw new Error("Database connection pool is not available on the client side.");
+  
   const query = `
     INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, "qaId", "roomId", userEmail, imageurl)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -30,7 +41,6 @@ const insertQA = async (question, answer, embeddings, sources, qaId, roomId, use
   `;
 
   try {
-    // Ensure embeddings is a JSON string
     const embeddingsJson = JSON.stringify(embeddings);
     const sourcesJson = JSON.stringify(sources);
     const res = await pool.query(query, [question, answer, embeddingsJson, sourcesJson, qaId, roomId, userEmail, imageurl]);
@@ -81,6 +91,8 @@ const insertQuestionEmbedderDetails = async (embeddedText, timestamp, email) => 
 };
 
 const insertChatHistory = async (userEmail, conversationTitle, roomId, messages) => {
+  console.log('Inserting chat history with title:', conversationTitle); // Debug log
+
   // Helper function to get all previous image URLs
   const getPreviousImageUrls = (messages) => {
     const imageUrls = new Set();
@@ -117,17 +129,20 @@ const insertChatHistory = async (userEmail, conversationTitle, roomId, messages)
     ON CONFLICT ("roomId")
     DO UPDATE SET
       conversation_json = $4::jsonb,
+      conversation_title = $2,  -- Add this line to update the title
       date = CURRENT_TIMESTAMP
     RETURNING *;
   `;
 
   try {
+    console.log('Query params:', { userEmail, conversationTitle, roomId, messagesLength: processedMessages.length }); // Debug log
     const result = await pool.query(query, [
       userEmail,
       conversationTitle,
       roomId,
       JSON.stringify(processedMessages)
     ]);
+    console.log('Insert/Update result:', result.rows[0]); // Debug log
     return result.rows[0];
   } catch (error) {
     console.error('Error inserting chat history:', error);
@@ -167,7 +182,7 @@ const getChatHistory = async (userEmail, range) => {
 
 const getChatHistoryByRoomId = async (roomId) => {
   const query = `
-    SELECT * FROM user_chat_history 
+    SELECT conversation_json FROM user_chat_history 
     WHERE "roomId" = $1;
   `;
 

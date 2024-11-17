@@ -293,6 +293,7 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
       const handleFullResponse = (message: { answer: string; sourceDocs: any[]; qaId: string; }) => {
       
         const { answer, sourceDocs, qaId } = message;
+        console.log('Hi from handleFullResponse');
       
         if (!answer) {
           console.error('No answer found in the full response message.');
@@ -315,7 +316,9 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
             };
             
             // Update MemoryService
-            MemoryService.updateChatMemory(roomId!, '', message.answer, []);
+            console.log('Updating MemoryService in handleFullResponse...');
+            //MemoryService.updateChatMemory(roomId!, null, message.answer, null);
+
       
             return {
               ...prevState,
@@ -489,7 +492,7 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
         history: [...prevState.history, [trimmedQuery, ''] as [string, string]],
       }));
   
-      await MemoryService.updateChatMemory(roomId!, trimmedQuery, '', []);
+      //await MemoryService.updateChatMemory(roomId!, trimmedQuery, '', []);
   
       setQuery('');
   
