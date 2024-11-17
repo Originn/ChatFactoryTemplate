@@ -91,7 +91,6 @@ const insertQuestionEmbedderDetails = async (embeddedText, timestamp, email) => 
 };
 
 const insertChatHistory = async (userEmail, conversationTitle, roomId, messages) => {
-  console.log('Inserting chat history with title:', conversationTitle); // Debug log
 
   // Helper function to get all previous image URLs
   const getPreviousImageUrls = (messages) => {
@@ -195,6 +194,21 @@ const getChatHistoryByRoomId = async (roomId) => {
   }
 };
 
+const getTitleByRoomId = async (roomId) => {
+  const query = `
+    SELECT conversation_title FROM user_chat_history 
+    WHERE "roomId" = $1;
+  `;
+
+  try {
+    const res = await pool.query(query, [roomId]);
+    return res.rows[0]; // Return the chat history for this roomId
+  } catch (err) {
+    console.error('Error fetching conversation title:', err);
+    throw err;
+  }
+};
+
 const deleteOldChatHistory = async () => {
   const query = `
     DELETE FROM user_chat_history
@@ -221,5 +235,6 @@ module.exports = {
   insertChatHistory, 
   getChatHistory, 
   getChatHistoryByRoomId, 
-  deleteOldChatHistory 
+  deleteOldChatHistory,
+  getTitleByRoomId
 };

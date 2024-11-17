@@ -3,7 +3,7 @@
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
 import { InputValues } from "langchain/memory";
 import BufferMemory from "./BufferMemory";
-import { insertChatHistory, getChatHistoryByRoomId } from '../db';
+import { insertChatHistory, getChatHistoryByRoomId, getTitleByRoomId } from '../db';
 import { Message } from '@/types/chat';
 
 
@@ -32,14 +32,23 @@ class MemoryService {
     // Retrieve existing chat history from the database
     let chatHistoryRecord = await getChatHistoryByRoomId(roomId);
   
-    // Use existing title if available, otherwise use provided title
-    const title = chatHistoryRecord?.conversation_title || conversationTitle;
+    // Fetch the title by roomId and extract the conversation_title property
+    let titleRecord = await getTitleByRoomId(roomId);
+    let title = titleRecord?.conversation_title || ''; // Extract the conversation_title or default to an empty string
+  
+    // Use conversationTitle if title is empty or undefined
+    title = title.trim() || conversationTitle.trim();
+  
+    // Ensure a fallback to a default if both are empty
+    if (!title) {
+      title = conversationTitle.trim();
+    }
   
     let messages: Message[] = [];
     if (chatHistoryRecord && chatHistoryRecord.conversation_json) {
       // Filter out the initial "Hi" message from existing messages
-      messages = chatHistoryRecord.conversation_json.filter(msg => 
-        !(msg.type === 'userMessage' && msg.message === 'Hi')
+      messages = chatHistoryRecord.conversation_json.filter(
+        msg => !(msg.type === 'userMessage' && msg.message === 'Hi')
       );
     }
   
@@ -63,14 +72,15 @@ class MemoryService {
         type: 'apiMessage',
         message: output,
         isComplete: true,
-        sourceDocs: sourceDocs || undefined
+        sourceDocs: sourceDocs || undefined,
       };
       messages.push(aiMessage);
     }
   
-    // Update chat history in the database with the title
+    // Update chat history in the database with the validated title
     await insertChatHistory(userEmail, title, roomId, messages);
   }
+  
   
   
   static async getHasProcessedImage(roomId: string): Promise<boolean> {

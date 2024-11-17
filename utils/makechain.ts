@@ -18,7 +18,7 @@ import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retriever";
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import OpenAIChat from "openai";
-import { insertChatHistory, getChatHistoryByRoomId } from '../db';
+import { getChatHistoryByRoomId } from '../db';
 
 const openai = new OpenAIChat();
 
@@ -225,6 +225,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     }
   
     const memory = await MemoryService.getChatHistory(roomId);
+    console.log('memory from getImageUrls:', memory);
     const lastMessage = memory[memory.length - 1];
     if (lastMessage?.additional_kwargs?.imageUrls) {
       return Array.isArray(lastMessage.additional_kwargs.imageUrls)
@@ -233,6 +234,31 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     }
   
     return [];
+  };
+
+  const getImageUrlsinHistory = async (imageUrls: string[] | undefined, roomId: string): Promise<string[]> => {
+    // If imageUrls are provided, return them immediately
+    if (imageUrls && imageUrls.length > 0) {
+      return imageUrls;
+    }
+  
+    // Retrieve the full chat history for the given room
+    const memory = await MemoryService.getChatHistory(roomId);
+    console.log('memory from getImageUrls:', memory);
+  
+    // Extract image URLs from the entire chat history
+    const extractedImageUrls: string[] = [];
+    for (const message of memory) {
+      if (message?.additional_kwargs?.imageUrls) {
+        const urls = Array.isArray(message.additional_kwargs.imageUrls)
+          ? message.additional_kwargs.imageUrls
+          : [message.additional_kwargs.imageUrls];
+        extractedImageUrls.push(...urls);
+      }
+    }
+  
+    // Return all unique image URLs
+    return Array.from(new Set(extractedImageUrls));
   };
 
   return {
@@ -357,13 +383,58 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       const rawChatHistory = await MemoryService.getChatHistory(roomId);
       console.log('Raw chat history:', rawChatHistory);
 
-      console.log('Processed image URLs:', processedImageUrls);
+      let hasImage = await getImageUrlsinHistory(imageUrls, roomId);
 
-      if (processedImageUrls.length > 0) {
+      console.log('Processed image URLs:', hasImage);
+
+      if (hasImage.length > 0) {
         const relatedToImage = await isQuestionRelatedToImage(input, rawChatHistory, nonStreamingModel, imageDescription);
-
+      
         if (relatedToImage) {
           console.log('Question is related to image');
+      
+          try {
+            type ChatModel = 'gpt-4o' | 'gpt-4o-mini';
+            const IMAGE_MODEL_NAME: ChatModel = (process.env.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
+      
+            const response = await openai.chat.completions.create({
+              model: IMAGE_MODEL_NAME,
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    {
+                      type: "text",
+                      text: `Given the following question and images, provide necessary and concise data about the images to help answer the question.
+                      Do not try to answer the question itself. This will be passed to another model which needs the data about the images. 
+                      If the user asks about how to machine a part in the images, give specific details of the geometry of the part. 
+                      If there are 2 images, check if they are the same part but viewed from different angles.`
+                    },
+                  ],
+                },
+                {
+                  role: "user",
+                  content: [
+                    { type: "text", text: `Question: ${input}` },
+                    ...hasImage.map(url => ({
+                      type: "image_url",
+                      image_url: { url }
+                    } as const))
+                  ],
+                },
+              ],
+            });
+      
+            imageDescription = response.choices[0]?.message?.content ?? 'No image description available';
+          } catch (error) {
+            console.error('Error processing images:', error);
+            imageDescription = 'Error processing image';
+          }
+      
+          // Add the image model answer to the input
+          if (imageDescription) {
+            input = `${input} [Image model answer: ${imageDescription}]`;
+          }
         } else {
           console.log('Question is not related to image');
         }
@@ -390,6 +461,8 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         combineDocsChain: questionAnswerChain,
       });
 
+      console.log('Input:', input);
+
       const ragResponse = await ragChain.invoke({
         input,
         chat_history: rawChatHistory,
@@ -397,8 +470,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         imageDescription,
       });
 
-      // Update chat memory
-      //await MemoryService.updateChatMemory(roomId, originalInput, ragResponse.answer, processedImageUrls, userEmail);
 
       let minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? 
         parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
@@ -485,6 +556,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
            existingHistory.conversation_json[0].message === 'Hi');
       
         if (shouldGenerateNewTitle) {
+          console.log('Generating new conversation title');
           const titleResponse = await nonStreamingModel.generate([[new HumanMessage(
             `Given this conversation:
             Human: ${originalInput}
