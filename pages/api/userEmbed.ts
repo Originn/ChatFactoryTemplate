@@ -121,7 +121,7 @@ async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, 
   }
 }
 
-async function syncChatHistory(roomId: string, clientHistory: any[]) {
+async function syncChatHistory(roomId: string, clientHistory: any[], userEmail: string) {
   const serverHistory = await MemoryService.getChatHistory(roomId);
 
   if (clientHistory.length > serverHistory.length) {
@@ -130,7 +130,7 @@ async function syncChatHistory(roomId: string, clientHistory: any[]) {
 
     // Reconstruct the history from client data
     for (const [input, output] of clientHistory) {
-      await MemoryService.updateChatMemory(roomId, input, output, []);
+      await MemoryService.updateChatMemory(roomId, input, output, [], userEmail);
     }
   } else {
     console.log('Server history is up to date');
@@ -151,7 +151,7 @@ export default async function handler(
     return res.status(400).json({ message: 'No roomId in the request' });
   }
 
-  await syncChatHistory(roomId, history);
+  await syncChatHistory(roomId, history, userEmail);
 
   const sanitizedQuestion = question?.trim().replaceAll('\n', ' ');
   const codePrefix = 'embed-4831-embed-4831';

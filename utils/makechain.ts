@@ -8,7 +8,7 @@ import { getIO } from "@/socketServer.cjs";
 import { v4 as uuidv4 } from 'uuid';
 import { insertQA } from '../db';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { HumanMessage } from "@langchain/core/messages";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { MaxMarginalRelevanceSearchOptions } from "@langchain/core/vectorstores";
 import { BaseRetrieverInterface } from '@langchain/core/retrievers';
 import { RunnableConfig } from '@langchain/core/runnables';
@@ -179,16 +179,17 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
   }
 }
 
-function initializeChatHistory(roomId: any) {
+function initializeChatHistory(roomId: any, userEmail: string) {
   // Directly call updateChatMemory with "Hi" as the initial input
-  MemoryService.updateChatMemory(roomId, "Hi", "", []);
+  console.log("Initializing chat history for room:", roomId);
+  MemoryService.updateChatMemory(roomId, "Hi", null, null, userEmail);
 }
 
 export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void, userEmail: string) => {
   const nonStreamingModel = new ChatOpenAI({
     modelName: 'gpt-4o',
     temperature: TEMPERATURE,
-    //verbose:true,
+    verbose:true,
   });
 
   const translationModel = new ChatOpenAI({
@@ -218,25 +219,26 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
   ]);
 
   // Retrieve and process image URLs
-  const getImageUrls = (imageUrls: string[] | undefined, roomId: string): string[] => {
+  const getImageUrls = async (imageUrls: string[] | undefined, roomId: string): Promise<string[]> => {
     if (imageUrls && imageUrls.length > 0) {
       return imageUrls;
     }
-
-    const memory = MemoryService.getChatMemory(roomId);
-    if (memory.metadata.imageUrl) {
-      return Array.isArray(memory.metadata.imageUrl) 
-        ? memory.metadata.imageUrl 
-        : [memory.metadata.imageUrl];
+  
+    const memory = await MemoryService.getChatHistory(roomId);
+    const lastMessage = memory[memory.length - 1];
+    if (lastMessage?.additional_kwargs?.imageUrls) {
+      return Array.isArray(lastMessage.additional_kwargs.imageUrls)
+        ? lastMessage.additional_kwargs.imageUrls
+        : [lastMessage.additional_kwargs.imageUrls];
     }
-
+  
     return [];
   };
 
   return {
     call: async (input: string, Documents: MyDocument[], roomId: string, userEmail: string, imageUrls: string[]) => {
       if (await isNewChatSession(roomId)) {
-        initializeChatHistory(roomId);
+        initializeChatHistory(roomId, userEmail);
       }
 
       const qaId = generateUniqueId();
@@ -258,7 +260,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         }],
       });
 
-      const processedImageUrls = getImageUrls(imageUrls, roomId);
+      const processedImageUrls = await getImageUrls(imageUrls, roomId);
       
       // Handle image processing
       let imageDescription = '';
@@ -314,8 +316,58 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         input = `${input} [Image model answer: ${imageDescription}]`;
       }
 
+      async function isQuestionRelatedToImage(
+        followUpQuestion: string,
+        chatHistory: (HumanMessage | AIMessage)[],
+        model: ChatOpenAI,
+        imageDescription: string,
+      ): Promise<boolean> {
+        const formattedHistory = chatHistory
+          .map((message) => {
+            const speaker = message instanceof HumanMessage ? 'User' : 'AI';
+            const content = message.content || 'No message content';
+            return `${speaker}: ${content}`;
+          })
+          .join('\n');
+      
+        const descriptionPart = imageDescription
+          ? `Relevant Image Description:\n${imageDescription}\n`
+          : '';
+      
+        const prompt = `
+      You are analyzing a conversation to determine whether a follow-up question is related to an image previously discussed in the conversation.
+      
+      Here is the chat history:
+      ${formattedHistory}
+      
+      ${descriptionPart}
+      
+      Here is the follow-up question:
+      "${followUpQuestion}"
+      
+      Determine if the follow-up question refers to or relies on the content of the image description. Answer "Yes" if it is related to the image and "No" if it is not. Provide no additional commentary.`;
+      
+        const response = await model.generate([[new HumanMessage(prompt)]]);
+      
+        const answer = response.generations[0][0]?.text.trim().toLowerCase();
+        return answer === 'yes';
+      }
+      
       // Get chat history and format it
       const rawChatHistory = await MemoryService.getChatHistory(roomId);
+      console.log('Raw chat history:', rawChatHistory);
+
+      console.log('Processed image URLs:', processedImageUrls);
+
+      if (processedImageUrls.length > 0) {
+        const relatedToImage = await isQuestionRelatedToImage(input, rawChatHistory, nonStreamingModel, imageDescription);
+
+        if (relatedToImage) {
+          console.log('Question is related to image');
+        } else {
+          console.log('Question is not related to image');
+        }
+      }
 
       const customRetriever = new CustomRetriever(vectorstore);
 
@@ -346,7 +398,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       });
 
       // Update chat memory
-      await MemoryService.updateChatMemory(roomId, originalInput, ragResponse.answer, processedImageUrls);
+      //await MemoryService.updateChatMemory(roomId, originalInput, ragResponse.answer, processedImageUrls, userEmail);
 
       let minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? 
         parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
@@ -424,51 +476,40 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         }
       
         let conversationTitle = '';
-        if (!existingHistory) {
+        console.log(`existingHistory: ${JSON.stringify(existingHistory)}`);
+        
+        // Check if history exists and contains more than just the initial "Hi" message
+        const shouldGenerateNewTitle = !existingHistory || 
+          (existingHistory.conversation_json.length === 1 && 
+           existingHistory.conversation_json[0].type === 'userMessage' && 
+           existingHistory.conversation_json[0].message === 'Hi');
+      
+        if (shouldGenerateNewTitle) {
           const titleResponse = await nonStreamingModel.generate([[new HumanMessage(
             `Given this conversation:
             Human: ${originalInput}
             AI: ${ragResponse.answer}
-    
+      
             Generate a short, descriptive title for this conversation (max 50 characters) in the used language.`
           )]]);
           conversationTitle = titleResponse.generations[0][0].text.trim();
+          console.log(`Generated conversation title: ${conversationTitle}`);
         } else {
           conversationTitle = existingHistory.conversation_title;
         }
       
-        const newHumanMessage = {
-          type: 'userMessage',
-          message: originalInput,
-          isComplete: true,
-          imageUrls: processedImageUrls
-        };
-        
-        const newAIMessage = {
-          type: 'apiMessage',
-          message: ragResponse.answer,
-          isComplete: true,
-          sourceDocs: Documents,
-          qaId: qaId
-        };
+        // Updated call to updateChatMemory including the conversation title
+        await MemoryService.updateChatMemory(
+          roomId,
+          originalInput,
+          ragResponse.answer,
+          processedImageUrls,
+          userEmail,
+          Documents,
+          qaId,
+          conversationTitle
+        );
       
-        let messages;
-        if (existingHistory) {
-          let existingMessages;
-          try {
-            existingMessages = typeof existingHistory.conversation_json === 'string' 
-              ? JSON.parse(existingHistory.conversation_json) 
-              : existingHistory.conversation_json;
-          } catch (parseError) {
-            console.error('Error parsing existing conversation_json:', parseError);
-            existingMessages = [];
-          }
-          messages = Array.isArray(existingMessages) ? [...existingMessages, newHumanMessage, newAIMessage] : [newHumanMessage, newAIMessage];
-        } else {
-          messages = [newHumanMessage, newAIMessage];
-        }
-  
-        await insertChatHistory(userEmail, conversationTitle, roomId, messages);
       } catch (error) {
         console.error('Error in chat history:', error);
       }

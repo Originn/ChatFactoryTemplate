@@ -1,13 +1,18 @@
+// MemoryService.ts
+
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
 import { InputValues } from "langchain/memory";
 import BufferMemory from "./BufferMemory";
+import { insertChatHistory, getChatHistoryByRoomId } from '../db';
+import { Message } from '@/types/chat';
+
 
 class MemoryService {
   private static chatMemory: Record<string, BufferMemory> = {};
 
   static getChatMemory(roomId: string): BufferMemory {
     if (!this.chatMemory[roomId]) {
-      this.chatMemory[roomId] = new BufferMemory({ 
+      this.chatMemory[roomId] = new BufferMemory({
         memoryKey: "chat_history",
       });
     }
@@ -16,33 +21,106 @@ class MemoryService {
 
   static async updateChatMemory(
     roomId: string,
-    input: string,
-    output: string,
-    imageUrl: string[]
+    input: string | null,
+    output: string | null,
+    imageUrl: string[] | null,
+    userEmail: string | null,
+    sourceDocs: any[] | null = null,
+    qaId: string | null = null,
+    conversationTitle: string = ''
   ): Promise<void> {
-    const memory = this.getChatMemory(roomId);
-    if (input) {
-      const humanMessage = new HumanMessage(input);
-      if (imageUrl && imageUrl.length > 0) {
-        humanMessage.additional_kwargs = { imageUrls: imageUrl };
-      }
-      memory.messages.push(humanMessage);
-    }
-    if (output) {
-      memory.messages.push(new AIMessage(output));
+    // Retrieve existing chat history from the database
+    let chatHistoryRecord = await getChatHistoryByRoomId(roomId);
+  
+    // Use existing title if available, otherwise use provided title
+    const title = chatHistoryRecord?.conversation_title || conversationTitle;
+  
+    let messages: Message[] = [];
+    if (chatHistoryRecord && chatHistoryRecord.conversation_json) {
+      // Filter out the initial "Hi" message from existing messages
+      messages = chatHistoryRecord.conversation_json.filter(msg => 
+        !(msg.type === 'userMessage' && msg.message === 'Hi')
+      );
     }
   
-    // Save the imageUrl in metadata if provided
-    if (imageUrl && imageUrl.length > 0) {
-      memory.metadata.imageUrl = imageUrl;
+    // Process input message
+    if (input) {
+      const humanMessage: Message = {
+        type: 'userMessage',
+        message: input,
+        isComplete: true,
+      };
+      if (imageUrl && imageUrl.length > 0) {
+        humanMessage.imageUrls = imageUrl;
+      }
+      messages.push(humanMessage);
     }
+  
+    // Process output message
+    if (output) {
+      const aiMessage: Message = {
+        qaId: qaId || undefined,
+        type: 'apiMessage',
+        message: output,
+        isComplete: true,
+        sourceDocs: sourceDocs || undefined
+      };
+      messages.push(aiMessage);
+    }
+  
+    // Update chat history in the database with the title
+    await insertChatHistory(userEmail, title, roomId, messages);
+  }
+  
+  
+  static async getHasProcessedImage(roomId: string): Promise<boolean> {
+    // Retrieve chat history record from the database
+    const chatHistoryRecord = await getChatHistoryByRoomId(roomId);
+    console.log('Chat history record:', chatHistoryRecord);
+  
+    // Check if any userMessage in conversation_json has non-empty imageUrls
+    if (chatHistoryRecord && Array.isArray(chatHistoryRecord.conversation_json)) {
+      return chatHistoryRecord.conversation_json.some((msg: any) => 
+        msg.type === 'userMessage' && msg.imageUrls && msg.imageUrls.length > 0
+      );
+    }
+  
+    // Default to false if no such message with imageUrls is found
+    return false;
   }
 
   static async getChatHistory(roomId: string): Promise<BaseMessage[]> {
-    const memory = this.getChatMemory(roomId);
-    const result = await memory.loadMemoryVariables({} as InputValues);
-    return result[memory.memoryKey] as BaseMessage[];
+    const chatHistoryRecord = await getChatHistoryByRoomId(roomId);
+  
+    if (!chatHistoryRecord || !chatHistoryRecord.conversation_json) {
+      return [];
+    }
+  
+    const messages: Message[] = chatHistoryRecord.conversation_json;
+  
+    // Convert stored messages to BaseMessage objects
+    const baseMessages: BaseMessage[] = messages.map((msg) => {
+      if (msg.type === 'userMessage') {
+        const humanMessage = new HumanMessage(msg.message);
+        if (msg.imageUrls && msg.imageUrls.length > 0) {
+          humanMessage.additional_kwargs = { imageUrls: msg.imageUrls };
+        }
+        return humanMessage;
+      } else if (msg.type === 'apiMessage') {
+        const aiMessage = new AIMessage(msg.message);
+        aiMessage.additional_kwargs = {
+          qaId: msg.qaId,
+          sourceDocs: msg.sourceDocs || [],
+        };
+        return aiMessage;
+      } else {
+        throw new Error(`Unknown message type: ${msg.type}`);
+      }
+    });
+  
+    return baseMessages;
   }
+  
 
   static clearChatMemory(roomId: string): void {
     const memory = this.getChatMemory(roomId);
@@ -53,52 +131,45 @@ class MemoryService {
   static async logMemoryState(roomId: string): Promise<void> {
     const memory = this.getChatMemory(roomId);
     console.log(`Memory state for room ${roomId}:`);
-    console.log('Messages:', memory.messages);
-    console.log('Metadata:', memory.metadata);
+    console.log("Messages:", memory.messages);
+    console.log("Metadata:", memory.metadata);
   }
 
   static loadFullConversationHistory(roomId: string, conversationHistory: any[]): void {
     const memory = this.getChatMemory(roomId);
-    
+  
     // Keep track of all image URLs in the conversation
     const allImageUrls: string[] = [];
-    
-    memory.messages = conversationHistory.map(msg => {
-      if (msg.type === 'userMessage') {
+  
+    memory.messages = conversationHistory.map((msg) => {
+      if (msg.type === "userMessage") {
         const humanMessage = new HumanMessage(msg.message);
-        // Add imageUrls to the message's additional_kwargs if present
         if (msg.imageUrls && msg.imageUrls.length > 0) {
           humanMessage.additional_kwargs = {
-            imageUrls: msg.imageUrls
+            imageUrls: msg.imageUrls,
           };
-          // Add these image URLs to our collection
           allImageUrls.push(...msg.imageUrls);
         }
         return humanMessage;
-      } else {
+      } else if (msg.type === "apiMessage") {
         const aiMessage = new AIMessage(msg.message);
-        // Preserve qaId and sourceDocs in additional_kwargs for AI messages
         aiMessage.additional_kwargs = {
           qaId: msg.qaId,
-          sourceDocs: msg.sourceDocs || []
+          sourceDocs: msg.sourceDocs || [],
         };
         return aiMessage;
+      } else {
+        // Throw an error for unknown message types
+        throw new Error(`Unknown message type: ${msg.type}`);
       }
     });
-
+  
     // Update metadata with ALL image URLs from the conversation
-    if (allImageUrls.length > 0) {
-      memory.metadata = {
-        ...memory.metadata,
-        imageUrl: allImageUrls
-      };
-    } else {
-      // Ensure imageUrl is cleared if there are no images
-      memory.metadata = {
-        ...memory.metadata,
-        imageUrl: []
-      };
-    }
+    memory.metadata = {
+      ...memory.metadata,
+      imageUrl: allImageUrls.length > 0 ? allImageUrls : [],
+      hasProcessedImage: allImageUrls.length > 0,
+    };
   }
 }
 
