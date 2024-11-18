@@ -20,6 +20,14 @@ import { createRetrievalChain } from "langchain/chains/retrieval";
 import OpenAIChat from "openai";
 import { getChatHistoryByRoomId } from '../db';
 
+const ENV = {
+  MODEL_NAME: process.env.MODEL_NAME || 'gpt-4o',
+  TEMPERATURE: parseFloat(process.env.TEMPERATURE || '0'),
+  LAMBDA_EMBEDDINGS: parseFloat(process.env.LAMBDA_EMBEDDINGS || '0.1'),
+  MINSCORESOURCESTHRESHOLD: parseFloat(process.env.MINSCORESOURCESTHRESHOLD || '0.78'),
+  IMAGE_MODEL_NAME: process.env.IMAGE_MODEL_NAME || 'gpt-4o-mini',
+};
+
 const openai = new OpenAIChat();
 
 // Type Definitions
@@ -32,8 +40,8 @@ interface DocumentInterface<T> {
 
 // Constants
 const io = getIO();
-const MODEL_NAME = process.env.MODEL_NAME;
-const TEMPERATURE = parseFloat(process.env.TEMPERATURE || "0");
+const MODEL_NAME = ENV.MODEL_NAME;
+const TEMPERATURE = ENV.TEMPERATURE;
 
 const contextualizeQSystemPrompt = `
 Given the conversation history and a follow-up question, rephrase the follow-up question to be a standalone question focused on SolidCAM-specific content. 
@@ -220,22 +228,11 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
   ]);
 
   // Retrieve and process image URLs
-  const getImageUrls = async (imageUrls: string[] | undefined, roomId: string): Promise<string[]> => {
-    if (imageUrls && imageUrls.length > 0) {
-      return imageUrls;
-    }
-  
-    const memory = await MemoryService.getChatHistory(roomId);
-    console.log('memory from getImageUrls:', memory);
-    const lastMessage = memory[memory.length - 1];
-    if (lastMessage?.additional_kwargs?.imageUrls) {
-      return Array.isArray(lastMessage.additional_kwargs.imageUrls)
-        ? lastMessage.additional_kwargs.imageUrls
-        : [lastMessage.additional_kwargs.imageUrls];
-    }
-  
-    return [];
-  };
+  // const getImageUrls = async (imageUrls: string[] | undefined, roomId: string): Promise<string[]> => {
+  //   if (imageUrls && imageUrls.length > 0) {
+  //     return imageUrls;
+  //   }
+  // };
 
   const getImageUrlsinHistory = async (imageUrls: string[] | undefined, roomId: string): Promise<string[]> => {
     // If imageUrls are provided, return them immediately
@@ -287,14 +284,17 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         }],
       });
 
-      const processedImageUrls = await getImageUrls(imageUrls, roomId);
+      console.log('Image URLs ya fucker:', imageUrls);
+
+      //const processedImageUrls = await getImageUrls(imageUrls, roomId);
       
       // Handle image processing
       let imageDescription = '';
-      if (processedImageUrls.length > 0) {
+      if (imageUrls && imageUrls.length > 0) {
         try {
+          console.log('Processing images...');
           type ChatModel = 'gpt-4o' | 'gpt-4o-mini';
-          const IMAGE_MODEL_NAME: ChatModel = (process.env.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
+          const IMAGE_MODEL_NAME: ChatModel = (ENV.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
           
           const response = await openai.chat.completions.create({
             model: IMAGE_MODEL_NAME,
@@ -315,7 +315,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
                 role: "user",
                 content: [
                   { type: "text", text: `Question: ${input}` },
-                  ...processedImageUrls.map(url => ({
+                  ...imageUrls.map(url => ({
                     type: "image_url",
                     image_url: { url }
                   } as const))
@@ -372,7 +372,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       Here is the follow-up question:
       "${followUpQuestion}"
       
-      Determine if the follow-up question refers to or relies on the content of the image description. Answer "Yes" if it is related to the image and "No" if it is not. Provide no additional commentary.`;
+      Determine if the follow-up question may be related to the image previously described in the conversation and if there is a need to have another look at the image to answer the question or you can use previous AI answers to answer the question. Answer "Yes" if you must see the image again and "No" if you don't. Provide no additional commentary.`;
       
         const response = await model.generate([[new HumanMessage(prompt)]]);
       
@@ -385,18 +385,22 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       console.log('Raw chat history:', rawChatHistory);
 
       let hasImage = await getImageUrlsinHistory(imageUrls, roomId);
+      
 
-      console.log('Processed image URLs:', hasImage);
+      // Only check history for images if current question has no images
+      if (imageUrls.length === 0 && hasImage.length > 0) {
+        
 
-      if (hasImage.length > 0) {
+        console.log('Processed image URLs from history:', hasImage);
+
         const relatedToImage = await isQuestionRelatedToImage(input, rawChatHistory, nonStreamingModel, imageDescription);
       
         if (relatedToImage) {
-          console.log('Question is related to image');
+          console.log('Question is related to image from history');
       
           try {
             type ChatModel = 'gpt-4o' | 'gpt-4o-mini';
-            const IMAGE_MODEL_NAME: ChatModel = (process.env.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
+            const IMAGE_MODEL_NAME: ChatModel = (ENV.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
       
             const response = await openai.chat.completions.create({
               model: IMAGE_MODEL_NAME,
@@ -428,7 +432,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       
             imageDescription = response.choices[0]?.message?.content ?? 'No image description available';
           } catch (error) {
-            console.error('Error processing images:', error);
+            console.error('Error processing images from history:', error);
             imageDescription = 'Error processing image';
           }
       
@@ -437,8 +441,11 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
             input = `${input} [Image model answer: ${imageDescription}]`;
           }
         } else {
-          console.log('Question is not related to image');
+          console.log('Question is not related to image from history');
         }
+
+      } else {
+        console.log('Current question has images, skipping history image processing');
       }
 
       const customRetriever = new CustomRetriever(vectorstore);
@@ -472,8 +479,8 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       });
 
 
-      let minScoreSourcesThreshold = process.env.MINSCORESOURCESTHRESHOLD !== undefined ? 
-        parseFloat(process.env.MINSCORESOURCESTHRESHOLD) : 0.78;
+      let minScoreSourcesThreshold = ENV.MINSCORESOURCESTHRESHOLD !== undefined ? 
+        ENV.MINSCORESOURCESTHRESHOLD : 0.78;
       let embeddingsStore;
 
       if (language !== 'English') {
@@ -537,7 +544,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         });
       }
 
-      await insertQA(originalInput, ragResponse.answer, ragResponse.context, Documents, qaId, roomId, userEmail, processedImageUrls);
+      await insertQA(originalInput, ragResponse.answer, ragResponse.context, Documents, qaId, roomId, userEmail, imageUrls);
 
       try {
         let existingHistory;
@@ -576,7 +583,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           roomId,
           originalInput,
           ragResponse.answer,
-          processedImageUrls,
+          imageUrls,
           userEmail,
           Documents,
           qaId,
