@@ -66,6 +66,7 @@ const qaSystemPrompt =
   "- Add links in the answer only if the link appears in the context and it is relevant to the answer.\n" +
   "- Don't make up links that do not exist in the context like https://example.com/chamfer_mill_tool.jpg.\n" +
   "- Always ask yourself if there is a relevant image to show from the context, and if there is, show it.\n" +
+  "- When there is an image description don't answer like this 'the image you describe'... just answer the question using the description without mentioning it.\n" +
   "- If the user's question is valid and there is no documentation or context about it, let them know that they can leave a comment, " +
   "and we will do our best to include it at a later stage.\n" +
   "- If a user asks for a competitor's advantage over SolidCAM, reply in a humorous way that SolidCAM is the best CAM, " +
