@@ -48,7 +48,7 @@ class MemoryService {
     if (chatHistoryRecord && chatHistoryRecord.conversation_json) {
       // Filter out the initial "Hi" message from existing messages
       messages = chatHistoryRecord.conversation_json.filter(
-        msg => !(msg.type === 'userMessage' && msg.message === 'Hi')
+        (msg: Message) => !(msg.type === 'userMessage' && msg.message === 'Hi')
       );
     }
   
