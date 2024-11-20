@@ -7,26 +7,6 @@ import { makeChain } from '@/utils/makechain';
 import { getPinecone } from '@/utils/pinecone-client';
 import { PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { getIO } from "@/socketServer.cjs";
-import MemoryService from '@/utils/memoryService';
-
-async function syncChatHistory(roomId: string, clientHistory: any[], userEmail: string | null) {
-  const serverHistory = await MemoryService.getChatHistory(roomId);
-  console.log('Server history:', serverHistory);
-
-  if (clientHistory.length > serverHistory.length) {
-    // Clear existing server history
-    MemoryService.clearChatMemory(roomId);
-
-    // Reconstruct the history from client data
-    for (const [input, output, image] of clientHistory) {
-      console.log('clientHistory:', clientHistory);
-      console.log('Syncing chat history:', input, output);
-      await MemoryService.updateChatMemory(roomId, input, output, image, userEmail);
-    }
-  } else {
-    console.log('Server history is up to date');
-  }
-}
 
 export default async function handler(
   req: NextApiRequest,

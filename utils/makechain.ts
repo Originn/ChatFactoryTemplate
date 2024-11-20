@@ -190,13 +190,18 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
 
 function initializeChatHistory(roomId: any, userEmail: string) {
   // Directly call updateChatMemory with "Hi" as the initial input
-  console.log("Initializing chat history for room:", roomId);
   MemoryService.updateChatMemory(roomId, "Hi", null, null, userEmail);
 }
 
 export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void, userEmail: string) => {
   const nonStreamingModel = new ChatOpenAI({
-    modelName: 'gpt-4o',
+    modelName: 'gpt-4o-mini',
+    temperature: TEMPERATURE,
+    verbose:true,
+  });
+
+  const isImageRelatedModel = new ChatOpenAI({
+    modelName: 'gpt-4o-mini',
     temperature: TEMPERATURE,
     verbose:true,
   });
@@ -242,7 +247,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
   
     // Retrieve the full chat history for the given room
     const memory = await MemoryService.getChatHistory(roomId);
-    console.log('memory from getImageUrls:', memory);
   
     // Extract image URLs from the entire chat history
     const extractedImageUrls: string[] = [];
@@ -283,16 +287,11 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           },
         }],
       });
-
-      console.log('Image URLs ya fucker:', imageUrls);
-
-      //const processedImageUrls = await getImageUrls(imageUrls, roomId);
       
       // Handle image processing
       let imageDescription = '';
       if (imageUrls && imageUrls.length > 0) {
         try {
-          console.log('Processing images...');
           type ChatModel = 'gpt-4o' | 'gpt-4o-mini';
           const IMAGE_MODEL_NAME: ChatModel = (ENV.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
           
@@ -382,7 +381,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       
       // Get chat history and format it
       const rawChatHistory = await MemoryService.getChatHistory(roomId);
-      console.log('Raw chat history:', rawChatHistory);
 
       let hasImage = await getImageUrlsinHistory(imageUrls, roomId);
       
@@ -390,13 +388,9 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       // Only check history for images if current question has no images
       if (imageUrls.length === 0 && hasImage.length > 0) {
         
-
-        console.log('Processed image URLs from history:', hasImage);
-
-        const relatedToImage = await isQuestionRelatedToImage(input, rawChatHistory, nonStreamingModel, imageDescription);
+        const relatedToImage = await isQuestionRelatedToImage(input, rawChatHistory, isImageRelatedModel, imageDescription);
       
         if (relatedToImage) {
-          console.log('Question is related to image from history');
       
           try {
             type ChatModel = 'gpt-4o' | 'gpt-4o-mini';
@@ -441,11 +435,9 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
             input = `${input} [Image model answer: ${imageDescription}]`;
           }
         } else {
-          console.log('Question is not related to image from history');
         }
 
       } else {
-        console.log('Current question has images, skipping history image processing');
       }
 
       const customRetriever = new CustomRetriever(vectorstore);
@@ -468,8 +460,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         retriever: historyAwareRetriever,
         combineDocsChain: questionAnswerChain,
       });
-
-      console.log('Input:', input);
 
       const ragResponse = await ragChain.invoke({
         input,
@@ -555,7 +545,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         }
       
         let conversationTitle = '';
-        console.log(`existingHistory: ${JSON.stringify(existingHistory)}`);
         
         // Check if history exists and contains more than just the initial "Hi" message
         const shouldGenerateNewTitle = !existingHistory || 
@@ -564,7 +553,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
            existingHistory.conversation_json[0].message === 'Hi');
       
         if (shouldGenerateNewTitle) {
-          console.log('Generating new conversation title');
           const titleResponse = await nonStreamingModel.generate([[new HumanMessage(
             `Given this conversation:
             Human: ${originalInput}
@@ -573,7 +561,6 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
             Generate a short, descriptive title for this conversation (max 50 characters) in the used language.`
           )]]);
           conversationTitle = titleResponse.generations[0][0].text.trim();
-          console.log(`Generated conversation title: ${conversationTitle}`);
         } else {
           conversationTitle = existingHistory.conversation_title;
         }
