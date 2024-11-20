@@ -25,7 +25,6 @@ export default async function handler(
   }
 
   const sanitizedQuestion = question?.trim().replaceAll('\n', ' ');
-  console.log('In gppQuestions:', sanitizedQuestion);
   const io = getIO();
 
   try {
@@ -46,8 +45,6 @@ export default async function handler(
       query: sanitizedQuestion,
       mode: "hybrid"
     };
-
-    console.log('Sending query to RAG API:', queryBody);
 
     const response = await fetch(`${RAG_API_URL}/query`, {
       method: 'POST',

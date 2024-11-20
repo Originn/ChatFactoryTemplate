@@ -68,7 +68,6 @@ const useSocket = (
             await MemoryService.clearChatMemory(roomId); // Clear existing memory
             for (const msg of conversation) {
               if (msg.type === 'userMessage') {
-                console.log('msg.message:', msg.message);
                 await MemoryService.updateChatMemory(roomId, msg.message, '', msg.imageUrls || [], userEmail);
               } else if (msg.type === 'apiMessage') {
                 await MemoryService.updateChatMemory(roomId, '', msg.message, [], userEmail);

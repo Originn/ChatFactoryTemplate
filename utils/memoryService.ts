@@ -1,7 +1,6 @@
 // MemoryService.ts
 
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
-import { InputValues } from "langchain/memory";
 import BufferMemory from "./BufferMemory";
 import { insertChatHistory, getChatHistoryByRoomId, getTitleByRoomId } from '../db';
 import { Message } from '@/types/chat';
@@ -86,7 +85,6 @@ class MemoryService {
   static async getHasProcessedImage(roomId: string): Promise<boolean> {
     // Retrieve chat history record from the database
     const chatHistoryRecord = await getChatHistoryByRoomId(roomId);
-    console.log('Chat history record:', chatHistoryRecord);
   
     // Check if any userMessage in conversation_json has non-empty imageUrls
     if (chatHistoryRecord && Array.isArray(chatHistoryRecord.conversation_json)) {
