@@ -13,7 +13,8 @@
     "lint": "eslint \"**/*.+(ts|js|tsx)\"",
     "format": "prettier --ignore-path .gitignore \"**/*.+(ts|js|tsx)\" --write",
     "export": "next export",
-    "delete-old-chat-history": "node scripts/deleteOldChatHistory.js"
+    "delete-old-chat-history": "node scripts/deleteOldChatHistory.js",
+    "heroku-postbuild": "npm install --production && npm run build"
   },
   "dependencies": {
     "@google-cloud/storage": "^6.12.0",
