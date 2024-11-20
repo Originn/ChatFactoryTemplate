@@ -197,13 +197,13 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
   const nonStreamingModel = new ChatOpenAI({
     modelName: 'gpt-4o-mini',
     temperature: TEMPERATURE,
-    verbose:true,
+    verbose:false,
   });
 
   const isImageRelatedModel = new ChatOpenAI({
     modelName: 'gpt-4o-mini',
     temperature: TEMPERATURE,
-    verbose:true,
+    verbose:false,
   });
 
   const translationModel = new ChatOpenAI({
