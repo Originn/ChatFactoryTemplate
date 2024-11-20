@@ -5,7 +5,7 @@ import { getIO } from "@/socketServer.cjs";
 import { v4 as uuidv4 } from 'uuid';
 import { insertQA } from '../../db';  // Import only insertQA
 
-const gppKeyword = process.env.NEXT_PUBLIC_GPP_KEYWORD ?? "gpp-keyword";
+const gppKeyword = process.env.NEXT_PUBLIC_GPP_KEYWORD ?? "gppQuestion";
 const RAG_API_URL = process.env.RAG_API_URL ?? "https://gppvmidlightrag-a4cb027319f5.herokuapp.com";
 
 const roomSessions: { [key: string]: boolean } = {};
