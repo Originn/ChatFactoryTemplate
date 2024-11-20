@@ -1,9 +1,16 @@
-// pages/api/refresh-image-url.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Storage, GetSignedUrlConfig } from '@google-cloud/storage';
 
 const storage = new Storage();
 const privateBucketName = process.env.GCLOUD_PRIVATE_STORAGE_BUCKET || 'solidcam-chatbot-private-images';
+
+// Define the metadata interface
+interface FileMetadata {
+  metadata?: {
+    userEmail?: string;
+    expirationDate?: string;
+  };
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -27,14 +34,30 @@ export default async function handler(
     const bucket = storage.bucket(privateBucketName);
     const file = bucket.file(fileName);
     
-    // Verify file exists and belongs to user
-    const [metadata] = await file.getMetadata();
-    if (metadata.metadata?.userEmail !== userEmail) {
+    // Type assertion to ensure metadata has the correct shape
+    const [metadata] = await file.getMetadata() as [FileMetadata, unknown];
+    
+    // Check if metadata exists and has required fields
+    if (!metadata?.metadata?.userEmail) {
+      return res.status(400).json({ error: 'File metadata is missing' });
+    }
+
+    if (metadata.metadata.userEmail !== userEmail) {
       return res.status(403).json({ error: 'Unauthorized access to file' });
     }
 
-    // Verify file hasn't expired (30-day limit)
-    const expirationDate = new Date(metadata.metadata?.expirationDate);
+    // Check for expiration date
+    const expirationDateStr = metadata.metadata.expirationDate;
+    if (!expirationDateStr) {
+      return res.status(400).json({ error: 'Missing expiration date' });
+    }
+
+    const expirationDate = new Date(expirationDateStr);
+    // Check if the date is valid
+    if (isNaN(expirationDate.getTime())) {
+      return res.status(400).json({ error: 'Invalid expiration date format' });
+    }
+
     if (expirationDate < new Date()) {
       return res.status(410).json({ error: 'Image has expired' });
     }
