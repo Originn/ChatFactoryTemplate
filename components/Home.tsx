@@ -61,11 +61,11 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
 };
 
 interface HomeProps {
-  isFromStaging?: boolean;
+  isFromSolidcamWeb?: boolean;
 }
 
-const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
-  const [isFromStagingState, setIsFromStagingState] = useState(isFromStagingProp);
+const Home: FC<HomeProps> = ({ isFromSolidcamWeb: isFromSolidcamWebProp }) => {
+  const [isFromSolidcamWebState, setisFromSolidcamWebState] = useState(isFromSolidcamWebProp);
   const { theme, toggleTheme } = useTheme();
   const [query, setQuery] = useState<string>('');
   const [requestsInProgress, setRequestsInProgress] = useState<
@@ -80,10 +80,9 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
       if (storedRoomId) {
         return storedRoomId;
       } else {
-        // Only add staging- prefix if it's a staging user
-        const isStaging = document.referrer.includes('staging.solidcam.com');
-        const newRoomId = isStaging ? 
-          `staging-${uuidv4().slice(0, 8)}` : 
+        const isFromSolidcamWeb = document.referrer.includes('solidcam.com');
+        const newRoomId = isFromSolidcamWeb ? 
+          `web-${uuidv4().slice(0, 8)}` : 
           `room-${Date.now()}`;
         localStorage.setItem('roomId', newRoomId);
         return newRoomId;
@@ -372,8 +371,8 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user?.email) {
         // User is signed in with email
-        localStorage.removeItem('stagingBrowserId'); // Clear staging ID
-        setIsFromStagingState(false); // Update staging state
+        localStorage.removeItem('webBrowserId'); 
+        setisFromSolidcamWebState(false);
       }
     });
   
@@ -464,11 +463,11 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
     let userIdentifier;
     if (currentUser?.email) {
       userIdentifier = currentUser.email;
-      localStorage.removeItem('stagingBrowserId');
-      setIsFromStagingState(false);
+      localStorage.removeItem('webBrowserId');
+      setisFromSolidcamWebState(false);
     } else {
-      const stagingBrowserId = localStorage.getItem('stagingBrowserId');
-      userIdentifier = stagingBrowserId || 'anonymous';
+      const webBrowserId = localStorage.getItem('webBrowserId');
+      userIdentifier = webBrowserId || 'anonymous';
     }
   
     try {
@@ -697,7 +696,7 @@ const Home: FC<HomeProps> = ({ isFromStaging: isFromStagingProp }) => {
       toggleTheme={toggleTheme}
       onHistoryItemClick={handleHistoryItemClick}
       handleNewChat={handleNewChat}
-      isFromStaging={isFromStagingState}
+      isFromSolidcamWeb={isFromSolidcamWebState}
     >
         <div className="mx-auto flex flex-col gap-4">
           {/* For internal embedding */}

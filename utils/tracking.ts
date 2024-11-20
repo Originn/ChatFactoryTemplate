@@ -64,7 +64,7 @@ export const handleSubmitClick = () => {
   }
 };
 
-export const trackStagingUser = (stagingUUID: string, isNewUser: boolean) => {
+export const trackSCwebsiteUser = (stagingUUID: string, isNewUser: boolean) => {
   // Track staging user visit
   window.gtag('event', 'staging_user_visit', {
     event_category: 'User Source',
