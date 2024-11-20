@@ -11,7 +11,7 @@ interface LayoutProps {
   toggleTheme: () => void;
   onHistoryItemClick: (conversation: ChatHistoryItem) => void;
   handleNewChat: () => void;
-  isFromStaging?: boolean; // Add this prop
+  isFromSolidcamWeb?: boolean; // Add this prop
 }
 
 const PRODUCTION_ENV = 'production';
@@ -28,7 +28,7 @@ const Layout: FC<LayoutProps> = ({
   toggleTheme, 
   onHistoryItemClick, 
   handleNewChat,
-  isFromStaging 
+  isFromSolidcamWeb 
 }) => {
   const userEmail = auth.currentUser ? auth.currentUser.email : '';
 
@@ -48,8 +48,8 @@ const Layout: FC<LayoutProps> = ({
       <header className={`sticky top-0 z-40 w-full ${theme === 'light' ? 'bg-white' : 'bg-dark-header'}`}>
         <div className="h-16 border-b border-b-slate-200 py-4">
           <nav className="ml-4 pl-6 flex items-center justify-start">
-            {/* Only show Chat History for non-staging users */}
-            {userEmail && !isFromStaging && (
+            {/* Only show Chat History for non-solidcam.com users */}
+            {userEmail && !isFromSolidcamWeb && (
               <div className={iconButtonClass}>
                 <Tooltip message="View chat history" hideOnClick={true}>
                   <ChatHistory
@@ -61,8 +61,8 @@ const Layout: FC<LayoutProps> = ({
               </div>
             )}
 
-            {/* Only show New Chat button for non-staging users */}
-            {!isFromStaging && (
+            {/* Only show New Chat button for non-solidcam.com users */}
+            {!isFromSolidcamWeb && (
               <Tooltip message="Start a new chat">
                 <button onClick={handleNewChat} className={newChatButtonClass}>
                   <Image
@@ -86,8 +86,8 @@ const Layout: FC<LayoutProps> = ({
               </button>
             </Tooltip>
 
-            {/* Only show Logout Button for non-staging users */}
-            {!isFromStaging && (
+            {/* Only show Logout Button for non-solidcam.com users */}
+            {!isFromSolidcamWeb && (
               <button onClick={handleSignOut} className={logoutButtonClass}>
                 Logout
               </button>

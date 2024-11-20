@@ -5,17 +5,12 @@ import AuthWrapper from '../auth/AuthWrapper';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
-import { setUserIdForAnalytics, trackStagingUser } from '@/utils/tracking';
-import { signInAnonymously } from 'firebase/auth';
-import { auth } from '@/utils/firebase';
+import { setUserIdForAnalytics, trackSCwebsiteUser } from '@/utils/tracking';
 import { v4 as uuidv4 } from 'uuid';
-
-const STAGING_ID_KEY = 'stagingBrowserId';
-const ROOM_ID_KEY = 'roomId';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const [isFromStaging, setIsFromStaging] = useState(false);
+  const [isFromSolidcamWeb, setisFromSolidcamWeb] = useState(false);
 
   const noAuthRequired = [
     '/verify-email',
@@ -30,30 +25,30 @@ function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
     const checkStaging = async () => {
       const referrer = document.referrer;
-      const isStaging = referrer.includes('staging.solidcam.com');
+      const isFromSolidcamWeb = referrer.includes('solidcam.com');
       
-      if (isStaging) {
+      if (isFromSolidcamWeb) {
         try {
           // Generate or get staging browser ID
-          let stagingBrowserId = localStorage.getItem('stagingBrowserId');
-          const isNewUser = !stagingBrowserId;
+          let webBrowserId = localStorage.getItem('webBrowserId');
+          const isNewUser = !webBrowserId;
           
-          if (!stagingBrowserId) {
-            stagingBrowserId = uuidv4();
-            localStorage.setItem('stagingBrowserId', stagingBrowserId);
+          if (!webBrowserId) {
+            webBrowserId = uuidv4();
+            localStorage.setItem('webBrowserId', webBrowserId);
           }
 
-          const roomId = `room-${stagingBrowserId.slice(0, 10)}`;
+          const roomId = `room-${webBrowserId.slice(0, 10)}`;
           localStorage.setItem('roomId', roomId);
           
-          setIsFromStaging(true);
+          setisFromSolidcamWeb(true);
 
           // Track the staging user
-          trackStagingUser(stagingBrowserId, isNewUser);
+          trackSCwebsiteUser(webBrowserId, isNewUser);
 
         } catch (error) {
           console.error('Error in staging setup:', error);
-          setIsFromStaging(false);
+          setisFromSolidcamWeb(false);
         }
       }
     };
@@ -64,12 +59,12 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   const isAuthRequired = !noAuthRequired.some(path => 
     router.pathname.startsWith(path)
-  ) && !isFromStaging;
+  ) && !isFromSolidcamWeb;
 
   // Combine the existing pageProps with our new prop
   const enhancedProps = {
     ...pageProps,
-    isFromStaging
+    isFromSolidcamWeb
   };
 
   return (
