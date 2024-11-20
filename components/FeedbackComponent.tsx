@@ -77,14 +77,14 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ messageIndex, qaI
     <div className="feedback-container">
       {/* Buttons to open the modal with different feedback types */}
       <div className="tooltip-container up">
-        <Tooltip message="Give positive feedback">
+        <Tooltip message="Give positive feedback" alignPixels={95}> 
           <button onClick={() => handleOpenModal('up')}>
             <Image src={thumbUpIcon} alt="Thumb Up" width={25} height={25} />
           </button>
         </Tooltip>
       </div>
       <div className="tooltip-container down">
-        <Tooltip message="Give negative feedback">
+        <Tooltip message="Give negative feedback" alignPixels={75}>
           <button onClick={() => handleOpenModal('down')}>
             <Image src={thumbDownIcon} alt="Thumb Down" width={25} height={25} />
           </button>

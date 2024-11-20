@@ -4,9 +4,10 @@ interface TooltipProps {
   message: string;
   children: React.ReactNode;
   hideOnClick?: boolean;
+  alignPixels?: number; // New prop for pixel alignment
 }
 
-const Tooltip: React.FC<TooltipProps> = ({ message, children, hideOnClick = false }) => {
+const Tooltip: React.FC<TooltipProps> = ({ message, children, hideOnClick = false, alignPixels = 30 }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [isClicked, setIsClicked] = useState(false);
 
@@ -40,7 +41,7 @@ const Tooltip: React.FC<TooltipProps> = ({ message, children, hideOnClick = fals
         <div 
           className="tooltip-content" 
           style={{ 
-            left: '30px',
+            left: `${alignPixels}px`,
             opacity: isVisible ? 1 : 0,
             transition: 'opacity 0.2s'
           }}
