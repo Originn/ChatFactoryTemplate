@@ -2,3 +2,6 @@
 
 # ignore all files in the `docs` directory
 docs/*
+node_modules/
+.cache/
+logs/
