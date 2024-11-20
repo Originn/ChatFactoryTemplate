@@ -14,7 +14,7 @@
     "format": "prettier --ignore-path .gitignore \"**/*.+(ts|js|tsx)\" --write",
     "export": "next export",
     "delete-old-chat-history": "node scripts/deleteOldChatHistory.js",
-    "heroku-postbuild": "npm install typescript && npm prune --omit=dev && npm run build"
+    "heroku-postbuild": "npm prune --omit=dev && npm install typescript && npm run build"
   },
   "dependencies": {
     "@google-cloud/storage": "^6.12.0",
