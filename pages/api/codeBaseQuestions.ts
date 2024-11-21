@@ -9,7 +9,7 @@ import { Message } from '@/types/chat';
 import MemoryService from '@/utils/memoryService';
 
 
-const gppKeyword = process.env.NEXT_PUBLIC_CODEBASE_KEYWORD ?? "baseCodeQuestion";
+const codebaseKeyword = process.env.NEXT_PUBLIC_CODEBASE_KEYWORD ?? "baseCodeQuestion";
 const RAG_API_URL = process.env.RAG_API_URL ?? "https://lightrag-codebase-8bc962afff7d.herokuapp.com/";
 
 const roomSessions: { [key: string]: boolean } = {};
@@ -37,7 +37,7 @@ export default async function handler(
     }
 
     // Handle initial greeting
-    if (sanitizedQuestion.startsWith(gppKeyword) && !roomSessions[roomId]) {
+    if (sanitizedQuestion.startsWith(codebaseKeyword) && !roomSessions[roomId]) {
       const greetingMessage = 'Welcome to Code Base Questions Mode! Feel free to ask any question.';
       io.to(roomId).emit(`tokenStream-${roomId}`, greetingMessage);
       roomSessions[roomId] = true;
