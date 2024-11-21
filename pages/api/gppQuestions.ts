@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { insertQA } from '../../db';  // Import only insertQA
 import { getChatHistoryByRoomId } from '../../db';
 import { Message } from '@/types/chat';
+import MemoryService from '@/utils/memoryService';
 
 
 const gppKeyword = process.env.NEXT_PUBLIC_GPP_KEYWORD ?? "gppQuestion";
@@ -81,6 +82,7 @@ export default async function handler(
     }
 
     const ragResponse = await response.json();
+    const aiResponse = ragResponse.data;
     
     // Generate QA ID
     const qaId = uuidv4();
@@ -88,17 +90,29 @@ export default async function handler(
     // Insert into database
     await insertQA(
       sanitizedQuestion,
-      ragResponse.data,
-      'gppQuestion',  // Using answer as context
-      [],  // Empty source docs
+      aiResponse,
+      'gppQuestion',
+      [],
       qaId,
       roomId,
       userEmail
     );
-    
-    // Send response to client through socket
-    if (ragResponse.data) {
-      io.to(roomId).emit(`tokenStream-${roomId}`, ragResponse.data);
+
+    // Update chat history using updateChatMemory
+    await MemoryService.updateChatMemory(
+      roomId,
+      sanitizedQuestion,
+      aiResponse,
+      null, // Assuming no images in this context
+      userEmail,
+      [], // Empty source docs
+      qaId,
+      '' // Optionally pass conversation title
+    );
+
+    // Send AI response back to client through socket
+    if (aiResponse) {
+      io.to(roomId).emit(`tokenStream-${roomId}`, aiResponse);
     }
 
     return res.status(200).json({ 
