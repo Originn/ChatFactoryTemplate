@@ -1,4 +1,4 @@
-// pages/api/gppQuestions.ts
+// pages/api/baseCodeQuestions.ts
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getIO } from "@/socketServer.cjs";
