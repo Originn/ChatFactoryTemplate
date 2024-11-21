@@ -155,6 +155,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb: isFromSolidcamWebProp }) => {
   const [isEmbeddingMode, setIsEmbeddingMode] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [gppQuestionMode, setGppQuestionMode] = useState(false);
+  const [codebaseQuestionMode, setCodebaseQuestionMode] = useState(false);
 
 
   useEffect(() => {
@@ -427,6 +428,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb: isFromSolidcamWebProp }) => {
 
   const codePrefix = process.env.NEXT_PUBLIC_CODE_PREFIX ?? "";
   const gppKeyword = process.env.NEXT_PUBLIC_GPP_KEYWORD ?? "";
+  const codebaseKeyword = process.env.NEXT_PUBLIC_CODEBASE_KEYWORD ?? "";
 
   const handleSubmit = async (e?: any) => {
     if (e) e.preventDefault();
@@ -504,12 +506,16 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb: isFromSolidcamWebProp }) => {
       if (trimmedQuery.startsWith(gppKeyword)) {
         setGppQuestionMode(true);
       }
+      if (trimmedQuery.startsWith(codebaseKeyword)) {
+        setCodebaseQuestionMode(true);
+      }
   
       // Determine the endpoint based on the active mode
       const isEmbedding = isEmbeddingMode || trimmedQuery.startsWith(codePrefix);
       const isGppQuestion = gppQuestionMode || trimmedQuery.startsWith(gppKeyword);
-      
-      const endpoint = isEmbedding ? '/api/userEmbed' : isGppQuestion ? '/api/gppQuestions' : '/api/chat';
+      const isCodebaseQuestion = codebaseQuestionMode || trimmedQuery.startsWith(codebaseKeyword);
+
+      const endpoint = isEmbedding ? '/api/userEmbed' : isGppQuestion ? '/api/gppQuestions' : isCodebaseQuestion ? '/api/codeBaseQuestions' : '/api/chat';
       const imagePreviewsToUse = isEmbedding ? imagePreviews : homeImagePreviews;
       const imageUrls = imagePreviewsToUse.slice(0, 3).map((preview) => preview.url);
   
