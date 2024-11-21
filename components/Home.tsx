@@ -609,7 +609,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb: isFromSolidcamWebProp }) => {
     setIsNewChat(true);
     setIsEmbeddingMode(false); // Reset embedding mode
     setGppQuestionMode(false); // Reset gppQuestion mode
-    setCodebaseQuestionMode(false); // Reset gppQuestion mode
+    setCodebaseQuestionMode(false);
   };
 
   // Function to load the user's latest chat history
