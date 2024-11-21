@@ -9,7 +9,7 @@ import { Message } from '@/types/chat';
 import MemoryService from '@/utils/memoryService';
 
 
-const gppKeyword = process.env.NEXT_PUBLIC_GPP_KEYWORD ?? "baseCodeQuestion";
+const gppKeyword = process.env.NEXT_PUBLIC_CODEBASE_KEYWORD ?? "baseCodeQuestion";
 const RAG_API_URL = process.env.RAG_API_URL ?? "https://lightrag-codebase-8bc962afff7d.herokuapp.com/";
 
 const roomSessions: { [key: string]: boolean } = {};
