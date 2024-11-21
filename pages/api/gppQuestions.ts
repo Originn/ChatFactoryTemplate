@@ -4,6 +4,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getIO } from "@/socketServer.cjs";
 import { v4 as uuidv4 } from 'uuid';
 import { insertQA } from '../../db';  // Import only insertQA
+import { getChatHistoryByRoomId } from '../../db';
+import { Message } from '@/types/chat';
+
 
 const gppKeyword = process.env.NEXT_PUBLIC_GPP_KEYWORD ?? "gppQuestion";
 const RAG_API_URL = process.env.RAG_API_URL ?? "https://gppvmidlightrag-a4cb027319f5.herokuapp.com";
@@ -40,10 +43,29 @@ export default async function handler(
       return res.status(200).json({ message: 'Greeting sent successfully.' });
     }
 
+    let chatHistoryRecord = await getChatHistoryByRoomId(roomId);
+    console.log("chatHistoryRecord:", chatHistoryRecord);
+    let messages: Message[] = [];
+    if (chatHistoryRecord && chatHistoryRecord.conversation_json) {
+      messages = chatHistoryRecord.conversation_json;
+    }
+
+    const userMessage: Message = {
+      type: 'userMessage',
+      message: sanitizedQuestion,
+      isComplete: true,
+      // Add any other properties if needed
+    };
+    messages.push(userMessage);
+
     // Make request to RAG API
     const queryBody = {
       query: sanitizedQuestion,
-      mode: "hybrid"
+      mode: "hybrid",
+      chat_history: messages.map((msg) => ({
+        role: msg.type === 'userMessage' ? 'user' : 'assistant',
+        content: msg.message,
+      })),
     };
 
     const response = await fetch(`${RAG_API_URL}/query`, {
@@ -51,7 +73,7 @@ export default async function handler(
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(queryBody)
+      body: JSON.stringify(queryBody),
     });
 
     if (!response.ok) {
