@@ -24,24 +24,34 @@ export default function Document() {
           dangerouslySetInnerHTML={{
             __html: `
               document.addEventListener('DOMContentLoaded', function () {
-                cookieconsent.run({
-                  "notice_banner_type": "simple",
-                  "consent_type": "express",
-                  "palette": "light",
-                  "language": "en",
-                  "page_load_consent_levels": ["strictly-necessary"],
-                  "notice_banner_reject_button_hide": false,
-                  "preferences_center_close_button_hide": false,
-                  "page_refresh_confirmation_buttons": false,
-                  "website_name": "solidcamchat",
-                  "website_privacy_policy_url": "https://www.solidcamchat.com/privacy-policy",
-                  onInitialConsent: function(status) {
-                    handleConsentChange(status);
-                  },
-                  onStatusChange: function(status) {
-                    handleConsentChange(status);
-                  }
-                });
+                // Check if page is in an iframe
+                const isInIframe = window !== window.parent;
+
+                if (!isInIframe) {
+                  cookieconsent.run({
+                    "notice_banner_type": "simple",
+                    "consent_type": "express",
+                    "palette": "light",
+                    "language": "en",
+                    "page_load_consent_levels": ["strictly-necessary"],
+                    "notice_banner_reject_button_hide": false,
+                    "preferences_center_close_button_hide": false,
+                    "page_refresh_confirmation_buttons": false,
+                    "website_name": "solidcamchat",
+                    "website_privacy_policy_url": "https://www.solidcamchat.com/privacy-policy",
+                    onInitialConsent: function(status) {
+                      handleConsentChange(status);
+                    },
+                    onStatusChange: function(status) {
+                      handleConsentChange(status);
+                    }
+                  });
+                } else {
+                  // Automatically set consent for iframe users
+                  Cookies.set('cookie_consent_user_accepted', 'true', { expires: 365 });
+                  // Also set the cookieconsent status cookie to maintain consistency
+                  Cookies.set('cookieconsent_status', 'allow', { expires: 365 });
+                }
 
                 function handleConsentChange(status) {
                   if (!cookieconsent.hasConsented('tracking')) {
@@ -58,6 +68,15 @@ export default function Document() {
                   window.handleDocumentClick = function() {};
                   window.measureFirstTokenTime = function() {};
                 }
+
+                // Initialize tracking if in iframe
+                if (isInIframe) {
+                  // Initialize Google Analytics right away for iframe users
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', 'G-LRZR96PT9B');
+                }
               });
             `,
           }}
@@ -67,18 +86,7 @@ export default function Document() {
           strategy="afterInteractive"
           data-cookie-consent="tracking"
         ></Script>
-        <Script
-          id="google-analytics-script"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-LRZR96PT9B');
-            `,
-          }}
-        ></Script>
+        {/* Remove the separate Google Analytics script since it's now handled in the main script */}
         <noscript>
           Free cookie consent management tool by <a href="https://www.termsfeed.com/">TermsFeed</a>
         </noscript>
