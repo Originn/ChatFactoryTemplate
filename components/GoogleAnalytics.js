@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
-const TRACKING_ID = process.env.NEXT_PUBLIC_TRACKING_ID; // Replace with your GA4 Measurement ID
+const TRACKING_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 const GoogleAnalytics = () => {
   const router = useRouter();
