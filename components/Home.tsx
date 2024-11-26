@@ -33,7 +33,7 @@ import EnlargedImageView from './EnlargedImageView';
 import { ChatHistoryItem } from './ChatHistory';
 import { io, Socket } from 'socket.io-client';
 import MemoryService from '@/utils/memoryService';
-import { handleWebinarClick, handleDocumentClick, handleSubmitClick } from '@/utils/tracking';
+import { handleWebinarClick, handleDocumentClick, handleSubmitClick, handleSubmitClickWeb } from '@/utils/tracking';
 import { v4 as uuidv4 } from 'uuid';
 import Tooltip from './Tooltip';
 import InitialDisclaimerModal from './InitialDisclaimerModal';
@@ -444,7 +444,11 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     if (e) e.preventDefault();
   
     // For Google Analytics
-    handleSubmitClick();
+    if (isFromSolidcamWeb) {
+      handleSubmitClickWeb();
+    } else {
+      handleSubmitClick();
+    }
   
     if (!roomId) {
       console.error('No roomId available');
