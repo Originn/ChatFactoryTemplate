@@ -75,6 +75,14 @@ export const handleSubmitClick = () => {
   });
 };
 
+export const handleSubmitClickWeb = () => {
+  safelyTrackEvent('submit_click_web', {
+    event_category: 'ChatBot',
+    event_label: 'User Submission from SolidCAM Web',
+    user_id: auth.currentUser?.uid,
+  });
+};
+
 export const trackSCwebsiteUser = (stagingUUID: string, isNewUser: boolean) => {
   safelyTrackEvent('staging_user_visit', {
     event_category: 'User Source',
