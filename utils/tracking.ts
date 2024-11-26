@@ -6,6 +6,7 @@ const getCookieConsent = () => {
   return cookiesConsent;
 };
 
+
 const safelyTrackEvent = (eventName: string, eventParams: object) => {
   if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
     try {
@@ -14,7 +15,6 @@ const safelyTrackEvent = (eventName: string, eventParams: object) => {
       console.error(`Error tracking event "${eventName}":`, error);
     }
   } else {
-    // Optionally, queue events or retry after a delay
     console.warn('Google Analytics gtag is not loaded');
   }
 };
@@ -112,6 +112,7 @@ export const handleSubmitClickWeb = async () => {
 
 
 
+
 export const setUserIdForAnalytics = () => {
   if (typeof window.gtag === 'function') {
     auth.onAuthStateChanged((user) => {
@@ -122,6 +123,7 @@ export const setUserIdForAnalytics = () => {
       try {
         window.gtag('config', process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, {
           user_id: userId,
+          cookie_flags: 'SameSite=None;Secure', // Include cookie_flags here
         });
       } catch (error) {
         console.error('Error setting user ID for analytics:', error);
