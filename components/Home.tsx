@@ -445,8 +445,10 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   
     // For Google Analytics
     if (isFromSolidcamWeb) {
+      console.log('isFromSolidcamWeb for gtag web', isFromSolidcamWeb);
       handleSubmitClickWeb();
     } else {
+      console.log('isFromSolidcamWeb for gtag normal', isFromSolidcamWeb);
       handleSubmitClick();
     }
   
