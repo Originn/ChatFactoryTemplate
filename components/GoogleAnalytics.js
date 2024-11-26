@@ -1,4 +1,5 @@
 // components/GoogleAnalytics.js
+
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
@@ -11,7 +12,10 @@ const GoogleAnalytics = () => {
     const handleRouteChange = (url) => {
       window.gtag('config', TRACKING_ID, {
         page_path: url,
-        cookie_flags: 'SameSite=None;Secure', // Include cookie_flags here
+        cookie_flags: 'SameSite=None;Secure',
+      });
+      window.gtag('event', 'session_start', {
+        session_id: Date.now().toString(),
       });
     };
 
@@ -31,9 +35,13 @@ const GoogleAnalytics = () => {
     scriptTag.innerHTML = `
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      window.gtag = gtag;
       gtag('js', new Date());
       gtag('config', '${TRACKING_ID}', {
         cookie_flags: 'SameSite=None;Secure',
+      });
+      gtag('event', 'session_start', {
+        session_id: Date.now().toString(),
       });
     `;
     document.head.appendChild(scriptTag);
