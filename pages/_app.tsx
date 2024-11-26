@@ -25,15 +25,14 @@ function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
     const checkStaging = async () => {
       const queryParams = new URLSearchParams(window.location.search);
-      const referrer = queryParams.get('referrer'); // Get 'referrer' from the query string
+      const referrer = queryParams.get('referrer');
       console.log('Referrer:', referrer);
-      const isFromSolidcamWeb = referrer === 'staging.solidcam.com'; // Validate referrer
-      console.log('isFromSolidcamWeb:', isFromSolidcamWeb); // Add this for verification
 
+      const isFromSolidcamWeb = referrer === 'staging.solidcam.com';
+      console.log('isFromSolidcamWeb:', isFromSolidcamWeb);
 
       if (isFromSolidcamWeb) {
         try {
-          // Generate or get staging browser ID
           let webBrowserId = localStorage.getItem('webBrowserId');
           const isNewUser = !webBrowserId;
 
@@ -47,8 +46,12 @@ function MyApp({ Component, pageProps }: AppProps) {
 
           setIsFromSolidcamWeb(true);
 
-          // Track the staging user
-          trackSCwebsiteUser(webBrowserId, isNewUser);
+          // Safely track staging user
+          try {
+            trackSCwebsiteUser(webBrowserId, isNewUser);
+          } catch (error) {
+            console.error('Error tracking staging user:', error);
+          }
         } catch (error) {
           console.error('Error in staging setup:', error);
           setIsFromSolidcamWeb(false);
@@ -57,14 +60,18 @@ function MyApp({ Component, pageProps }: AppProps) {
     };
 
     checkStaging();
-    setUserIdForAnalytics();
+
+    try {
+      setUserIdForAnalytics();
+    } catch (error) {
+      console.error('Error setting user ID for analytics:', error);
+    }
   }, []);
 
   const isAuthRequired = !noAuthRequired.some((path) =>
     router.pathname.startsWith(path)
   ) && !isFromSolidcamWeb;
 
-  // Combine the existing pageProps with our new prop
   const enhancedProps = {
     ...pageProps,
     isFromSolidcamWeb,
