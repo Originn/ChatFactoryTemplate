@@ -159,15 +159,21 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb: isFromSolidcamWebProp }) => {
 
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const hasAcceptedDisclaimer = Cookies.get('disclaimer_accepted');
-      if (!hasAcceptedDisclaimer) {
-        setShowDisclaimer(true);
-      }
-    }, 1000); // Show after 1 second delay for better UX
-
-    return () => clearTimeout(timer);
-  }, []);
+    if (!isFromSolidcamWebState) {
+      const timer = setTimeout(() => {
+        const hasAcceptedDisclaimer = Cookies.get('disclaimer_accepted');
+        if (!hasAcceptedDisclaimer) {
+          setShowDisclaimer(true);
+        }
+      }, 1000); // Show after 1 second delay for better UX
+  
+      return () => clearTimeout(timer);
+    } else {
+      // Don't show the disclaimer if coming from SolidCAM Web
+      setShowDisclaimer(false);
+    }
+  }, [isFromSolidcamWebState]);
+  
 
   // Add this handler function
   const handleDisclaimerAccept = () => {
