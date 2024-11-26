@@ -1,3 +1,5 @@
+// pages/_document.tsx
+
 import { Html, Head, Main, NextScript } from "next/document";
 import Script from "next/script";
 
@@ -5,18 +7,26 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
-        {/* Your existing code */}
+        {/* Fonts and other head elements */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap"
+          rel="stylesheet"
+        />
+        {/* Cookie Consent and Tracking */}
+        <Script
+          src="https://www.termsfeed.com/public/cookie-consent/4.1.0/cookie-consent.js"
+          charSet="UTF-8"
+          strategy="beforeInteractive"
+        ></Script>
         <Script
           src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/3.0.1/js.cookie.min.js"
           strategy="beforeInteractive"
         ></Script>
-        {/* Remove the gtag.js script from here */}
-        {/* ... */}
       </Head>
       <body>
         <Main />
         <NextScript />
-        {/* Move the gtag.js script here */}
+        {/* Load gtag.js dynamically based on iframe status */}
         <Script
           id="gtag-script"
           strategy="afterInteractive"
@@ -25,17 +35,34 @@ export default function Document() {
               (function() {
                 const isInIframe = window !== window.parent;
 
-                if (!isInIframe) {
-                  // Load gtag.js only if not in iframe
+                if (isInIframe) {
+                  // Load gtag.js dynamically in iframe
                   var script = document.createElement('script');
                   script.src = 'https://www.googletagmanager.com/gtag/js?id=G-LRZR96PT9B';
                   script.async = true;
+                  script.onload = function() {
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    window.gtag = gtag;
+                    gtag('js', new Date());
+                    gtag('config', 'G-LRZR96PT9B');
+                    console.log('Google Analytics initialized in iframe.');
+                    window.gtagReady = true; // Set the flag to indicate gtag is ready
+                  };
+                  document.head.appendChild(script);
+                } else {
+                  // Load gtag.js normally on the main site
+                  var script = document.createElement('script');
+                  script.src = 'https://www.googletagmanager.com/gtag/js?id=G-LRZR96PT9B';
+                  script.async = true;
+                  script.setAttribute('data-cookie-consent', 'tracking');
                   document.head.appendChild(script);
                 }
               })();
             `,
           }}
         ></Script>
+        {/* Cookie consent and tracking */}
         <Script
           id="cookie-consent-and-tracking"
           strategy="afterInteractive"
@@ -48,24 +75,20 @@ export default function Document() {
                   // Automatically accept cookies in iframe
                   Cookies.set('cookie_consent_user_accepted', 'true', { expires: 365 });
                   Cookies.set('cookieconsent_status', 'allow', { expires: 365 });
-
-                  // Load gtag.js dynamically
-                  var script = document.createElement('script');
-                  script.src = 'https://www.googletagmanager.com/gtag/js?id=G-LRZR96PT9B';
-                  script.async = true;
-                  script.onload = function() {
-                    window.dataLayer = window.dataLayer || [];
-                    function gtag(){dataLayer.push(arguments);}
-                    window.gtag = gtag;
-                    gtag('js', new Date());
-                    gtag('config', 'G-LRZR96PT9B');
-                    console.log('Google Analytics initialized in iframe.');
-                  };
-                  document.head.appendChild(script);
+                  // gtag is initialized in the previous script
                 } else {
                   // Display cookie banner on main website
                   cookieconsent.run({
-                    // Your cookie consent configurations
+                    "notice_banner_type": "simple",
+                    "consent_type": "express",
+                    "palette": "light",
+                    "language": "en",
+                    "page_load_consent_levels": ["strictly-necessary"],
+                    "notice_banner_reject_button_hide": false,
+                    "preferences_center_close_button_hide": false,
+                    "page_refresh_confirmation_buttons": false,
+                    "website_name": "solidcamchat",
+                    "website_privacy_policy_url": "https://www.solidcamchat.com/privacy-policy",
                     onInitialConsent: function(status) {
                       handleConsentChange(status);
                     },
@@ -92,7 +115,8 @@ export default function Document() {
                   }
 
                   function disableTrackingScripts() {
-                    // Disable tracking scripts
+                    const trackingScripts = document.querySelectorAll('script[data-cookie-consent="tracking"]');
+                    trackingScripts.forEach(script => script.remove());
                     window.gtag = function() {}; // Override gtag to prevent errors
                     console.warn('Tracking scripts disabled.');
                   }
@@ -101,7 +125,9 @@ export default function Document() {
             `,
           }}
         ></Script>
-        {/* Remove the existing gtag.js script tag */}
+        <noscript>
+          Free cookie consent management tool by <a href="https://www.termsfeed.com/">TermsFeed</a>
+        </noscript>
       </body>
     </Html>
   );
