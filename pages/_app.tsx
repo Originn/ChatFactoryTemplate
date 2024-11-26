@@ -28,6 +28,8 @@ function MyApp({ Component, pageProps }: AppProps) {
       const referrer = queryParams.get('referrer'); // Get 'referrer' from the query string
       console.log('Referrer:', referrer);
       const isFromSolidcamWeb = referrer === 'staging.solidcam.com'; // Validate referrer
+      console.log('isFromSolidcamWeb:', isFromSolidcamWeb); // Add this for verification
+
 
       if (isFromSolidcamWeb) {
         try {
