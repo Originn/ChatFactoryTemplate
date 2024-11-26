@@ -26,6 +26,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     const checkStaging = async () => {
       const queryParams = new URLSearchParams(window.location.search);
       const referrer = queryParams.get('referrer'); // Get 'referrer' from the query string
+      console.log('Referrer:', referrer);
       const isFromSolidcamWeb = referrer === 'staging.solidcam.com'; // Validate referrer
 
       if (isFromSolidcamWeb) {
