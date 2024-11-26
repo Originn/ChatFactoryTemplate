@@ -72,9 +72,10 @@ function MyApp({ Component, pageProps }: AppProps) {
     router.pathname.startsWith(path)
   ) && !isFromSolidcamWeb;
 
+  // Pass `isFromSolidcamWeb` as a prop to the Component
   const enhancedProps = {
     ...pageProps,
-    isFromSolidcamWeb,
+    isFromSolidcamWeb, // Add this line to ensure the prop is passed to all pages
   };
 
   return (
