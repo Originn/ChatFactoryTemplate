@@ -75,7 +75,29 @@ export const handleSubmitClick = () => {
   });
 };
 
-export const handleSubmitClickWeb = () => {
+// utils/tracking.ts
+
+// utils/tracking.ts
+
+export const handleSubmitClickWeb = async () => {
+  // Wait until gtag is ready
+  await new Promise<void>((resolve) => {
+    if (typeof window !== 'undefined') {
+      if (window.gtagReady) {
+        resolve();
+      } else {
+        const interval = setInterval(() => {
+          if (window.gtagReady) {
+            clearInterval(interval);
+            resolve();
+          }
+        }, 50); // Check every 50ms
+      }
+    } else {
+      resolve(); // In a non-browser environment, resolve immediately
+    }
+  });
+
   let userId = auth.currentUser?.uid;
   if (!userId && typeof window !== 'undefined') {
     userId = localStorage.getItem('webBrowserId') || 'anonymous';
@@ -87,6 +109,7 @@ export const handleSubmitClickWeb = () => {
     user_id: userId,
   });
 };
+
 
 
 export const setUserIdForAnalytics = () => {
