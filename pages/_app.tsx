@@ -25,7 +25,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
     const checkStaging = async () => {
       const referrer = document.referrer;
-      const isFromSolidcamWeb = referrer.includes('solidcam.com');
+      const isFromSolidcamWeb = /^(https?:\/\/)?(www\.|staging\.)solidcam\.com/.test(referrer);
       
       if (isFromSolidcamWeb) {
         try {
