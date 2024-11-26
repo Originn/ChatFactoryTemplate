@@ -64,8 +64,8 @@ interface HomeProps {
   isFromSolidcamWeb?: boolean;
 }
 
-const Home: FC<HomeProps> = ({ isFromSolidcamWeb: isFromSolidcamWebProp }) => {
-  const [isFromSolidcamWebState, setisFromSolidcamWebState] = useState(isFromSolidcamWebProp);
+const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
+  const [isFromSolidcamWebState, setisFromSolidcamWebState] = useState(isFromSolidcamWeb);
   const { theme, toggleTheme } = useTheme();
   const [query, setQuery] = useState<string>('');
   const [requestsInProgress, setRequestsInProgress] = useState<
@@ -158,6 +158,10 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb: isFromSolidcamWebProp }) => {
   const [codebaseQuestionMode, setCodebaseQuestionMode] = useState(false);
 
 
+  useEffect(() => {
+    console.log('isFromSolidcamWeb in Home:', isFromSolidcamWeb);
+  }, [isFromSolidcamWeb]);
+  
   useEffect(() => {
     if (!isFromSolidcamWebState) {
       const timer = setTimeout(() => {
