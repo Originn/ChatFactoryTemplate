@@ -76,45 +76,26 @@ export const handleSubmitClick = () => {
 };
 
 export const handleSubmitClickWeb = () => {
+  let userId = auth.currentUser?.uid;
+  if (!userId && typeof window !== 'undefined') {
+    userId = localStorage.getItem('webBrowserId') || 'anonymous';
+  }
+
   safelyTrackEvent('submit_click_web', {
     event_category: 'ChatBot',
     event_label: 'User Submission from SolidCAM Web',
-    user_id: auth.currentUser?.uid,
+    user_id: userId,
   });
 };
 
-export const trackSCwebsiteUser = (stagingUUID: string, isNewUser: boolean) => {
-  safelyTrackEvent('staging_user_visit', {
-    event_category: 'User Source',
-    event_label: 'Staging User',
-    user_id: stagingUUID,
-    staging_uuid: stagingUUID,
-    user_type: isNewUser ? 'new_user' : 'returning_user',
-    referrer: document.referrer,
-  });
-
-  if (typeof window.gtag === 'function') {
-    window.gtag('set', 'user_properties', {
-      is_staging_user: true,
-      staging_uuid: stagingUUID,
-      user_source: 'staging',
-    });
-
-    if (isNewUser) {
-      safelyTrackEvent('new_staging_user', {
-        event_category: 'User Acquisition',
-        event_label: 'New Staging User',
-        user_id: stagingUUID,
-        staging_uuid: stagingUUID,
-      });
-    }
-  }
-};
 
 export const setUserIdForAnalytics = () => {
   if (typeof window.gtag === 'function') {
     auth.onAuthStateChanged((user) => {
-      const userId = user ? user.uid : undefined;
+      let userId = user ? user.uid : undefined;
+      if (!userId && typeof window !== 'undefined') {
+        userId = localStorage.getItem('webBrowserId') || 'anonymous';
+      }
       try {
         window.gtag('config', process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, {
           user_id: userId,
@@ -127,3 +108,4 @@ export const setUserIdForAnalytics = () => {
     console.warn('Google Analytics gtag is not loaded');
   }
 };
+

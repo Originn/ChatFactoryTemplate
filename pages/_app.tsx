@@ -5,7 +5,7 @@ import AuthWrapper from '../auth/AuthWrapper';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
-import { setUserIdForAnalytics, trackSCwebsiteUser } from '@/utils/tracking';
+import { setUserIdForAnalytics } from '@/utils/tracking';
 import { v4 as uuidv4 } from 'uuid';
 
 function MyApp({ Component, pageProps }: AppProps) {
@@ -46,12 +46,6 @@ function MyApp({ Component, pageProps }: AppProps) {
 
           setIsFromSolidcamWeb(true);
 
-          // Safely track staging user
-          try {
-            trackSCwebsiteUser(webBrowserId, isNewUser);
-          } catch (error) {
-            console.error('Error tracking staging user:', error);
-          }
         } catch (error) {
           console.error('Error in staging setup:', error);
           setIsFromSolidcamWeb(false);
