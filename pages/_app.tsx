@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const [isFromSolidcamWeb, setisFromSolidcamWeb] = useState(false);
+  const [isFromSolidcamWeb, setIsFromSolidcamWeb] = useState(false);
 
   const noAuthRequired = [
     '/verify-email',
@@ -19,20 +19,21 @@ function MyApp({ Component, pageProps }: AppProps) {
     '/account-created-confirmation',
     '/password-reset-confirmation',
     '/acctmgmt',
-    '/privacy-policy'
+    '/privacy-policy',
   ];
 
   useEffect(() => {
     const checkStaging = async () => {
-      const referrer = document.referrer;
-      const isFromSolidcamWeb = /^(https?:\/\/)?(www\.|staging\.)solidcam\.com/.test(referrer);
-      
+      const queryParams = new URLSearchParams(window.location.search);
+      const referrer = queryParams.get('referrer'); // Get 'referrer' from the query string
+      const isFromSolidcamWeb = referrer === 'staging.solidcam.com'; // Validate referrer
+
       if (isFromSolidcamWeb) {
         try {
           // Generate or get staging browser ID
           let webBrowserId = localStorage.getItem('webBrowserId');
           const isNewUser = !webBrowserId;
-          
+
           if (!webBrowserId) {
             webBrowserId = uuidv4();
             localStorage.setItem('webBrowserId', webBrowserId);
@@ -40,15 +41,14 @@ function MyApp({ Component, pageProps }: AppProps) {
 
           const roomId = `room-${webBrowserId.slice(0, 10)}`;
           localStorage.setItem('roomId', roomId);
-          
-          setisFromSolidcamWeb(true);
+
+          setIsFromSolidcamWeb(true);
 
           // Track the staging user
           trackSCwebsiteUser(webBrowserId, isNewUser);
-
         } catch (error) {
           console.error('Error in staging setup:', error);
-          setisFromSolidcamWeb(false);
+          setIsFromSolidcamWeb(false);
         }
       }
     };
@@ -57,23 +57,23 @@ function MyApp({ Component, pageProps }: AppProps) {
     setUserIdForAnalytics();
   }, []);
 
-  const isAuthRequired = !noAuthRequired.some(path => 
+  const isAuthRequired = !noAuthRequired.some((path) =>
     router.pathname.startsWith(path)
   ) && !isFromSolidcamWeb;
 
   // Combine the existing pageProps with our new prop
   const enhancedProps = {
     ...pageProps,
-    isFromSolidcamWeb
+    isFromSolidcamWeb,
   };
 
   return (
     <>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta 
-          name="description" 
-          content="Visit our website to further your knowledge about SolidCAM using our LLM ChatBot. Get personalized assistance and detailed information to enhance your experience." 
+        <meta
+          name="description"
+          content="Visit our website to further your knowledge about SolidCAM using our LLM ChatBot. Get personalized assistance and detailed information to enhance your experience."
         />
         <title>SolidCAM Chat</title>
       </Head>
