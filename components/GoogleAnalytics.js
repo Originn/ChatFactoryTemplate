@@ -11,6 +11,7 @@ const GoogleAnalytics = () => {
     const handleRouteChange = (url) => {
       window.gtag('config', TRACKING_ID, {
         page_path: url,
+        cookie_flags: 'SameSite=None;Secure', // Include cookie_flags here
       });
     };
 
@@ -31,7 +32,9 @@ const GoogleAnalytics = () => {
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', '${TRACKING_ID}');
+      gtag('config', '${TRACKING_ID}', {
+        cookie_flags: 'SameSite=None;Secure',
+      });
     `;
     document.head.appendChild(scriptTag);
   }, []);

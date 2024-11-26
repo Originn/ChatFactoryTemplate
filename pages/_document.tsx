@@ -1,7 +1,8 @@
 // pages/_document.tsx
-
 import { Html, Head, Main, NextScript } from "next/document";
 import Script from "next/script";
+
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 export default function Document() {
   return (
@@ -38,14 +39,16 @@ export default function Document() {
                 if (isInIframe) {
                   // Load gtag.js dynamically in iframe
                   var script = document.createElement('script');
-                  script.src = 'https://www.googletagmanager.com/gtag/js?id=G-LRZR96PT9B';
+                  script.src = 'https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}';
                   script.async = true;
                   script.onload = function() {
                     window.dataLayer = window.dataLayer || [];
                     function gtag(){dataLayer.push(arguments);}
                     window.gtag = gtag;
                     gtag('js', new Date());
-                    gtag('config', 'G-LRZR96PT9B');
+                    gtag('config', '${GA_MEASUREMENT_ID}', {
+                      cookie_flags: 'SameSite=None;Secure',
+                    });
                     console.log('Google Analytics initialized in iframe.');
                     window.gtagReady = true; // Set the flag to indicate gtag is ready
                   };
@@ -53,7 +56,7 @@ export default function Document() {
                 } else {
                   // Load gtag.js normally on the main site
                   var script = document.createElement('script');
-                  script.src = 'https://www.googletagmanager.com/gtag/js?id=G-LRZR96PT9B';
+                  script.src = 'https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}';
                   script.async = true;
                   script.setAttribute('data-cookie-consent', 'tracking');
                   document.head.appendChild(script);
@@ -110,7 +113,9 @@ export default function Document() {
                     function gtag(){dataLayer.push(arguments);}
                     window.gtag = gtag;
                     gtag('js', new Date());
-                    gtag('config', 'G-LRZR96PT9B');
+                    gtag('config', '${GA_MEASUREMENT_ID}', {
+                      cookie_flags: 'SameSite=None;Secure',
+                    });
                     console.log('Google Analytics initialized on main website.');
                   }
 
