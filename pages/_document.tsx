@@ -5,23 +5,40 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap"
-          rel="stylesheet"
-        />
-        {/* Cookie Consent and Tracking */}
-        <Script
-          src="https://www.termsfeed.com/public/cookie-consent/4.1.0/cookie-consent.js"
-          charSet="UTF-8"
-          strategy="beforeInteractive"
-        ></Script>
+        {/* Your existing code */}
         <Script
           src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/3.0.1/js.cookie.min.js"
           strategy="beforeInteractive"
         ></Script>
+        {/* Remove the gtag.js script from here */}
+        {/* ... */}
+      </Head>
+      <body>
+        <Main />
+        <NextScript />
+        {/* Move the gtag.js script here */}
+        <Script
+          id="gtag-script"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                const isInIframe = window !== window.parent;
+
+                if (!isInIframe) {
+                  // Load gtag.js only if not in iframe
+                  var script = document.createElement('script');
+                  script.src = 'https://www.googletagmanager.com/gtag/js?id=G-LRZR96PT9B';
+                  script.async = true;
+                  document.head.appendChild(script);
+                }
+              })();
+            `,
+          }}
+        ></Script>
         <Script
           id="cookie-consent-and-tracking"
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               document.addEventListener('DOMContentLoaded', function () {
@@ -32,25 +49,23 @@ export default function Document() {
                   Cookies.set('cookie_consent_user_accepted', 'true', { expires: 365 });
                   Cookies.set('cookieconsent_status', 'allow', { expires: 365 });
 
-                  // Initialize Google Analytics immediately
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', 'G-LRZR96PT9B');
-                  console.log('Google Analytics initialized in iframe.');
+                  // Load gtag.js dynamically
+                  var script = document.createElement('script');
+                  script.src = 'https://www.googletagmanager.com/gtag/js?id=G-LRZR96PT9B';
+                  script.async = true;
+                  script.onload = function() {
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    window.gtag = gtag;
+                    gtag('js', new Date());
+                    gtag('config', 'G-LRZR96PT9B');
+                    console.log('Google Analytics initialized in iframe.');
+                  };
+                  document.head.appendChild(script);
                 } else {
                   // Display cookie banner on main website
                   cookieconsent.run({
-                    "notice_banner_type": "simple",
-                    "consent_type": "express",
-                    "palette": "light",
-                    "language": "en",
-                    "page_load_consent_levels": ["strictly-necessary"],
-                    "notice_banner_reject_button_hide": false,
-                    "preferences_center_close_button_hide": false,
-                    "page_refresh_confirmation_buttons": false,
-                    "website_name": "solidcamchat",
-                    "website_privacy_policy_url": "https://www.solidcamchat.com/privacy-policy",
+                    // Your cookie consent configurations
                     onInitialConsent: function(status) {
                       handleConsentChange(status);
                     },
@@ -70,14 +85,14 @@ export default function Document() {
                   function enableTrackingScripts() {
                     window.dataLayer = window.dataLayer || [];
                     function gtag(){dataLayer.push(arguments);}
+                    window.gtag = gtag;
                     gtag('js', new Date());
                     gtag('config', 'G-LRZR96PT9B');
                     console.log('Google Analytics initialized on main website.');
                   }
 
                   function disableTrackingScripts() {
-                    const trackingScripts = document.querySelectorAll('script[data-cookie-consent="tracking"]');
-                    trackingScripts.forEach(script => script.remove());
+                    // Disable tracking scripts
                     window.gtag = function() {}; // Override gtag to prevent errors
                     console.warn('Tracking scripts disabled.');
                   }
@@ -86,18 +101,7 @@ export default function Document() {
             `,
           }}
         ></Script>
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-LRZR96PT9B"
-          strategy="afterInteractive"
-          data-cookie-consent="tracking"
-        ></Script>
-        <noscript>
-          Free cookie consent management tool by <a href="https://www.termsfeed.com/">TermsFeed</a>
-        </noscript>
-      </Head>
-      <body>
-        <Main />
-        <NextScript />
+        {/* Remove the existing gtag.js script tag */}
       </body>
     </Html>
   );

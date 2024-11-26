@@ -7,16 +7,18 @@ const getCookieConsent = () => {
 };
 
 const safelyTrackEvent = (eventName: string, eventParams: object) => {
-  if (typeof window.gtag === 'function') {
+  if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
     try {
       window.gtag('event', eventName, eventParams);
     } catch (error) {
       console.error(`Error tracking event "${eventName}":`, error);
     }
   } else {
+    // Optionally, queue events or retry after a delay
     console.warn('Google Analytics gtag is not loaded');
   }
 };
+
 
 export const handleWebinarClick = (url: string) => {
   const consent = getCookieConsent();
