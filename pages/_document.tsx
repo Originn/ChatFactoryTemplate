@@ -9,6 +9,7 @@ export default function Document() {
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap"
           rel="stylesheet"
         />
+        {/* Cookie Consent and Tracking */}
         <Script
           src="https://www.termsfeed.com/public/cookie-consent/4.1.0/cookie-consent.js"
           charSet="UTF-8"
@@ -19,15 +20,26 @@ export default function Document() {
           strategy="beforeInteractive"
         ></Script>
         <Script
-          id="cookie-consent-script"
+          id="cookie-consent-and-tracking"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               document.addEventListener('DOMContentLoaded', function () {
-                // Check if page is in an iframe
                 const isInIframe = window !== window.parent;
 
-                if (!isInIframe) {
+                if (isInIframe) {
+                  // Automatically accept cookies in iframe
+                  Cookies.set('cookie_consent_user_accepted', 'true', { expires: 365 });
+                  Cookies.set('cookieconsent_status', 'allow', { expires: 365 });
+
+                  // Initialize Google Analytics immediately
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', 'G-LRZR96PT9B');
+                  console.log('Google Analytics initialized in iframe.');
+                } else {
+                  // Display cookie banner on main website
                   cookieconsent.run({
                     "notice_banner_type": "simple",
                     "consent_type": "express",
@@ -46,36 +58,29 @@ export default function Document() {
                       handleConsentChange(status);
                     }
                   });
-                } else {
-                  // Automatically set consent for iframe users
-                  Cookies.set('cookie_consent_user_accepted', 'true', { expires: 365 });
-                  // Also set the cookieconsent status cookie to maintain consistency
-                  Cookies.set('cookieconsent_status', 'allow', { expires: 365 });
-                }
 
-                function handleConsentChange(status) {
-                  if (!cookieconsent.hasConsented('tracking')) {
-                    disableTrackingScripts();
+                  function handleConsentChange(status) {
+                    if (cookieconsent.hasConsented('tracking')) {
+                      enableTrackingScripts();
+                    } else {
+                      disableTrackingScripts();
+                    }
                   }
-                }
 
-                function disableTrackingScripts() {
-                  const trackingScripts = document.querySelectorAll('script[data-cookie-consent="tracking"]');
-                  trackingScripts.forEach(script => script.remove());
+                  function enableTrackingScripts() {
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+                    gtag('config', 'G-LRZR96PT9B');
+                    console.log('Google Analytics initialized on main website.');
+                  }
 
-                  window.gtag = function() {};
-                  window.handleWebinarClick = function() {};
-                  window.handleDocumentClick = function() {};
-                  window.measureFirstTokenTime = function() {};
-                }
-
-                // Initialize tracking if in iframe
-                if (isInIframe) {
-                  // Initialize Google Analytics right away for iframe users
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', 'G-LRZR96PT9B');
+                  function disableTrackingScripts() {
+                    const trackingScripts = document.querySelectorAll('script[data-cookie-consent="tracking"]');
+                    trackingScripts.forEach(script => script.remove());
+                    window.gtag = function() {}; // Override gtag to prevent errors
+                    console.warn('Tracking scripts disabled.');
+                  }
                 }
               });
             `,
@@ -86,7 +91,6 @@ export default function Document() {
           strategy="afterInteractive"
           data-cookie-consent="tracking"
         ></Script>
-        {/* Remove the separate Google Analytics script since it's now handled in the main script */}
         <noscript>
           Free cookie consent management tool by <a href="https://www.termsfeed.com/">TermsFeed</a>
         </noscript>
