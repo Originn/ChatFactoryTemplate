@@ -62,7 +62,7 @@ const Layout: FC<LayoutProps> = ({
             )}
 
             {/* Only show New Chat button for non-solidcam.com users */}
-            {!isFromSolidcamWeb && (
+            
               <Tooltip message="Start a new chat">
                 <button onClick={handleNewChat} className={newChatButtonClass}>
                   <Image
@@ -73,7 +73,7 @@ const Layout: FC<LayoutProps> = ({
                   />
                 </button>
               </Tooltip>
-            )}
+            
 
             {/* Theme Toggle Button - show for all users */}
             <Tooltip message={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
