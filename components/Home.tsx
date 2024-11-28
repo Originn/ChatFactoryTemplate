@@ -79,17 +79,21 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       const storedRoomId = localStorage.getItem('roomId');
       if (storedRoomId) {
         return storedRoomId;
+      } else if (isFromSolidcamWeb) {
+        // Embedded in SolidCAM Web, wait for parent to send roomId
+        console.log('Iframe: Embedded in SolidCAM Web, waiting for ROOM_ID from parent');
+        return null;
       } else {
-        const isFromSolidcamWeb = document.referrer.includes('solidcam.com');
-        const newRoomId = isFromSolidcamWeb ? 
-          `web-${uuidv4().slice(0, 8)}` : 
-          `room-${Date.now()}`;
+        // Not embedded, generate new roomId
+        const newRoomId = `room-${Date.now()}`;
         localStorage.setItem('roomId', newRoomId);
+        console.log('Iframe: Not embedded, generated new roomId:', newRoomId);
         return newRoomId;
       }
     }
-    return `room-${Date.now()}`; // Fallback for SSR
+    return null; // Fallback for SSR
   });
+  
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [messageState, setMessageState] = useState<{
     messages: Message[];
@@ -345,6 +349,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       };
     }
   }, [socket, roomId]);
+
 
 
 
@@ -617,16 +622,23 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     const newRoomId = `room-${Date.now()}`;
     setRoomId(newRoomId);
     localStorage.setItem('roomId', newRoomId);
+    changeRoom(newRoomId); // Update socket connection
   
-    if (socket) {
-      socket.emit('joinRoom', newRoomId);
+    // Notify parent about the new roomId
+    if (isFromSolidcamWeb) {
+      console.log('Iframe: Sending ROOM_ID_UPDATE to parent with roomId:', newRoomId);
+      window.parent.postMessage(
+        { type: 'ROOM_ID_UPDATE', roomId: newRoomId },
+        'https://staging.solidcam.com'
+      );
     }
   
     setIsNewChat(true);
-    setIsEmbeddingMode(false); // Reset embedding mode
-    setGppQuestionMode(false); // Reset gppQuestion mode
+    setIsEmbeddingMode(false);
+    setGppQuestionMode(false);
     setCodebaseQuestionMode(false);
   };
+  
 
   // Function to load the user's latest chat history
   const loadChatHistory = async () => {
@@ -654,14 +666,12 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
           MemoryService.loadFullConversationHistory(roomId, conversation);
         }
       } else if (response.status === 404) {
-        // Handle 404 by returning without logging anything
-        //console.log('No chat history found for room:', roomId); // Optional: Only for debugging
-        return; // Avoid error or further processing
+        // No chat history found
+        return;
       } else {
         throw new Error('Failed to load chat history.');
       }
     } catch (error) {
-      // Handle any other errors, if necessary
       setError('Error loading chat history. Please try again later.');
     }
   };
@@ -708,6 +718,32 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
 
     return () => messageListElement?.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const receiveMessage = (event: MessageEvent) => {
+      if (event.origin !== 'https://staging.solidcam.com') {
+        console.warn('Iframe: Origin not allowed:', event.origin);
+        return;
+      }
+      if (event.data.type === 'ROOM_ID') {
+        const receivedRoomId = event.data.roomId;
+        console.log('Iframe: Received ROOM_ID from parent:', receivedRoomId);
+  
+        // Update roomId and load chat history
+        setRoomId(receivedRoomId);
+        localStorage.setItem('roomId', receivedRoomId);
+        changeRoom(receivedRoomId); // Update the socket connection
+        loadChatHistory(); // Load existing chat history
+      }
+    };
+  
+    window.addEventListener('message', receiveMessage);
+  
+    return () => {
+      window.removeEventListener('message', receiveMessage);
+    };
+  }, [changeRoom, loadChatHistory, roomId]);
+
 
   const isPrivateDelete = currentStage !== 4;
   return (
