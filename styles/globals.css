@@ -1,10 +1,4 @@
 /* Global Styles (e.g., in _app.tsx or a global CSS file) */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 :root {
     --background-light: #ffffff;
     --background-dark: #000000;
