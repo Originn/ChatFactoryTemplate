@@ -1072,11 +1072,8 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                     value={query}
                     className={styles.textarea}
                     readOnly={currentStage === 4}
-                    style={{
-                      height: isFromSolidcamWeb ? '58px' : 'auto',
-                      transform: isFromSolidcamWeb ? 'translateY(-34px)' : 'none',
-                    }}
                   />
+
                   {/* Conditionally render the ImageUpload component */}
                   {!loading && <ImageUpload handleFileChange={handleFileChange} />}
 
