@@ -394,10 +394,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   
     return () => unsubscribe(); // Cleanup subscription
   }, []);
-
-  useEffect(() => {
-    adjustTextAreaHeight();
-  }, []);
+  
 
   const adjustTextAreaHeight = () => {
     if (textAreaRef.current) {
