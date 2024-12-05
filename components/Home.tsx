@@ -630,7 +630,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       console.log('Iframe: Sending ROOM_ID_UPDATE to parent with roomId:', newRoomId);
       window.parent.postMessage(
         { type: 'ROOM_ID_UPDATE', roomId: newRoomId },
-        'https://staging.solidcam.com'
+        '*' // Change to '*' for testing or to the actual parent origin
       );
     }
   
