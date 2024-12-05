@@ -726,7 +726,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   
       const allowedOrigins = [
         'http://127.0.0.1:5500', // Parent's origin during development
-        'https://your-production-domain.com', // Parent's production origin
+        'https://staging.solidcam.com', // Parent's production origin
       ];
   
       if (!allowedOrigins.includes(event.origin)) {
@@ -758,7 +758,8 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     return () => {
       window.removeEventListener('message', receiveMessage);
     };
-  }, [changeRoom, loadChatHistory]);
+  }, []); // Empty dependency array to prevent re-running
+  
   
 
 
