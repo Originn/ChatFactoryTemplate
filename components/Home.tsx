@@ -722,10 +722,19 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
 
   useEffect(() => {
     const receiveMessage = (event: MessageEvent) => {
-      if (event.origin !== 'https://staging.solidcam.com') {
+      const allowedOrigins = [
+        'https://solidcam-staging-d58dfa13bbb6.herokuapp.com',
+        'http://127.0.0.1:5500',
+        'http://localhost:5500',
+        'https://staging.solidcam.com', // Include this if applicable
+        // Add any other allowed origins here
+      ];
+  
+      if (!allowedOrigins.includes(event.origin)) {
         console.warn('Iframe: Origin not allowed:', event.origin);
         return;
       }
+  
       if (event.data.type === 'ROOM_ID') {
         const receivedRoomId = event.data.roomId;
         console.log('Iframe: Received ROOM_ID from parent:', receivedRoomId);
@@ -743,7 +752,8 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     return () => {
       window.removeEventListener('message', receiveMessage);
     };
-  }, [changeRoom, loadChatHistory, roomId]);
+  }, [changeRoom, loadChatHistory]);
+  
 
 
   const isPrivateDelete = currentStage !== 4;
