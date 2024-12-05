@@ -722,12 +722,11 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
 
   useEffect(() => {
     const receiveMessage = (event: MessageEvent) => {
+      console.log('Iframe: Received message:', event.origin, event.data);
+  
       const allowedOrigins = [
-        'https://solidcam-staging-d58dfa13bbb6.herokuapp.com',
-        'http://127.0.0.1:5500',
-        'http://localhost:5500',
-        'https://staging.solidcam.com', // Include this if applicable
-        // Add any other allowed origins here
+        'http://127.0.0.1:5500', // Parent's origin during development
+        'https://your-production-domain.com', // Parent's production origin
       ];
   
       if (!allowedOrigins.includes(event.origin)) {
@@ -742,12 +741,19 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
         // Update roomId and load chat history
         setRoomId(receivedRoomId);
         localStorage.setItem('roomId', receivedRoomId);
-        changeRoom(receivedRoomId); // Update the socket connection
-        loadChatHistory(); // Load existing chat history
+        changeRoom(receivedRoomId);
+        loadChatHistory();
       }
     };
   
     window.addEventListener('message', receiveMessage);
+  
+    // Notify parent that iframe is ready
+    const parentOrigin = document.referrer
+      ? new URL(document.referrer).origin
+      : '*';
+    console.log('Iframe: Sending IFRAME_READY to parent with origin:', parentOrigin);
+    window.parent.postMessage({ type: 'IFRAME_READY' }, parentOrigin);
   
     return () => {
       window.removeEventListener('message', receiveMessage);
