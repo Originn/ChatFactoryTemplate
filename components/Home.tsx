@@ -1,6 +1,6 @@
 // components/Home.tsx
 
-import React, { useRef, useState, useEffect, ComponentProps, FC } from 'react';
+import React, { useRef, useState, useEffect, ComponentProps, FC, useCallback } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import LoadingDots from './ui/LoadingDots';
@@ -642,16 +642,16 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   
 
   // Function to load the user's latest chat history
-  const loadChatHistory = async () => {
+  const loadChatHistory = useCallback(async () => {
     if (!roomId) return;
-  
+
     try {
       const response = await fetch(`/api/latest-chat-history?userEmail=${userEmail}&roomId=${roomId}`);
       if (response.ok) {
         const historyData = await response.json();
         if (historyData && historyData.conversation_json) {
           const conversation = historyData.conversation_json;
-  
+
           setMessageState({
             messages: conversation.map((msg: any) => ({
               ...msg,
@@ -663,19 +663,21 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
               .filter((msg: any) => msg.type === 'userMessage')
               .map((msg: any) => [msg.message, ''] as [string, string]),
           });
-  
+
           MemoryService.loadFullConversationHistory(roomId, conversation);
         }
       } else if (response.status === 404) {
         // No chat history found
+        console.log('No chat history found for roomId:', roomId);
         return;
       } else {
         throw new Error('Failed to load chat history.');
       }
     } catch (error) {
+      console.error('Error loading chat history:', error);
       setError('Error loading chat history. Please try again later.');
     }
-  };
+  }, [roomId, userEmail]); // Include roomId and userEmail in dependencies
   
 
   // Load chat history on component mount (page refresh)
@@ -727,6 +729,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       const allowedOrigins = [
         'http://127.0.0.1:5500', // Parent's origin during development
         'https://staging.solidcam.com', // Parent's production origin
+        // Add any other allowed origins here
       ];
   
       if (!allowedOrigins.includes(event.origin)) {
@@ -738,11 +741,11 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
         const receivedRoomId = event.data.roomId;
         console.log('Iframe: Received ROOM_ID from parent:', receivedRoomId);
   
-        // Update roomId and load chat history
+        // Update roomId and localStorage
         setRoomId(receivedRoomId);
         localStorage.setItem('roomId', receivedRoomId);
-        changeRoom(receivedRoomId);
-        loadChatHistory();
+        changeRoom(receivedRoomId); // Update the socket connection
+        // Do NOT call loadChatHistory here
       }
     };
   
@@ -758,10 +761,15 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     return () => {
       window.removeEventListener('message', receiveMessage);
     };
-  }, []); // Empty dependency array to prevent re-running
+  }, [changeRoom]); // Include changeRoom in dependencies
   
   
-
+  useEffect(() => {
+    if (roomId) {
+      console.log('Iframe: roomId changed, loading chat history for roomId:', roomId);
+      loadChatHistory();
+    }
+  }, [roomId, loadChatHistory]); // Dependency array includes roomId
 
   const isPrivateDelete = currentStage !== 4;
   return (
