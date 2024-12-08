@@ -1,5 +1,5 @@
-// components/Home.tsx
-
+//components/Home.tsx
+//
 import React, { useRef, useState, useEffect, ComponentProps, FC, useCallback } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
