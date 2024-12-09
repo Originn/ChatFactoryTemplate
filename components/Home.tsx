@@ -1106,7 +1106,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                   {!loading && <ImageUpload handleFileChange={handleFileChange} />}
 
                   {/* Conditionally render the general file input and label */}
-                  {!loading && (
+                  {!loading && !isFromSolidcamWeb && (
                     <>
                       <input
                         ref={fileInputRef}
@@ -1135,7 +1135,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                   )}
 
                   {currentStage === 4 ? (
-                    !loading && (
+                    !loading && !isFromSolidcamWeb && (
                       <label
                         htmlFor="fileInput"
                         className={styles.fileUploadButton}
