@@ -1,4 +1,4 @@
-//components/Home.tsx
+// components/Home.tsx
 
 import React, { useRef, useState, useEffect, ComponentProps, FC, useCallback } from 'react';
 import Image from 'next/image';
@@ -1103,8 +1103,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                     }}
                   />
                   {/* Conditionally render the ImageUpload component */}
-                  {!loading && !isFromSolidcamWeb &&<ImageUpload handleFileChange={handleFileChange} />}
-
+                  {!loading && !isFromSolidcamWeb && <ImageUpload handleFileChange={handleFileChange} />}
                   {/* Conditionally render the general file input and label */}
                   {!loading && (
                     <>
