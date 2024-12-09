@@ -1,5 +1,5 @@
 //components/Home.tsx
-//
+
 import React, { useRef, useState, useEffect, ComponentProps, FC, useCallback } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
@@ -1103,10 +1103,10 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                     }}
                   />
                   {/* Conditionally render the ImageUpload component */}
-                  {!loading && <ImageUpload handleFileChange={handleFileChange} />}
+                  {!loading && !isFromSolidcamWeb &&<ImageUpload handleFileChange={handleFileChange} />}
 
                   {/* Conditionally render the general file input and label */}
-                  {!loading && !isFromSolidcamWeb && (
+                  {!loading && (
                     <>
                       <input
                         ref={fileInputRef}
@@ -1135,7 +1135,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                   )}
 
                   {currentStage === 4 ? (
-                    !loading && !isFromSolidcamWeb && (
+                    !loading && (
                       <label
                         htmlFor="fileInput"
                         className={styles.fileUploadButton}
