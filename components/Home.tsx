@@ -164,6 +164,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
 
   useEffect(() => {
     console.log('isFromSolidcamWeb in Home:', isFromSolidcamWeb);
+    setisFromSolidcamWebState(isFromSolidcamWeb || false);
   }, [isFromSolidcamWeb]);
 
   useEffect(() => {
