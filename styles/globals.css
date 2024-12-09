@@ -1194,6 +1194,10 @@ body.dark .signin-popup-body-input:disabled {
 
   @media (max-width: 768px) {
 
+    .modal {
+      width: 95%;
+    }
+
     
     #termsfeed-com---nb {
       bottom: 0 !important;
