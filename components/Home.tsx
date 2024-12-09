@@ -1106,7 +1106,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                   {/* Conditionally render the ImageUpload component */}
                   {!loading && !isFromSolidcamWeb && <ImageUpload handleFileChange={handleFileChange} />}
                   {/* Conditionally render the general file input and label */}
-                  {!loading && (
+                  {!loading && !isFromSolidcamWeb &&(
                     <>
                       <input
                         ref={fileInputRef}
