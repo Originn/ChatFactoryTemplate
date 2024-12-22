@@ -25,36 +25,36 @@ function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
     const checkStaging = async () => {
       const queryParams = new URLSearchParams(window.location.search);
-      const referrer = queryParams.get('referrer');
+      const referrer = queryParams.get('referrer') || document.referrer; // Fallback to document.referrer
       console.log('Referrer:', referrer);
-
-      const isFromSolidcamWeb = referrer === 'staging.solidcam.com';
+  
+      // Check if referrer includes the SolidCAM staging domain
+      const isFromSolidcamWeb = referrer.includes('staging.solidcam.com');
       console.log('isFromSolidcamWeb:', isFromSolidcamWeb);
-
+  
       if (isFromSolidcamWeb) {
         try {
           let webBrowserId = localStorage.getItem('webBrowserId');
           const isNewUser = !webBrowserId;
-
+  
           if (!webBrowserId) {
             webBrowserId = uuidv4();
             localStorage.setItem('webBrowserId', webBrowserId);
           }
-
+  
           const roomId = `room-${webBrowserId.slice(0, 10)}`;
           localStorage.setItem('roomId', roomId);
-
+  
           setIsFromSolidcamWeb(true);
-
         } catch (error) {
           console.error('Error in staging setup:', error);
           setIsFromSolidcamWeb(false);
         }
       }
     };
-
+  
     checkStaging();
-
+  
     try {
       setUserIdForAnalytics();
     } catch (error) {
