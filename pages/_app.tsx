@@ -29,7 +29,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       console.log('Referrer:', referrer);
   
       // Check if referrer includes the SolidCAM staging domain
-      const isFromSolidcamWeb = referrer.includes('staging.solidcam.com');
+      const isFromSolidcamWeb = referrer.includes('staging.solidcam.com') || referrer.includes('solidcam.com');
       console.log('isFromSolidcamWeb:', isFromSolidcamWeb);
   
       if (isFromSolidcamWeb) {
