@@ -134,14 +134,12 @@ const insertChatHistory = async (userEmail, conversationTitle, roomId, messages)
   `;
 
   try {
-    console.log('Query params:', { userEmail, conversationTitle, roomId, messagesLength: processedMessages.length }); // Debug log
     const result = await pool.query(query, [
       userEmail,
       conversationTitle,
       roomId,
       JSON.stringify(processedMessages)
     ]);
-    console.log('Insert/Update result:', result.rows[0]); // Debug log
     return result.rows[0];
   } catch (error) {
     console.error('Error inserting chat history:', error);
