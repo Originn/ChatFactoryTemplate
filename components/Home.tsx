@@ -730,7 +730,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       const allowedOrigins = [
         'http://127.0.0.1:5500', // Parent's origin during development
         'https://staging.solidcam.com', // Parent's production origin
-        'https://solidcam.com',
+        'https://www.solidcam.com',
         // Add any other allowed origins here
       ];
   
