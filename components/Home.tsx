@@ -533,10 +533,10 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   
       // Determine the endpoint based on the active mode
       const isEmbedding = isEmbeddingMode || trimmedQuery.startsWith(codePrefix);
-      const isGppQuestion = gppQuestionMode || trimmedQuery.startsWith(gppKeyword);
+      //const isGppQuestion = gppQuestionMode || trimmedQuery.startsWith(gppKeyword);
       const isCodebaseQuestion = codebaseQuestionMode || trimmedQuery.startsWith(codebaseKeyword);
 
-      const endpoint = isEmbedding ? '/api/userEmbed' : isGppQuestion ? '/api/gppQuestions' : isCodebaseQuestion ? '/api/codeBaseQuestions' : '/api/chat';
+      const endpoint = isEmbedding ? '/api/userEmbed' : isCodebaseQuestion ? '/api/codeBaseQuestions' : '/api/chat';
       const imagePreviewsToUse = isEmbedding ? imagePreviews : homeImagePreviews;
       const imageUrls = imagePreviewsToUse.slice(0, 3).map((preview) => preview.url);
   
