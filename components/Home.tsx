@@ -34,14 +34,12 @@ import { ChatHistoryItem } from './ChatHistory';
 import { io, Socket } from 'socket.io-client';
 import MemoryService from '@/utils/memoryService';
 import { handleWebinarClick, handleDocumentClick, handleSubmitClick, handleSubmitClickWeb } from '@/utils/tracking';
-import { v4 as uuidv4 } from 'uuid';
 import Tooltip from './Tooltip';
 import InitialDisclaimerModal from './InitialDisclaimerModal';
 import Cookies from 'js-cookie';
 
 
 const PRODUCTION_ENV = 'production';
-const LOCAL_URL = 'http://localhost:3000';
 const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
 
 let imageUrlUserIcon = '/usericon.png';
