@@ -181,24 +181,16 @@ const toggleForm = () => {
   setShowModal(true); // Open the Sign Up popup
 };
 
-  const handleNextClick = async () => {
-    if (!validateEmail(email)) {
-        setErrorMessage('Please enter a valid email address.');
-        return;
-    }
+const handleNextClick = async () => {
+  console.log('Starting handleNextClick with email:', email);
 
-    try {
-        const methods = await fetchSignInMethodsForEmail(auth, email);
-        if (methods.length === 0) {
-            setErrorMessage('No account found with this email. Please sign up.');
-        } else {
-            setEmailSubmitted(true); // This state change triggers the useEffect
-            setErrorMessage('');
-        }
-    } catch (error) {
-        console.error('Error checking user email:', error);
-        setErrorMessage('An error occurred while checking the email.');
-    }
+  if (!validateEmail(email)) {
+      console.log('Email validation failed');
+      setErrorMessage('Please enter a valid email address.');
+      return;
+  }
+    setEmailSubmitted(true);
+    setErrorMessage('');
 };
 
 useEffect(() => {
