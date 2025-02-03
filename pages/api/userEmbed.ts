@@ -1,28 +1,26 @@
 // pages/api/userEmbed.ts
-
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getIO } from "@/socketServer.cjs";
+import createClient from "openai";
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
 import { getPinecone } from '@/utils/pinecone-client';
 import { PINECONE_NAME_SPACE } from '@/config/pinecone';
-import { getIO } from "@/socketServer.cjs";
 import { QuestionEmbedder } from "@/scripts/QuestionEmbedder";
-import createClient from "openai";
 import MemoryService from '@/utils/memoryService';
 
-// Initialize OpenAI client
+// Import your DB session methods
+import {
+  getRoomSession,
+  createRoomSession,
+  updateRoomSession,
+  deleteRoomSession,
+} from '@/utils/roomSessionsDb'; // adjust path if needed
+
+// The (optional) Embeddings-based client
 const openAIClient = new createClient({});
 
-interface RoomSession {
-  stage: number;
-  header?: string;
-  text?: string;
-  images?: { url: string, description?: string }[];
-}
-
-const roomSessions: { [key: string]: RoomSession } = {};
-
-// Utility function to get image description
+// Utility to fetch an image description (if you're using a standard GPT model)
 async function getImageDescription(imageUrl: string, roomId: string) {
   const io = getIO();
   try {
@@ -41,93 +39,89 @@ async function getImageDescription(imageUrl: string, roomId: string) {
         },
       ],
       max_tokens: 300,
-      stream: true,
     });
 
-    let description = '';
-    for await (const token of response) {
-      if (token.choices[0]?.delta?.content) {
-        description += token.choices[0].delta.content;
-        io.to(roomId).emit("newToken", token.choices[0].delta.content);
-      }
-    }
-
+    const description = response.choices?.[0]?.message?.content || "No description found.";
+    io.to(roomId).emit(`tokenStream-${roomId}`, description);
     return description;
   } catch (error) {
     console.error('Error getting image description:', error);
-    io.to(roomId).emit("newToken", "Error getting image description.");
-    return "Error getting image description.";
+    io.to(roomId).emit(`tokenStream-${roomId}`, 'Error getting image description.');
+    return 'Error getting image description.';
   }
 }
 
-// Utility function to handle embedding and response
-async function handleEmbeddingAndResponse(session: RoomSession, roomId: string, userEmail: string) {
+// Embedding + response
+async function handleEmbeddingAndResponse(roomId: string, userEmail: string) {
   const io = getIO();
+
+  // 1) Retrieve the current row from DB again, in case it's updated
+  const session = await getRoomSession(roomId);
+  if (!session) {
+    throw new Error(`No session found in DB for roomId=${roomId} during embedding.`);
+  }
+
+  const { header, text, images } = session;
   const codePrefix = 'embed-4831-embed-4831';
 
-  // Proceed directly to the embedding logic
-  const pinecone = await getPinecone();
-  const vectorStore = await PineconeStore.fromExistingIndex(
-    new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
-    {
-      pineconeIndex: pinecone,
-      namespace: PINECONE_NAME_SPACE,
-      textKey: 'text',
-    },
-  );
+  // 2) Construct the text to embed
+  const imagesText = images?.map(
+    (img: any) => `${img.url} image description: ${img.description}`
+  ).join(' ') || '';
 
-  const questionEmbedder = new QuestionEmbedder(
-    vectorStore,
-    new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
-    userEmail
-  );
-
-  const imagesText = session.images?.map(img => `${img.url} image description: ${img.description}`).join(' ') || '';
-  const headerAndText = `${codePrefix} header: ${session.header} ${imagesText} text: ${session.text}`;
+  const headerAndText = `${codePrefix} header: ${header} ${imagesText} text: ${text}`;
 
   try {
-    const embedQuestionResult = await questionEmbedder.embedQuestion(headerAndText, userEmail);
-    if (embedQuestionResult) {
-      const message = '\n\n**Your text and images (if provided) have been successfully embedded.**';
-      io.to(roomId).emit(`tokenStream-${roomId}`, message);
-  
-      // Emit an event to remove the thumbnails from the frontend
-      io.to(roomId).emit("removeThumbnails");
-      io.to(roomId).emit(`resetStages-${roomId}`, 4);
-      io.to(roomId).emit('embeddingComplete');
+    // 3) Connect to Pinecone
+    const pinecone = await getPinecone();
+    const vectorStore = await PineconeStore.fromExistingIndex(
+      new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
+      {
+        pineconeIndex: pinecone,
+        namespace: PINECONE_NAME_SPACE,
+        textKey: 'text',
+      },
+    );
 
-      delete roomSessions[roomId];
-      
-      // Emit an event to hide the banner on success
-      io.to(roomId).emit("uploadStatus", "Upload and processing complete.");
-      return { status: 200, message };
-    } else {
-      console.error(`Embedding failed for roomId: ${roomId}`);
-      const message = 'Embedding failed. Please try again.';
-      io.to(roomId).emit(`tokenStream-${roomId}`, message);
-      
-      // Emit an event to hide the banner on failure
-      io.to(roomId).emit("uploadStatus", "Upload and processing failed.");
-      return { status: 500, message };
+    const questionEmbedder = new QuestionEmbedder(
+      vectorStore,
+      new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
+      userEmail
+    );
+
+    // 4) Embed
+    const embedQuestionResult = await questionEmbedder.embedQuestion(headerAndText, userEmail);
+    if (!embedQuestionResult) {
+      throw new Error('Embedding failed. Please try again.');
     }
-  } catch (error) {
-    console.error(`Error during embedding for roomId: ${roomId}:`, error);
-    const message = 'Embedding process encountered an error. Please try again.';
+
+    // 5) Notify UI
+    const message = '\n\n**Your text and images (if provided) have been successfully embedded.**';
     io.to(roomId).emit(`tokenStream-${roomId}`, message);
-    
-    // Emit an event to hide the banner on error
+    io.to(roomId).emit("removeThumbnails");
+    io.to(roomId).emit(`resetStages-${roomId}`, 4);
+    io.to(roomId).emit('embeddingComplete');
+    io.to(roomId).emit("uploadStatus", "Upload and processing complete.");
+
+    // 6) Delete the session from DB now that we are finished
+    await deleteRoomSession(roomId);
+
+    return { status: 200, message };
+  } catch (err) {
+    console.error('Error during embedding for roomId:', roomId, err);
+    io.to(roomId).emit(`tokenStream-${roomId}`, 'Embedding process encountered an error. Please try again.');
     io.to(roomId).emit("uploadStatus", "Upload and processing failed.");
-    return { status: 500, message };
+    return { status: 500, message: (err as Error).message || 'Error in embedding' };
   }
 }
 
+// Keep or adapt your syncChatHistory logic
 async function syncChatHistory(roomId: string, clientHistory: any[], userEmail: string) {
   const serverHistory = await MemoryService.getChatHistory(roomId);
 
   if (clientHistory.length > serverHistory.length) {
     // Clear existing server history
     MemoryService.clearChatMemory(roomId);
-
     // Reconstruct the history from client data
     for (const [input, output] of clientHistory) {
       await MemoryService.updateChatMemory(roomId, input, output, [], userEmail);
@@ -137,20 +131,23 @@ async function syncChatHistory(roomId: string, clientHistory: any[], userEmail: 
   }
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const { question, history, roomId, imageUrls, userEmail } = req.body;
-
+/**
+ * This is your Next.js API handler for the embedding flow.
+ *
+ * 1) It uses a DB-based session (room_sessions table) instead of an in-memory object.
+ * 2) The user enters codePrefix => stage=1 => provide header => stage=2 => provide text => stage=3 => optionally upload images => stage=4 => embed => delete session.
+ */
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const { question, history, roomId, imageUrls, userEmail } = req.body;
   if (!roomId) {
     return res.status(400).json({ message: 'No roomId in the request' });
   }
 
+  // Possibly sync the user’s chat history
   await syncChatHistory(roomId, history, userEmail);
 
   const sanitizedQuestion = question?.trim().replaceAll('\n', ' ');
@@ -158,100 +155,115 @@ export default async function handler(
   const io = getIO();
 
   try {
-    let session = roomSessions[roomId];
+    // 1) Load the existing session row from DB
+    let session = await getRoomSession(roomId);
+    console.log('DB session state before request:', session);
 
-    // Check if the question is an image URL and history contains the codePrefix
-    const isImageUrls = imageUrls.length > 0;
-
-    if (isImageUrls) {
-      session = session || { stage: 4, header: '', text: '', images: [] };
-
-      // Ensure images array is initialized
-      if (!session.images) {
-        session.images = [];
+    // If user typed the code prefix but there's no session, create it
+    if (sanitizedQuestion && sanitizedQuestion.startsWith(codePrefix)) {
+      if (!session) {
+        // stage=1: user just typed code prefix => request header
+        session = await createRoomSession(roomId, 1, null, null, []);
+      } else {
+        // Possibly reset or do nothing
+        // e.g. session = await updateRoomSession(roomId, 1, null, null, []);
       }
+    }
 
-      // Extract header and text from history
-      const headerEntry = history[history.length - 3];
-      const textEntry = history[history.length - 2];
+    // If no session at this point => 400
+    if (!session) {
+      return res.status(400).json({ message: 'Invalid request: no session found or created.' });
+    }
 
-      session.header = headerEntry ? headerEntry[0].replace(codePrefix, '').trim() : session.header;
-      session.text = textEntry ? textEntry[0] : session.text;
-      const imageUrls = sanitizedQuestion.split(' ');
+    // Keep local copies for convenience
+    let { stage, header, text, images } = session;
+    images = images || [];
+
+    // 2) Check if user is uploading images (i.e., `imageUrls` is not empty).
+    const isImageUrls = imageUrls?.length > 0;
+
+    // 2a) If user is uploading images, we assume stage=4 or at least finalize
+    if (isImageUrls) {
+      // Force stage=4 if not already
+      if (stage < 4) stage = 4;
+
+      // Keep the same header/text from DB
+      // But update images with new URLs if any
       for (const url of imageUrls) {
-        if (url.startsWith('https://storage.googleapis.com/solidcam-chatbot-documents/')) {
-          session.images.push({ url });
+        // If not already in array, push it
+        if (!images.some((img: any) => img.url === url)) {
+          images.push({ url });
         }
       }
 
-      roomSessions[roomId] = session;
+      // If the user might have typed some text for image descriptions:
+      // or you parse the question
+      // ...
 
-      for (let img of session.images ?? []) {
+      // 2b) fetch/generate descriptions for each new image
+      for (const img of images) {
         if (!img.description) {
-          if (img.url.includes("www_linkedin_com")) {
+          if (img.url.includes("linkedin")) {
             img.description = "LinkedIn image URL, no description fetched.";
           } else {
             img.description = await getImageDescription(img.url, roomId);
-            img.description += " [END OF DESCRIPTION]";
           }
         }
       }
 
+      // 2c) Update DB session
+      session = await updateRoomSession(roomId, stage, header ?? '', text ?? '', images);
+
+      // 2d) Now embed and finalize
       io.to(roomId).emit("uploadStatus", "Uploading and processing your data...");
-
-      const result = await handleEmbeddingAndResponse(session, roomId, userEmail);
-      return res.status(result.status).json({ message: result.message });
-
-    } else if (session && session.stage == 4) {
-      // Handle cases where there is no image but hasCodePrefixInHistory is true
-      session = session || { stage: 4, header: '', text: '' };
-
-      // Extract header and text from history
-      const headerEntry = history[history.length - 2];
-      const textEntry = history[history.length - 1];
-      session.header = headerEntry ? headerEntry[0].replace(codePrefix, '').trim() : session.header;
-      session.text = textEntry ? textEntry[0] : session.text;
-
-      roomSessions[roomId] = session;
-
-      const result = await handleEmbeddingAndResponse(session, roomId, userEmail);
+      const result = await handleEmbeddingAndResponse(roomId, userEmail);
       return res.status(result.status).json({ message: result.message });
     }
 
-    if (sanitizedQuestion && sanitizedQuestion.startsWith(codePrefix)) {
-      session = { stage: 1 };
-      roomSessions[roomId] = session;
+    // 3) If user is not uploading images but we are at stage=4 => embed final
+    if (stage === 4) {
+      const result = await handleEmbeddingAndResponse(roomId, userEmail);
+      return res.status(result.status).json({ message: result.message });
     }
 
-    if (session) {
-      if (session.stage === 1) {
-        const message = 'You have entered the internal embedding mode for SolidCAM ChatBot.\n\n Please provide a **header** for the content and include a **link** if relevant.';
-        roomSessions[roomId] = { ...session, stage: 2 };
-        io.to(roomId).emit(`tokenStream-${roomId}`, message);
-        return res.status(200).json({ message });
+    // 4) If user is providing normal text input (stage=1 => ask for header, stage=2 => get header => ask for text, etc.)
+    if (stage === 1) {
+      // user should provide the header now
+      // e.g. removing the codePrefix from the question
+      const newHeader = sanitizedQuestion.replace(codePrefix, '').trim();
+      stage = 2;
+      await updateRoomSession(roomId, stage, newHeader, text ?? '', images);
 
-      } else if (session.stage === 2) {
-        session.header = sanitizedQuestion;
-        roomSessions[roomId] = { ...session, stage: 3 };
-        io.to(roomId).emit("storeHeader", session.header);
-        const message = 'Thank you! Now, please provide the **text** associated with the header.';
-        io.to(roomId).emit(`tokenStream-${roomId}`, message);
-        return res.status(200).json({ message });
+      const msg = 'You have entered embedding mode. Please provide a **header** (and link if relevant).';
+      io.to(roomId).emit(`tokenStream-${roomId}`, msg);
+      return res.status(200).json({ message: msg });
+    } 
+    else if (stage === 2) {
+      // user is providing the actual header text
+      // next => stage=3
+      stage = 3;
+      await updateRoomSession(roomId, stage, sanitizedQuestion, text ?? '', images);
 
-      } else if (session.stage === 3) {
-        session.text = sanitizedQuestion;
-        roomSessions[roomId] = { ...session, stage: 4 };
-        const message = 'If you have an **image** to upload, please do so now. If image is not needed click submit.';
-        io.to(roomId).emit(`tokenStream-${roomId}`, message);
-        io.to(roomId).emit(`stageUpdate-${roomId}`, 4);
-        return res.status(200).json({ message });
-      }
-    } else {
-      const message = 'Invalid request.';
-      return res.status(400).json({ message });
+      const msg = 'Thank you! Now, please provide the **text** associated with that header.';
+      io.to(roomId).emit(`tokenStream-${roomId}`, msg);
+      return res.status(200).json({ message: msg });
     }
+    else if (stage === 3) {
+      // user provided the main text => proceed to stage=4 for image or final embed
+      stage = 4;
+      await updateRoomSession(roomId, stage, header ?? '', sanitizedQuestion, images);
+
+      const msg = 'If you have an **image** to upload, do so now. Or click submit to finalize embedding.';
+      io.to(roomId).emit(`tokenStream-${roomId}`, msg);
+      io.to(roomId).emit(`stageUpdate-${roomId}`, 4);
+      return res.status(200).json({ message: msg });
+    }
+
+    // If none of the above matched, we consider it invalid
+    return res.status(400).json({ message: 'Invalid request flow.' });
+
   } catch (error: any) {
-    console.error('Error', error);
+    console.error('Error in userEmbed handler:', error);
     return res.status(500).json({ error: error.message || 'Something went wrong' });
   }
 }

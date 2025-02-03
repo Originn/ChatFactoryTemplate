@@ -136,10 +136,10 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     useState<ChatHistoryItem | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
   const {
-    imagePreviews,
-    handleFileChange,
+    imagePreviews,             // embedding images
+    handleFileChange,          // embed file change
     handleDeleteImage,
-    setImagePreviews,
+    setImagePreviews,          // we can push images here in stage=4
     uploadProgress: internalUploadProgress,
   } = useFileUpload(setQuery, roomId, auth, setUploadStatus);
 
@@ -152,8 +152,18 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     uploadProgress: homeUploadProgress,
     fileErrors,
   } = useFileUploadFromHome(setQuery, roomId, auth, setUploadStatus);
-  const { uploadProgress: pasteUploadProgress, clearPastedImagePreviews } =
-    usePasteImageUpload(roomId, auth, textAreaRef, setHomeImagePreviews, currentStage, setQuery);
+  const {
+    uploadProgress: pasteUploadProgress,
+    clearPastedImagePreviews
+  } = usePasteImageUpload(
+    roomId,
+    auth,
+    textAreaRef,
+    setHomeImagePreviews, // normal usage
+    setImagePreviews,     // embedding usage
+    currentStage,
+    setQuery
+  );
   const [isEmbeddingMode, setIsEmbeddingMode] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [gppQuestionMode, setGppQuestionMode] = useState(false);
@@ -538,7 +548,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
 
       const endpoint = isEmbedding ? '/api/userEmbed' : isCodebaseQuestion ? '/api/codeBaseQuestions' : '/api/chat';
       const imagePreviewsToUse = isEmbedding ? imagePreviews : homeImagePreviews;
-      const imageUrls = imagePreviewsToUse.slice(0, 3).map((preview) => preview.url);
+      const imageUrls = imagePreviewsToUse.slice(0, 3).map(preview => preview.url);
   
       // Prepare the request body
       const requestBody = JSON.stringify({
