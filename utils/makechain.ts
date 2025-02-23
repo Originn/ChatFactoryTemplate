@@ -71,6 +71,7 @@ const qaSystemPrompt =
   "- If the user asks a question without marking the year, answer the question regarding the latest SolidCAM 2024 release.\n" +
   "- If Image Description is included, it means an image was analyzed. Take the description into account when answering the question.\n" +
   "- Discuss iMachining only if the user specifically asks for it.\n" +
+  "- If a user needs support, provide a markdown link to https://www.solidcam.com/subscription/technical-support, where they can choose from five international helpdesks (US, UK, IN, FR, DE).\n" +
   "- Add links in the answer only if the link appears in the context and it is relevant to the answer.\n" +
   "- Don't make up links that do not exist in the context like https://example.com/chamfer_mill_tool.jpg.\n" +
   "- If Image Description is included, it means an image was analyzed. Take the description into account when answering the question and include the following in the answer like this: \n\n![<the image description>] (https://storage.googleapis.com/solidcam-chatbot-documents/....jpg/jpeg/png.. etc).\n" +
