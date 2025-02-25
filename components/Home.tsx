@@ -984,21 +984,36 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                                 let documentCount = 0;
                                 const webinarTimestamps = new Set();
 
+                                // Log all document types at the beginning
+                                console.log('All source docs types:', message.sourceDocs.map(doc => ({
+                                  type: doc.metadata.type,
+                                  source: doc.metadata.source,
+                                  timestamp: doc.metadata.timestamp
+                                })));
+
                                 return message.sourceDocs.map((doc, docIndex) => {
+                                  // Log each document's type
+                                  console.log(`Doc ${docIndex} type:`, doc.metadata.type);
+                                  console.log(`Doc ${docIndex} source:`, doc.metadata.source);
+                                  
                                   let title;
-                                  if (doc.metadata.type === 'youtube') {
+                                  if (doc.metadata.type === 'youtube' || doc.metadata.type === 'vimeo') {
+                                    console.log(`Found ${doc.metadata.type} document at index ${docIndex}`);
                                     // Check if this webinar timestamp has already been processed
                                     if (!webinarTimestamps.has(doc.metadata.timestamp)) {
                                       webinarCount++;
                                       webinarTimestamps.add(doc.metadata.timestamp);
                                       title = `Webinar ${webinarCount}`;
+                                      console.log(`Creating new webinar entry #${webinarCount} for timestamp:`, doc.metadata.timestamp);
                                     } else {
                                       // Skip this webinar as it's a duplicate
+                                      console.log(`Skipping duplicate webinar with timestamp:`, doc.metadata.timestamp);
                                       return null;
                                     }
                                   } else {
                                     documentCount++;
                                     title = `Document ${documentCount}`;
+                                    console.log(`Creating document entry #${documentCount} for type:`, doc.metadata.type);
                                   }
 
                                   // If the webinar was skipped, don't render anything
@@ -1010,58 +1025,70 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                                         <h3>{title}</h3>
                                       </AccordionTrigger>
                                       <AccordionContent>
-                                        {doc.metadata.type === 'youtube' ? (
-                                          <p>
-                                            <b>Source:</b>
-                                            {doc.metadata.source ? (
-                                              <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleWebinarClick(doc.metadata.source)}>
-                                                View Webinar
-                                              </a>
-                                            ) : 'Unavailable'}
-                                          </p>
-                                        ) : ( doc.metadata.type === 'sentinel' ? (
-                                                <p>
-                                                  <b>Source:</b>
-                                                  {doc.metadata.source ? (
-                                                    <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(doc.metadata.source)}>
-                                                      View
-                                                    </a>
-                                                  ) : 'Unavailable'}
-                                                </p>
-                                              ) : (
-                                                <>
-                                                  <ReactMarkdown components={{ a: (props: ComponentProps<'a'>) => <CustomLink {...props} /> }}>
-                                                    {doc.pageContent.split('\n')[0]}
-                                                  </ReactMarkdown>
-                                                  <p className="mt-2">
-                                                    <b>Source:</b>
-                                                    {doc.metadata && doc.metadata.source
-                                                      ? (() => {
-                                                          const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
-                                                          const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
-                                                          let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
-                                                          let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
-                                                          if (smallestPageNumberInRange === null && largestPageNumber !== null) {
-                                                            smallestPageNumberInRange = largestPageNumber;
-                                                          }
-                                                          const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
-                                                          const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-                                                          const iosPageLink = isiOS ? pageLink.replace('#page=', '#page') : pageLink;
-                                                          return <a href={iosPageLink} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(pageLink)}>View Page</a>;
-                                                        })()
-                                                      : 'Unavailable'}
-                                                  </p>
-                                                </>
-                                              )
-                                            )}
-                                          </AccordionContent>
-                                        </AccordionItem>
-                                      );
-                                    });
-                                  })()}
-                                </Accordion>
-                              </div>
-                            )}
+                                      {(() => {
+                                        console.log(`Rendering content for ${doc.metadata.type} at index ${docIndex}`);
+                                        
+                                        if (doc.metadata.type === 'youtube' || doc.metadata.type === 'vimeo') {
+                                          console.log(`Rendering webinar view for ${doc.metadata.type}`);
+                                          return (
+                                            <p>
+                                              <b>Source:</b>
+                                              {doc.metadata.source ? (
+                                                <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleWebinarClick(doc.metadata.source)}>
+                                                  View Webinar
+                                                </a>
+                                              ) : 'Unavailable'}
+                                            </p>
+                                          );
+                                        } else if (doc.metadata.type === 'sentinel') {
+                                          console.log('Rendering sentinel view');
+                                          return (
+                                            <p>
+                                              <b>Source:</b>
+                                              {doc.metadata.source ? (
+                                                <a href={doc.metadata.source} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(doc.metadata.source)}>
+                                                  View
+                                                </a>
+                                              ) : 'Unavailable'}
+                                            </p>
+                                          );
+                                        } else {
+                                          console.log('Rendering standard document view');
+                                          return (
+                                            <>
+                                              <ReactMarkdown components={{ a: (props: ComponentProps<'a'>) => <CustomLink {...props} /> }}>
+                                                {doc.pageContent.split('\n')[0]}
+                                              </ReactMarkdown>
+                                              <p className="mt-2">
+                                                <b>Source:</b>
+                                                {doc.metadata && doc.metadata.source
+                                                  ? (() => {
+                                                      const pageNumbers = Array.from(doc.pageContent.matchAll(/\((\d+)\)/g), m => parseInt(m[1], 10));
+                                                      const largestPageNumber = pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
+                                                      let candidateNumbers = largestPageNumber !== null ? pageNumbers.filter(n => largestPageNumber - n <= 2) : [];
+                                                      let smallestPageNumberInRange = candidateNumbers.length > 0 ? Math.min(...candidateNumbers) : null;
+                                                      if (smallestPageNumberInRange === null && largestPageNumber !== null) {
+                                                        smallestPageNumberInRange = largestPageNumber;
+                                                      }
+                                                      const pageLink = smallestPageNumberInRange !== null ? `${doc.metadata.source}#page=${smallestPageNumberInRange}` : doc.metadata.source;
+                                                      const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+                                                      const iosPageLink = isiOS ? pageLink.replace('#page=', '#page') : pageLink;
+                                                      return <a href={iosPageLink} target="_blank" rel="noopener noreferrer" onClick={() => handleDocumentClick(pageLink)}>View Page</a>;
+                                                    })()
+                                                  : 'Unavailable'}
+                                              </p>
+                                            </>
+                                          );
+                                        }
+                                      })()}
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  );
+                                });
+                              })()}
+                            </Accordion>
+                          </div>
+                          )}
 
 
                           {/* Render feedback only for apiMessage */}
