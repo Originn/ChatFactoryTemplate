@@ -178,13 +178,14 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     const embedder = new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 });
     const embeddingsResponse = await embedder.embedQuery(query);
     
-    const [pdfResults, webinarResults, sentinelResults] = await Promise.all([
+    const [pdfResults, webinarResults, sentinelResults, vimeoResults] = await Promise.all([
       filteredSimilaritySearch(this.vectorStore, embeddingsResponse, 'pdf', 2, minScoreSourcesThreshold),
       filteredSimilaritySearch(this.vectorStore, embeddingsResponse, 'youtube', 2, minScoreSourcesThreshold),
-      filteredSimilaritySearch(this.vectorStore, embeddingsResponse, 'sentinel', 2, minScoreSourcesThreshold)
+      filteredSimilaritySearch(this.vectorStore, embeddingsResponse, 'sentinel', 2, minScoreSourcesThreshold),
+      filteredSimilaritySearch(this.vectorStore, embeddingsResponse, 'vimeo', 2, minScoreSourcesThreshold)
     ]);
-
-    const combinedResults = [...pdfResults, ...webinarResults, ...sentinelResults];
+  
+    const combinedResults = [...pdfResults, ...webinarResults, ...sentinelResults, ...vimeoResults];
     return combinedResults.sort((a, b) => b[1] - a[1]);
   }
 }
@@ -275,7 +276,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       const streamingModel = new ChatOpenAI({
         streaming: true,
         modelName: MODEL_NAME,
-        //verbose: true,
+        verbose: false,
         temperature: TEMPERATURE,
         modelKwargs: { seed: 1 },
         callbacks: [{
