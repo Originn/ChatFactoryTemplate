@@ -278,7 +278,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       const streamingModel = new ChatOpenAI({
         streaming: true,
         modelName: MODEL_NAME,
-        verbose: true,
+        verbose: false,
         temperature: TEMPERATURE,
         modelKwargs: { seed: 1 },
         callbacks: [{
