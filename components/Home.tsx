@@ -776,7 +776,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   
   useEffect(() => {
     if (roomId) {
-      console.log('Iframe: roomId changed, loading chat history for roomId:', roomId);
+      console.log('Loading chat history for roomId:', roomId);
       loadChatHistory();
     }
   }, [roomId, loadChatHistory]); // Dependency array includes roomId
