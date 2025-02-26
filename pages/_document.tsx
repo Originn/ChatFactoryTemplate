@@ -52,7 +52,6 @@ export default function Document() {
                     gtag('event', 'session_start', {
                       session_id: Date.now().toString(),
                     });
-                    console.log('Google Analytics initialized in iframe.');
                     window.gtagReady = true; // Set the flag to indicate gtag is ready
                   };
                   document.head.appendChild(script);
@@ -119,7 +118,6 @@ export default function Document() {
                     gtag('config', '${GA_MEASUREMENT_ID}', {
                       cookie_flags: 'SameSite=None;Secure',
                     });
-                    console.log('Google Analytics initialized on main website.');
                   }
 
                   function disableTrackingScripts() {
