@@ -79,13 +79,13 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
         return storedRoomId;
       } else if (isFromSolidcamWeb) {
         // Embedded in SolidCAM Web, wait for parent to send roomId
-        console.log('Iframe: Embedded in SolidCAM Web, waiting for ROOM_ID from parent');
+        //console.log('Iframe: Embedded in SolidCAM Web, waiting for ROOM_ID from parent');
         return null;
       } else {
         // Not embedded, generate new roomId
         const newRoomId = `room-${Date.now()}`;
         localStorage.setItem('roomId', newRoomId);
-        console.log('Iframe: Not embedded, generated new roomId:', newRoomId);
+        //console.log('Iframe: Not embedded, generated new roomId:', newRoomId);
         return newRoomId;
       }
     }
@@ -636,7 +636,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   
     // Notify parent about the new roomId
     if (isFromSolidcamWeb) {
-      console.log('Iframe: Sending ROOM_ID_UPDATE to parent with roomId:', newRoomId);
+      //console.log('Iframe: Sending ROOM_ID_UPDATE to parent with roomId:', newRoomId);
       window.parent.postMessage(
         { type: 'ROOM_ID_UPDATE', roomId: newRoomId },
         '*' // Change to '*' for testing or to the actual parent origin
@@ -733,7 +733,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
 
   useEffect(() => {
     const receiveMessage = (event: MessageEvent) => {
-      console.log('Iframe: Received message:', event.origin, event.data);
+      //console.log('Iframe: Received message:', event.origin, event.data);
   
       const allowedOrigins = [
         'http://127.0.0.1:5500', // Parent's origin during development
@@ -749,7 +749,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   
       if (event.data.type === 'ROOM_ID') {
         const receivedRoomId = event.data.roomId;
-        console.log('Iframe: Received ROOM_ID from parent:', receivedRoomId);
   
         // Update roomId and localStorage
         setRoomId(receivedRoomId);
@@ -765,7 +764,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     const parentOrigin = document.referrer
       ? new URL(document.referrer).origin
       : '*';
-    console.log('Iframe: Sending IFRAME_READY to parent with origin:', parentOrigin);
+    //console.log('Iframe: Sending IFRAME_READY to parent with origin:', parentOrigin);
     window.parent.postMessage({ type: 'IFRAME_READY' }, parentOrigin);
   
     return () => {
