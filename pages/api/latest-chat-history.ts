@@ -18,10 +18,8 @@ export default async function handler(
 
     try {
       const history = await getChatHistoryByRoomId(roomId);
-      if (!history) {
-        return res.status(404).json({ error: 'Chat history not found' });
-      }
-      res.status(200).json(history);
+      // Return 200 OK with empty conversation_json array if no history found
+      res.status(200).json(history || { conversation_json: [] });
     } catch (error) {
       console.error('Error fetching chat history:', error);
       res.status(500).json({ error: 'Failed to fetch chat history' });
