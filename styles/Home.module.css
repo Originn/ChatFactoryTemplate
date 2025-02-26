@@ -4,7 +4,6 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-
 }
 
 .Home_cloud__16v52,.Home_messagelist__wIt78 {
@@ -19,8 +18,53 @@
   text-align: center;
 }
 
+/* Main container for the chat layout */
+.chatContainer {
+  display: flex;
+  flex-direction: column;
+  width: 75vw;
+  height: calc(100vh - 210px);
+  position: relative;
+}
+
+/* Container for the chat box that will shrink */
+.chatBoxContainer {
+  flex: 1;
+  min-height: 0; /* Important for flexbox to allow shrinking */
+  overflow: hidden; /* Prevent overflow */
+  width: 100%;
+}
+
+/* Class for the cloud when images are present */
+.cloudWithImages {
+  height: calc(65vh - 55px) !important; /* Shrink the chat pane when images are present */
+  transition: height 0.3s ease; /* Smooth transition */
+}
+
+/* Image thumbnails container positioned between chat and textarea */
+.imageThumbnailsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 0;
+  margin-bottom: 30px;
+  max-height: 166px; /* Height of thumbnails + padding */
+  overflow-y: auto;
+}
+
+/* Fixed input container at the bottom */
+.inputContainer {
+  width: 100%;
+  bottom: 0;
+  position: relative;
+  padding-top: 10px;
+}
+
 .cloudform {
   position: relative;
+  width: 100%;
 }
 
 .textarea {
@@ -28,13 +72,13 @@
   resize: none;
   font-size: 1rem;
   padding: 1rem 1rem 1rem 1rem;
-  width: 75vw;
+  width: 100%;
   border-radius: 0.5rem;
   border: 1px solid #d9d9e3;
   background: #ffffff;
   color: #000;
   outline: none;
-  padding-right: 120px; /* Ensures it stps before the icons */
+  padding-right: 120px; /* Ensures it stops before the icons */
 }
 
 .textarea {
@@ -234,17 +278,19 @@
   position: relative;
   padding: 1rem 0;
   flex-direction: column;
+  width: 100%;
 }
 
 .cloud {
-  width: 75vw;
-  height: 65vh;
+  width: 100%;
+  height: 68vh;
   background-color: var(--background-light);
   border-radius: 0.5rem;
   border: 1px solid #d9d9e3;
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: height 0.3s ease; /* Smooth transition for height changes */
 }
 
 .pointsnormal {
@@ -447,6 +493,43 @@
   border-radius: 0.2rem;
 }
 
+/* Extra small device optimization */
+@media (max-height: 600px) {
+  .chatContainer {
+    width: 95vw;
+    height: calc(40vh);
+  }
+
+  .chatBoxContainer {
+    height: 25vh !important;
+  }
+  
+  .cloud {
+    height: 55vh !important;
+  }
+  
+  /* Make this selector more specific to increase priority */
+  .cloud.cloudWithImages,
+  .cloudWithImages,
+  .chatBoxContainer .cloudWithImages {
+    height: 39vh !important;
+    max-height: 39vh !important;
+    min-height: 39vh !important;
+  }
+  
+  .imageThumbnailsContainer {
+    margin-bottom: 25px;
+    max-height: 130px;
+    display: flex !important;
+    visibility: visible !important;
+  }
+  
+  .textarea {
+    min-height: 50px !important;
+    font-size: 0.9rem;
+  }
+}
+
 /* Mobile optimization */
 @media (max-width: 600px) {
   .main {
@@ -454,13 +537,24 @@
     max-height: 90vh;
   }
 
+  .chatContainer {
+    width: 90vw;
+    height: calc(100vh - 190px);
+  }
+
   .cloud {
-    width: 22rem;
-    height: 28rem;
+    width: 100%;
+    height: 70vh;
   }
+  
+  .cloudWithImages {
+    height: 61vh !important;
+  }
+  
   .textarea {
-    width: 22rem;
+    width: 100%;
   }
+  
   .topnav {
     border: 1px solid black;
     align-items: center;
@@ -498,6 +592,12 @@
   .waveContainer {
     width:75%;
   }
+  
+  .imageThumbnailsContainer {
+    width: 100%;
+    margin-bottom: 35px;
+    max-height: 166px; /* Height of thumbnails + padding */
+  }
 }
 
 .paste-upload-progress {
@@ -519,4 +619,19 @@
 .progress-item span {
   font-size: 0.8rem;
   margin-bottom: 0.5rem;
+}
+
+/* Ensure the image thumbnails look good */
+.image-wrapper {
+  margin: 4px;
+  position: relative;
+}
+
+
+/* For internal embedding */
+.image-container-image-thumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
 }

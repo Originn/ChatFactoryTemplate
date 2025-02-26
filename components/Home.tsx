@@ -794,7 +794,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       isFromSolidcamWeb={isFromSolidcamWebState}
     >
         <div className="mx-auto flex flex-col gap-4">
-          {/* For internal embedding */}
+          {/* For internal embedding - No change needed here */}
           {imagePreviews.length > 0 && (
             <div className="image-container-image-thumb">
               {imagePreviews.map((image, index) => (
@@ -816,46 +816,18 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
               onClose={() => setEnlargedImage(null)}
             />
           )}
-          
 
-          {homeImagePreviews.length > 0 && !loading && (
-            <div className="image-container-image-thumb">
-              {homeImagePreviews.map((image, index) => (
-                <ImagePreview
-                  key={index}
-                  image={image}
-                  index={index}
-                  onDelete={() => handleHomeDeleteImage(image.fileName, index, isPrivateDelete)}
-                  uploadProgress={
-                    pasteUploadProgress[image.fileName] ||
-                    homeUploadProgress[image.fileName] ||
-                    null
-                  }
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Section to display file errors */}
-          {Object.entries(fileErrors).length > 0 && (
-            <div className="error-container">
-              {Object.entries(fileErrors).map(([fileName, error]) => (
-                <div
-                  key={fileName}
-                  className="border border-red-400 rounded-md p-2 mt-2"
-                >
-                  <p className="text-red-500 text-sm">{`Error uploading: ${error}`}</p>
-                </div>
-              ))}
-            </div>
-          )}
           <main className={styles.main}>
             <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
               SolidCAM ChatBot
             </h1>
-            <main className={styles.main}>
-              <div className="content-container">
-                <div className={`${styles.cloud} auto-height`}>
+            
+            <div className={styles.chatContainer}>
+              {/* Main container with flex layout */}
+              
+              {/* Chat pane (top) */}
+              <div className={styles.chatBoxContainer}>
+                <div className={`${styles.cloud} ${homeImagePreviews.length > 0 && !loading ? styles.cloudWithImages : ''}`}>
                   <div ref={messageListRef} className={styles.messagelist}>
                     {messages.map((message, index) => {
                       let icon;
@@ -937,12 +909,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                                   {images.map((image, imgIndex) => (
                                     <div
                                       key={imgIndex}
-                                      style={{
-                                        width: '150px',
-                                        height: '150px',
-                                        overflow: 'hidden',
-                                        position: 'relative',
-                                      }}
                                     >
                                       <img
                                         src={image.url}
@@ -1107,141 +1073,180 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                   </div>
                 </div>
               </div>
-            </main>
-            <div className={styles.center}>
-              <div className={styles.cloudform}>
-                <form
-                  onSubmit={handleSubmit}
-                  className={styles.textareaContainer}
-                >
-                  <textarea
-                    disabled={loading}
-                    onKeyDown={handleEnter}
-                    onChange={handleChange}
-                    ref={textAreaRef}
-                    autoFocus={false}
-                    rows={1}
-                    maxLength={50000}
-                    id="userInput"
-                    name="userInput"
-                    placeholder={
-                      loading
-                        ? 'Waiting for response...'
-                        : isMicActive
-                        ? ''
-                        : 'Message SolidCAM ChatBot...'
+              
+              {/* Image thumbnails (middle) */}
+              {homeImagePreviews.length > 0 && !loading && (
+              <div className={styles.imageThumbnailsContainer}>
+                {homeImagePreviews.map((image, index) => (
+                  <ImagePreview
+                    key={index}
+                    image={image}
+                    index={index}
+                    onDelete={() => handleHomeDeleteImage(image.fileName, index, isPrivateDelete)}
+                    uploadProgress={
+                      pasteUploadProgress[image.fileName] ||
+                      homeUploadProgress[image.fileName] ||
+                      null
                     }
-                    value={query}
-                    className={styles.textarea}
-                    readOnly={currentStage === 4}
-                    style={{
-                      height: isFromSolidcamWeb ? '58px' : 'auto',
-                      transform: isFromSolidcamWeb ? 'translateY(-34px)' : 'none',
-                    }}
+                    // Add this new onClick prop to handle thumbnail clicks
+                    onClick={() => setEnlargedImage(image)}
                   />
-                  {/* Conditionally render the ImageUpload component */}
-                  {!loading && !isFromSolidcamWeb && <ImageUpload handleFileChange={handleFileChange} />}
-                  {/* Conditionally render the general file input and label */}
-                  {!loading && !isFromSolidcamWeb &&(
-                    <>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        onChange={handleHomeFileChange}
-                        accept="image/*"
-                        multiple
-                        style={{ display: 'none' }}
-                        id="generalFileInput"
-                      />
-                      <label
-                        htmlFor="generalFileInput"
-                        className={styles.fileUploadButton}
-                        title="Upload image"
-                      >
-                        <Tooltip message="Upload image" hideOnClick={true}>
-                        <Image
-                          src="/image-upload-48.png"
-                          alt="Upload JPG"
-                          width="30"
-                          height="30"
-                        />
-                        </Tooltip>
-                      </label>
-                    </>
-                  )}
-
-                  {currentStage === 4 ? (
-                    !loading && (
-                      <label
-                        htmlFor="fileInput"
-                        className={styles.fileUploadButton}
-                      >
-                        <input
-                          id="fileInput"
-                          type="file"
-                          accept="image/jpeg"
-                          style={{ display: 'none' }}
-                          onChange={handleFileChange}
-                          multiple
-                        />
-                        <Tooltip message="Upload image" hideOnClick={true}>
-                        <Image
-                          src="/image-upload-48.png"
-                          alt="Upload JPG"
-                          width="30"
-                          height="30"
-                        />
-                        </Tooltip>
-                      </label>
-                    )
-                  ) : (
-                    <MicrophoneRecorder
-                      setQuery={setQuery}
-                      loading={loading}
-                      setIsTranscribing={setIsTranscribing}
-                      isTranscribing={isTranscribing}
-                      setIsMicActive={setIsMicActive}
-                    />
-                  )}
-
-                  {!isMicActive && (
-                    <button
-                      type="submit"
-                      id="submitButton"
-                      disabled={loading || isTranscribing}
-                      className={styles.generatebutton}
+                ))}
+              </div>
+            )}
+              
+              {/* Section to display file errors */}
+              {Object.entries(fileErrors).length > 0 && (
+                <div className="error-container">
+                  {Object.entries(fileErrors).map(([fileName, error]) => (
+                    <div
+                      key={fileName}
+                      className="border border-red-400 rounded-md p-2 mt-2"
                     >
-                      {loading || isTranscribing ? (
-                        <div className={styles.loadingwheel}>
-                          <LoadingDots color="#000" />
-                        </div>
-                      ) : (
-                        <svg
-                          viewBox="0 0 20 20"
-                          className={styles.svgicon}
-                          xmlns="http://www.w3.org/2000/svg"
+                      <p className="text-red-500 text-sm">{`Error uploading: ${error}`}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Textarea fixed at bottom */}
+              <div className={styles.inputContainer}>
+                <div className={styles.cloudform}>
+                  <form className={styles.textareaContainer}
+                    onSubmit={handleSubmit}
+                  >
+                    <textarea
+                      disabled={loading}
+                      onKeyDown={handleEnter}
+                      onChange={handleChange}
+                      ref={textAreaRef}
+                      autoFocus={false}
+                      rows={1}
+                      maxLength={50000}
+                      id="userInput"
+                      name="userInput"
+                      placeholder={
+                        loading
+                          ? 'Waiting for response...'
+                          : isMicActive
+                          ? ''
+                          : 'Message SolidCAM ChatBot...'
+                      }
+                      value={query}
+                      className={styles.textarea}
+                      readOnly={currentStage === 4}
+                      style={{
+                        height: isFromSolidcamWeb ? '58px' : 'auto',
+                        transform: isFromSolidcamWeb ? 'translateY(-34px)' : 'none',
+                      }}
+                    />
+                    {/* Conditionally render the ImageUpload component */}
+                    {!loading && !isFromSolidcamWeb && <ImageUpload handleFileChange={handleFileChange} />}
+                    {/* Conditionally render the general file input and label */}
+                    {!loading && !isFromSolidcamWeb &&(
+                      <>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          onChange={handleHomeFileChange}
+                          accept="image/*"
+                          multiple
+                          style={{ display: 'none' }}
+                          id="generalFileInput"
+                        />
+                        <label
+                          htmlFor="generalFileInput"
+                          className={styles.fileUploadButton}
+                          title="Upload image"
                         >
-                          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
-                        </svg>
-                      )}
-                    </button>
-                  )}
-                </form>
-                {speechError && (
-                  <div className="border border-red-400 rounded-md p-4">
-                    <p className="text-red-500">{speechError}</p>
-                  </div>
-                )}
-                <div className="disclaimer-container">
-                  <div className={styles.disclaimerText}>
-                    <p style={{ fontSize: 'small', color: 'gray' }}>
-                      SolidCAM ChatBot may display inaccurate info so
-                      double-check its responses
-                    </p>
+                          <Tooltip message="Upload image" hideOnClick={true}>
+                          <Image
+                            src="/image-upload-48.png"
+                            alt="Upload JPG"
+                            width="30"
+                            height="30"
+                          />
+                          </Tooltip>
+                        </label>
+                      </>
+                    )}
+
+                    {currentStage === 4 ? (
+                      !loading && (
+                        <label
+                          htmlFor="fileInput"
+                          className={styles.fileUploadButton}
+                        >
+                          <input
+                            id="fileInput"
+                            type="file"
+                            accept="image/jpeg"
+                            style={{ display: 'none' }}
+                            onChange={handleFileChange}
+                            multiple
+                          />
+                          <Tooltip message="Upload image" hideOnClick={true}>
+                          <Image
+                            src="/image-upload-48.png"
+                            alt="Upload JPG"
+                            width="30"
+                            height="30"
+                          />
+                          </Tooltip>
+                        </label>
+                      )
+                    ) : (
+                      <MicrophoneRecorder
+                        setQuery={setQuery}
+                        loading={loading}
+                        setIsTranscribing={setIsTranscribing}
+                        isTranscribing={isTranscribing}
+                        setIsMicActive={setIsMicActive}
+                      />
+                    )}
+
+                    {!isMicActive && (
+                      <button
+                        type="submit"
+                        id="submitButton"
+                        disabled={loading || isTranscribing}
+                        className={styles.generatebutton}
+                      >
+                        {loading || isTranscribing ? (
+                          <div className={styles.loadingwheel}>
+                            <LoadingDots color="#000" />
+                          </div>
+                        ) : (
+                          <svg
+                            viewBox="0 0 20 20"
+                            className={styles.svgicon}
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+                          </svg>
+                        )}
+                      </button>
+                    )}
+                  </form>
+                  
+                  <div className="disclaimer-container">
+                    <div className={styles.disclaimerText}>
+                      <p style={{ fontSize: 'small', color: 'gray' }}>
+                        SolidCAM ChatBot may display inaccurate info so
+                        double-check its responses
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+            
+            {speechError && (
+              <div className="border border-red-400 rounded-md p-4">
+                <p className="text-red-500">{speechError}</p>
+              </div>
+            )}
+            
             {errorreact && (
               <div className="border border-red-400 rounded-md p-4">
                 <p className="text-red-500">{errorreact}</p>

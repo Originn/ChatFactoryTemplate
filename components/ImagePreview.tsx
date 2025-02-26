@@ -13,13 +13,15 @@ interface ImagePreviewProps {
   index: number;
   onDelete: (fileName: string, index: number) => void;
   uploadProgress: number | null;
+  onClick?: () => void; // Add this new prop for click-to-enlarge
 }
 
 export const ImagePreview: React.FC<ImagePreviewProps> = ({ 
   image, 
   index, 
   onDelete, 
-  uploadProgress 
+  uploadProgress,
+  onClick  // Add this to the destructuring
 }) => {
   const [imageUrl, setImageUrl] = useState(image.url);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -65,18 +67,21 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
         </div>
       ) : (
         <>
-          <img
-            src={imageUrl}
-            alt={`Preview ${index + 1}`}
-            className="image-preview"
-            onError={handleImageError}
-            style={{ 
-              width: '150px', 
-              height: '150px', 
-              objectFit: 'cover',
-              borderRadius: '8px'
-            }}
-          />
+          {/* Wrap the image in a clickable div when onClick is provided */}
+          <div onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
+            <img
+              src={imageUrl}
+              alt={`Preview ${index + 1}`}
+              className="image-preview"
+              onError={handleImageError}
+              style={{ 
+                width: '75px', 
+                height: '75px', 
+                objectFit: 'cover',
+                borderRadius: '8px'
+              }}
+            />
+          </div>
           
           {error && (
             <div className="absolute inset-0 flex items-center justify-center bg-red-100 bg-opacity-75">
