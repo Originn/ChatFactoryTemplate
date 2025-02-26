@@ -112,7 +112,7 @@ const useFileUploadFromHome = (
     setUploadStatus(null);
   };
 
-  const handleHomeDeleteImage = async (fileName: string, index: number, isPrivate: boolean) => {
+  const handleHomeDeleteImage = async (fileName: string, isPrivate: boolean) => {
     const userEmail = auth.currentUser?.email;
     if (!userEmail) return;
   
@@ -123,13 +123,13 @@ const useFileUploadFromHome = (
           'Content-Type': 'application/json',
           'Authorization': userEmail
         },
-        body: JSON.stringify({ fileName, isPrivate }),  // Pass isPrivate to determine the bucket
+        body: JSON.stringify({ fileName, isPrivate }),
       });
       
       if (!response.ok) throw new Error('Failed to delete image');
       
-      // Filter out the deleted image from the state
-      setHomeImagePreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
+      // Filter by fileName instead of index
+      setHomeImagePreviews(prevPreviews => prevPreviews.filter(preview => preview.fileName !== fileName));
   
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
