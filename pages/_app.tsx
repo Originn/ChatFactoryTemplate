@@ -24,12 +24,28 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     const checkStaging = async () => {
-      const queryParams = new URLSearchParams(window.location.search);
-      const referrer = queryParams.get('referrer') || document.referrer; // Fallback to document.referrer
-      console.log('Referrer:', referrer);
-  
-      // Check if referrer includes the SolidCAM staging domain
-      const isFromSolidcamWeb = referrer.includes('staging.solidcam.com') || referrer.includes('solidcam.com');
+      let isFromSolidcamWeb = false;
+      
+      try {
+        // Check if we're in an iframe
+        const isInIframe = window !== window.parent;
+        
+        if (isInIframe) {
+          // If we can access the parent, check its URL or origin
+          // Note: This may fail due to same-origin policy if on different domains
+          isFromSolidcamWeb = true;
+        } else {
+          // Fall back to referrer check
+          const queryParams = new URLSearchParams(window.location.search);
+          const referrer = queryParams.get('referrer') || document.referrer;
+          isFromSolidcamWeb = referrer.includes('solidcam.com');
+        }
+      } catch (e) {
+        // If we get a security error, assume we're in an iframe from solidcam.com
+        console.error("Security error checking iframe status:", e);
+        isFromSolidcamWeb = true;
+      }
+      
       console.log('isFromSolidcamWeb:', isFromSolidcamWeb);
   
       if (isFromSolidcamWeb) {
