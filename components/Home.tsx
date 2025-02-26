@@ -1077,12 +1077,12 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
               {/* Image thumbnails (middle) */}
               {homeImagePreviews.length > 0 && !loading && (
               <div className={styles.imageThumbnailsContainer}>
-                {homeImagePreviews.map((image, index) => (
-                  <ImagePreview
-                    key={index}
-                    image={image}
-                    index={index}
-                    onDelete={() => handleHomeDeleteImage(image.fileName, index, isPrivateDelete)}
+              {homeImagePreviews.map((image, index) => (
+                <ImagePreview
+                  key={image.fileName} // Use fileName as key
+                  image={image}
+                  index={index}
+                  onDelete={() => handleHomeDeleteImage(image.fileName, isPrivateDelete)}
                     uploadProgress={
                       pasteUploadProgress[image.fileName] ||
                       homeUploadProgress[image.fileName] ||
