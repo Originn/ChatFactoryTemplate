@@ -743,7 +743,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       ];
   
       if (!allowedOrigins.includes(event.origin)) {
-        console.warn('Iframe: Origin not allowed:', event.origin);
+        console.warn(event.origin);
         return;
       }
   
