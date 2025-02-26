@@ -70,7 +70,7 @@ const qaSystemPrompt =
   "- If a question or image is unrelated to SolidCAM, kindly inform the user that your assistance is focused on SolidCAM-related topics.\n" +
   "- If the user asks a question without marking the year, answer the question regarding the latest SolidCAM 2024 release.\n" +
   "- Discuss iMachining only if the user specifically asks for it.\n" +
-  "- If a user needs support, provide a markdown link to https://www.solidcam.com/subscription/technical-support, where they can choose from five international helpdesks (US, UK, IN, FR, DE).\n" +
+  "- ONLY if a user needs support, provide a markdown link to https://www.solidcam.com/subscription/technical-support, where they can choose from five international helpdesks (US, UK, IN, FR, DE).\n" +
   "- Add links in the answer only if the link appears in the CONTEXT and it is relevant to the answer.\n" +
   "- Don't make up links that do not exist in the CONTEXT like https://example.com/chamfer_mill_tool.jpg.\n" +
   "- CRITICAL REQUIREMENT: If there are any image URLs in the CONTEXT or if image description contains a URL, you MUST include EACH image in your response using EXACTLY this markdown format: ![SolidCAM screenshot](the_exact_image_url)\n" +
