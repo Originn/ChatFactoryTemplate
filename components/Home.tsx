@@ -171,7 +171,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
 
 
   useEffect(() => {
-    console.log('isFromSolidcamWeb in Home:', isFromSolidcamWeb);
+    //console.log('isFromSolidcamWeb in Home:', isFromSolidcamWeb);
     setisFromSolidcamWebState(isFromSolidcamWeb || false);
   }, [isFromSolidcamWeb]);
 
@@ -460,10 +460,8 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   
     // For Google Analytics
     if (isFromSolidcamWeb) {
-      console.log('isFromSolidcamWeb for gtag web', isFromSolidcamWeb);
       handleSubmitClickWeb();
     } else {
-      console.log('isFromSolidcamWeb for gtag normal', isFromSolidcamWeb);
       handleSubmitClick();
     }
   
@@ -677,7 +675,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
         }
       } else if (response.status === 404) {
         // No chat history found
-        console.log('No chat history found for roomId:', roomId);
         return;
       } else {
         throw new Error('Failed to load chat history.');
@@ -775,7 +772,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   
   useEffect(() => {
     if (roomId) {
-      console.log('Loading chat history for roomId:', roomId);
+      //console.log('Loading chat history for roomId:', roomId);
       loadChatHistory();
     }
   }, [roomId, loadChatHistory]); // Dependency array includes roomId
@@ -949,36 +946,24 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                                 let documentCount = 0;
                                 const webinarTimestamps = new Set();
 
-                                // Log all document types at the beginning
-                                console.log('All source docs types:', message.sourceDocs.map(doc => ({
-                                  type: doc.metadata.type,
-                                  source: doc.metadata.source,
-                                  timestamp: doc.metadata.timestamp
-                                })));
 
                                 return message.sourceDocs.map((doc, docIndex) => {
                                   // Log each document's type
-                                  console.log(`Doc ${docIndex} type:`, doc.metadata.type);
-                                  console.log(`Doc ${docIndex} source:`, doc.metadata.source);
                                   
                                   let title;
                                   if (doc.metadata.type === 'youtube' || doc.metadata.type === 'vimeo') {
-                                    console.log(`Found ${doc.metadata.type} document at index ${docIndex}`);
                                     // Check if this webinar timestamp has already been processed
                                     if (!webinarTimestamps.has(doc.metadata.timestamp)) {
                                       webinarCount++;
                                       webinarTimestamps.add(doc.metadata.timestamp);
                                       title = `Webinar ${webinarCount}`;
-                                      console.log(`Creating new webinar entry #${webinarCount} for timestamp:`, doc.metadata.timestamp);
                                     } else {
                                       // Skip this webinar as it's a duplicate
-                                      console.log(`Skipping duplicate webinar with timestamp:`, doc.metadata.timestamp);
                                       return null;
                                     }
                                   } else {
                                     documentCount++;
                                     title = `Document ${documentCount}`;
-                                    console.log(`Creating document entry #${documentCount} for type:`, doc.metadata.type);
                                   }
 
                                   // If the webinar was skipped, don't render anything
@@ -991,10 +976,8 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                                       </AccordionTrigger>
                                       <AccordionContent>
                                       {(() => {
-                                        console.log(`Rendering content for ${doc.metadata.type} at index ${docIndex}`);
                                         
                                         if (doc.metadata.type === 'youtube' || doc.metadata.type === 'vimeo') {
-                                          console.log(`Rendering webinar view for ${doc.metadata.type}`);
                                           return (
                                             <p>
                                               <b>Source:</b>
@@ -1006,7 +989,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                                             </p>
                                           );
                                         } else if (doc.metadata.type === 'sentinel') {
-                                          console.log('Rendering sentinel view');
                                           return (
                                             <p>
                                               <b>Source:</b>
@@ -1018,7 +1000,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                                             </p>
                                           );
                                         } else {
-                                          console.log('Rendering standard document view');
                                           return (
                                             <>
                                               <ReactMarkdown components={{ a: (props: ComponentProps<'a'>) => <CustomLink {...props} /> }}>

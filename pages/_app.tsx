@@ -46,7 +46,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         isFromSolidcamWeb = true;
       }
       
-      console.log('isFromSolidcamWeb:', isFromSolidcamWeb);
+      //console.log('isFromSolidcamWeb:', isFromSolidcamWeb);
   
       if (isFromSolidcamWeb) {
         try {
