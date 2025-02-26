@@ -24,9 +24,9 @@ const ActionHandlerPage = () => {
 
         const verifyEmail = async () => {
           try {
-            console.log('Checking action code...');
-            const actionCodeInfo = await checkActionCode(auth, actionCode); // Ensure the code is valid
-            console.log('Action code is valid:', actionCodeInfo);
+            //console.log('Checking action code...');
+            //const actionCodeInfo = await checkActionCode(auth, actionCode); // Ensure the code is valid
+            //console.log('Action code is valid:', actionCodeInfo);
             await applyActionCode(auth, actionCode);
         
             router.replace('/account-created-confirmation');

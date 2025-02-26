@@ -182,10 +182,10 @@ const toggleForm = () => {
 };
 
 const handleNextClick = async () => {
-  console.log('Starting handleNextClick with email:', email);
+  //console.log('Starting handleNextClick with email:', email);
 
   if (!validateEmail(email)) {
-      console.log('Email validation failed');
+      //console.log('Email validation failed');
       setErrorMessage('Please enter a valid email address.');
       return;
   }
