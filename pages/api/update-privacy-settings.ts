@@ -20,7 +20,6 @@ if (!admin.apps.length) {
 }
 
 interface PrivacySettings {
-  allowAnalytics: boolean;
   storeHistory: boolean;
   retentionPeriod: string;
 }
@@ -66,9 +65,9 @@ export default async function handler(
     }
 
     // Validate settings
-    const { allowAnalytics, storeHistory, retentionPeriod } = settings;
+    const { storeHistory, retentionPeriod } = settings;
     
-    if (typeof allowAnalytics !== 'boolean' || typeof storeHistory !== 'boolean') {
+    if (typeof storeHistory !== 'boolean') {
       return res.status(400).json({ message: 'Invalid settings format' });
     }
     
@@ -78,70 +77,102 @@ export default async function handler(
       return res.status(400).json({ message: 'Invalid retention period' });
     }
 
-    // Update or insert privacy settings
-    const upsertQuery = `
-      INSERT INTO user_privacy_settings 
-        (uid, email, allow_analytics, store_history, retention_period, updated_at)
-      VALUES 
-        ($1, $2, $3, $4, $5, NOW())
-      ON CONFLICT (uid) 
-      DO UPDATE SET
-        email = $2,
-        allow_analytics = $3,
-        store_history = $4, 
-        retention_period = $5,
-        updated_at = NOW()
-      RETURNING *;
-    `;
-
-    const result = await pool.query(upsertQuery, [
-      uid,
-      userEmail,
-      allowAnalytics,
-      storeHistory,
-      retentionPeriod
-    ]);
-
-    // If user turned off history storage, optionally delete their history
-    if (!storeHistory) {
-      // This could be made optional or configurable
-      await pool.query('DELETE FROM user_chat_history WHERE useremail = $1', [userEmail]);
-    }
-
-    // Apply retention period to existing data
-    if (retentionPeriod !== 'forever') {
-      let interval;
+    // Start a database transaction
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
       
+      // Get current settings to detect changes
+      const currentSettingsQuery = 'SELECT * FROM user_privacy_settings WHERE uid = $1';
+      const currentSettingsResult = await client.query(currentSettingsQuery, [uid]);
+      const currentSettings = currentSettingsResult.rows[0] || null;
+      
+      // Update or insert privacy settings
+      const upsertQuery = `
+        INSERT INTO user_privacy_settings 
+          (uid, email, store_history, retention_period, updated_at)
+        VALUES 
+          ($1, $2, $3, $4, NOW())
+        ON CONFLICT (uid) 
+        DO UPDATE SET
+          email = $2,
+          store_history = $3, 
+          retention_period = $4,
+          updated_at = NOW()
+        RETURNING *;
+      `;
+
+      const result = await client.query(upsertQuery, [
+        uid,
+        userEmail,
+        storeHistory,
+        retentionPeriod
+      ]);
+
+      // If user turned off history storage, delete their history
+      if (!storeHistory) {
+        await client.query('DELETE FROM user_chat_history WHERE useremail = $1', [userEmail]);
+      }
+
+      // Apply retention period to existing data
+      // First, determine the SQL interval based on the retention period
+      let sqlInterval = '';
       switch (retentionPeriod) {
         case '1year':
-          interval = '1 year';
+          sqlInterval = '1 year';
           break;
         case '6months':
-          interval = '6 months';
+          sqlInterval = '6 months';
           break;
         case '3months':
-          interval = '3 months';
+          sqlInterval = '3 months';
           break;
         case '1month':
-          interval = '1 month';
+          sqlInterval = '1 month';
           break;
-        default:
-          interval = null;
+        case 'forever':
+          // No interval needed for 'forever'
+          break;
       }
       
-      if (interval) {
-        // Delete chat history older than the specified interval
-        await pool.query(
-          'DELETE FROM user_chat_history WHERE useremail = $1 AND date < NOW() - INTERVAL $2',
-          [userEmail, interval]
+      // If retention period is not 'forever', apply it to data
+      if (retentionPeriod !== 'forever') {
+        // Delete chat history older than the retention period
+        await client.query(
+          `DELETE FROM user_chat_history 
+           WHERE useremail = $1 AND date < NOW() - INTERVAL '${sqlInterval}'`,
+          [userEmail]
+        );
+        
+        // Anonymize Q&A data older than the retention period
+        await client.query(
+          `UPDATE QuestionsAndAnswers 
+           SET userEmail = 'anon-' || SUBSTR(MD5(userEmail), 1, 8),
+               question = REGEXP_REPLACE(question, '\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b', '[EMAIL REDACTED]'),
+               question = REGEXP_REPLACE(question, '\\b\\d{10,16}\\b', '[NUMBER REDACTED]'),
+               question = REGEXP_REPLACE(question, '\\b\\d{3}[- ]?\\d{2}[- ]?\\d{4}\\b', '[SSN REDACTED]')
+           WHERE userEmail = $1 AND created_at < NOW() - INTERVAL '${sqlInterval}'`,
+          [userEmail]
         );
       }
+      
+      await client.query('COMMIT');
+      
+      return res.status(200).json({ 
+        message: 'Privacy settings updated successfully',
+        settings: {
+          storeHistory: result.rows[0].store_history,
+          retentionPeriod: result.rows[0].retention_period
+        }
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-
-    return res.status(200).json({ 
-      message: 'Privacy settings updated successfully',
-      settings: result.rows[0]
-    });
   } catch (error) {
     console.error('Error updating privacy settings:', error);
     return res.status(500).json({ message: 'Error processing the request' });

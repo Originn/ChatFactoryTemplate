@@ -55,7 +55,7 @@ export default async function handler(
       return res.status(401).json({ message: 'Invalid authentication' });
     }
 
-    // Start a transaction to ensure all data is deleted atomically
+    // Start a transaction to ensure all data is processed atomically
     const client = await pool.connect();
     
     try {
@@ -64,8 +64,15 @@ export default async function handler(
       // Delete chat history
       await client.query('DELETE FROM user_chat_history WHERE useremail = $1', [email]);
       
-      // Delete Q&A history
-      await client.query('DELETE FROM QuestionsAndAnswers WHERE userEmail = $1', [email]);
+      // Anonymize Q&A history instead of deleting it
+      await client.query(`
+        UPDATE QuestionsAndAnswers 
+        SET userEmail = 'anon-' || SUBSTR(MD5(userEmail), 1, 8),
+            question = REGEXP_REPLACE(question, '\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b', '[EMAIL REDACTED]'),
+            question = REGEXP_REPLACE(question, '\\b\\d{10,16}\\b', '[NUMBER REDACTED]'),
+            question = REGEXP_REPLACE(question, '\\b\\d{3}[- ]?\\d{2}[- ]?\\d{4}\\b', '[SSN REDACTED]')
+        WHERE userEmail = $1
+      `, [email]);
       
       // Delete privacy settings
       await client.query('DELETE FROM user_privacy_settings WHERE email = $1', [email]);
