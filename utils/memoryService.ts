@@ -20,7 +20,7 @@ class MemoryService {
 
   static async updateChatMemory(
     roomId: string,
-    input: string | null,
+    input: string,
     output: string | null,
     imageUrl: string[] | null,
     userEmail: string | null,
@@ -77,7 +77,7 @@ class MemoryService {
     }
   
     // Update chat history in the database with the validated title
-    await insertChatHistory(userEmail, title, roomId, messages);
+    await insertChatHistory(userEmail || '', title, roomId, messages);
   }
   
   
