@@ -473,9 +473,17 @@ useEffect(() => {
             {/* NEW: Delete Chat History */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
               <h3 className="text-lg font-medium mb-2 dark:text-white">Delete Chat History</h3>
-              <p className="mb-4 text-gray-600 dark:text-gray-400">
-                Delete your chat history for a specific timeframe. This action cannot be undone.
-              </p>
+              <div className="mb-4">
+                <p className="mb-2 text-gray-600 dark:text-gray-400">
+                    Delete your chat history for a specific timeframe. This action only removes your conversation logs from the system but preserves the questions and answers database.
+                </p>
+                <p className="text-sm mb-3 text-gray-500 dark:text-gray-500 italic">
+                    Note: Q&A pairs are kept for a minimum of 1 month, and you can opt to anonymize them using the settings under <span className="font-medium">Data Retention</span>. Once deleted, your chat history cannot be recovered.
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-500">
+                    To request complete deletion of all your data including Q&A history, please email <a href="mailto:privacy@solidcam.com" className="text-blue-500 hover:underline">privacy@solidcam.com</a> with your account email address.
+                </p>
+              </div>
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 <select
                   className="border dark:border-gray-700 dark:bg-gray-700 dark:text-white p-2 rounded"
