@@ -146,12 +146,23 @@ export default async function handler(
         );
         
         // Anonymize Q&A data older than the retention period
+        // FIXED: Changed multiple SET statements to nested REGEXP_REPLACE calls
         await client.query(
           `UPDATE QuestionsAndAnswers 
            SET userEmail = 'anon-' || SUBSTR(MD5(userEmail), 1, 8),
-               question = REGEXP_REPLACE(question, '\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b', '[EMAIL REDACTED]'),
-               question = REGEXP_REPLACE(question, '\\b\\d{10,16}\\b', '[NUMBER REDACTED]'),
-               question = REGEXP_REPLACE(question, '\\b\\d{3}[- ]?\\d{2}[- ]?\\d{4}\\b', '[SSN REDACTED]')
+               question = REGEXP_REPLACE(
+                 REGEXP_REPLACE(
+                   REGEXP_REPLACE(
+                     question, 
+                     '\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b', 
+                     '[EMAIL REDACTED]'
+                   ),
+                   '\\b\\d{10,16}\\b', 
+                   '[NUMBER REDACTED]'
+                 ),
+                 '\\b\\d{3}[- ]?\\d{2}[- ]?\\d{4}\\b', 
+                 '[SSN REDACTED]'
+               )
            WHERE userEmail = $1 AND created_at < NOW() - INTERVAL '${sqlInterval}'`,
           [userEmail]
         );
