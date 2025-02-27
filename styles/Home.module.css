@@ -36,22 +36,36 @@
 }
 
 /* Class for the cloud when images are present */
-.cloudWithImages {
-  height: calc(65vh - 55px) !important; /* Shrink the chat pane when images are present */
-  transition: height 0.3s ease; /* Smooth transition */
+.cloud {
+  width: 100%;
+  height: 68vh;
+  background-color: var(--background-light);
+  border-radius: 0.5rem;
+  border: 1px solid #d9d9e3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: height 0.3s ease;
 }
 
-/* Image thumbnails container positioned between chat and textarea */
+/* Define the shrunk cloud */
+.cloudWithImages {
+  height: calc(65vh - 61px) !important;
+  max-height: calc(65vh - 61px) !important;
+}
+
+/* Ensure image thumbnails container has proper styling */
 .imageThumbnailsContainer {
-  display: flex;
+  display: flex !important;
   flex-wrap: wrap;
   justify-content: flex-start;
   gap: 8px;
   width: 100%;
   padding: 8px 0;
   margin-bottom: 30px;
-  max-height: 166px; /* Height of thumbnails + padding */
+  max-height: 166px;
   overflow-y: auto;
+  visibility: visible !important;
 }
 
 /* Fixed input container at the bottom */
@@ -281,18 +295,6 @@
   padding: 1rem 0;
   flex-direction: column;
   width: 100%;
-}
-
-.cloud {
-  width: 100%;
-  height: 68vh;
-  background-color: var(--background-light);
-  border-radius: 0.5rem;
-  border: 1px solid #d9d9e3;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: height 0.3s ease; /* Smooth transition for height changes */
 }
 
 .pointsnormal {
