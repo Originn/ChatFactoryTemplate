@@ -82,7 +82,9 @@
 }
 
 .textarea {
-  min-height: 60px !important; /* Ensures this style has the highest priority */
+  min-height: 58px !important; /* Ensures this style has the highest priority */
+  max-height: 240px !important; /* Prevent scrollbar at 600px height */
+  transition: height 0.3s ease; /* Smooth transition for height changes */
 }
 
 .textarea:disabled {
@@ -525,8 +527,9 @@
   }
   
   .textarea {
-    min-height: 50px !important;
+    min-height: 58px !important;
     font-size: 0.9rem;
+    max-height: 240px !important; /* Prevent scrollbar at 600px height */
   }
 }
 
