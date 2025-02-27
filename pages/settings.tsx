@@ -29,10 +29,12 @@ const Settings = () => {
   });
   
   const [privacySettings, setPrivacySettings] = useState({
-    allowAnalytics: true,
     storeHistory: true,
-    retentionPeriod: 'forever'
+    retentionPeriod: '1month' // Changed default to 1 month per GDPR requirements
   });
+
+  // New state for delete history dropdown
+  const [deleteTimeframe, setDeleteTimeframe] = useState('all');
   
   const router = useRouter();
   
@@ -104,9 +106,8 @@ const Settings = () => {
       if (response.ok) {
         const data = await response.json();
         setPrivacySettings({
-          allowAnalytics: data.allowAnalytics ?? true,
           storeHistory: data.storeHistory ?? true,
-          retentionPeriod: data.retentionPeriod || 'forever'
+          retentionPeriod: data.retentionPeriod || '1month' // Changed default to 1 month
         });
       } else {
         console.error('Error loading privacy settings:', await response.text());
@@ -163,6 +164,64 @@ const Settings = () => {
       setStatusMessage({
         type: 'error',
         text: error instanceof Error ? error.message : 'An error occurred while exporting your data.'
+      });
+    } finally {
+      setLoading(false);
+      setProcessingAction(null);
+    }
+  };
+
+  // New function to handle chat history deletion
+  const handleDeleteChatHistory = async () => {
+    if (!userInfo?.email) return;
+    
+    // Confirm deletion with user
+    const confirmed = window.confirm(
+      `Are you sure you want to delete your chat history for the selected timeframe? This action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+    
+    setProcessingAction('deleteHistory');
+    setLoading(true);
+    
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      const idToken = await getIdToken(user);
+      
+      const response = await fetch('/api/delete-chat-history', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ 
+          email: userInfo.email,
+          timeframe: deleteTimeframe
+        }),
+      });
+      
+      if (response.ok) {
+        // Refresh user data stats to reflect the deletion
+        await loadUserDataStats(userInfo.email, idToken);
+        
+        setStatusMessage({
+          type: 'success',
+          text: 'Your chat history has been successfully deleted for the selected timeframe.'
+        });
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete chat history');
+      }
+    } catch (error) {
+      console.error('Error deleting chat history:', error);
+      setStatusMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'An error occurred while deleting your chat history.'
       });
     } finally {
       setLoading(false);
@@ -411,6 +470,41 @@ useEffect(() => {
               </button>
             </div>
             
+            {/* NEW: Delete Chat History */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
+              <h3 className="text-lg font-medium mb-2 dark:text-white">Delete Chat History</h3>
+              <p className="mb-4 text-gray-600 dark:text-gray-400">
+                Delete your chat history for a specific timeframe. This action cannot be undone.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <select
+                  className="border dark:border-gray-700 dark:bg-gray-700 dark:text-white p-2 rounded"
+                  value={deleteTimeframe}
+                  onChange={(e) => setDeleteTimeframe(e.target.value)}
+                >
+                  <option value="all" className="bg-white dark:bg-gray-700">Delete All History</option>
+                  <option value="hour" className="bg-white dark:bg-gray-700">Delete Last Hour</option>
+                  <option value="day" className="bg-white dark:bg-gray-700">Delete Last Day</option>
+                  <option value="week" className="bg-white dark:bg-gray-700">Delete Last Week</option>
+                  <option value="month" className="bg-white dark:bg-gray-700">Delete Last Month</option>
+                </select>
+                <button 
+                  onClick={handleDeleteChatHistory}
+                  disabled={loading && processingAction === 'deleteHistory'}
+                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 disabled:bg-red-300 flex items-center"
+                >
+                  {loading && processingAction === 'deleteHistory' ? (
+                    <>
+                      <span className="mr-2">Deleting</span>
+                      <LoadingDots color="#fff" />
+                    </>
+                  ) : (
+                    'Delete History'
+                  )}
+                </button>
+              </div>
+            </div>
+            
             {/* Account deletion */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
               <h3 className="text-lg font-medium mb-2 dark:text-white">Delete Your Account</h3>
@@ -443,21 +537,7 @@ useEffect(() => {
               <h3 className="text-lg font-medium mb-4 dark:text-white">Data Collection and Processing</h3>
               
               <div className="space-y-4">
-                <div className="flex items-start">
-                  <input 
-                    id="allowAnalytics" 
-                    type="checkbox" 
-                    className="mt-1 mr-3" 
-                    checked={privacySettings.allowAnalytics}
-                    onChange={(e) => setPrivacySettings({...privacySettings, allowAnalytics: e.target.checked})}
-                  />
-                  <div>
-                    <label htmlFor="allowAnalytics" className="font-medium dark:text-white">Allow Usage Analytics</label>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      We collect anonymous usage data to improve our service. This helps us understand how the chatbot is used.
-                    </p>
-                  </div>
-                </div>
+                {/* Removed "Allow Usage Analytics" toggle as per requirement */}
                 
                 <div className="flex items-start">
                   <input 
@@ -470,9 +550,15 @@ useEffect(() => {
                   <div>
                     <label htmlFor="storeHistory" className="font-medium dark:text-white">Store Chat History</label>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Allow us to store your chat history so you can reference past conversations. Disabling will clear your history.
+                      Allow us to store your chat history so you can reference past conversations. Disabling will immediately delete your existing history and prevent new conversations from being saved.
                     </p>
                   </div>
+                </div>
+                
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Note: Usage analytics are now managed through the cookie consent banner. You can adjust these settings at any time through the cookie preferences link in the footer.
+                  </p>
                 </div>
               </div>
             </div>
@@ -480,19 +566,22 @@ useEffect(() => {
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
               <h3 className="text-lg font-medium mb-2 dark:text-white">Data Retention</h3>
               <p className="mb-4 text-gray-600 dark:text-gray-400">
-                Choose how long we store your chat history. Changing this will affect future and existing data.
+                Choose how long we store your information. This applies to both chat history and Q&A data. Changing this will affect existing and future data.
               </p>
               <select 
                 className="border dark:border-gray-700 dark:bg-gray-700 dark:text-white p-2 rounded w-full max-w-xs"
                 value={privacySettings.retentionPeriod}
                 onChange={(e) => setPrivacySettings({...privacySettings, retentionPeriod: e.target.value})}
               >
-                <option value="forever" className="bg-white dark:bg-gray-700">Indefinitely (default)</option>
-                <option value="1year" className="bg-white dark:bg-gray-700">1 year</option>
-                <option value="6months" className="bg-white dark:bg-gray-700">6 months</option>
+                <option value="1month" className="bg-white dark:bg-gray-700">1 month (default)</option>
                 <option value="3months" className="bg-white dark:bg-gray-700">3 months</option>
-                <option value="1month" className="bg-white dark:bg-gray-700">1 month</option>
+                <option value="6months" className="bg-white dark:bg-gray-700">6 months</option>
+                <option value="1year" className="bg-white dark:bg-gray-700">1 year</option>
+                <option value="forever" className="bg-white dark:bg-gray-700">Forever</option>
               </select>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Note: When retention period expires, personal data is anonymized in our knowledge base while preserving the value of Q&A pairs.
+              </p>
             </div>
             
             <div className="mt-6">
