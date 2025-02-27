@@ -12,9 +12,24 @@
 }
 
 html, body {
-    overflow-x: hidden; /* Prevent horizontal overflow */
-    overflow-y: hidden;
-  }
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+/* Special class for settings page that enables scrolling */
+.settings-page {
+  overflow-y: auto !important;
+  height: 100vh;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Make the settings container scrollable */
+.settings-container {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 60px;
+}
   
 
 body.dark ul,

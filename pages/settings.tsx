@@ -300,6 +300,17 @@ const handlePrivacySettingsUpdate = async () => {
     });
   };
 
+
+useEffect(() => {
+    // Add the settings-page class to body when component mounts
+    document.body.classList.add('settings-page');
+    
+    return () => {
+      // Remove the class when component unmounts
+      document.body.classList.remove('settings-page');
+    };
+  }, []);
+
   return (
     <Layout 
       theme={theme}
@@ -308,25 +319,26 @@ const handlePrivacySettingsUpdate = async () => {
       handleNewChat={handleNewChat}
       isFromSolidcamWeb={false}
     >
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Back to Chat button */}
-        <div className="mb-6">
-          <Link href="/" className="flex items-center text-blue-500 hover:text-blue-700 dark:hover:text-blue-300">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Back to Chat
-          </Link>
+    <div className="flex-1 overflow-y-auto settings-container">
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* Back to Chat button */}
+      <div className="mb-6">
+        <Link href="/" className="flex items-center text-blue-500 hover:text-blue-700 dark:hover:text-blue-300">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+          </svg>
+          Back to Chat
+        </Link>
+      </div>
+      
+      <h1 className="text-2xl font-bold mb-6 dark:text-white">Settings & Privacy</h1>
+      
+      {/* Status message */}
+      {statusMessage && (
+        <div className={`mb-4 p-4 rounded text-white ${statusMessage.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+          {statusMessage.text}
         </div>
-        
-        <h1 className="text-2xl font-bold mb-6 dark:text-white">Settings & Privacy</h1>
-        
-        {/* Status message */}
-        {statusMessage && (
-          <div className={`mb-4 p-4 rounded text-white ${statusMessage.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
-            {statusMessage.text}
-          </div>
-        )}
+      )}
         
         <div className="flex border-b mb-6">
           <button 
@@ -548,7 +560,8 @@ const handlePrivacySettingsUpdate = async () => {
             </div>
           </div>
         )}
-      </div>
+    </div>
+    </div>
     </Layout>
   );
 };
