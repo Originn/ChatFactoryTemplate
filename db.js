@@ -223,6 +223,53 @@ const deleteOldChatHistory = async () => {
   }
 };
 
+const getUserPrivacySettings = async (uid) => {
+  const query = `
+    SELECT * FROM user_privacy_settings 
+    WHERE uid = $1;
+  `;
+
+  try {
+    const res = await pool.query(query, [uid]);
+    return res.rows[0]; // Return the privacy settings or undefined if not found
+  } catch (err) {
+    console.error('Error fetching user privacy settings:', err);
+    throw err;
+  }
+};
+
+// Function to update user privacy settings
+const updateUserPrivacySettings = async (uid, email, allowAnalytics, storeHistory, retentionPeriod) => {
+  const query = `
+    INSERT INTO user_privacy_settings 
+      (uid, email, allow_analytics, store_history, retention_period, updated_at)
+    VALUES 
+      ($1, $2, $3, $4, $5, NOW())
+    ON CONFLICT (uid) 
+    DO UPDATE SET
+      email = $2,
+      allow_analytics = $3,
+      store_history = $4, 
+      retention_period = $5,
+      updated_at = NOW()
+    RETURNING *;
+  `;
+
+  try {
+    const res = await pool.query(query, [
+      uid,
+      email,
+      allowAnalytics,
+      storeHistory,
+      retentionPeriod
+    ]);
+    return res.rows[0]; // Return the updated privacy settings
+  } catch (err) {
+    console.error('Error updating user privacy settings:', err);
+    throw err;
+  }
+};
+
 
 
 module.exports = { 
@@ -234,5 +281,7 @@ module.exports = {
   getChatHistory, 
   getChatHistoryByRoomId, 
   deleteOldChatHistory,
-  getTitleByRoomId
+  getTitleByRoomId,
+  getUserPrivacySettings,
+  updateUserPrivacySettings
 };
