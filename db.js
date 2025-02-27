@@ -283,5 +283,5 @@ module.exports = {
   deleteOldChatHistory,
   getTitleByRoomId,
   getUserPrivacySettings,
-  updateUserPrivacySettings
+  updateUserPrivacySettings,
 };

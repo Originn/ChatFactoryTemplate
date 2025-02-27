@@ -51,3 +51,23 @@ export function getTitleByRoomId(
 ): Promise<any>;
 
 export function deleteOldChatHistory(): Promise<number>;
+
+// Add the missing type definitions for privacy functions
+export function getUserPrivacySettings(
+  uid: string
+): Promise<{
+  uid: string;
+  email: string;
+  store_history: boolean;
+  retention_period: string;
+  allow_analytics?: boolean;
+  updated_at?: Date;
+} | undefined>;
+
+export function updateUserPrivacySettings(
+  uid: string,
+  email: string,
+  allowAnalytics: boolean,
+  storeHistory: boolean,
+  retentionPeriod: string
+): Promise<any>;

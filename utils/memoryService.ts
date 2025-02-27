@@ -1,10 +1,26 @@
-// MemoryService.ts
+// Modified version of utils/memoryService.ts
 
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
 import BufferMemory from "./BufferMemory";
-import { insertChatHistory, getChatHistoryByRoomId, getTitleByRoomId } from '../db';
+import { insertChatHistory, getChatHistoryByRoomId, getTitleByRoomId, getUserPrivacySettings } from '../db';
 import { Message } from '@/types/chat';
+import { auth as clientAuth } from '@/utils/firebase'; // For client-side access
+import admin from 'firebase-admin'; // For server-side access
 
+// Initialize Firebase Admin if not already initialized
+if (!admin.apps.length && typeof window === 'undefined') {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      }),
+    });
+  } catch (error) {
+    console.error('Firebase admin initialization error', error);
+  }
+}
 
 class MemoryService {
   private static chatMemory: Record<string, BufferMemory> = {};
@@ -28,6 +44,42 @@ class MemoryService {
     qaId: string | null = null,
     conversationTitle: string = ''
   ): Promise<void> {
+    // GDPR CHECK: Skip storing history if user has disabled it
+    if (userEmail) {
+      try {
+        // Get the current user's UID directly
+        let uid = null;
+        
+        // When running on the client side
+        if (typeof window !== 'undefined' && clientAuth.currentUser) {
+          uid = clientAuth.currentUser.uid;
+        } 
+        // When running on the server side
+        else if (typeof window === 'undefined') {
+          try {
+            const userRecord = await admin.auth().getUserByEmail(userEmail);
+            uid = userRecord.uid;
+          } catch (firebaseError) {
+            console.error('Error getting user from Firebase:', firebaseError);
+          }
+        }
+        
+        if (uid) {
+          // Get the user's privacy settings
+          const privacySettings = await getUserPrivacySettings(uid);
+          
+          // If storeHistory is explicitly set to false, don't save anything
+          if (privacySettings && privacySettings.store_history === false) {
+            console.log(`Chat history storage disabled for user ${userEmail}. Message not saved.`);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error checking privacy settings:', error);
+        // Continue with storing history in case of error (fail open)
+      }
+    }
+    
     // Retrieve existing chat history from the database
     let chatHistoryRecord = await getChatHistoryByRoomId(roomId);
   
@@ -79,8 +131,6 @@ class MemoryService {
     // Update chat history in the database with the validated title
     await insertChatHistory(userEmail || '', title, roomId, messages);
   }
-  
-  
   
   static async getHasProcessedImage(roomId: string): Promise<boolean> {
     // Retrieve chat history record from the database
