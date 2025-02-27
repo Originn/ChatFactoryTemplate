@@ -95,7 +95,8 @@ export default async function handler(
       [],
       qaId,
       roomId,
-      userEmail
+      userEmail,
+      []
     );
 
     // Update chat history using updateChatMemory
