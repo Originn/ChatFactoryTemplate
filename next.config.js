@@ -9,7 +9,27 @@ const nextConfig = {
     if (dev) {
       config.devtool = isServer ? 'source-map' : 'inline-source-map';
     }
-    config.experiments = { ...config.experiments, topLevelAwait: true };
+    
+    // Add top-level await support
+    config.experiments = { 
+      ...config.experiments, 
+      topLevelAwait: true,
+      asyncWebAssembly: true // Add WebAssembly support for farmhash
+    };
+    
+    // Handle Node.js-specific modules in client-side bundles
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        net: false,
+        tls: false,
+        fs: false,
+        http2: false,
+        dns: false,
+        child_process: false
+      };
+    }
+    
     return config;
   },
   env: {

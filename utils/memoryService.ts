@@ -2,23 +2,35 @@
 
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
 import BufferMemory from "./BufferMemory";
-import { insertChatHistory, getChatHistoryByRoomId, getTitleByRoomId, getUserPrivacySettings } from '../db';
+import { 
+  insertChatHistory, 
+  getChatHistoryByRoomId, 
+  getTitleByRoomId, 
+  getUserPrivacySettings 
+} from '../db';
 import { Message } from '@/types/chat';
 import { auth as clientAuth } from '@/utils/firebase'; // For client-side access
-import admin from 'firebase-admin'; // For server-side access
 
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length && typeof window === 'undefined') {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
-    });
-  } catch (error) {
-    console.error('Firebase admin initialization error', error);
+// Only import firebase-admin on the server side
+let admin: any = null;
+if (typeof window === 'undefined') {
+  // Dynamic import for server-side only
+  // This prevents the admin SDK from being included in client bundles
+  admin = require('firebase-admin');
+  
+  // Initialize Firebase Admin if not already initialized and we're server-side
+  if (!admin.apps.length) {
+    try {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        }),
+      });
+    } catch (error) {
+      console.error('Firebase admin initialization error', error);
+    }
   }
 }
 
@@ -55,7 +67,7 @@ class MemoryService {
           uid = clientAuth.currentUser.uid;
         } 
         // When running on the server side
-        else if (typeof window === 'undefined') {
+        else if (typeof window === 'undefined' && admin) {
           try {
             const userRecord = await admin.auth().getUserByEmail(userEmail);
             uid = userRecord.uid;
@@ -132,6 +144,7 @@ class MemoryService {
     await insertChatHistory(userEmail || '', title, roomId, messages);
   }
   
+  // Rest of the methods remain the same...
   static async getHasProcessedImage(roomId: string): Promise<boolean> {
     // Retrieve chat history record from the database
     const chatHistoryRecord = await getChatHistoryByRoomId(roomId);
