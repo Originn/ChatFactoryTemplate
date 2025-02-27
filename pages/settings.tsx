@@ -311,7 +311,7 @@ const handlePrivacySettingsUpdate = async () => {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Back to Chat button */}
         <div className="mb-6">
-          <Link href="/" className="flex items-center text-blue-500 hover:text-blue-700">
+          <Link href="/" className="flex items-center text-blue-500 hover:text-blue-700 dark:hover:text-blue-300">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
             </svg>
@@ -319,7 +319,7 @@ const handlePrivacySettingsUpdate = async () => {
           </Link>
         </div>
         
-        <h1 className="text-2xl font-bold mb-6">Settings & Privacy</h1>
+        <h1 className="text-2xl font-bold mb-6 dark:text-white">Settings & Privacy</h1>
         
         {/* Status message */}
         {statusMessage && (
@@ -330,19 +330,19 @@ const handlePrivacySettingsUpdate = async () => {
         
         <div className="flex border-b mb-6">
           <button 
-            className={`py-2 px-4 ${activeTab === 'data' ? 'border-b-2 border-blue-500' : ''}`}
+            className={`py-2 px-4 dark:text-white ${activeTab === 'data' ? 'border-b-2 border-blue-500' : ''}`}
             onClick={() => setActiveTab('data')}
           >
             Your Data
           </button>
           <button 
-            className={`py-2 px-4 ${activeTab === 'privacy' ? 'border-b-2 border-blue-500' : ''}`}
+            className={`py-2 px-4 dark:text-white ${activeTab === 'privacy' ? 'border-b-2 border-blue-500' : ''}`}
             onClick={() => setActiveTab('privacy')}
           >
             Privacy Settings
           </button>
           <button 
-            className={`py-2 px-4 ${activeTab === 'contact' ? 'border-b-2 border-blue-500' : ''}`}
+            className={`py-2 px-4 dark:text-white ${activeTab === 'contact' ? 'border-b-2 border-blue-500' : ''}`}
             onClick={() => setActiveTab('contact')}
           >
             Contact Information
@@ -351,35 +351,35 @@ const handlePrivacySettingsUpdate = async () => {
 
         {activeTab === 'data' && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Your Data</h2>
+            <h2 className="text-xl font-semibold mb-4 dark:text-white">Your Data</h2>
             
             {/* Data summary */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-medium mb-4">Your Data Summary</h3>
+              <h3 className="text-lg font-medium mb-4 dark:text-white">Your Data Summary</h3>
               
               <div className="space-y-3">
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">Email: </span> 
-                  <span className="font-medium">{userInfo?.email || 'Loading...'}</span>
+                  <span className="font-medium dark:text-white">{userInfo?.email || 'Loading...'}</span>
                 </div>
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">Chat history items: </span> 
-                  <span className="font-medium">{dataStats.chatHistoryCount}</span>
+                  <span className="font-medium dark:text-white">{dataStats.chatHistoryCount}</span>
                 </div>
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">Account created: </span> 
-                  <span className="font-medium">{formatDate(userInfo?.createdAt || null)}</span>
+                  <span className="font-medium dark:text-white">{formatDate(userInfo?.createdAt || null)}</span>
                 </div>
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">Last activity: </span> 
-                  <span className="font-medium">{formatDate(dataStats.lastActive)}</span>
+                  <span className="font-medium dark:text-white">{formatDate(dataStats.lastActive)}</span>
                 </div>
               </div>
             </div>
             
             {/* Data export */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-medium mb-2">Access and Export Your Data</h3>
+              <h3 className="text-lg font-medium mb-2 dark:text-white">Access and Export Your Data</h3>
               <p className="mb-4 text-gray-600 dark:text-gray-400">
                 Download a copy of your personal data including your chat history and account information.
               </p>
@@ -401,7 +401,7 @@ const handlePrivacySettingsUpdate = async () => {
             
             {/* Account deletion */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-medium mb-2">Delete Your Account</h3>
+              <h3 className="text-lg font-medium mb-2 dark:text-white">Delete Your Account</h3>
               <p className="mb-4 text-gray-600 dark:text-gray-400">
                 Permanently delete your account and all associated data. This action cannot be undone.
               </p>
@@ -425,10 +425,10 @@ const handlePrivacySettingsUpdate = async () => {
 
         {activeTab === 'privacy' && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Privacy Settings</h2>
+            <h2 className="text-xl font-semibold mb-4 dark:text-white">Privacy Settings</h2>
             
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-medium mb-4">Data Collection and Processing</h3>
+              <h3 className="text-lg font-medium mb-4 dark:text-white">Data Collection and Processing</h3>
               
               <div className="space-y-4">
                 <div className="flex items-start">
@@ -440,7 +440,7 @@ const handlePrivacySettingsUpdate = async () => {
                     onChange={(e) => setPrivacySettings({...privacySettings, allowAnalytics: e.target.checked})}
                   />
                   <div>
-                    <label htmlFor="allowAnalytics" className="font-medium">Allow Usage Analytics</label>
+                    <label htmlFor="allowAnalytics" className="font-medium dark:text-white">Allow Usage Analytics</label>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       We collect anonymous usage data to improve our service. This helps us understand how the chatbot is used.
                     </p>
@@ -456,7 +456,7 @@ const handlePrivacySettingsUpdate = async () => {
                     onChange={(e) => setPrivacySettings({...privacySettings, storeHistory: e.target.checked})}
                   />
                   <div>
-                    <label htmlFor="storeHistory" className="font-medium">Store Chat History</label>
+                    <label htmlFor="storeHistory" className="font-medium dark:text-white">Store Chat History</label>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Allow us to store your chat history so you can reference past conversations. Disabling will clear your history.
                     </p>
@@ -466,7 +466,7 @@ const handlePrivacySettingsUpdate = async () => {
             </div>
             
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-medium mb-2">Data Retention</h3>
+              <h3 className="text-lg font-medium mb-2 dark:text-white">Data Retention</h3>
               <p className="mb-4 text-gray-600 dark:text-gray-400">
                 Choose how long we store your chat history. Changing this will affect future and existing data.
               </p>
@@ -475,11 +475,11 @@ const handlePrivacySettingsUpdate = async () => {
                 value={privacySettings.retentionPeriod}
                 onChange={(e) => setPrivacySettings({...privacySettings, retentionPeriod: e.target.value})}
               >
-                <option value="forever">Indefinitely (default)</option>
-                <option value="1year">1 year</option>
-                <option value="6months">6 months</option>
-                <option value="3months">3 months</option>
-                <option value="1month">1 month</option>
+                <option value="forever" className="bg-white dark:bg-gray-700">Indefinitely (default)</option>
+                <option value="1year" className="bg-white dark:bg-gray-700">1 year</option>
+                <option value="6months" className="bg-white dark:bg-gray-700">6 months</option>
+                <option value="3months" className="bg-white dark:bg-gray-700">3 months</option>
+                <option value="1month" className="bg-white dark:bg-gray-700">1 month</option>
               </select>
             </div>
             
@@ -504,16 +504,16 @@ const handlePrivacySettingsUpdate = async () => {
 
         {activeTab === 'contact' && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Contact Information</h2>
+            <h2 className="text-xl font-semibold mb-4 dark:text-white">Contact Information</h2>
             
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-medium mb-4">GDPR Requests</h3>
+              <h3 className="text-lg font-medium mb-4 dark:text-white">GDPR Requests</h3>
               <p className="mb-2 text-gray-600 dark:text-gray-400">
                 For specific GDPR concerns or requests not handled through this interface, you can contact our data protection team:
               </p>
               
               <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded mb-4">
-                <p className="font-medium">privacy@solidcam.com</p>
+                <p className="font-medium dark:text-white">privacy@solidcam.com</p>
               </div>
               
               <p className="text-gray-600 dark:text-gray-400">
@@ -522,25 +522,25 @@ const handlePrivacySettingsUpdate = async () => {
             </div>
             
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-medium mb-4">Legal Information</h3>
+              <h3 className="text-lg font-medium mb-4 dark:text-white">Legal Information</h3>
               
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-medium mb-2">Privacy Policy</h4>
+                  <h4 className="font-medium mb-2 dark:text-white">Privacy Policy</h4>
                   <p className="text-gray-600 dark:text-gray-400 mb-2">
                     Our privacy policy details how we collect, process, and protect your data:
                   </p>
-                  <Link href="/privacy-policy" className="text-blue-500 hover:underline">
+                  <Link href="/privacy-policy" className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300">
                     Read our Privacy Policy
                   </Link>
                 </div>
                 
                 <div>
-                  <h4 className="font-medium mb-2">Data Processing Agreement</h4>
+                  <h4 className="font-medium mb-2 dark:text-white">Data Processing Agreement</h4>
                   <p className="text-gray-600 dark:text-gray-400 mb-2">
                     For business customers requiring a DPA (Data Processing Agreement), please contact us:
                   </p>
-                  <a href="mailto:legal@solidcam.com" className="text-blue-500 hover:underline">
+                  <a href="mailto:legal@solidcam.com" className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300">
                     legal@solidcam.com
                   </a>
                 </div>
