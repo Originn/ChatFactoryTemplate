@@ -50,8 +50,8 @@ const AccountDeleted = () => {
       <div className="mt-8 text-center text-sm text-gray-500">
         <p>
           For any questions about data policies, please contact{' '}
-          <a href="mailto:privacy@solidcam.com" className="text-blue-500 hover:underline">
-            privacy@solidcam.com
+          <a href="mailto:ai@solidcam.app" className="text-blue-500 hover:underline">
+            ai@solidcam.app
           </a>
         </p>
       </div>
