@@ -538,7 +538,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         });
       }
 
-      await insertQA(originalInput, ragResponse.answer, ragResponse.context, Documents, qaId, roomId, userEmail, imageUrls);
+      await insertQA(originalInput, ragResponse.answer, ragResponse.context, Documents, qaId, roomId, userEmail, imageUrls, language);
 
       try {
         let existingHistory;
