@@ -166,7 +166,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   );
   const [isEmbeddingMode, setIsEmbeddingMode] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
-  const [gppQuestionMode, setGppQuestionMode] = useState(false);
   const [codebaseQuestionMode, setCodebaseQuestionMode] = useState(false);
 
 
@@ -444,7 +443,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       }
     }
   };
-  
+
   const handleEnter = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       if (e.shiftKey) {
@@ -554,16 +553,12 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       if (trimmedQuery.startsWith(codePrefix)) {
         setIsEmbeddingMode(true);
       }
-      if (trimmedQuery.startsWith(gppKeyword)) {
-        setGppQuestionMode(true);
-      }
       if (trimmedQuery.startsWith(codebaseKeyword)) {
         setCodebaseQuestionMode(true);
       }
   
       // Determine the endpoint based on the active mode
       const isEmbedding = isEmbeddingMode || trimmedQuery.startsWith(codePrefix);
-      //const isGppQuestion = gppQuestionMode || trimmedQuery.startsWith(gppKeyword);
       const isCodebaseQuestion = codebaseQuestionMode || trimmedQuery.startsWith(codebaseKeyword);
 
       const endpoint = isEmbedding ? '/api/userEmbed' : isCodebaseQuestion ? '/api/codeBaseQuestions' : '/api/chat';
@@ -665,7 +660,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   
     setIsNewChat(true);
     setIsEmbeddingMode(false);
-    setGppQuestionMode(false);
     setCodebaseQuestionMode(false);
   };
   

@@ -14,7 +14,8 @@ export function insertQA(
   qaId: string, 
   roomId: string, 
   userEmail: string, 
-  imageurl: string | string[]
+  imageurl: string | string[],
+  language: string
 ): Promise<any>;
 
 export function updateFeedback(
