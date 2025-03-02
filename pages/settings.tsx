@@ -481,7 +481,7 @@ useEffect(() => {
                     Note: Q&A pairs are kept for a minimum of 1 month, and you can opt to anonymize them using the settings under <span className="font-medium">Data Retention</span>. Once deleted, your chat history cannot be recovered.
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-500">
-                    To request complete deletion of all your data including Q&A history, please email <a href="mailto:privacy@solidcam.com" className="text-blue-500 hover:underline">privacy@solidcam.com</a> with your account email address.
+                    To request complete deletion of all your data including Q&A history, please email <a href="mailto:ai@solidcam.app" className="text-blue-500 hover:underline">ai@solidcam.app</a> with your account email address.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
@@ -622,7 +622,7 @@ useEffect(() => {
               </p>
               
               <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded mb-4">
-                <p className="font-medium dark:text-white">privacy@solidcam.com</p>
+                <p className="font-medium dark:text-white">ai@solidcam.app</p>
               </div>
               
               <p className="text-gray-600 dark:text-gray-400">
@@ -644,15 +644,6 @@ useEffect(() => {
                   </Link>
                 </div>
                 
-                <div>
-                  <h4 className="font-medium mb-2 dark:text-white">Data Processing Agreement</h4>
-                  <p className="text-gray-600 dark:text-gray-400 mb-2">
-                    For business customers requiring a DPA (Data Processing Agreement), please contact us:
-                  </p>
-                  <a href="mailto:legal@solidcam.com" className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300">
-                    legal@solidcam.com
-                  </a>
-                </div>
               </div>
             </div>
           </div>

@@ -75,7 +75,7 @@ export default function PrivacyPolicy() {
         <strong>Retention Periods:</strong> By default, we retain your data for 1 month. Through your account settings under "Data Retention," you can choose to extend this period to 3 months, 6 months, 1 year, or forever. When this retention period expires, personal data is anonymized in our knowledge base while preserving the value of Q&A pairs for service improvement. Note that uploaded images are always deleted after 30 days regardless of these settings.
       </p>
       <p className={styles.paragraph}>
-        <strong>Complete Data Deletion:</strong> If you wish to request complete deletion of all your data, including anonymized Q&A pairs and any uploaded images, please email <a href="mailto:privacy@solidcam.com" className={styles.link}>privacy@solidcam.com</a> with your account email address. We will process your request within 30 days as required by applicable regulations.
+        <strong>Complete Data Deletion:</strong> If you wish to request complete deletion of all your data, including anonymized Q&A pairs and any uploaded images, please email <a href="mailto:ai@solidcam.app" className={styles.link}>ai@solidcam.app</a> with your account email address. We will process your request within 30 days as required by applicable regulations.
       </p>
       <p className={styles.paragraph}>
         <strong>Account Deletion:</strong> When you choose to delete your account through the Settings page, we:
@@ -146,7 +146,7 @@ export default function PrivacyPolicy() {
         </li>
       </ul>
       <p className={styles.paragraph}>
-        To exercise these rights, please email <a href="mailto:privacy@solidcam.com" className={styles.link}>privacy@solidcam.com</a> or use the relevant features in your account settings.
+        To exercise these rights, please email <a href="mailto:ai@solidcam.app" className={styles.link}>ai@solidcam.app</a> or use the relevant features in your account settings.
       </p>
 
       <h3 className={styles.sectionHeader}>Data Security</h3>
@@ -180,14 +180,9 @@ export default function PrivacyPolicy() {
         <strong>Updates and Modifications:</strong> We may update this policy periodically to reflect changes in our practices or relevant regulations. We will notify you of significant changes by posting the new privacy policy on our website and, where appropriate, via email.
       </p>
 
-      <h3 className={styles.sectionHeader}>Data Protection Officer</h3>
-      <p className={styles.paragraph}>
-        We have appointed a Data Protection Officer who can be contacted at <a href="mailto:dpo@solidcam.com" className={styles.link}>dpo@solidcam.com</a> for any data protection related inquiries.
-      </p>
-
       <h3 className={styles.sectionHeader}>Contact Information and Complaints</h3>
       <p className={styles.paragraph}>
-        For any questions or concerns regarding our privacy practices, please contact us at <a href="mailto:privacy@solidcam.com" className={styles.link}>privacy@solidcam.com</a> or via our designated support channels.
+        For any questions or concerns regarding our privacy practices, please contact us at <a href="mailto:ai@solidcam.app" className={styles.link}>ai@solidcam.app</a> or via our designated support channels.
       </p>
       <p className={styles.paragraph}>
         If you are located in the EEA and believe that we have not adequately addressed your data privacy concerns, you have the right to lodge a complaint with your local supervisory authority.

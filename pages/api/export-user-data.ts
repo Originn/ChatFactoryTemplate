@@ -55,57 +55,30 @@ export default async function handler(
       return res.status(401).json({ message: 'Invalid authentication' });
     }
 
-    // Collect user data from various tables
-    const userData: any = {
-      email,
-      chatHistory: [],
-      questions: [],
-      settings: {},
-      accountInfo: {}
-    };
-
-    // Get user's chat history
-    const chatHistoryQuery = await pool.query(
-      `SELECT * FROM user_chat_history WHERE useremail = $1 ORDER BY date DESC;`,
-      [email]
-    );
-    userData.chatHistory = chatHistoryQuery.rows;
-
-    // Get user's Q&A history
+    // Get user's Q&A history with only the required fields
     const questionsQuery = await pool.query(
-      `SELECT * FROM QuestionsAndAnswers WHERE userEmail = $1 ORDER BY created_at DESC;`,
+      `SELECT question, answer, thumb, comment, userEmail 
+       FROM QuestionsAndAnswers 
+       WHERE userEmail = $1 
+       ORDER BY created_at DESC;`,
       [email]
     );
-    userData.questions = questionsQuery.rows;
+    
+    // Format the data as an array of objects with the selected fields
+    const userData = questionsQuery.rows.map(row => ({
+      question: row.question,
+      answer: row.answer,
+      thumb: row.thumb,
+      comment: row.comment,
+      userEmail: row.useremail || row.userEmail // Handle potential column name inconsistency
+    }));
 
-    // Get user's privacy settings
-    const settingsQuery = await pool.query(
-      `SELECT * FROM user_privacy_settings WHERE email = $1;`,
-      [email]
-    );
-    userData.settings = settingsQuery.rows[0] || {};
-
-    // Get Firebase user information
-    try {
-      const firebaseUser = await admin.auth().getUserByEmail(email);
-      userData.accountInfo = {
-        uid: firebaseUser.uid,
-        createdAt: firebaseUser.metadata.creationTime,
-        lastSignIn: firebaseUser.metadata.lastSignInTime,
-        emailVerified: firebaseUser.emailVerified,
-        displayName: firebaseUser.displayName,
-      };
-    } catch (error) {
-      console.error('Error fetching Firebase user data:', error);
-      userData.accountInfo = { error: 'Could not fetch Firebase user data' };
-    }
-
-    // Set response headers for file download
+    // Set response headers for file download with pretty-printing enabled
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename=solidcam-data-${Date.now()}.json`);
     
-    // Send the data
-    return res.status(200).json(userData);
+    // Send the data with 2-space indentation for nice formatting
+    return res.status(200).send(JSON.stringify(userData, null, 2));
   } catch (error) {
     console.error('Error exporting user data:', error);
     return res.status(500).json({ message: 'Error processing the request' });
