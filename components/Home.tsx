@@ -473,7 +473,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   };
 
   const codePrefix = process.env.NEXT_PUBLIC_CODE_PREFIX ?? "";
-  const gppKeyword = process.env.NEXT_PUBLIC_GPP_KEYWORD ?? "";
   const codebaseKeyword = process.env.NEXT_PUBLIC_CODEBASE_KEYWORD ?? "";
 
   const handleSubmit = async (e?: any) => {
@@ -549,7 +548,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
         console.error('Failed to fetch chat history:', error);
       }
   
-      // Activate embedding or GPP mode if the query starts with respective keyword
+      // Activate embedding mode if the query starts with respective keyword
       if (trimmedQuery.startsWith(codePrefix)) {
         setIsEmbeddingMode(true);
       }
