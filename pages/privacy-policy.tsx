@@ -44,6 +44,9 @@ export default function PrivacyPolicy() {
       <p className={styles.paragraph}>
         <strong>Comments and Feedback:</strong> We actively collect user feedback submitted through our platform. This input is invaluable as it helps us to continually refine our offerings and address user needs more effectively.
       </p>
+      <p className={styles.paragraph}>
+        <strong>Image Uploads:</strong> We collect and securely store images that you upload during interactions with our ChatBot. These images help us better understand your inquiries related to SolidCAM software and provide more accurate assistance.
+      </p>
 
       <h3 className={styles.sectionHeader}>Use of Information</h3>
       <p className={styles.paragraph}>
@@ -55,7 +58,7 @@ export default function PrivacyPolicy() {
 
       <h3 className={styles.sectionHeader}>Data Retention and Deletion</h3>
       <p className={styles.paragraph}>
-        <strong>Data Categories and Retention:</strong> We maintain two distinct categories of data:
+        <strong>Data Categories and Retention:</strong> We maintain the following categories of data:
       </p>
       <ul className={styles.list}>
         <li className={styles.listItem}>
@@ -64,12 +67,15 @@ export default function PrivacyPolicy() {
         <li className={styles.listItem}>
           <strong>Questions and Answers Database:</strong> We maintain a database of questions and corresponding answers to improve our service. This data is kept for a minimum of 1 month and is subject to your data retention preferences set in your account settings.
         </li>
+        <li className={styles.listItem}>
+          <strong>Uploaded Images:</strong> All images uploaded during your interactions with the ChatBot are securely stored and automatically deleted after 30 days. This applies regardless of your other data retention settings.
+        </li>
       </ul>
       <p className={styles.paragraph}>
-        <strong>Retention Periods:</strong> By default, we retain your data for 1 month. Through your account settings under "Data Retention," you can choose to extend this period to 3 months, 6 months, 1 year, or forever. When this retention period expires, personal data is anonymized in our knowledge base while preserving the value of Q&A pairs for service improvement.
+        <strong>Retention Periods:</strong> By default, we retain your data for 1 month. Through your account settings under "Data Retention," you can choose to extend this period to 3 months, 6 months, 1 year, or forever. When this retention period expires, personal data is anonymized in our knowledge base while preserving the value of Q&A pairs for service improvement. Note that uploaded images are always deleted after 30 days regardless of these settings.
       </p>
       <p className={styles.paragraph}>
-        <strong>Complete Data Deletion:</strong> If you wish to request complete deletion of all your data, including anonymized Q&A pairs, please email <a href="mailto:privacy@solidcam.com" className={styles.link}>privacy@solidcam.com</a> with your account email address. We will process your request within 30 days as required by applicable regulations.
+        <strong>Complete Data Deletion:</strong> If you wish to request complete deletion of all your data, including anonymized Q&A pairs and any uploaded images, please email <a href="mailto:privacy@solidcam.com" className={styles.link}>privacy@solidcam.com</a> with your account email address. We will process your request within 30 days as required by applicable regulations.
       </p>
       <p className={styles.paragraph}>
         <strong>Account Deletion:</strong> When you choose to delete your account through the Settings page, we:
@@ -79,6 +85,7 @@ export default function PrivacyPolicy() {
         <li className={styles.listItem}>Anonymize your questions and answers in our database by replacing personal identifiers with randomized tokens</li>
         <li className={styles.listItem}>Remove all privacy settings and associated personal information</li>
         <li className={styles.listItem}>Delete your user account from our authentication system</li>
+        <li className={styles.listItem}>Your uploaded images will continue to be stored securely and will be automatically deleted after the standard 30-day retention period</li>
       </ul>
 
       <h3 className={styles.sectionHeader}>Data Sharing and Third-Party Disclosure</h3>
@@ -145,6 +152,9 @@ export default function PrivacyPolicy() {
       <h3 className={styles.sectionHeader}>Data Security</h3>
       <p className={styles.paragraph}>
         <strong>Protective Measures:</strong> We employ robust technical, administrative, and organizational controls to safeguard your personal data against unauthorized access, loss, or modification. Measures include encryption, access control procedures, and secure software development practices.
+      </p>
+      <p className={styles.paragraph}>
+        <strong>Image Storage Security:</strong> All uploaded images are stored using industry-standard encryption and secure storage methods to ensure your data remains protected during the retention period.
       </p>
       <p className={styles.paragraph}>
         <strong>Data Breach Notification:</strong> In the event of a data breach that may affect your personal information, we will notify you and relevant authorities as required by applicable law without undue delay.
