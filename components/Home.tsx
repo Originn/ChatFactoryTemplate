@@ -166,8 +166,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   );
   const [isEmbeddingMode, setIsEmbeddingMode] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
-  const [codebaseQuestionMode, setCodebaseQuestionMode] = useState(false);
-
 
   useEffect(() => {
     //console.log('isFromSolidcamWeb in Home:', isFromSolidcamWeb);
@@ -473,7 +471,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   };
 
   const codePrefix = process.env.NEXT_PUBLIC_CODE_PREFIX ?? "";
-  const codebaseKeyword = process.env.NEXT_PUBLIC_CODEBASE_KEYWORD ?? "";
 
   const handleSubmit = async (e?: any) => {
     if (e) e.preventDefault();
@@ -552,15 +549,12 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       if (trimmedQuery.startsWith(codePrefix)) {
         setIsEmbeddingMode(true);
       }
-      if (trimmedQuery.startsWith(codebaseKeyword)) {
-        setCodebaseQuestionMode(true);
-      }
+
   
       // Determine the endpoint based on the active mode
       const isEmbedding = isEmbeddingMode || trimmedQuery.startsWith(codePrefix);
-      const isCodebaseQuestion = codebaseQuestionMode || trimmedQuery.startsWith(codebaseKeyword);
 
-      const endpoint = isEmbedding ? '/api/userEmbed' : isCodebaseQuestion ? '/api/codeBaseQuestions' : '/api/chat';
+      const endpoint = isEmbedding ? '/api/userEmbed' : '/api/chat';
       const imagePreviewsToUse = isEmbedding ? imagePreviews : homeImagePreviews;
       const imageUrls = imagePreviewsToUse.slice(0, 3).map(preview => preview.url);
   
@@ -659,7 +653,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   
     setIsNewChat(true);
     setIsEmbeddingMode(false);
-    setCodebaseQuestionMode(false);
   };
   
 
