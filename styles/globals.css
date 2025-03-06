@@ -1,4 +1,3 @@
-/* Global Styles (e.g., in _app.tsx or a global CSS file) */
 :root {
     --background-light: #ffffff;
     --background-dark: #000000;
@@ -11,29 +10,128 @@
     --footer-height: -60px;
 }
 
+/* === Base HTML Elements === */
 html, body {
   overflow-x: hidden;
   overflow-y: hidden;
 }
 
-/* Special class for settings page that enables scrolling */
+/* === Layout Classes === */
 .settings-page {
   overflow-y: auto !important;
   height: 100vh;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Make the settings container scrollable */
 .settings-container {
   height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 60px;
 }
-  
 
+.center-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  height: 100vh;
+  width: 100%;
+  text-align: center;
+  overflow: hidden;
+}
+
+.image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.image-container img {
+  max-width: 200px;
+  height: auto;
+}
+
+.image-container-image-thumb {
+  position: absolute;
+  top: 120px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 700px;
+  overflow-y: auto;
+}
+
+.textareaContainer {
+  display: flex;
+  align-items: center;
+}
+
+.content-container {
+  display: flex;
+  flex-direction: column;
+  height: 65vh;
+  box-sizing: border-box;
+  padding-bottom: calc(var(--footer-height) + var(--textarea-height) + 20px);
+  max-width: 100%;
+  width: 100%;
+}
+
+.auto-height {
+  flex-grow: 1 !important;
+  overflow-y: auto !important;
+}
+
+/* === Light/Dark Theme === */
+/* Light Mode */
+body.light {
+  background-color: var(--background-light);
+}
+
+/* Light Mode Scrollbars */
+body.light .Home_messagelist__wIt78::-webkit-scrollbar {
+  width: 8px;
+}
+
+body.light .Home_messagelist__wIt78::-webkit-scrollbar-thumb {
+  background-color: #cccccc;
+  border-radius: 4px;
+}
+
+body.light .Home_messagelist__wIt78::-webkit-scrollbar-track {
+  background-color: #f0f0f0;
+}
+
+body.light .Home_textarea__k243o::-webkit-scrollbar {
+  width: 8px;
+}
+
+body.light .Home_textarea__k243o::-webkit-scrollbar-thumb {
+  background-color: #cccccc;
+  border-radius: 4px;
+}
+
+body.light .Home_textarea__k243o::-webkit-scrollbar-track {
+  background-color: #f0f0f0;
+}
+
+body.light .Home_textarea__k243o {
+  border: 2px solid #bfbfbf;
+}
+
+/* Dark Mode */
+body.dark {
+  background-color: var(--background-dark);
+}
+
+/* Dark Mode Text Colors */
 body.dark ul,
 body.dark ul li,
+body.dark ol,
+body.dark ol li,
 body.dark p,
 body.dark h1,
 body.dark h2,
@@ -43,682 +141,100 @@ body.dark a,
 body.dark .markdownanswer,
 body.dark .markdownanswer ol,
 body.dark .markdownanswer ul,
-body.dark .markdownanswer li {
-    color: #ffffff; /* This should be a light color suitable for dark mode */
+body.dark .markdownanswer li,
+body.dark .account-exists-text,
+body.dark .divider,
+body.dark .heading,
+body.dark .inline-text,
+body.dark .footer,
+body.dark .h-4 w-4 transition-transform duration-200,
+body.dark .submit-feedback-label {
+  color: #ffffff;
 }
 
-body.dark .account-exists-text {
-    color: #ffffff; /* Ensures inline text is visible in dark mode */
-}
-
-body.dark .divider {
-    color: #ffffff; /* Ensures inline text is visible in dark mode */
-}
-
-body.dark .divider::before,
-body.dark .divider::after {
-    background-color: #ffffff; /* Adjust property if needed */
-}
-
-body.dark .heading {
-    color: #ffffff; /* Ensures inline text is visible in dark mode */
-}
-body.dark .inline-text {
-    color: #ffffff; /* Ensures inline text is visible in dark mode */
-}
-
-body.light {
-    background-color: #ffffff;
-}
-  
-body.dark {
-    background-color: #000000;
-}
-
-body.dark ol {
-    color: #ffffff;
-}
-
-body.dark ol li {
-    color: #ffffff;
-}
-
-body.dark h1 {
-    color: #ffffff;
-}
-
-
-body.dark h3 {
-    color: #ffffff;
+/* Dark Mode Links */
+body.dark a {
+  color: rgb(255, 255, 255);
 }
 
 body.dark a[href^="https://storage.googleapis.com"][href*="page="] {
-    color: purple !important;
+  color: purple !important;
 }
 
+/* Dark Mode Dividers */
+body.dark .divider::before,
+body.dark .divider::after {
+  background-color: #ffffff;
+}
 
+/* Dark Mode Home Components */
 body.dark .Home_apimessage__VhfTn {
-    background-color: #4d4d4d;
+  background-color: #4d4d4d;
 }
 
-body.dark .Home_usermessagewaiting__SNXox{
-    background-color: #333333;
+body.dark .Home_usermessagewaiting__SNXox {
+  background-color: #333333;
 }
 
 body.dark .Home_apimessage___VZRe {
-    background-color: #000000;
+  background-color: #000000;
 }
 
 body.dark header {
-    background-color: #000000;
+  background-color: #000000;
 }
 
-body.dark .Home_textarea__k243o{
-    background-color: #333333;
-    color: #ffffff;
-}
-
-body.dark .Home_waveContainer__1LLAo{
+body.dark .Home_textarea__k243o,
+body.dark .Home_waveContainer__1LLAo {
   background-color: #333333;
   color: #ffffff;
 }
 
-body.dark .Home_center__O_TIN{
-    background-color: #000000;
+body.dark .Home_center__O_TIN,
+body.dark .Home_messagelist__wIt78 {
+  background-color: #000000;
 }
 
-body.dark .Home_usermessage__tWHWR{
-    background-color: #333333;
+body.dark .Home_usermessage__tWHWR,
+body.dark .Home_usermessage__i8g8V {
+  background-color: #333333;
 }
 
-body.dark .Home_usermessage__i8g8V{
-    background-color: #333333;
+body.dark .Home_textarea__lSHf7 {
+  background-color: #4d4d4d;
 }
 
-body.dark .Home_textarea__lSHf7{
-    background-color: #4d4d4d;
+/* Dark Mode Placeholder Text */
+body.dark .Home_textarea__lSHf7::placeholder,
+body.dark .Home_textarea__lSHf7::-webkit-input-placeholder,
+body.dark .Home_textarea__lSHf7::-moz-placeholder,
+body.dark .Home_textarea__lSHf7:-ms-input-placeholder,
+body.dark .Home_textarea__lSHf7:-moz-placeholder,
+body.dark .Home_messagelist__wIt78::placeholder,
+body.dark .Home_messagelist__wIt78::-webkit-input-placeholder,
+body.dark .Home_messagelist__wIt78::-moz-placeholder,
+body.dark .Home_messagelist__wIt78:-ms-input-placeholder,
+body.dark .Home_messagelist__wIt78:-moz-placeholder {
+  color: black;
 }
 
-body.dark .Home_textarea__lSHf7::placeholder {
-    color: black;
-}
-
-body.dark .Home_textarea__lSHf7::-webkit-input-placeholder { /* Chrome/Opera/Safari */
-    color: black;
-}
-
-
-body.dark .Home_textarea__lSHf7::-moz-placeholder { /* Firefox 19+ */
-    color: black;
-}
-
-body.dark .Home_textarea__lSHf7:-ms-input-placeholder { /* IE 10+ */
-    color: black;
-}
-
-body.dark .Home_textarea__lSHf7:-moz-placeholder { /* Firefox 18- */
-    color: black;
-}
-
-body.dark .Home_messagelist__wIt78{
-    background-color: #000000;
-}
-
-
-body.dark .h-4 w-4 transition-transform duration-200{
-    color: #ffffff;
-}
-
-body.dark .footer {
-    color: #ffffff;
-}
-
-body.dark .Home_messagelist__wIt78::placeholder {
-    color: black;
-}
-
-body.dark .Home_messagelist__wIt78::-webkit-input-placeholder { /* Chrome/Opera/Safari */
-    color: black;
-}
-
-
-body.dark .Home_messagelist__wIt78::-moz-placeholder { /* Firefox 19+ */
-    color: black;
-}
-
-body.dark .Home_messagelist__wIt78:-ms-input-placeholder { /* IE 10+ */
-    color: black;
-}
-
-body.dark .Home_messagelist__wIt78:-moz-placeholder { /* Firefox 18- */
-    color: black;
-}
-
-body.dark a {
-    color: rgb(255, 255, 255); /* This will set the color to white */
-}
-
-
-/* Thumb (the part you drag) styling */
-body.dark::-webkit-scrollbar-thumb {
-    background-color: black;
-    border-radius: 5px;
-}
-
-/* Track (the background) styling */
-body.dark::-webkit-scrollbar-track {
-    background-color: #999999;
-}
-
-/* Overall scrollbar styling */
-body.dark .Home_messagelist__wIt78::-webkit-scrollbar {
-    width: 10px;
-}
-
-
-/* Thumb (the part you drag) styling */
+/* Dark Mode Scrollbars */
+body.dark::-webkit-scrollbar-thumb,
 body.dark .Home_messagelist__wIt78::-webkit-scrollbar-thumb {
-    background-color: black;
-    border-radius: 5px;
+  background-color: black;
+  border-radius: 5px;
 }
 
-/* Track (the background) styling */
+body.dark::-webkit-scrollbar-track,
 body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
-    background-color: #999999;
+  background-color: #999999;
 }
 
-.Home_cloud__16v52 {
-  background-color: var(--background-light); /* Use the light mode background variable or a specific color */
-  color: #000000; /* Dark text color for contrast */
-  border: 2px solid #cccccc; /* Make border more visible with a darker color */
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* Optional: add a shadow for depth */
-  margin-bottom: 10px; /* Margin below the message list for separation */
-  border-radius: 8px; /* Rounded corners */
-  font-size: 1rem; /* Text size */
+body.dark .Home_messagelist__wIt78::-webkit-scrollbar {
+  width: 10px;
 }
 
-
-/* Enhance scrollbar visibility in .Home_messagelist__wIt78 for light mode */
-body.light .Home_messagelist__wIt78::-webkit-scrollbar {
-  width: 8px; /* Adjust scrollbar width */
-}
-
-body.light .Home_messagelist__wIt78::-webkit-scrollbar-thumb {
-  background-color: #cccccc; /* Darker scrollbar thumb for better visibility */
-  border-radius: 4px; /* Rounded corners for the scrollbar thumb */
-}
-
-body.light .Home_messagelist__wIt78::-webkit-scrollbar-track {
-  background-color: #f0f0f0; /* Lighter track */
-}
-
-/* Enhance scrollbar visibility in .Home_textarea__k243o for light mode */
-body.light .Home_textarea__k243o::-webkit-scrollbar {
-  width: 8px; /* Adjust scrollbar width */
-}
-
-
-body.light .Home_textarea__k243o::-webkit-scrollbar-thumb {
-  background-color: #cccccc; /* Darker scrollbar thumb for better visibility */
-  border-radius: 4px; /* Rounded corners for the scrollbar thumb */
-}
-
-body.light .Home_textarea__k243o::-webkit-scrollbar-track {
-  background-color: #f0f0f0; /* Lighter track */
-}
-
-body.light .Home_textarea__k243o {
-  border: 2px solid #bfbfbf; /* A slightly darker border for better visibility, as suggested previously */
-}
-
-
-.submit-feedback-label {
-  text-align: left;
-  margin-bottom: 10px; /* Adjust spacing as needed */
-  /* font-weight: bold; */
-  /* Further styling options like font-size, color, etc., based on your design */
-}
-
-body.dark .submit-feedback-label {
-  text-align: left;
-  margin-bottom: 10px; /* Adjust spacing as needed */
-  /* font-weight: bold; */
-  color: white;
-}
-
-.modal-backdrop {
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.4); /* Semi-transparent black backdrop */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1050;
-}
-
-.modal {
-    background: rgb(163, 163, 163); /* Light gray background */
-    margin: auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 50%;
-    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
-    border-radius: 20px; /* Rounded corners for the modal */
-    overflow-y: auto;
-}
-
-.modal-header {
-    padding: 10px 16px;
-    background-color: rgb(116, 116, 116); /* Light gray header */
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-top-left-radius: 20px; /* Rounded top left corner */
-    border-top-right-radius: 20px; /* Rounded top right corner */
-}
-
-.modal-header h2 {
-    margin: 0;
-}
-
-.modal-header .close {
-    color: white;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.modal-header .close:hover,
-.modal-header .close:focus {
-    color: #000;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.modal-body {
-    padding: 2px 16px;
-}
-
-.modal-footer {
-    padding: 10px 16px;
-    background-color: rgb(116, 116, 116); /* Light gray footer */
-    color: white;
-    border-bottom-left-radius: 20px; /* Rounded bottom left corner */
-    border-bottom-right-radius: 20px; /* Rounded bottom right corner */
-}
-
-/* Style the textarea */
-.modal textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 10px; /* Rounded borders for the textarea */
-    box-sizing: border-box;
-    margin-top: 6px;
-    margin-bottom: 16px;
-    resize: vertical;
-}
-
-/* Style the submit button */
-.modal .btn {
-    background-color: #4CAF50;
-    color: white;
-    padding: 14px 20px;
-    border: none;
-    cursor: pointer;
-    width: 100%;
-    border-radius: 10px; /* Rounded borders for the button */
-    opacity: 0.9;
-}
-
-.modal .btn:hover {
-    opacity: 1;
-}
-
-
-
-.tooltip-container {
-    display: inline-block; /* or 'inline-flex' if you need flex properties */
-    position: relative; /* This establishes the nearest positioned ancestor for absolute positioning */
-  }
-  
-  .tooltip-container:hover .tooltip-content {
-      visibility: visible;
-      opacity: 1;
-      /* Adjust this to move the tooltip below the button */
-      transform: translateX(-50%) translateY(1px);
-      transition: visibility 0.2s, opacity 0.2s, transform 0.2s;
-  }
-  
-  .tooltip-content {
-      visibility: hidden;
-      opacity: 0;
-      width: auto; /* Auto width to fit content, adjust as needed */
-      background-color: rgb(116, 116, 116);
-      color: #fff;
-      text-align: center;
-      border-radius: 6px;
-      padding: 5px 10px;
-      position: absolute;
-      z-index: 1000; /* Ensure it's on top */
-      /* Position the tooltip below the button with a consistent gap */
-      top: 100%; /* Position at the bottom of the button */
-      left: 50%; /* Start from the center of the button */
-      /* Adjust this to center the tooltip below the button */
-      transform: translateX(-50%) translateY(1px);
-      white-space: nowrap; /* Prevent text wrapping */
-      box-shadow: 2px 2px 5px rgba(0,0,0,0.2); /* Optional shadow for better visibility */
-  }
-  
-/* For Thumb Up button */
-.tooltip-container.up .tooltip-content {
-    /* Adjust positioning for Thumb Up tooltip */
-    left: 452%;
-  }
-  
-  /* For Thumb Down button */
-  .tooltip-container.down .tooltip-content {
-    /* Adjust positioning for Thumb Down tooltip */
-    left: 365%;
-  }
-  
-  /* For Comment button */
-  .tooltip-container.comment .tooltip-content {
-    /* Adjust positioning for Comment tooltip */
-    left: 140%;
-  }
-
-.firebaseui-idp-icon {
-    margin-right: 10px;
-    width: 18px; /* Adjust size as needed */
-    height: 18px; /* Adjust size as needed */
-}
-
-/* Style the divider text */
-.firebaseui-card-header {
-    text-align: center;
-    margin: 20px 0;
-    color: rgba(0, 0, 0, 0.54);
-}
-
-/* Adjust input field styles to match the Firebase UI look */
-.mdl-textfield__input {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.42);
-    padding: 10px;
-    font-size: 16px;
-    display: block;
-    width: 100%;
-    margin: 10px 0;
-}
-
-/* Style the labels for floating effect */
-.mdl-textfield__label {
-    color: rgba(0, 0, 0, 0.54);
-    font-size: 16px;
-    font-weight: normal;
-    pointer-events: none;
-    position: absolute;
-    bottom: 5px;
-    left: 0;
-    transition: all 200ms;
-}
-
-.mdl-textfield__label::after {
-    background-color: #4285f4;
-    bottom: -1px;
-    content: '';
-    height: 2px;
-    left: 45%;
-    position: absolute;
-    transition: all 200ms;
-    width: 10px; /* starting width */
-    will-change: left, width;
-}
-
-/* React to input focus and input not empty */
-.mdl-textfield--floating-label.is-focused .mdl-textfield__label,
-.mdl-textfield--floating-label.is-dirty .mdl-textfield__label {
-    color: #4285f4;
-    font-size: 12px;
-    top: -20px;
-}
-
-.mdl-textfield--floating-label.is-focused .mdl-textfield__label::after,
-.mdl-textfield--floating-label.is-dirty .mdl-textfield__label::after {
-    left: 0;
-    width: 100%; /* full width on focus or when filled */
-}
-  
-
-  
-  /* Icon styles */
-  .firebaseui-idp-icon-wrapper {
-    background-color: transparent;
-    padding-right: 10px;
-  }
-  
-  
-  /* Hover effect */
-.firebaseui-idp-button:hover {
-    background-color: #f8f9fa;
-  }
-  
-  /* Focus effect */
-  .firebaseui-idp-button:focus {
-    background-color: #f1f3f4;
-    outline: none; /* Optional: removes the default focus outline */
-    border-color: #c6c6c6; /* Optional: changes the border color on focus */
-  }
-  
-  /* Text inside the button */
-  .firebaseui-idp-text {
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  
-  /* Additional global styles for elements like links */
-  .firebaseui-link {
-    color: #1a73e8; /* Match the link color with the design */
-  }
-  
-  
-  /* Adjustments for individual button icons and text */
-  .firebaseui-idp-microsoft .firebaseui-idp-icon,
-  .firebaseui-idp-google .firebaseui-idp-icon,
-  .firebaseui-idp-apple .firebaseui-idp-icon {
-    margin-right: 8px;
-  }
-  
-  
-  /* Add hover effects for interactive elements */
-  .firebaseui-idp-button:hover, .create-account-button:hover {
-    opacity: 0.8; /* Example hover effect */
-  }
-  
-  .center-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* Centers children vertically */
-    justify-content: center;
-    min-height: 100vh;
-    height: 100vh;
-    width: 100%;
-    text-align: center;
-    overflow: hidden; /* Prevent overflow */
-  }
-  
-  /* Container for the image */
-.image-container {
-  display: flex;
-  justify-content: center; /* Center image horizontally */
-  align-items: center; /* Center image vertically */
-  margin-bottom: 20px; /* Space between image and form */
-}
-
-/* Styling for the image */
-.image-container img {
-  max-width: 200px; /* Adjust the image size as needed */
-  height: auto;
-}
-
-/* Container for the FirebaseUI sign-in form */
-.firebaseui-container {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch; /* Stretch the children */
-  width: 100%;
-  max-width: 500px; /* Maximum width of the container */
-  padding: 20px; /* Padding inside the container */
-  box-shadow: none;
-  background-color: transparent;
-}
-
-  .firebaseui-idp-button,
-  .create-account-button,
-  .sign-in-button {
-    border-radius: 20px; /* Adjusted for less roundness */
-    font-size: 11px; /* Your preference for font size */
-    width: 80%; /* Adjust for padding */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgb(204, 204, 204);
-    font-weight: bold;
-    cursor: pointer;
-    outline: none;
-    background: white;
-    text-align: center;
-    margin: 0.7rem 0;
-    padding: 0.5rem 1.6rem;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  
-  .firebaseui-idp-button:hover {
-    opacity: 0.8;
-  }
-  
-  /* Additional styles for specific buttons */
-  .firebaseui-idp-google {
-    background-color: #ffffff;
-    color: black;
-  }
-  
-  .firebaseui-idp-apple {
-    background-color: #ffffff;
-    color: black;
-  }
-  
-  .firebaseui-idp-microsoft {
-    background-color: #ffffff;
-    color: black;
-  }
-
-  .create-account-button {
-    padding: 8px 16px; /* Adjusted padding to match other buttons */
-    border-radius: 20px; /* Rounded corners like other buttons */
-    font-size: 14px; /* Same font size for consistency */
-    margin: 10px 0; /* Consistent margin with other buttons */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgb(204, 204, 204); /* Same border styling */
-    font-weight: bold;
-    cursor: pointer;
-    outline: none;
-    text-align: center;
-    box-shadow: 0 2px 4px 0 rgba(0,0,0,0.25); /* Optional: if you want shadow like other buttons */
-    color: black; /* Text color - make this white if you want it like the Google button */
-    background-color: #4285F4; /* Background color to match the Google button */
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* Container to wrap around the 'or' text and lines */
-.divider-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 80%; /* same width as the buttons */
-    margin: 10px 0; /* same margin as the buttons for consistent spacing */
-    margin-left: auto;
-    margin-right: auto;
-  }
-  
-  /* Style for the 'or' divider with lines */
-  .divider {
-    flex-grow: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative; /* Set position relative to enable absolute positioning of children */
-    margin: 5px 0; /* Increase margin for spacing */
-  }
-  
-  .divider::before,
-  .divider::after {
-    content: ''; /* This is necessary to create the pseudo-elements */
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%); /* Center the lines vertically */
-    width: 45%; /* Adjust the width of the lines */
-    height: 1px;
-    background: rgba(0, 0, 0, 0.2); /* Lighter line color */
-  }
-  
-  .divider::before {
-    left: 0;
-  }
-  
-  .divider::after {
-    right: 0;
-  }
-  
-  .divider-text {
-    background: #FFF; /* Match your background */
-    padding: 0 10px;
-  }
-  
-  .heading {
-    font-weight: bold;
-    text-align: center; /* Center the text */
-    font-size: 2.5rem; /* Adjust for smaller screens */
-    margin-bottom: 1rem;
-  }
-
-
-  .signup-popup-backdrop,
-  .signin-popup-backdrop{
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    /* transform: translate(-400px, 10%); */
-}
-
-/* Popup Window */
-.signup-popup {
-    background: white;
-    border-radius: 16px; /* Adjusted for a larger radius */
-    padding: 40px; /* More padding for a bigger popup */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Adjusted for a softer shadow */
-    width: 600px; /* Adjust width for a bigger popup */
-    max-width: 600px; /* Ensure it doesn't get bigger than 600px */
-    position: relative; /* For absolute positioning of the close button */
-}
-
+/* Dark Mode Popups */
 body.dark .signup-popup,
 body.dark .signin-popup,
 body.dark .forgot-password-popup {
@@ -727,504 +243,588 @@ body.dark .forgot-password-popup {
   border: 2px solid white;
 }
 
-/* Popup Header */
-.signup-popup-header h2 {
-    display: flex;
-    justify-content: flex-start; /* Align to the left */
-    margin-bottom: 20px; /* Space between header and inputs */
-    font-size: 32px; /* Larger font size */
-    font-weight: 700; /* Bolder text */
-    border-bottom: none; /* No border */
-}
-
-/* Close Button */
-.signup-popup-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    position: absolute; /* Positioned absolutely */
-    top: 20px; /* Distance from the top */
-    right: 20px; /* Distance from the right */
-}
-
-/* Input Fields */
-.signup-popup-body input {
-    width: 100%;
-    padding: 16px; /* Larger padding for bigger input fields */
-    margin-bottom: 20px; /* More space between inputs */
-    border: 2px solid #ccc; /* Thicker border */
-    border-radius: 8px; /* Rounded borders */
-    box-sizing: border-box;
-    font-size: 16px; /* Larger font size */
-}
-
-/* Label inside inputs when focused */
-.signup-popup-body input::placeholder {
-    font-size: 12px; /* Smaller font size for placeholder */
-    color: #999; /* Lighter color for placeholder text */
-}
-
-/* Input focus state */
-.signup-popup-body input:focus {
-    outline: none; /* Remove default focus outline */
-    border-color: #1DA1F2; /* Blue border when focused */
-}
-
-/* Footer with Create Account Button */
-.signup-popup-footer {
-    text-align: center; /* Center the button */
-}
-
-/* Button Styling */
-.signup-popup .btn {
-    width: 100%; /* Button should span the full width of the popup */
-    padding: 16px 0; /* Larger padding for a taller button */
-    border: none;
-    border-radius: 8px; /* Rounded borders */
-    color: white;
-    cursor: pointer;
-    font-weight: bold;
-    margin-top: 20px; /* Space above the button */
-    font-size: 16px; /* Larger font size */
-    background-color: #ccc; /* Start with grey color */
-    color: black; /* Text color when button is disabled */
-}
-
-/* Button Hover Effect */
-.signup-popup .btn-enabled .btn:hover {
-    background-color: #333; /* Darker grey on hover for enabled button */
-}
-
-/* Button Enabled Style */
-.signup-popup .btn-enabled {
-    background-color: #000; /* Change to black when enabled */
-    color: white; /* Text color when button is enabled */
-}
-
 body.dark .signup-popup .btn-enabled { 
-    background-color: #69c9bc; /* Change to white when enabled */
-    color: black; /* Text color when button is enabled */
-
-}
-
-/* Cursor for disabled button */
-.signup-popup .btn:disabled {
-    cursor: default; /* Keep the default cursor for disabled state */
-}
-
-/* .error-message {
-    color: red;
-    margin: 10px 0;
-    text-align: center;
-} */
-
-.sign-in-button {
-    padding: 8px 16px; /* Adjusted padding to match other buttons */
-    border-radius: 20px; /* Rounded corners like other buttons */
-    font-size: 14px; /* Same font size for consistency */
-    margin: 10px 0; /* Consistent margin with other buttons */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgb(204, 204, 204); /* Same border styling */
-    font-weight: bold;
-    cursor: pointer;
-    outline: none;
-    text-align: center;
-    box-shadow: 0 2px 4px 0 rgba(0,0,0,0.25); /* Optional: if you want shadow like other buttons */
-    color: blue; /* Text color - make this white if you want it like the Google button */
-    background-color: #ffffff; /* Background color to match the Google button */
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* Optionally, style for hover effect */
-.sign-in-button:hover {
-    background-color: #f2f2f2; /* Slightly darker on hover */
-}
-
-.account-exists-text {
-    font-size: 18px;
-    font-weight: bold;
-    margin-top: 80px;
-    margin-bottom: 20px;
-    text-align: center; /* Center align the text */
-    width: 100%; /* Full width is fine for text elements */
-  }
-
-.signin-popup {
-    background: white;
-    border-radius: 16px; /* Adjusted for a larger radius */
-    padding: 40px; /* More padding for a bigger popup */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Adjusted for a softer shadow */
-    width: 600px; /* Adjust width for a bigger popup */
-    max-width: 600px; /* Ensure it doesn't get bigger than 600px */
-    margin: auto;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); /* Center the popup */
-    box-shadow: 0px 4px 6px rgba(0,0,0,0.1); /* Subtle shadow for depth */
-}
-
-.signin-popup-header h2 {
-    display: flex;
-    justify-content: flex-start; /* Align to the left */
-    margin-bottom: 20px; /* Space between header and inputs */
-    font-size: 32px; /* Larger font size */
-    font-weight: 700; /* Bolder text */
-    border-bottom: none; /* No border */
-}
-
-.signin-popup-header .signin-popup-close {
-    border: none;
-    background: none;
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    font-size: 20px;
-    cursor: pointer;
-}
-
-.signin-popup-body {
-    width: 100%;
-    padding: 10px;
-    margin: 5px 0;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.signin-popup-body-input {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-.signin-popup-body-input[type="password"] {
-    width: 80%; /* Adjust based on your design */
-    padding: 10px; /* Adjust padding to control height */
-    margin: 10px auto; /* Center align */
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px; /* Consistent font size */
-    /* Other styling as necessary */
-}
-
-.forgot-password-link {
-    background-color: #ffffff; /* White background */
-    color: #000000; /* Black text */
-    display: inline-block; /* Make it an inline block for padding */
-    padding: 10px 20px; /* Button padding */
-    text-align: center; /* Center text */
-    font-size: 16px; /* Font size */
-    margin: 10px 0; /* Margin for spacing */
-    border-radius: 20px; /* Rounded borders like other buttons */
-    border: 1px solid #ccc; /* Border to look like a button */
-    width: 80%; /* Match the width of the input fields */
-    text-decoration: none; /* No underline */
-}
-
-/* Center the 'Don't have an account? Sign up' text */
-.signin-popup-footer {
-    text-align: center; /* Center the text */
-    width: 100%; /* Full width */
-    padding: 10px 0; /* Padding for spacing */
-}
-
-/* Adjust the hover effect for the 'Forgot password?' link */
-.forgot-password-link:hover {
-    background-color: #f8f9fa; /* Slight background color change on hover */
-}
-
-.create-account-link {
-    cursor: pointer;
-    color: #007bff; /* Match the design color */
-    font-weight: bold; /* Bold text */
-    text-decoration: none; /* No underline */
-}
-
-
-/* Style the input fields to match the design */
-.signin-popup-body input[type="email"] {
-    width: 80%; /* Adjust width as needed */
-    padding: 15px; /* Adjust padding to match the design */
-    margin: 10px 0; /* Add space between elements */
-    border: 1px solid #ccc; /* Light grey border */
-    border-radius: 4px; /* Slight rounding of corners */
-    font-size: 16px; /* Larger font size for readability */
-}
-
-body.dark .signin-popup-body input[type="email"],
-body.dark .forgot-password-popup-body input[type="email"],
-body.dark .signin-popup-body input[type="password"],
-body.dark .signup-popup-body-input {
-    color: #fff; /* White text */
-    background-color: #333; /* Dark grey background */
-    border: 1px solid #666; /* Darker grey border */
-}
-
-
-/* Style the 'Next' button */
-.btn.sign-in-next-button {
-    width: 80%; /* Match the width of the input fields */
-    background-color: #000; /* Black background */
-    color: #fff; /* White text */
-    border-radius: 20px; /* Rounded corners */
-    padding: 15px 20px; /* Padding to make the button taller and wider */
-    margin: 20px auto; /* Add space around the button */
-    border: none; /* Remove border */
-    font-size: 16px; /* Larger font size */
-    cursor: pointer; /* Pointer cursor on hover */
+  background-color: #69c9bc;
+  color: black;
 }
 
 body.dark .btn.sign-in-next-button,
-body.dark .btn.forgot-password-next-button{
-    color:#1DA1F2; 
-    background-color:#000000;
-    border:1px solid #1DA1F2;
+body.dark .btn.forgot-password-next-button {
+  color: #1DA1F2; 
+  background-color: #000000;
+  border: 1px solid #1DA1F2;
 }
 
-.signin-popup-body-input,
-.signin-popup-body-input:disabled {
-  width: 80%; /* Ensure full width */
-  padding: 15px; /* Adjust padding to match design */
-  border: 1px solid #ccc; /* Match border styling */
-  border-radius: 4px; /* Match border-radius */
-  font-size: 16px; /* Match font-size */
-  margin: 10px 0; /* Provide some space between fields */
-}
-
-/* Gray out the text in the disabled email input */
-.signin-popup-body-input:disabled {
-  color: #999; /* Gray color */
-  background: #f7f7f7; /* Slightly gray background */
+body.dark .signin-popup-body input[type=\"email\"],
+body.dark .forgot-password-popup-body input[type=\"email\"],
+body.dark .signin-popup-body input[type=\"password\"],
+body.dark .signup-popup-body-input {
+  color: #fff;
+  background-color: #333;
+  border: 1px solid #666;
 }
 
 body.dark .signin-popup-body-input:disabled {
   background: #494949; 
 }
 
-.email-display {
-    margin-bottom: 10px; /* Add some space below the email display */
-    font-size: 16px; /* Match the font size to your design */
-    color: #666; /* A neutral color for the email text */
-  }
-
-  /* Style for disabled email display */
-.signin-popup-body-input:disabled {
-    color: #999; /* Gray color */
-    background-color: #f7f7f7; /* Slightly gray background to indicate it's not editable */
-    pointer-events: none; /* Disable pointer events */
+body.dark .modalStyle {
+  background-color: #333;
+  color: #fff;
 }
 
-/* Backdrop for the Forgot Password popup */
-.forgot-password-popup-backdrop {
-    position: fixed;
-    z-index: 1010; /* Make sure this is above other modals */
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5); /* Dim the background */
-    display: flex;
-    justify-content: center;
-    align-items: center;
+body.dark .backdropStyle {
+  background-color: rgba(0, 0, 0, 0.7);
 }
 
-/* Forgot Password Popup */
-.forgot-password-popup {
-    background: white;
-    border-radius: 16px; /* Adjusted for a larger radius */
-    padding: 40px; /* More padding for a bigger popup */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Adjusted for a softer shadow */
-    width: 600px; /* Adjust width for a bigger popup */
-    max-width: 600px; /* Ensure it doesn't get bigger than 600px */
-    margin: auto;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); /* Center the popup */
-    box-shadow: 0px 4px 6px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+/* === Cloud Element === */
+.Home_cloud__16v52 {
+  background-color: var(--background-light);
+  color: #000000;
+  border: 2px solid #cccccc;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 10px;
+  border-radius: 8px;
+  font-size: 1rem;
 }
 
-/* Forgot Password Popup Header */
-.forgot-password-popup-header h2 {
-  display: flex;
-  justify-content: flex-start; /* Align to the left */
-  margin-bottom: 20px; /* Space between header and inputs */
-  font-size: 32px; /* Larger font size */
-  font-weight: 700; /* Bolder text */
-  border-bottom: none; /* No border */
+/* === Home Components === */
+.Home_center__O_TIN {
+  position: relative;
+  width: 100%;
+  height: 100px;
+  z-index: 10;
 }
 
-/* Forgot Password Popup Close Button */
-.forgot-password-popup-close {
-    border: none;
-    background: none;
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    font-size: 20px;
-    cursor: pointer;
+.Home_cloudform__PjM4h {
+  height: 30px;
 }
 
-/* Forgot Password Popup Body */
-.forgot-password-popup-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* Centers items horizontally */
-  justify-content: center; /* Centers items vertically */
+/* === Global Scrollbar === */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* === Feedback & Messages === */
+.submit-feedback-label {
+  text-align: left;
+  margin-bottom: 10px;
+}
+
+.success-message {
+  color: #4CAF50;
+  background-color: #E8F5E9;
+  border-left: 5px solid #4CAF50;
   padding: 10px;
-  margin: 5px 0;
-  width: 100%; /* Takes the full width of the parent container */
+  margin: 10px 0;
+  border-radius: 5px;
 }
 
-/* Input Styles */
-.forgot-password-popup-body input[type="email"] {
-  width: 100%; /* Takes the full width of the flex container */
-  padding: 15px; /* Padding for spacing inside the input */
-  margin-bottom: 20px; /* Margin to separate input from the button */
-  border: 1px solid #ccc; /* Border color */
-  border-radius: 4px; /* Rounded corners for the input */
-  font-size: 16px; /* Font size for the text inside the input */
+.error-message {
+  color: #D32F2F;
+  background-color: #FFEBEE;
+  border-left: 5px solid #D32F2F;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
 }
 
-/* Next Button Styles */
-.forgot-password-next-button {
-  width: 100%; /* Match the width of the input fields */
-  padding: 15px; /* Padding for height and width */
-  margin-top: 20px; /* Margin to separate button from the input */
-  background-color: #000; /* Black background */
-  color: #fff; /* White text */
-  border-radius: 20px; /* Rounded corners for the button */
-  border: none; /* No border for the button */
-  font-size: 16px; /* Font size for the text inside the button */
-  cursor: pointer; /* Pointer cursor on hover */
+.warning-message {
+  color: #FF9800;
+  background-color: #FFF3E0;
+  border-left: 5px solid #FF9800;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
 }
 
-/* Error Message */
-/* .error-message {
-    color: red;
-    text-align: center;
-    margin-top: 10px;
-} */
-
-.passw-reset-popup-backdrop {
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    /* transform: translate(-400px, 10%); */
-  }
-  
-  .passw-reset-popup {
-    background: white;
-    border-radius: 16px;
-    padding: 40px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    width: 600px;
-    max-width: 100%; /* Ensure it doesn't overflow on smaller screens */
-    margin: auto;
-    position: absolute; /* Changed from absolute for better responsiveness */
-    transform: translate(-50%, -50%);
-    top: 50%;
-    left: 50%;
-  }
-  
-  .passw-reset-popup-header h2 {
-    margin-bottom: 20px;
-    font-size: 32px;
-    font-weight: 700;
-  }
-  
-  .passw-reset-popup-body {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .passw-reset-popup-body-input {
-    width: 80%;
-    padding: 15px;
-    margin: 10px 0;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  .passw-reset-next-button {
-    width: 80%;
-    background-color: #000;
-    color: #fff;
-    border-radius: 20px;
-    padding: 15px 20px;
-    margin: 20px 0;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  
-  /* Forgot Password Popup Close Button */
-.passw-reset-popup-close {
-    border: none;
-    background: none;
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    font-size: 20px;
-    cursor: pointer;
+.info-message {
+  color: #2196F3;
+  background-color: #E3F2FD;
+  border-left: 5px solid #2196F3;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
 }
 
 .confirmation-message {
-    color: #ffffff; /* A green color for success messages */
-    background-color: #D4EDDA;
-    border-color: #C3E6CB;
-    padding: 10px;
-    border-radius: 5px;
-    margin: 20px 0;
-    text-align: center;
-    font-size: 24px;
-  }
-  
-  .error-message {
-    color: #FF0000; /* Red color for error messages */
-    padding: 10px;
-    border-radius: 5px;
-    margin: 20px 0;
-    text-align: center;
-    font-size: 16px;
-  }
-
-  .toggle-theme-button {
-    border: none;
-    background: none;
-    margin: 0;
-    padding: 0;
-    position: fixed;
-    top: 20px;        
-    left: 20px;       
-    z-index: 1000;     
-  }
-
-  .toggle-theme-button img {
-    display: block;
-    width: 24px;
-    height: 24px;
+  color: #ffffff;
+  background-color: #D4EDDA;
+  border-color: #C3E6CB;
+  padding: 10px;
+  border-radius: 5px;
+  margin: 20px 0;
+  text-align: center;
+  font-size: 24px;
 }
 
+/* === Tooltips === */
+.tooltip-container {
+  display: inline-block;
+  position: relative;
+}
 
+.tooltip-container:hover .tooltip-content {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(1px);
+  transition: visibility 0.2s, opacity 0.2s, transform 0.2s;
+}
+
+.tooltip-content {
+  visibility: hidden;
+  opacity: 0;
+  width: auto;
+  background-color: rgb(116, 116, 116);
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 10px;
+  position: absolute;
+  z-index: 1000;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(1px);
+  white-space: nowrap;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+}
+
+.tooltip-container.up .tooltip-content {
+  left: 452%;
+}
+
+.tooltip-container.down .tooltip-content {
+  left: 365%;
+}
+
+.tooltip-container.comment .tooltip-content {
+  left: 140%;
+}
+
+/* === Modal Styling === */
+.modal-backdrop {
+  position: fixed;
+  z-index: 1050;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background: rgb(163, 163, 163);
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 50%;
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+  border-radius: 20px;
+  overflow-y: auto;
+}
+
+.modal-header {
+  padding: 10px 16px;
+  background-color: rgb(116, 116, 116);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+}
+
+.modal-header .close {
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.modal-header .close:hover,
+.modal-header .close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 2px 16px;
+}
+
+.modal-footer {
+  padding: 10px 16px;
+  background-color: rgb(116, 116, 116);
+  color: white;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+.modal textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-sizing: border-box;
+  margin-top: 6px;
+  margin-bottom: 16px;
+  resize: vertical;
+}
+
+.modal .btn {
+  background-color: #4CAF50;
+  color: white;
+  padding: 14px 20px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  border-radius: 10px;
+  opacity: 0.9;
+}
+
+.modal .btn:hover {
+  opacity: 1;
+}
+
+/* === Authentication === */
+/* Firebase UI */
+.firebaseui-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 500px;
+  padding: 20px;
+  box-shadow: none;
+  background-color: transparent;
+}
+
+.firebaseui-idp-icon {
+  margin-right: 10px;
+  width: 18px;
+  height: 18px;
+}
+
+.firebaseui-card-header {
+  text-align: center;
+  margin: 20px 0;
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.firebaseui-idp-icon-wrapper {
+  background-color: transparent;
+  padding-right: 10px;
+}
+
+.firebaseui-idp-button, 
+.create-account-button, 
+.sign-in-button {
+  border-radius: 20px;
+  font-size: 11px;
+  width: 80%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(204, 204, 204);
+  font-weight: bold;
+  cursor: pointer;
+  outline: none;
+  background: white;
+  text-align: center;
+  margin: 0.7rem auto;
+  padding: 0.5rem 1.6rem;
+}
+
+.firebaseui-idp-button:hover, 
+.create-account-button:hover,
+.sign-in-button:hover {
+  opacity: 0.8;
+  background-color: #f8f9fa;
+}
+
+.firebaseui-idp-button:focus {
+  background-color: #f1f3f4;
+  outline: none;
+  border-color: #c6c6c6;
+}
+
+.firebaseui-idp-text {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.firebaseui-link {
+  color: #1a73e8;
+}
+
+.firebaseui-idp-google,
+.firebaseui-idp-apple,
+.firebaseui-idp-microsoft {
+  background-color: #ffffff;
+  color: black;
+}
+
+.firebaseui-idp-microsoft .firebaseui-idp-icon,
+.firebaseui-idp-google .firebaseui-idp-icon,
+.firebaseui-idp-apple .firebaseui-idp-icon {
+  margin-right: 8px;
+}
+
+/* Create Account Button */
+.create-account-button {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  margin: 10px auto;
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,0.25);
+  color: black;
+  background-color: #4285F4;
+}
+
+/* Sign In Button */
+.sign-in-button {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  margin: 10px auto;
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,0.25);
+  color: blue;
+  background-color: #ffffff;
+}
+
+.sign-in-button:hover {
+  background-color: #f2f2f2;
+}
+
+/* Divider */
+.divider-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80%;
+  margin: 10px auto;
+}
+
+.divider {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 5px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 45%;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+.divider-text {
+  background: #FFF;
+  padding: 0 10px;
+}
+
+/* Account Text */
+.account-exists-text {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 80px;
+  margin-bottom: 20px;
+  text-align: center;
+  width: 100%;
+}
+
+/* Heading */
+.heading {
+  font-weight: bold;
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+/* === Popup Windows === */
+/* Common Popup Styles */
+.signup-popup-backdrop,
+.signin-popup-backdrop,
+.forgot-password-popup-backdrop,
+.passw-reset-popup-backdrop {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.signup-popup,
+.signin-popup,
+.forgot-password-popup,
+.passw-reset-popup {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  width: 600px;
+  max-width: 600px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Headers */
+.signup-popup-header h2,
+.signin-popup-header h2,
+.forgot-password-popup-header h2,
+.passw-reset-popup-header h2 {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 20px;
+  font-size: 32px;
+  font-weight: 700;
+  border-bottom: none;
+}
+
+/* Close Buttons */
+.signup-popup-close,
+.signin-popup-close,
+.forgot-password-popup-close,
+.passw-reset-popup-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+/* Input Fields */
+.signup-popup-body input,
+.signin-popup-body-input,
+.forgot-password-popup-body input[type=\"email\"],
+.passw-reset-popup-body-input {
+  width: 80%;
+  padding: 15px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.signin-popup-body-input:disabled {
+  color: #999;
+  background: #f7f7f7;
+  pointer-events: none;
+}
+
+/* Email Display */
+.email-display {
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #666;
+}
+
+/* Buttons */
+.btn.sign-in-next-button,
+.forgot-password-next-button,
+.passw-reset-next-button {
+  width: 80%;
+  background-color: #000;
+  color: #fff;
+  border-radius: 20px;
+  padding: 15px 20px;
+  margin: 20px auto;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Forgot Password Link */
+.forgot-password-link {
+  background-color: #ffffff;
+  color: #000000;
+  display: inline-block;
+  padding: 10px 20px;
+  text-align: center;
+  font-size: 16px;
+  margin: 10px 0;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  width: 80%;
+  text-decoration: none;
+}
+
+.forgot-password-link:hover {
+  background-color: #f8f9fa;
+}
+
+/* Create Account Link */
+.create-account-link {
+  cursor: pointer;
+  color: #007bff;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+/* Footer */
+.signin-popup-footer {
+  text-align: center;
+  width: 100%;
+  padding: 10px 0;
+}
+
+/* Popup Bodies */
+.signin-popup-body,
+.forgot-password-popup-body,
+.passw-reset-popup-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  margin: 5px 0;
+}
+
+/* === Confirmation Modal === */
 .modalStyle {
   position: fixed;
   top: 50%;
@@ -1237,7 +837,7 @@ body.dark .signin-popup-body-input:disabled {
   border-radius: 12px;
   width: 90%;
   max-width: 450px;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;
   text-align: center;
 }
 
@@ -1258,21 +858,19 @@ body.dark .signin-popup-body-input:disabled {
   margin-bottom: 20px;
 }
 
-
-/* Add some space after the 'Agree' button */
 .agreeButtonStyle {
   padding: 10px 20px;
   margin: 10px;
+  margin-right: 50px;
   border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
-  font-weight: 600; /* Makes text a bit bolder */
-  transition: background-color 0.3s; /* Smooth transition for hover effect */
-  border: 1px solid; /* Add a transparent border for consistent sizing */
-  margin-right: 10px; /* Add some space to the right of buttons */
+  font-weight: 600;
+  transition: background-color 0.3s;
+  border: 1px solid;
   background-color: #4CAF50;
   color: white;
-  border-color: #b6b6b6; /* Slightly darker border for the green button */
+  border-color: #b6b6b6;
 }
 
 .agreeButtonStyle:hover {
@@ -1285,120 +883,88 @@ body.dark .signin-popup-body-input:disabled {
   border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
-  font-weight: 600; /* Makes text a bit bolder */
-  transition: background-color 0.3s; /* Smooth transition for hover effect */
-  border: 1px solid; /* Add a transparent border for consistent sizing */
-  margin-right: 10px; /* Add some space to the right of buttons */
+  font-weight: 600;
+  transition: background-color 0.3s;
+  border: 1px solid;
   background-color: #f44336;
   color: white;
-  border-color: #b6b6b6; /* Slightly darker border for the red button */
+  border-color: #b6b6b6;
 }
 
 .cancelButtonStyle:hover {
   background-color: #D73327;
 }
 
-/* If you want space between buttons, it’s better to add margin to only one side */
-/* This prevents double the intended space between buttons */
-.agreeButtonStyle {
-  margin-right: 50px; /* Adjust the space to your preference */
+/* === Misc UI Elements === */
+.toggle-theme-button {
+  border: none;
+  background: none;
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  top: 20px;        
+  left: 20px;       
+  z-index: 1000;     
 }
 
-body.dark .modalStyle {
-  background-color: #333; /* Dark gray for better visibility in dark mode */
-  color: #fff; /* White text for contrast */
+.toggle-theme-button img {
+  display: block;
+  width: 24px;
+  height: 24px;
 }
 
-body.dark .backdropStyle {
-  background-color: rgba(0, 0, 0, 0.7); /* Darker backdrop for better contrast in dark mode */
-}
-
-.success-message {
-  color: #4CAF50; /* Green color for success */
-  background-color: #E8F5E9; /* Light green background */
-  border-left: 5px solid #4CAF50; /* Solid left border for emphasis */
-  padding: 10px; /* Padding for better spacing */
-  margin: 10px 0; /* Margin for spacing around the element */
-  border-radius: 5px; /* Rounded corners for a softer look */
-}
-
-.error-message {
-  color: #D32F2F; /* Red color for errors */
-  background-color: #FFEBEE; /* Light red background */
-  border-left: 5px solid #D32F2F;
+/* === Form Fields === */
+.mdl-textfield__input {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.42);
   padding: 10px;
+  font-size: 16px;
+  display: block;
+  width: 100%;
   margin: 10px 0;
-  border-radius: 5px;
 }
 
-.warning-message {
-  color: #FF9800; /* Orange color for warnings */
-  background-color: #FFF3E0; /* Light orange background */
-  border-left: 5px solid #FF9800;
-  padding: 10px;
-  margin: 10px 0;
-  border-radius: 5px;
-}
-
-.info-message {
-  color: #2196F3; /* Blue color for informational messages */
-  background-color: #E3F2FD; /* Light blue background */
-  border-left: 5px solid #2196F3;
-  padding: 10px;
-  margin: 10px 0;
-  border-radius: 5px;
-}
-
-/* Global scrollbar styling */
-::-webkit-scrollbar {
-  width: 12px; /* Adjust width to your preference */
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1; /* Light grey track */
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888; /* Dark grey thumb */
-  border-radius: 6px; /* Optional: rounded corners for the thumb */
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555; /* Slightly darker grey on hover */
-}
-
-.Home_center__O_TIN {
-  position: relative;  /* or 'absolute' or 'fixed' depending on need */
-  width: 100%;          /* Adjust width as needed */
-  height: 100px;        /* Set a fixed height or use 'vh' for a percentage of the viewport height */
-  z-index: 10;          /* Ensure it's layered correctly if using 'absolute' or 'fixed' */
-}
-
-.Home_cloudform__PjM4h {
-  height: 30px;
-}
-
-.image-container-image-thumb {
+.mdl-textfield__label {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 16px;
+  font-weight: normal;
+  pointer-events: none;
   position: absolute;
-  top: 120px;
-  left: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 700px; /* Set a maximum height for the container */
-  overflow-y: auto; /* Enable vertical scrolling */
+  bottom: 5px;
+  left: 0;
+  transition: all 200ms;
 }
 
-.textareaContainer {
-  display: flex;
-  align-items: center;
+.mdl-textfield__label::after {
+  background-color: #4285f4;
+  bottom: -1px;
+  content: '';
+  height: 2px;
+  left: 45%;
+  position: absolute;
+  transition: all 200ms;
+  width: 10px;
+  will-change: left, width;
 }
 
+.mdl-textfield--floating-label.is-focused .mdl-textfield__label,
+.mdl-textfield--floating-label.is-dirty .mdl-textfield__label {
+  color: #4285f4;
+  font-size: 12px;
+  top: -20px;
+}
+
+.mdl-textfield--floating-label.is-focused .mdl-textfield__label::after,
+.mdl-textfield--floating-label.is-dirty .mdl-textfield__label::after {
+  left: 0;
+  width: 100%;
+}
+
+/* === Cookie Notice === */
 #termsfeed-com---nb {
   position: fixed;
-  bottom: 10px; /* Position it 10px from the bottom */
-  left: 10px; /* Position it 10px from the left */
-  max-width: 600px; /* Set a max-width */
+  bottom: 10px;
+  left: 10px;
+  max-width: 600px;
   max-height: 300px;
   background-color: #ffffff !important;
   color: #000000 !important;
@@ -1406,19 +972,4 @@ body.dark .backdropStyle {
   border-radius: 5px !important;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
   overflow: hidden;
-}
-
-.content-container {
-  display: flex;
-  flex-direction: column;
-  height: 65vh; /* Adjust as necessary */
-  box-sizing: border-box;
-  padding-bottom: calc(var(--footer-height) + var(--textarea-height) + 20px);
-  max-width: 100%; /* Ensure it doesn't exceed the viewport width */
-  width: 100%; /* Take full width */
-}
-
-.auto-height {
-  flex-grow: 1 !important;
-  overflow-y: auto !important;
 }

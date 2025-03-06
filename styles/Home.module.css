@@ -48,6 +48,17 @@
   transition: height 0.3s ease;
 }
 
+/* Styling from globals.css for .Home_cloud__16v52 */
+.Home_cloud__16v52 {
+  background-color: var(--background-light);
+  color: #000000;
+  border: 2px solid #cccccc;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 10px;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
 /* Define the shrunk cloud */
 .cloudWithImages {
   height: calc(65vh - 61px) !important;
@@ -101,6 +112,18 @@
   transition: height 0.3s ease; /* Smooth transition for height changes */
 }
 
+/* Dark mode styling for textarea from globals.css */
+body.dark .Home_textarea__k243o,
+body.dark .Home_textarea__lSHf7 {
+  background-color: #333333;
+  color: #ffffff;
+}
+
+/* Light mode styling for textarea from globals.css */
+body.light .Home_textarea__k243o {
+  border: 2px solid #bfbfbf;
+}
+
 .textarea:disabled {
   opacity: 0.5;
 }
@@ -137,7 +160,7 @@
   display: flex;
 }
 
-.fileUploadButtonInHome{
+.fileUploadButtonInHome {
   position: absolute;
   top: -1.5rem;
   right: 5.5rem;
@@ -184,6 +207,39 @@
   border-radius: 0.5rem;
 }
 
+/* Dark mode styling for messagelist from globals.css */
+body.dark .Home_messagelist__wIt78 {
+  background-color: #000000;
+}
+
+/* Enhanced scrollbar for messagelist from globals.css */
+body.dark .Home_messagelist__wIt78::-webkit-scrollbar {
+  width: 10px;
+}
+
+body.dark .Home_messagelist__wIt78::-webkit-scrollbar-thumb {
+  background-color: black;
+  border-radius: 5px;
+}
+
+body.dark .Home_messagelist__wIt78::-webkit-scrollbar-track {
+  background-color: #999999;
+}
+
+/* Light mode scrollbar enhancement */
+body.light .Home_messagelist__wIt78::-webkit-scrollbar {
+  width: 8px;
+}
+
+body.light .Home_messagelist__wIt78::-webkit-scrollbar-thumb {
+  background-color: #cccccc;
+  border-radius: 4px;
+}
+
+body.light .Home_messagelist__wIt78::-webkit-scrollbar-track {
+  background-color: #f0f0f0;
+}
+
 .messagelistloading {
   display: flex;
   width: 100%;
@@ -197,6 +253,12 @@
   color: #000;
 }
 
+/* Dark mode styling for user message from globals.css */
+body.dark .Home_usermessage__tWHWR,
+body.dark .Home_usermessage__i8g8V {
+  background-color: #333333;
+}
+
 .usermessagewaiting {
   padding: 1.5rem;
   color: #000;
@@ -206,6 +268,11 @@
   animation: loading-gradient 2s ease-in-out infinite;
   animation-direction: alternate;
   animation-name: loading-gradient;
+}
+
+/* Dark mode styling for user message waiting from globals.css */
+body.dark .Home_usermessagewaiting__SNXox {
+  background-color: #333333;
 }
 
 .warning {
@@ -233,6 +300,12 @@
   padding: 1.5rem;
   color: #000;
   animation: fadein 0.5s;
+}
+
+/* Dark mode styling for API message from globals.css */
+body.dark .Home_apimessage__VhfTn,
+body.dark .Home_apimessage___VZRe {
+  background-color: #4d4d4d;
 }
 
 @keyframes fadein {
@@ -297,6 +370,25 @@
   width: 100%;
 }
 
+/* Dark mode styling for center from globals.css */
+body.dark .Home_center__O_TIN {
+  background-color: #000000;
+}
+
+/* Center styling from globals.css */
+.Home_center__O_TIN {
+  position: relative;
+  width: 100%;
+  height: 100px;
+  z-index: 10;
+}
+
+/* Auto height utility from globals.css */
+.auto-height {
+  flex-grow: 1 !important;
+  overflow-y: auto !important;
+}
+
 .pointsnormal {
   width: 90%;
   height: 90%;
@@ -317,6 +409,17 @@
   text-align: center;
   background-color: white; /* Ensuring it stands out from the content, adjust the color as needed */
   box-shadow: 0 -2px 10px rgba(0,0,0,0.1); /* Optional shadow for better separation from content */
+}
+
+/* Content container from globals.css */
+.content-container {
+  display: flex;
+  flex-direction: column;
+  height: 65vh;
+  box-sizing: border-box;
+  padding-bottom: calc(var(--footer-height) + var(--textarea-height) + 20px);
+  max-width: 100%;
+  width: 100%;
 }
 
 .footer a {
@@ -350,7 +453,6 @@
   width: 90%;
 }
 
-
 .lineSeparator {
   border-bottom: 1px solid #1f1e1e;
   width: 99.2%;
@@ -371,7 +473,6 @@
   margin-bottom: -35px;
 }
 
-
 /* Add this to your Home.module.css */
 .micButton {
   position: absolute;
@@ -388,9 +489,8 @@
   width: 35%;
   height: 56px; 
   position: absolute;
-  margin-right:2px;
+  margin-right: 2px;
 }
-
 
 .waveContainer {
   display: flex;
@@ -404,27 +504,33 @@
   border-radius: 4px; /* Slightly rounded corners */
 }
 
+/* Dark mode styling for wave container from globals.css */
+body.dark .Home_waveContainer__1LLAo {
+  background-color: #333333;
+  color: #ffffff;
+}
+
 @media (max-width: 1439px) {
   .waveContainer {
-    width:30%;
+    width: 30%;
   }
 }
 
 @media (max-width: 1090px) {
   .waveContainer {
-    width:40%;
+    width: 40%;
   }
 }
 
 @media (max-width: 800px) {
   .waveContainer {
-    width:50%;
+    width: 50%;
   }
 }
 
 @media (max-width: 639px) {
   .waveContainer {
-    width:60%;
+    width: 60%;
   }
 }
 
@@ -465,7 +571,7 @@
   height: 30px;
   border-radius: 4px; /* Slightly rounded corners */
   margin-left: 45px;
-  border:1px solid #bfbfbf;
+  border: 1px solid #bfbfbf;
 }
 
 .squareButton:hover {
@@ -478,7 +584,7 @@
   height: 30px;
   border-radius: 50%; /* Fully rounded corners */
   margin-right: 6px;
-  border:1px solid #bfbfbf;
+  border: 1px solid #bfbfbf;
 }
 
 .circleButton:hover {
@@ -486,13 +592,12 @@
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* Increase shadow on hover */
 }
 
-.micIcon{
+.micIcon {
   padding: 0.3rem;
   color: rgb(165, 162, 162);
 }
 
-
-.micIcon:hover{
+.micIcon:hover {
   background: #e4575726;
   border-radius: 0.2rem;
 }
@@ -595,7 +700,7 @@
   }
 
   .waveContainer {
-    width:75%;
+    width: 75%;
   }
   
   .imageThumbnailsContainer {
@@ -631,7 +736,6 @@
   margin: 4px;
   position: relative;
 }
-
 
 /* For internal embedding */
 .image-container-image-thumb {
