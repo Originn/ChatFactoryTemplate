@@ -650,7 +650,7 @@ body.dark .Home_waveContainer__1LLAo {
 
   .chatContainer {
     width: 90vw;
-    height: calc(100vh - 1px);
+    height: 70vh;
   }
 
   .cloud {
