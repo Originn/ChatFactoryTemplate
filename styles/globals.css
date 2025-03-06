@@ -1008,4 +1008,24 @@ body.dark .backdropStyle {
     overflow-y: auto;
     align-items: flex-start;
   }
+
+  #termsfeed-com---nb {
+    max-height: 60vh !important; /* Adjust height for mobile */
+    overflow-y: auto !important; /* Enable vertical scrolling */
+    -webkit-overflow-scrolling: touch !important; /* Smooth scrolling on iOS */
+  }
+  
+  /* Make sure the content inside has enough padding */
+  #termsfeed-com---nb .cc-nb-main-container {
+    padding: 15px !important;
+  }
+  
+  /* Improve button layout for touch */
+  #termsfeed-com---nb .cc-nb-buttons-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    margin-top: 15px !important;
+  }
 }
