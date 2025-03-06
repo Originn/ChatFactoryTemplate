@@ -647,13 +647,10 @@ body.dark .Home_waveContainer__1LLAo {
     max-height: 90vh;
   }
 
-  .inputContainer {
-    margin-top: 20px; /* Add margin to create space between chat pane and textarea */
-  }
 
   .chatContainer {
     width: 90vw;
-    height: calc(100vh - 190px);
+    height: calc(100vh - 1px);
   }
 
   .cloud {
