@@ -92,7 +92,7 @@ function createDeepSeekModel(params: ModelParams): ChatDeepSeek {
     // Create the DeepSeek model with standard options
     const model = new ChatDeepSeek({
       streaming,
-      model: 'deepseek-reasoner',
+      model: 'deepseek-chat',
       maxTokens,
       callbacks,
       temperature: 0,
