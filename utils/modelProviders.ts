@@ -83,11 +83,10 @@ function preprocessMessages(messages: BaseMessageLike[][]): BaseMessageLike[][] 
 /**
  * Creates a DeepSeek chat model with the provided parameters
  */
-/**
- * Creates a DeepSeek chat model with the provided parameters
- */
 function createDeepSeekModel(params: ModelParams): ChatDeepSeek {
     const { streaming = false, callbacks = [], verbose = false, maxTokens, apiKey } = params;
+    
+    console.log("Creating DeepSeek model with streaming:", streaming);
     
     // Create the DeepSeek model with standard options
     const model = new ChatDeepSeek({
@@ -97,7 +96,8 @@ function createDeepSeekModel(params: ModelParams): ChatDeepSeek {
       callbacks,
       temperature: 0,
       apiKey: apiKey || process.env.DEEPSEEK_API_KEY,
-      timeout: 30000 // 30 seconds
+      timeout: 60000, // Increase to 60 seconds to give more time for processing
+      maxRetries: 2   // Add retries to improve reliability
     });
   
     // Override token counting to avoid errors
