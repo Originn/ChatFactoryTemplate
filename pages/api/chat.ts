@@ -1,38 +1,73 @@
 // pages/api/chat.ts
-
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getIO } from "@/socketServer.cjs";
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
-import { makeChain } from '@/utils/makechain';
 import { getPinecone } from '@/utils/pinecone-client';
 import { PINECONE_NAME_SPACE } from '@/config/pinecone';
-import { getIO } from "@/socketServer.cjs";
+import { makeChain } from '@/utils/makechain';
+import { MyDocument } from '@/interfaces/Document';
+import MemoryService from '@/utils/memoryService';
+import { getUserAIProvider, getAPIKeyForProvider } from '@/db';
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const { question, history, roomId, imageUrls, userEmail } = req.body;
+// Function to synchronize chat history
+async function syncChatHistory(roomId: string, clientHistory: any[], userEmail: string) {
+  const serverHistory = await MemoryService.getChatHistory(roomId);
 
+  if (clientHistory.length > serverHistory.length) {
+    // Clear existing server history
+    MemoryService.clearChatMemory(roomId);
+    // Reconstruct the history from client data
+    for (const [input, output] of clientHistory) {
+      await MemoryService.updateChatMemory(roomId, input, output, [], userEmail);
+    }
+  } else {
+    console.log('Server history is up to date');
+  }
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  const { question, history, roomId, imageUrls = [], userEmail } = req.body;
 
   if (!roomId) {
     return res.status(400).json({ message: 'No roomId in the request' });
   }
 
-  //await syncChatHistory(roomId, history, userEmail);
-
-  const sanitizedQuestion = question?.trim().replaceAll('\n', ' ');
-  const io = getIO();
+  if (!question) {
+    return res.status(400).json({ message: 'No question in the request' });
+  }
 
   try {
-    if (!question) {
-      return res.status(400).json({ message: 'No question in the request' });
+    // Sync chat history first
+    await syncChatHistory(roomId, history, userEmail);
+
+    // Get the user's AI provider preference
+    let aiProvider: string;
+    try {
+      aiProvider = await getUserAIProvider(userEmail);
+      console.log(`Using AI provider: ${aiProvider} for user: ${userEmail}`);
+    } catch (error) {
+      console.error('Error getting user AI provider preference:', error);
+      aiProvider = 'openai'; // Default to OpenAI if there's an error
     }
 
-    // Proceed to the embedding logic for cases without images
+    // Get the appropriate API key for the selected provider
+    try {
+      const apiKey = await getAPIKeyForProvider(aiProvider, userEmail);
+      process.env.OPENAI_API_KEY = apiKey;
+      
+      if (aiProvider === 'deepseek') {
+        process.env.DEEPSEEK_API_KEY = apiKey;
+      }
+    } catch (error) {
+      console.error('Error getting API key for provider:', error);
+    }
+
+    // Initialize Pinecone
     const pinecone = await getPinecone();
     const vectorStore = await PineconeStore.fromExistingIndex(
       new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
@@ -43,17 +78,34 @@ export default async function handler(
       },
     );
 
-    const chain = makeChain(vectorStore, (token) => {
+    // Send tokens to client
+    const io = getIO();
+    const sendToken = (token: string) => {
       if (roomId) {
-        io.to(roomId).emit("newToken", token);
+        io.to(roomId).emit(`tokenStream-${roomId}`, token);
+      } else {
+        console.error('No roomId available for token stream');
       }
-    }, userEmail);
+    };
 
-    await chain.call(sanitizedQuestion, [], roomId, userEmail, imageUrls);
-    return res.status(200).json({ message: 'Embedding complete' });
+    // Create documents array for results
+    const documents: MyDocument[] = [];
 
+    // Create chain with the user's AI provider preference
+    const chain = makeChain(vectorStore, sendToken, userEmail, aiProvider);
+    
+    // Execute the chain
+    await chain.call(question, documents, roomId, userEmail, imageUrls);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Processing chat request'
+    });
   } catch (error: any) {
-    console.error('Error', error);
-    return res.status(500).json({ error: error.message || 'Something went wrong' });
+    console.error('Error in chat handler:', error);
+    return res.status(500).json({ 
+      error: error.message || 'Something went wrong',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 }

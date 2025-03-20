@@ -72,3 +72,12 @@ export function updateUserPrivacySettings(
   storeHistory: boolean,
   retentionPeriod: string
 ): Promise<any>;
+
+export function getUserAIProvider(
+  userEmail: string
+): Promise<string>;
+
+export function getAPIKeyForProvider(
+  provider: string,
+  userEmail: string
+): Promise<string | undefined>;
