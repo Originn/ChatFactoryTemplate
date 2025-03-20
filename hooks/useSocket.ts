@@ -23,16 +23,20 @@ const useSocket = (
   // Function to change rooms
   const changeRoom = useCallback((newRoomId: string) => {
     if (socket) {
-      // Leave the current room
-      if (roomIdRef.current) {
+      // Only leave the current room if it's different from the new room
+      if (roomIdRef.current && roomIdRef.current !== newRoomId) {
         socket.emit('leave', roomIdRef.current);
       }
   
-      // Join the new room
-      socket.emit('join', newRoomId);
-      roomIdRef.current = newRoomId;
-      setRoomId(newRoomId);
-      localStorage.setItem('roomId', newRoomId); // Store roomId in localStorage
+      // Only join the new room if it's different from the current room
+      if (roomIdRef.current !== newRoomId) {
+        socket.emit('join', newRoomId);
+        roomIdRef.current = newRoomId;
+        setRoomId(newRoomId);
+        localStorage.setItem('roomId', newRoomId); // Store roomId in localStorage
+      }
+      
+      // Always ensure we're tracking requests for this room
       setRequestsInProgress((prev: any) => ({ ...prev, [newRoomId]: false }));
     }
   }, [socket, setRoomId, setRequestsInProgress]);
