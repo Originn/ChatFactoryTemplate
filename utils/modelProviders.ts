@@ -1,6 +1,5 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatDeepSeek } from '@langchain/deepseek';
-import { BaseMessage } from '@langchain/core/messages';
 import { BaseMessageLike } from '@langchain/core/messages';
 
 interface ModelParams {
@@ -64,7 +63,9 @@ function preprocessMessages(messages: BaseMessageLike[][]): BaseMessageLike[][] 
       }
       
       // For actual message objects
-      const currentType = message instanceof BaseMessage ? message.constructor.name : 'Unknown';
+      const currentType = typeof message === 'object' && message !== null 
+        ? (message as any).constructor.name 
+        : 'Unknown';
       
       if (lastType !== currentType || processedArray.length === 0) {
         processedArray.push(message);
@@ -82,24 +83,90 @@ function preprocessMessages(messages: BaseMessageLike[][]): BaseMessageLike[][] 
 /**
  * Creates a DeepSeek chat model with the provided parameters
  */
+/**
+ * Creates a DeepSeek chat model with the provided parameters
+ */
 function createDeepSeekModel(params: ModelParams): ChatDeepSeek {
-  const { streaming = false, callbacks = [], verbose = false, maxTokens, apiKey } = params;
+    const { streaming = false, callbacks = [], verbose = false, maxTokens, apiKey } = params;
+    
+    // Create the DeepSeek model with standard options
+    const model = new ChatDeepSeek({
+      streaming,
+      model: 'deepseek-reasoner',
+      maxTokens,
+      callbacks,
+      temperature: 0,
+      apiKey: apiKey || process.env.DEEPSEEK_API_KEY,
+      timeout: 30000 // 30 seconds
+    });
   
-  const model = new ChatDeepSeek({
-    streaming,
-    model: 'deepseek-reasoner', // Using DeepSeek-R1 reasoning model
-    maxTokens,
-    callbacks,
-    temperature: 0,
-    apiKey: apiKey || process.env.DEEPSEEK_API_KEY,
-  });
-
-  // Override the generate method to ensure proper message formatting
-  const originalGenerate = model.generate.bind(model);
-  model.generate = async function(messages, options, callbacks) {
-    const processedMessages = preprocessMessages(messages);
-    return originalGenerate(processedMessages, options, callbacks);
-  };
+    // Override token counting to avoid errors
+    // @ts-ignore - accessing protected methods
+    model.getNumTokens = async (text: string): Promise<number> => {
+      // Simple approximation: ~1 token per 4 characters
+      return Math.ceil(text.length / 4);
+    };
   
-  return model;
-}
+    // @ts-ignore - accessing protected methods
+    model.getNumTokensFromMessages = async (messages: any[]): Promise<number> => {
+      let totalTokens = 0;
+      for (const message of messages) {
+        if (typeof message === 'string') {
+          totalTokens += Math.ceil(message.length / 4);
+        } else if (message?.content) {
+          const content = typeof message.content === 'string' 
+            ? message.content 
+            : JSON.stringify(message.content);
+          totalTokens += Math.ceil(content.length / 4);
+        }
+      }
+      return totalTokens;
+    };
+  
+    // Override the generate method to ensure proper message formatting
+    const originalGenerate = model.generate.bind(model);
+    model.generate = async function(messages, options, callbacks) {
+      try {
+        const processedMessages = preprocessMessages(messages);
+        return await originalGenerate(processedMessages, options, callbacks);
+      } catch (error:any) {
+        console.error("DeepSeek generate error:", error);
+        
+        // If the error is about message format, try with even more aggressive processing
+        if (error.message && typeof error.message === 'string' && 
+            error.message.includes("does not support successive")) {
+          
+          // Keep only one message of each type (system, human, assistant)
+          const simplifiedMessages = messages.map(msgArray => {
+            // Extract type-specific messages
+            const systemMsg = msgArray.find(m => typeof m === 'object' && 
+              (m as any)?.constructor?.name === 'SystemMessage');
+            
+            const humanMsg = [...msgArray]
+              .reverse()
+              .find(m => typeof m === 'object' && 
+                (m as any)?.constructor?.name === 'HumanMessage');
+            
+            const assistantMsg = [...msgArray]
+              .reverse()
+              .find(m => typeof m === 'object' && 
+                (m as any)?.constructor?.name === 'AIMessage');
+            
+            // Build a clean array with proper alternation
+            const result = [];
+            if (systemMsg) result.push(systemMsg);
+            if (humanMsg) result.push(humanMsg);
+            if (assistantMsg) result.push(assistantMsg);
+            
+            return result;
+          });
+          
+          return await originalGenerate(simplifiedMessages, options, callbacks);
+        }
+        
+        throw error;
+      }
+    };
+    
+    return model;
+  }
