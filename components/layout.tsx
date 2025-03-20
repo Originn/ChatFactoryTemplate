@@ -37,7 +37,7 @@ const Layout: FC<LayoutProps> = ({
   const newChatButtonClass = "w-10 h-10 flex items-center justify-center bg-blue-500 text-white rounded-full mr-4";
 
   return (
-    <div className={`flex flex-col min-h-screen mx-auto ${theme === 'dark' ? 'dark' : ''}`}>
+    <div className={`flex flex-col min-h-screen mx-auto`}>
       <header className={`sticky top-0 z-40 w-full ${theme === 'light' ? 'bg-white' : 'bg-dark-header'}`}>
         <div className="h-16 border-b border-b-slate-200 py-4">
           <div className="mx-4 px-6 flex items-center justify-between">

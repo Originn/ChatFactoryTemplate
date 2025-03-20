@@ -419,12 +419,16 @@ const handleAiProviderUpdate = async () => {
   };
 
 
-useEffect(() => {
+  useEffect(() => {
     // Add the settings-page class to body when component mounts
     document.body.classList.add('settings-page');
     
+    // Make sure we don't mess with the theme classes
+    const currentTheme = document.body.classList.contains('dark') ? 'dark' : 'light';
+    document.body.classList.add(currentTheme);
+    
     return () => {
-      // Remove the class when component unmounts
+      // Remove the settings-page class when component unmounts
       document.body.classList.remove('settings-page');
     };
   }, []);
