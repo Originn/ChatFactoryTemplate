@@ -14,6 +14,7 @@ import { getIdToken } from 'firebase/auth';
 const Settings = () => {
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('data');
+  const [aiProvider, setAiProvider] = useState('openai'); // Default AI provider
   const [loading, setLoading] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
@@ -398,7 +399,6 @@ useEffect(() => {
           {statusMessage.text}
         </div>
       )}
-        
         <div className="flex border-b mb-6">
           <button 
             className={`py-2 px-4 dark:text-white ${activeTab === 'data' ? 'border-b-2 border-blue-500' : ''}`}
@@ -411,6 +411,12 @@ useEffect(() => {
             onClick={() => setActiveTab('privacy')}
           >
             Privacy Settings
+          </button>
+          <button 
+            className={`py-2 px-4 dark:text-white ${activeTab === 'aiprovider' ? 'border-b-2 border-blue-500' : ''}`}
+            onClick={() => setActiveTab('aiprovider')}
+          >
+            AI Provider
           </button>
           <button 
             className={`py-2 px-4 dark:text-white ${activeTab === 'contact' ? 'border-b-2 border-blue-500' : ''}`}
@@ -607,6 +613,69 @@ useEffect(() => {
                   'Save Privacy Settings'
                 )}
               </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'aiprovider' && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4 dark:text-white">AI Provider Settings</h2>
+            
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
+              <h3 className="text-lg font-medium mb-4 dark:text-white">Select AI Provider</h3>
+              
+              <p className="mb-4 text-gray-600 dark:text-gray-400">
+                Choose the AI provider that will power your chat experience. Different providers may offer varied capabilities and response styles.
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <input 
+                    id="openai" 
+                    type="radio" 
+                    name="aiProvider"
+                    value="openai"
+                    className="mr-3" 
+                    checked={aiProvider === 'openai'}
+                    onChange={() => setAiProvider('openai')}
+                  />
+                  <div>
+                    <label htmlFor="openai" className="font-medium dark:text-white">OpenAI</label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Powered by OpenAI's advanced language models.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center">
+                  <input 
+                    id="deepseek" 
+                    type="radio" 
+                    name="aiProvider"
+                    value="deepseek"
+                    className="mr-3" 
+                    checked={aiProvider === 'deepseek'}
+                    onChange={() => setAiProvider('deepseek')}
+                  />
+                  <div>
+                    <label htmlFor="deepseek" className="font-medium dark:text-white">DeepSeek</label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Powered by DeepSeek's language models, optimized for technical content.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <button 
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-blue-300 flex items-center"
+                >
+                  Save AI Provider Setting
+                </button>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  Note: This setting will be applied to all new conversations. Existing conversations will continue using their original AI provider.
+                </p>
+              </div>
             </div>
           </div>
         )}
