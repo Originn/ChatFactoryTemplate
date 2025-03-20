@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS user_privacy_settings (
   allow_analytics BOOLEAN NOT NULL DEFAULT TRUE,
   store_history BOOLEAN NOT NULL DEFAULT TRUE,
   retention_period VARCHAR(20) NOT NULL DEFAULT 'forever',
+  ai_provider VARCHAR(50) NOT NULL DEFAULT 'openai',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -35,3 +36,14 @@ CREATE TABLE IF NOT EXISTS gdpr_data_access_log (
   fulfilled_date TIMESTAMP WITH TIME ZONE,
   notes TEXT
 );
+
+-- Add ai_provider column to existing table if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns 
+    WHERE table_name = 'user_privacy_settings' AND column_name = 'ai_provider'
+  ) THEN
+    ALTER TABLE user_privacy_settings ADD COLUMN ai_provider VARCHAR(50) NOT NULL DEFAULT 'openai';
+  END IF;
+END $$;
