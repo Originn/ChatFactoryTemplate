@@ -153,19 +153,20 @@ body.dark .submit-feedback-label {
 }
 
 /* Dark Mode Links */
+/* Dark Mode Links */
 body.dark a {
   color: #4dabf7; /* Light blue color for better visibility in dark mode */
-  text-decoration: underline; /* Add underline for additional visibility */
+  text-decoration: none; /* No underline */
 }
 
 body.dark a:hover {
   color: #74c0fc; /* Lighter blue on hover */
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 body.dark a[href^="https://storage.googleapis.com"][href*="page="] {
   color: #ae3ec9 !important; /* Keep the special Google Storage links a different color */
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Dark Mode Dividers */
