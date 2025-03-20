@@ -16,7 +16,11 @@ export const useTheme = () => {
 
   useEffect(() => {
     window.localStorage.setItem('theme', theme);
-    document.body.className = theme;
+    
+    // Remove both theme classes first
+    document.body.classList.remove('light', 'dark');
+    // Add the current theme class
+    document.body.classList.add(theme);
   }, [theme]);
 
   useEffect(() => {
