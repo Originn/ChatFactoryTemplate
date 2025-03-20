@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [isFromSolidcamWeb, setIsFromSolidcamWeb] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   const noAuthRequired = [
     '/verify-email',
@@ -21,6 +22,22 @@ function MyApp({ Component, pageProps }: AppProps) {
     '/acctmgmt',
     '/privacy-policy',
   ];
+
+  // Load theme from localStorage on initial render
+  useEffect(() => {
+    // Apply the saved theme as early as possible
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
+      if (savedTheme) {
+        setTheme(savedTheme);
+        // Apply theme class to document immediately
+        document.documentElement.classList.remove('light', 'dark');
+        document.documentElement.classList.add(savedTheme);
+        document.body.classList.remove('light', 'dark');
+        document.body.classList.add(savedTheme);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const checkStaging = async () => {
@@ -86,6 +103,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   const enhancedProps = {
     ...pageProps,
     isFromSolidcamWeb, // Add this line to ensure the prop is passed to all pages
+    initialTheme: theme, // Pass the initial theme to prevent flashing
   };
 
   return (
@@ -98,13 +116,15 @@ function MyApp({ Component, pageProps }: AppProps) {
         />
         <title>SolidCAM Chat</title>
       </Head>
-      {isAuthRequired ? (
-        <AuthWrapper>
+      <div className={theme}>
+        {isAuthRequired ? (
+          <AuthWrapper>
+            <Component {...enhancedProps} />
+          </AuthWrapper>
+        ) : (
           <Component {...enhancedProps} />
-        </AuthWrapper>
-      ) : (
-        <Component {...enhancedProps} />
-      )}
+        )}
+      </div>
     </>
   );
 }
