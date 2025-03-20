@@ -19,8 +19,9 @@ import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retr
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import OpenAIChat from "openai";
 import { getChatHistoryByRoomId } from '../db';
-import { createDeepSeekModel } from './deepseek-client';
+import { createChatModel } from './modelProviders';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
+
 const ENV = {
   MODEL_NAME: process.env.MODEL_NAME || 'gpt-4o',
   TEMPERATURE: parseFloat(process.env.TEMPERATURE || '0'),
@@ -99,7 +100,10 @@ Text: "{text}"`;
 // Utility Functions
 async function detectLanguageWithOpenAI(text: string, nonStreamingModel: ChatOpenAI): Promise<string> {
   const prompt = LANGUAGE_DETECTION_PROMPT.replace('{text}', text);
-  const message = new HumanMessage(prompt);
+  const message = {
+    role: "user",
+    content: prompt
+  };
   const response = await nonStreamingModel.generate([[message]]);
 
   if (response.generations.length > 0 && response.generations[0].length > 0) {
@@ -108,6 +112,30 @@ async function detectLanguageWithOpenAI(text: string, nonStreamingModel: ChatOpe
   }
 
   return 'English';
+}
+
+function preprocessChatHistoryForDeepSeek(history: (HumanMessage | AIMessage)[]) {
+  if (history.length <= 1) return history;
+  
+  // Ensure alternating pattern: if two messages of same type are adjacent, keep only the latest one
+  const processedHistory: (HumanMessage | AIMessage)[] = [];
+  
+  for (let i = 0; i < history.length; i++) {
+    const currentMessage = history[i];
+    const lastProcessedMessage = processedHistory[processedHistory.length - 1];
+    
+    // If first message or different type from last processed message, add it
+    if (!lastProcessedMessage || 
+        (currentMessage instanceof HumanMessage && lastProcessedMessage instanceof AIMessage) ||
+        (currentMessage instanceof AIMessage && lastProcessedMessage instanceof HumanMessage)) {
+      processedHistory.push(currentMessage);
+    } else {
+      // Same type as previous, replace the last message
+      processedHistory[processedHistory.length - 1] = currentMessage;
+    }
+  }
+  
+  return processedHistory;
 }
 
 async function filteredSimilaritySearch(vectorStore: any, queryVector: number[], type: string, limit: number, minScore: number): Promise<SearchResult[]> {
@@ -123,7 +151,10 @@ async function filteredSimilaritySearch(vectorStore: any, queryVector: number[],
 
 async function translateToEnglish(text: string, translationModel: ChatOpenAI): Promise<string> {
   const prompt = TRANSLATION_PROMPT.replace('{text}', text);
-  const message = new HumanMessage(prompt);
+  const message = {
+    role: "user",
+    content: prompt
+  };
 
   const response = await translationModel.generate([[message]]);
 
@@ -200,19 +231,19 @@ function initializeChatHistory(roomId: any, userEmail: string) {
 export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void, userEmail: string, aiProvider: string = 'openai') => {
   const nonStreamingModel = new ChatOpenAI({
     modelName: 'gpt-4o-mini',
-    temperature: TEMPERATURE,
-    verbose:false,
+    temperature: ENV.TEMPERATURE,
+    verbose: false,
   });
 
   const isImageRelatedModel = new ChatOpenAI({
     modelName: 'gpt-4o-mini',
-    temperature: TEMPERATURE,
-    verbose:false,
+    temperature: ENV.TEMPERATURE,
+    verbose: false,
   });
 
   const translationModel = new ChatOpenAI({
     modelName: 'gpt-4o',
-    temperature: TEMPERATURE,
+    temperature: ENV.TEMPERATURE,
   });
 
   function generateUniqueId(): string {
@@ -275,47 +306,21 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       const qaId = generateUniqueId();
 
-      // Initialize streaming model based on AI provider preference
-      let streamingModel: BaseChatModel;
-      
-      if (aiProvider === 'deepseek') {
-        // Use DeepSeek model
-        console.log(`Using DeepSeek for user: ${userEmail}`);
-        streamingModel = createDeepSeekModel({
-          apiKey: process.env.DEEPSEEK_API_KEY,
-          modelName: 'deepseek-reasoner',  // Using DeepSeek-R1 reasoning model
-          temperature: TEMPERATURE,
-          streaming: true,
-          callbacks: [{
-            handleLLMNewToken: (token:any) => {
-              if (roomId) {
-                io.to(roomId).emit(`tokenStream-${roomId}`, token);
-              } else {
-                console.error('No roomId available for token stream');
-              }
-            },
-          }],
-        });
-      } else {
-        // Default to OpenAI
-        console.log(`Using OpenAI for user: ${userEmail}`);
-        streamingModel = new ChatOpenAI({
-          streaming: true,
-          modelName: MODEL_NAME,
-          verbose: false,
-          temperature: TEMPERATURE,
-          modelKwargs: { seed: 1 },
-          callbacks: [{
-            handleLLMNewToken: (token) => {
-              if (roomId) {
-                io.to(roomId).emit(`tokenStream-${roomId}`, token);
-              } else {
-                console.error('No roomId available for token stream');
-              }
-            },
-          }],
-        });
-      }
+      // Initialize streaming model based on AI provider preference using our new utility
+      const streamingModel = createChatModel(aiProvider, {
+        streaming: true,
+        verbose: false,
+        maxTokens: 4000,
+        callbacks: [{
+          handleLLMNewToken: (token: any) => {
+            if (roomId) {
+              io.to(roomId).emit(`tokenStream-${roomId}`, token);
+            } else {
+              console.error('No roomId available for token stream');
+            }
+          },
+        }],
+      });
       // Handle image processing
       let imageDescription = '';
       if (imageUrls && imageUrls.length > 0) {
@@ -401,7 +406,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       
       Determine if the follow-up question may be related to the image previously described in the conversation and if there is a need to have another look at the image to answer the question or you can use previous AI answers to answer the question. Answer "Yes" if you must see the image again and "No" if you don't. Provide no additional commentary.`;
       
-        const response = await model.generate([[new HumanMessage(prompt)]]);
+      const response = await model.generate([[{role: "user", content: prompt}]]);
       
         const answer = response.generations[0][0]?.text.trim().toLowerCase();
         return answer === 'yes';
@@ -470,18 +475,22 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       const customRetriever = new CustomRetriever(vectorstore);
 
+      let processedChatHistory = rawChatHistory;
+        if (aiProvider === 'deepseek') {
+          processedChatHistory = preprocessChatHistoryForDeepSeek(rawChatHistory);
+        }
+
 
 
       const historyAwareRetriever = await createHistoryAwareRetriever({
-        llm: nonStreamingModel,
-        retriever: customRetriever,
-        rephrasePrompt: contextualizeQPrompt,
+        llm: nonStreamingModel as any,
+        retriever: customRetriever as any,
+        rephrasePrompt: contextualizeQPrompt as any,
       });
 
-
       const questionAnswerChain = await createStuffDocumentsChain({
-        llm: streamingModel,
-        prompt: qaPrompt,
+        llm: streamingModel as any,
+        prompt: qaPrompt as any,
       });
 
       const ragChain = await createRetrievalChain({
@@ -491,7 +500,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       const ragResponse = await ragChain.invoke({
         input,
-        chat_history: rawChatHistory,
+        chat_history: rawChatHistory as any,
         language,
         imageDescription,
       });
@@ -581,13 +590,14 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
            existingHistory.conversation_json[0].message === 'Hi');
       
         if (shouldGenerateNewTitle) {
-          const titleResponse = await nonStreamingModel.generate([[new HumanMessage(
-            `Given this conversation:
+          const titleResponse = await nonStreamingModel.generate([[{
+            role: "user",
+            content: `Given this conversation:
             Human: ${originalInput}
             AI: ${ragResponse.answer}
-      
+          
             Generate a short, descriptive title for this conversation (max 50 characters) in the used language.`
-          )]]);
+          }]]);
           conversationTitle = titleResponse.generations[0][0].text.trim();
         } else {
           conversationTitle = existingHistory.conversation_title;
