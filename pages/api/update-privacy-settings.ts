@@ -22,6 +22,7 @@ if (!admin.apps.length) {
 interface PrivacySettings {
   storeHistory: boolean;
   retentionPeriod: string;
+  aiProvider?: string;
 }
 
 export default async function handler(
@@ -65,7 +66,7 @@ export default async function handler(
     }
 
     // Validate settings
-    const { storeHistory, retentionPeriod } = settings;
+    const { storeHistory, retentionPeriod, aiProvider } = settings;
     
     if (typeof storeHistory !== 'boolean') {
       return res.status(400).json({ message: 'Invalid settings format' });
@@ -75,6 +76,14 @@ export default async function handler(
     const validRetentionPeriods = ['forever', '1year', '6months', '3months', '1month'];
     if (!validRetentionPeriods.includes(retentionPeriod)) {
       return res.status(400).json({ message: 'Invalid retention period' });
+    }
+
+    // Validate AI provider if set
+    if (aiProvider !== undefined) {
+      const validProviders = ['openai', 'deepseek'];
+      if (!validProviders.includes(aiProvider)) {
+        return res.status(400).json({ message: 'Invalid AI provider' });
+      }
     }
 
     // Start a database transaction
@@ -91,14 +100,15 @@ export default async function handler(
       // Update or insert privacy settings
       const upsertQuery = `
         INSERT INTO user_privacy_settings 
-          (uid, email, store_history, retention_period, updated_at)
+          (uid, email, store_history, retention_period, ai_provider, updated_at)
         VALUES 
-          ($1, $2, $3, $4, NOW())
+          ($1, $2, $3, $4, $5, NOW())
         ON CONFLICT (uid) 
         DO UPDATE SET
           email = $2,
           store_history = $3, 
           retention_period = $4,
+          ai_provider = $5,
           updated_at = NOW()
         RETURNING *;
       `;
@@ -107,7 +117,8 @@ export default async function handler(
         uid,
         userEmail,
         storeHistory,
-        retentionPeriod
+        retentionPeriod,
+        aiProvider || 'openai' // Default to 'openai' if not provided
       ]);
 
       // If user turned off history storage, delete their history
@@ -174,7 +185,8 @@ export default async function handler(
         message: 'Privacy settings updated successfully',
         settings: {
           storeHistory: result.rows[0].store_history,
-          retentionPeriod: result.rows[0].retention_period
+          retentionPeriod: result.rows[0].retention_period,
+          aiProvider: result.rows[0].ai_provider
         }
       });
       

@@ -110,6 +110,11 @@ const Settings = () => {
           storeHistory: data.storeHistory ?? true,
           retentionPeriod: data.retentionPeriod || '1month' // Changed default to 1 month
         });
+        
+        // Also set the AI provider if it exists
+        if (data.aiProvider) {
+          setAiProvider(data.aiProvider);
+        }
       } else {
         console.error('Error loading privacy settings:', await response.text());
       }
@@ -332,6 +337,59 @@ const handlePrivacySettingsUpdate = async () => {
     setStatusMessage({
       type: 'error',
       text: error instanceof Error ? error.message : 'An error occurred while updating your privacy settings.'
+    });
+  } finally {
+    setLoading(false);
+    setProcessingAction(null);
+  }
+};
+
+// Handler for saving AI provider setting
+const handleAiProviderUpdate = async () => {
+  if (!userInfo?.uid) return;
+  
+  setProcessingAction('aiProvider');
+  setLoading(true);
+  
+  try {
+    // Get the current user's ID token
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    
+    const idToken = await getIdToken(user);
+    
+    const response = await fetch('/api/update-privacy-settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
+      body: JSON.stringify({
+        uid: userInfo.uid,
+        settings: {
+          storeHistory: privacySettings.storeHistory,
+          retentionPeriod: privacySettings.retentionPeriod,
+          aiProvider: aiProvider
+        }
+      }),
+    });
+    
+    if (response.ok) {
+      setStatusMessage({
+        type: 'success',
+        text: 'Your AI provider preference has been updated successfully.'
+      });
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to update AI provider');
+    }
+  } catch (error) {
+    console.error('Error updating AI provider:', error);
+    setStatusMessage({
+      type: 'error',
+      text: error instanceof Error ? error.message : 'An error occurred while updating your AI provider.'
     });
   } finally {
     setLoading(false);
@@ -660,7 +718,7 @@ useEffect(() => {
                   <div>
                     <label htmlFor="deepseek" className="font-medium dark:text-white">DeepSeek</label>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Powered by DeepSeek's language models, optimized for technical content.
+                      Powered by DeepSeek's efficient and powerful language models.
                     </p>
                   </div>
                 </div>
@@ -668,9 +726,18 @@ useEffect(() => {
               
               <div className="mt-6">
                 <button 
+                  onClick={handleAiProviderUpdate}
+                  disabled={loading && processingAction === 'aiProvider'}
                   className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-blue-300 flex items-center"
                 >
-                  Save AI Provider Setting
+                  {loading && processingAction === 'aiProvider' ? (
+                    <>
+                      <span className="mr-2">Saving</span>
+                      <LoadingDots color="#fff" />
+                    </>
+                  ) : (
+                    'Save AI Provider Setting'
+                  )}
                 </button>
                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                   Note: This setting will be applied to all new conversations. Existing conversations will continue using their original AI provider.
