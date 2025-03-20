@@ -138,7 +138,6 @@ body.dark h1,
 body.dark h2,
 body.dark h3,
 body.dark h4,
-body.dark a,
 body.dark .markdownanswer,
 body.dark .markdownanswer ol,
 body.dark .markdownanswer ul,
@@ -155,18 +154,21 @@ body.dark .submit-feedback-label {
 
 /* Dark Mode Links */
 body.dark a {
-  color: rgb(255, 255, 255);
+  color: #4dabf7; /* Light blue color for better visibility in dark mode */
+  text-decoration: underline; /* Add underline for additional visibility */
+}
+
+body.dark a:hover {
+  color: #74c0fc; /* Lighter blue on hover */
+  text-decoration: underline;
 }
 
 body.dark a[href^="https://storage.googleapis.com"][href*="page="] {
-  color: purple !important;
+  color: #ae3ec9 !important; /* Keep the special Google Storage links a different color */
+  text-decoration: underline;
 }
 
 /* Dark Mode Dividers */
-body.dark .divider::before,
-body.dark .divider::after {
-  background-color: #ffffff;
-}
 
 /* Dark Mode Home Components */
 body.dark .Home_apimessage__VhfTn {

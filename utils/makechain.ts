@@ -21,7 +21,7 @@ import OpenAIChat from "openai";
 import { getChatHistoryByRoomId } from '../db';
 import { createChatModel } from './modelProviders';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
-
+import { getRelevantHistory } from './contextManager';
 const ENV = {
   MODEL_NAME: process.env.MODEL_NAME || 'gpt-4o',
   TEMPERATURE: parseFloat(process.env.TEMPERATURE || '0'),
@@ -497,14 +497,21 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         retriever: historyAwareRetriever,
         combineDocsChain: questionAnswerChain,
       });
+      // Get optimized relevant history instead of using full history
+      const relevantHistory = await getRelevantHistory(rawChatHistory, input, {
+        maxTurns: 3, // Use only last 3 conversation turns by default
+        useSemanticSearch: false, // Simple approach is efficient and works well enough
+        recencyWeight: 0.7 // Prioritize recent exchanges
+      });
+
+      console.log(`Using ${relevantHistory.length} messages out of ${rawChatHistory.length} total history items for context`);
 
       const ragResponse = await ragChain.invoke({
         input,
-        chat_history: rawChatHistory as any,
+        chat_history: relevantHistory as any, // Use optimized history instead of full history
         language,
         imageDescription,
       });
-
 
       let minScoreSourcesThreshold = ENV.MINSCORESOURCESTHRESHOLD !== undefined ? 
         ENV.MINSCORESOURCESTHRESHOLD : 0.78;
