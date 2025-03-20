@@ -41,6 +41,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'No question in the request' });
   }
 
+  // Store original environment variables
+  const originalOpenAIKey = process.env.OPENAI_API_KEY;
+  const originalDeepSeekKey = process.env.DEEPSEEK_API_KEY;
+
   try {
     // Sync chat history first
     await syncChatHistory(roomId, history, userEmail);
@@ -55,22 +59,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       aiProvider = 'openai'; // Default to OpenAI if there's an error
     }
 
-    // Get the appropriate API key for the selected provider
+    // Get the appropriate API key based on provider
     try {
       const apiKey = await getAPIKeyForProvider(aiProvider, userEmail);
-      process.env.OPENAI_API_KEY = apiKey;
       
+      // Set the appropriate environment variable based on provider
       if (aiProvider === 'deepseek') {
         process.env.DEEPSEEK_API_KEY = apiKey;
+      } else {
+        // For OpenAI or any other provider
+        process.env.OPENAI_API_KEY = apiKey;
       }
     } catch (error) {
       console.error('Error getting API key for provider:', error);
+      // Continue with default keys if we can't get the user-specific key
     }
 
     // Initialize Pinecone
     const pinecone = await getPinecone();
     const vectorStore = await PineconeStore.fromExistingIndex(
-      new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 }),
+      new OpenAIEmbeddings({ 
+        modelName: "text-embedding-3-small", 
+        dimensions: 1536,
+        openAIApiKey: process.env.OPENAI_API_KEY // Use the current OpenAI key
+      }),
       {
         pineconeIndex: pinecone,
         namespace: PINECONE_NAME_SPACE,
@@ -107,5 +119,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       error: error.message || 'Something went wrong',
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
+  } finally {
+    // Restore original environment variables to prevent leaking between requests
+    process.env.OPENAI_API_KEY = originalOpenAIKey;
+    process.env.DEEPSEEK_API_KEY = originalDeepSeekKey;
   }
 }
