@@ -201,53 +201,20 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     }
   }, [roomId]);
 
-  // Initialize Socket.IO client
+  // Initialize the socket reference
   useEffect(() => {
     const newSocket = io(serverUrl, {
       secure: true,
       transports: ['websocket'],
     });
-
-    newSocket.on(`stageUpdate-${roomId}`, (newStage: number) => {
-      setCurrentStage(newStage);
-    });
-
-    newSocket.on(`resetStages-${roomId}`, (newStage: number) => {
-      setCurrentStage(null);
-    });
-
-    newSocket.on("removeThumbnails", () => {
-      const thumbnailElement = document.querySelector('.image-container-image-thumb');
-      if (!thumbnailElement) {
-        //'Thumbnail element not found');
-      } else {
-        //console.log('Thumbnail element found and will be removed');
-        thumbnailElement.remove();
-      }
-    });
-
-    newSocket.on("embeddingComplete", () => {
-      setIsEmbeddingMode(false);
-      //console.log('Embedding complete');
-    });
-
-    newSocket.on('connect', () => {
-      //console.log('Socket connected');
-      if (roomId) {
-        newSocket.emit('joinRoom', roomId);
-      }
-    });
-
-    newSocket.on('connect_error', (err) => {
-      console.error('Socket connection error:', err);
-    });
-
+    
+    // Just set the socket reference - we'll handle events separately
     setSocket(newSocket);
-
+    
     return () => {
       newSocket.disconnect();
     };
-  }, [serverUrl, roomId]); // Added roomId to dependencies
+  }, [serverUrl]);
 
   // Emit 'joinRoom' whenever socket or roomId changes
   useEffect(() => {
@@ -640,14 +607,15 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     const newRoomId = `room-${Date.now()}`;
     setRoomId(newRoomId);
     localStorage.setItem('roomId', newRoomId);
-    changeRoom(newRoomId); // Update socket connection
+    
+    // Use only one method to change rooms instead of multiple calls
+    changeRoom(newRoomId);
   
-    // Notify parent about the new roomId
+    // Notify parent about the new roomId if in iframe mode
     if (isFromSolidcamWeb) {
-      //console.log('Iframe: Sending ROOM_ID_UPDATE to parent with roomId:', newRoomId);
       window.parent.postMessage(
         { type: 'ROOM_ID_UPDATE', roomId: newRoomId },
-        '*' // Change to '*' for testing or to the actual parent origin
+        '*'
       );
     }
   
