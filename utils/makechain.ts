@@ -309,7 +309,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
       // Initialize streaming model based on AI provider preference using our new utility
       const streamingModel = createChatModel(aiProvider, {
         streaming: true,
-        verbose: false,
+        verbose: true,
         maxTokens: 4000,
         callbacks: [{
           handleLLMNewToken: (token: any) => {

@@ -64,7 +64,8 @@ export default async function handler(
       return res.status(200).json({
         allowAnalytics: true,
         storeHistory: true,
-        retentionPeriod: 'forever'
+        retentionPeriod: 'forever',
+        aiProvider: 'openai'  // Default AI provider
       });
     }
 
@@ -73,7 +74,8 @@ export default async function handler(
     return res.status(200).json({
       allowAnalytics: settings.allow_analytics,
       storeHistory: settings.store_history,
-      retentionPeriod: settings.retention_period
+      retentionPeriod: settings.retention_period,
+      aiProvider: settings.ai_provider
     });
   } catch (error) {
     console.error('Error fetching privacy settings:', error);
