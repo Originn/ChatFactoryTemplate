@@ -17,9 +17,18 @@ app.prepare().then(() => {
 
   console.error('Express server created.');
 
+  // Increase the timeout for Heroku
+  server.use((req, res, next) => {
+    // Set a longer timeout (70 seconds) for API requests
+    if (req.url.startsWith('/api/')) {
+      req.setTimeout(70000); // 70 seconds
+      res.setTimeout(70000); // 70 seconds
+    }
+    next();
+  });
+  
   server.use((req, res, next) => {
     const host = req.header("Host");
-    
     if (host === "solidcam.herokuapp.com") {
       console.error('Redirecting from Heroku domain to custom domain');
       return res.redirect(301, `https://www.solidcamchat.com${req.url}`);
