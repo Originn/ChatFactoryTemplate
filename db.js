@@ -270,6 +270,41 @@ const updateUserPrivacySettings = async (uid, email, allowAnalytics, storeHistor
   }
 };
 
+// Get the user's AI provider preference
+const getUserAIProvider = async (userEmail) => {
+  const query = `
+    SELECT ups.ai_provider 
+    FROM user_privacy_settings ups 
+    WHERE ups.email = $1;
+  `;
+
+  try {
+    const res = await pool.query(query, [userEmail]);
+    if (res.rows.length > 0) {
+      return res.rows[0].ai_provider || 'openai'; // Default to openai if null
+    }
+    return 'openai'; // Default to openai if no record found
+  } catch (err) {
+    console.error('Error fetching user AI provider:', err);
+    return 'openai'; // Default to openai on error
+  }
+};
+
+// Get the API key for the selected provider
+const getAPIKeyForProvider = async (provider, userEmail) => {
+  // For OpenAI, we use the default system-wide API key
+  if (provider === 'openai') {
+    return process.env.OPENAI_API_KEY;
+  }
+  
+  // For DeepSeek, use the system-wide API key
+  if (provider === 'deepseek') {
+    return process.env.DEEPSEEK_API_KEY;
+  }
+  
+  // Default fallback
+  return process.env.OPENAI_API_KEY;
+};
 
 
 module.exports = { 
@@ -284,4 +319,6 @@ module.exports = {
   getTitleByRoomId,
   getUserPrivacySettings,
   updateUserPrivacySettings,
+  getUserAIProvider,
+  getAPIKeyForProvider,
 };

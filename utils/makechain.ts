@@ -19,7 +19,8 @@ import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retr
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import OpenAIChat from "openai";
 import { getChatHistoryByRoomId } from '../db';
-
+import { createDeepSeekModel } from './deepseek-client';
+import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 const ENV = {
   MODEL_NAME: process.env.MODEL_NAME || 'gpt-4o',
   TEMPERATURE: parseFloat(process.env.TEMPERATURE || '0'),
@@ -196,8 +197,7 @@ function initializeChatHistory(roomId: any, userEmail: string) {
   // Directly call updateChatMemory with "Hi" as the initial input
   MemoryService.updateChatMemory(roomId, "Hi", null, null, userEmail);
 }
-
-export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void, userEmail: string) => {
+export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void, userEmail: string, aiProvider: string = 'openai') => {
   const nonStreamingModel = new ChatOpenAI({
     modelName: 'gpt-4o-mini',
     temperature: TEMPERATURE,
@@ -275,23 +275,47 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
 
       const qaId = generateUniqueId();
 
-      const streamingModel = new ChatOpenAI({
-        streaming: true,
-        modelName: MODEL_NAME,
-        verbose: false,
-        temperature: TEMPERATURE,
-        modelKwargs: { seed: 1 },
-        callbacks: [{
-          handleLLMNewToken: (token) => {
-            if (roomId) {
-              io.to(roomId).emit(`tokenStream-${roomId}`, token);
-            } else {
-              console.error('No roomId available for token stream');
-            }
-          },
-        }],
-      });
+      // Initialize streaming model based on AI provider preference
+      let streamingModel: BaseChatModel;
       
+      if (aiProvider === 'deepseek') {
+        // Use DeepSeek model
+        console.log(`Using DeepSeek for user: ${userEmail}`);
+        streamingModel = createDeepSeekModel({
+          apiKey: process.env.DEEPSEEK_API_KEY,
+          modelName: 'deepseek-reasoner',  // Using DeepSeek-R1 reasoning model
+          temperature: TEMPERATURE,
+          streaming: true,
+          callbacks: [{
+            handleLLMNewToken: (token:any) => {
+              if (roomId) {
+                io.to(roomId).emit(`tokenStream-${roomId}`, token);
+              } else {
+                console.error('No roomId available for token stream');
+              }
+            },
+          }],
+        });
+      } else {
+        // Default to OpenAI
+        console.log(`Using OpenAI for user: ${userEmail}`);
+        streamingModel = new ChatOpenAI({
+          streaming: true,
+          modelName: MODEL_NAME,
+          verbose: false,
+          temperature: TEMPERATURE,
+          modelKwargs: { seed: 1 },
+          callbacks: [{
+            handleLLMNewToken: (token) => {
+              if (roomId) {
+                io.to(roomId).emit(`tokenStream-${roomId}`, token);
+              } else {
+                console.error('No roomId available for token stream');
+              }
+            },
+          }],
+        });
+      }
       // Handle image processing
       let imageDescription = '';
       if (imageUrls && imageUrls.length > 0) {
