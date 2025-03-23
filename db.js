@@ -31,25 +31,26 @@ if (typeof window === 'undefined') {
 
 // Continue defining your functions below, with checks for `pool` availability
 
-const insertQA = async (question, answer, embeddings, sources, qaId, roomId, userEmail, imageurl, language) => {
+const insertQA = async (question, answer, embeddings, sources, qaId, roomId, userEmail, imageurl, language, modelType = 'openai') => {
   if (!pool) throw new Error("Database connection pool is not available on the client side.");
   
   const query = `
-    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, "qaId", "roomId", userEmail, imageurl, language)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, "qaId", "roomId", userEmail, imageurl, language, model_type)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     RETURNING *;
   `;
 
   try {
     const embeddingsJson = JSON.stringify(embeddings);
     const sourcesJson = JSON.stringify(sources);
-    const res = await pool.query(query, [question, answer, embeddingsJson, sourcesJson, qaId, roomId, userEmail, imageurl, language]);
+    const res = await pool.query(query, [question, answer, embeddingsJson, sourcesJson, qaId, roomId, userEmail, imageurl, language, modelType]);
     return res.rows[0]; // Return the inserted row
   } catch (err) {
     console.error('Error running query', err);
     throw err;
   }
 };
+
 
 // Assuming `pool` is your database connection pool
 const updateFeedback = async (qaId, thumb, comment, roomId) => {
