@@ -743,9 +743,6 @@ const handleAiProviderUpdate = async () => {
                     'Save AI Provider Setting'
                   )}
                 </button>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  Note: This setting will be applied to all new conversations. Existing conversations will continue using their original AI provider.
-                </p>
               </div>
             </div>
           </div>
