@@ -71,18 +71,42 @@ class MemoryService {
     qaId: string | null = null,
     conversationTitle: string = ''
   ): Promise<void> {
+    // Skip database operations on client side
+    if (typeof window !== 'undefined') {
+      // Just update in-memory state on client-side
+      const memory = this.getChatMemory(roomId);
+      
+      // Add user message to memory
+      if (input) {
+        const humanMessage = new HumanMessage(input);
+        if (imageUrl && imageUrl.length > 0) {
+          humanMessage.additional_kwargs = { imageUrls: imageUrl };
+        }
+        memory.messages.push(humanMessage);
+      }
+      
+      // Add AI message to memory
+      if (output) {
+        const aiMessage = new AIMessage(output);
+        aiMessage.additional_kwargs = {
+          qaId: qaId || undefined,
+          sourceDocs: sourceDocs || [],
+        };
+        memory.messages.push(aiMessage);
+      }
+      
+      return;
+    }
+    
+    // Server-side code continues below
     // GDPR CHECK: Skip storing history if user has disabled it
     if (userEmail) {
       try {
         // Get the current user's UID directly
         let uid = null;
         
-        // When running on the client side
-        if (typeof window !== 'undefined' && clientAuth.currentUser) {
-          uid = clientAuth.currentUser.uid;
-        } 
-        // When running on the server side
-        else if (typeof window === 'undefined' && admin) {
+        // We're already on server-side here (we checked window above)
+        if (admin) {
           try {
             const userRecord = await admin.auth().getUserByEmail(userEmail);
             uid = userRecord.uid;
@@ -90,7 +114,6 @@ class MemoryService {
             console.error('Error getting user from Firebase:', firebaseError);
           }
         }
-        
         if (uid) {
           // Get the user's privacy settings
           const privacySettings = await getUserPrivacySettings(uid);
@@ -160,7 +183,16 @@ class MemoryService {
   
   // Rest of the methods remain the same...
   static async getHasProcessedImage(roomId: string): Promise<boolean> {
-    // Retrieve chat history record from the database
+    // Skip database access on client side
+    if (typeof window !== 'undefined') {
+      // If we're on client-side, check in-memory data
+      if (this.chatMemory[roomId] && this.chatMemory[roomId].metadata && this.chatMemory[roomId].metadata.hasProcessedImage) {
+        return this.chatMemory[roomId].metadata.hasProcessedImage;
+      }
+      return false;
+    }
+    
+    // Server-side code proceeds with database access
     const chatHistoryRecord = await getChatHistoryByRoomId(roomId);
   
     // Check if any userMessage in conversation_json has non-empty imageUrls
@@ -175,8 +207,17 @@ class MemoryService {
   }
 
   static async getChatHistory(roomId: string): Promise<BaseMessage[]> {
+    // Skip database access on client side
+    if (typeof window !== 'undefined') {
+      // If we're on client-side, use in-memory data if available
+      if (this.chatMemory[roomId] && this.chatMemory[roomId].messages.length > 0) {
+        return this.chatMemory[roomId].messages;
+      }
+      return []; // Return empty array on client-side with no data
+    }
+    
+    // Server-side code proceeds with database access
     const chatHistoryRecord = await getChatHistoryByRoomId(roomId);
-  
     if (!chatHistoryRecord || !chatHistoryRecord.conversation_json) {
       return [];
     }

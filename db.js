@@ -32,8 +32,11 @@ if (typeof window === 'undefined') {
 // Continue defining your functions below, with checks for `pool` availability
 
 const insertQA = async (question, answer, embeddings, sources, qaId, roomId, userEmail, imageurl, language, modelType = 'openai') => {
-  if (!pool) throw new Error("Database connection pool is not available on the client side.");
-  
+  // Check if pool is available (server-side only)
+  if (!pool) {
+    console.warn("Database connection pool is not available on the client side.");
+    return null; // Return null to indicate no data available
+  }
   const query = `
     INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, "qaId", "roomId", userEmail, imageurl, language, model_type)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -54,6 +57,12 @@ const insertQA = async (question, answer, embeddings, sources, qaId, roomId, use
 
 // Assuming `pool` is your database connection pool
 const updateFeedback = async (qaId, thumb, comment, roomId) => {
+  // Check if pool is available (server-side only)
+  if (!pool) {
+    console.warn("Database connection pool is not available on the client side.");
+    return null; // Return null to indicate no data available
+  }
+  
   const query = `
     UPDATE QuestionsAndAnswers
     SET thumb = $2, comment = $3
@@ -76,6 +85,12 @@ const updateFeedback = async (qaId, thumb, comment, roomId) => {
 };
 
 const insertQuestionEmbedderDetails = async (embeddedText, timestamp, email) => {
+  // Check if pool is available (server-side only)
+  if (!pool) {
+    console.warn("Database connection pool is not available on the client side.");
+    return null; // Return null to indicate no data available
+  }
+  
   const query = `
     INSERT INTO "QuestionEmbedder" ("Embedded_text", "timestamp", "email")
     VALUES ($1, $2, $3)
@@ -92,7 +107,11 @@ const insertQuestionEmbedderDetails = async (embeddedText, timestamp, email) => 
 };
 
 const insertChatHistory = async (userEmail, conversationTitle, roomId, messages) => {
-
+  // Check if pool is available (server-side only)
+  if (!pool) {
+    console.warn("Database connection pool is not available on the client side.");
+    return null; // Return null to indicate no data available
+  }
   // Helper function to get all previous image URLs
   const getPreviousImageUrls = (messages) => {
     const imageUrls = new Set();
@@ -149,6 +168,12 @@ const insertChatHistory = async (userEmail, conversationTitle, roomId, messages)
 };
 
 const getChatHistory = async (userEmail, range) => {
+  // Check if pool is available (server-side only)
+  if (!pool) {
+    console.warn("Database connection pool is not available on the client side.");
+    return []; // Return empty array to indicate no data available
+  }
+  
   let dateCondition = '';
 
   if (range === 'today') {
@@ -179,6 +204,12 @@ const getChatHistory = async (userEmail, range) => {
 };
 
 const getChatHistoryByRoomId = async (roomId) => {
+  // Check if pool is available (server-side only)
+  if (!pool) {
+    console.warn("Database connection pool is not available on the client side.");
+    return null; // Return null to indicate no data available
+  }
+  
   const query = `
     SELECT conversation_json FROM user_chat_history 
     WHERE "roomId" = $1;
@@ -194,6 +225,12 @@ const getChatHistoryByRoomId = async (roomId) => {
 };
 
 const getTitleByRoomId = async (roomId) => {
+  // Check if pool is available (server-side only)
+  if (!pool) {
+    console.warn("Database connection pool is not available on the client side.");
+    return null; // Return null to indicate no data available
+  }
+  
   const query = `
     SELECT conversation_title FROM user_chat_history 
     WHERE "roomId" = $1;
@@ -209,6 +246,12 @@ const getTitleByRoomId = async (roomId) => {
 };
 
 const deleteOldChatHistory = async () => {
+  // Check if pool is available (server-side only)
+  if (!pool) {
+    console.warn("Database connection pool is not available on the client side.");
+    return 0; // Return 0 to indicate no rows deleted
+  }
+  
   const query = `
     DELETE FROM user_chat_history
     WHERE date < NOW() - INTERVAL '30 days'
@@ -225,6 +268,12 @@ const deleteOldChatHistory = async () => {
 };
 
 const getUserPrivacySettings = async (uid) => {
+  // Check if pool is available (server-side only)
+  if (!pool) {
+    console.warn("Database connection pool is not available on the client side.");
+    return null; // Return null to indicate no data available
+  }
+  
   const query = `
     SELECT * FROM user_privacy_settings 
     WHERE uid = $1;
@@ -241,6 +290,12 @@ const getUserPrivacySettings = async (uid) => {
 
 // Function to update user privacy settings
 const updateUserPrivacySettings = async (uid, email, allowAnalytics, storeHistory, retentionPeriod) => {
+  // Check if pool is available (server-side only)
+  if (!pool) {
+    console.warn("Database connection pool is not available on the client side.");
+    return null; // Return null to indicate no data available
+  }
+  
   const query = `
     INSERT INTO user_privacy_settings 
       (uid, email, allow_analytics, store_history, retention_period, updated_at)
@@ -273,6 +328,12 @@ const updateUserPrivacySettings = async (uid, email, allowAnalytics, storeHistor
 
 // Get the user's AI provider preference
 const getUserAIProvider = async (userEmail) => {
+  // Check if pool is available (server-side only)
+  if (!pool) {
+    console.warn("Database connection pool is not available on the client side.");
+    return 'openai'; // Default to openai when client-side
+  }
+  
   const query = `
     SELECT ups.ai_provider 
     FROM user_privacy_settings ups 
@@ -293,6 +354,11 @@ const getUserAIProvider = async (userEmail) => {
 
 // Get the API key for the selected provider
 const getAPIKeyForProvider = async (provider, userEmail) => {
+  // API keys should only be available on the server side
+  if (typeof window !== 'undefined') {
+    console.warn("API keys are only available on the server side.");
+    return null; // Return null on client-side
+  }
   // For OpenAI, we use the default system-wide API key
   if (provider === 'openai') {
     return process.env.OPENAI_API_KEY;
