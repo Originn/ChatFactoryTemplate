@@ -545,12 +545,29 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       });
   
       if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
+        if (response.status === 503) {
+          // This is likely a DeepSeek service unavailable error
+          console.error('Service temporarily unavailable (503). This could be a DeepSeek API issue.');
+          // Don't show error to the user, just log it
+          throw new Error('Service temporarily unavailable');
+        } else {
+          // For other errors, throw normally
+          throw new Error(`Server responded with status: ${response.status}`);
+        }
       }
   
     } catch (error) {
       console.error('Error in submit:', error);
-      setError('An error occurred while fetching the data. Please try again.');
+      
+      // Check if it's a DeepSeek 503 error (which we want to suppress)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMessage === 'Service temporarily unavailable') {
+        // Don't show the error to the user, just log it
+        console.log('Suppressing DeepSeek service unavailable error display');
+      } else {
+        // Display other errors normally
+        setError('An error occurred while fetching the data. Please try again.');
+      }
     } finally {
       setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
       setLoading(false);
