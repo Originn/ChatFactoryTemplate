@@ -10,29 +10,44 @@ import {
 } from '../db';
 import { Message } from '@/types/chat';
 import { auth as clientAuth } from '@/utils/firebase'; // For client-side access
+import path from 'path';
+import fs from 'fs';
 
 // Only import firebase-admin on the server side
 let admin: any = null;
+
 if (typeof window === 'undefined') {
-  // Dynamic import for server-side only
-  // This prevents the admin SDK from being included in client bundles
   admin = require('firebase-admin');
-  
-  // Initialize Firebase Admin if not already initialized and we're server-side
+  const fs = require('fs');
+  const path = require('path');
+
   if (!admin.apps.length) {
     try {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-      });
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        // ✅ Production / encoded credentials method
+        admin.initializeApp({
+          credential: admin.credential.applicationDefault(),
+        });
+      } else {
+        // ✅ Local fallback: load from JSON file (development only)
+        const localPath = path.join(process.cwd(), 'solidcamchat-firebase-adminsdk-6c5fy-fcfed248c9.json');
+
+        if (fs.existsSync(localPath)) {
+          const serviceAccount = JSON.parse(fs.readFileSync(localPath, 'utf-8'));
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+          });
+        } else {
+          console.warn('⚠️ Firebase Admin: No credentials found');
+        }
+      }
+
     } catch (error) {
-      console.error('Firebase admin initialization error', error);
+      console.error('❌ Firebase Admin initialization failed', error);
     }
   }
 }
+
 
 class MemoryService {
   private static chatMemory: Record<string, BufferMemory> = {};
@@ -82,7 +97,6 @@ class MemoryService {
           
           // If storeHistory is explicitly set to false, don't save anything
           if (privacySettings && privacySettings.store_history === false) {
-            console.log(`Chat history storage disabled for user ${userEmail}. Message not saved.`);
             return;
           }
         }
