@@ -6,7 +6,7 @@ import { MyDocument } from 'interfaces/Document';
 import { BaseRetriever } from "@langchain/core/retrievers";
 import { getIO } from "@/socketServer.cjs";
 import { v4 as uuidv4 } from 'uuid';
-import { insertQA } from '../db';
+import { insertQA, getChatHistoryByRoomId } from '../db';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { MaxMarginalRelevanceSearchOptions } from "@langchain/core/vectorstores";
@@ -18,10 +18,11 @@ import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retriever";
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import OpenAIChat from "openai";
-import { getChatHistoryByRoomId } from '../db';
 import { createChatModel } from './modelProviders';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { getRelevantHistory } from './contextManager';
+
+// Environment configuration
 const ENV = {
   MODEL_NAME: process.env.MODEL_NAME || 'gpt-4o',
   TEMPERATURE: parseFloat(process.env.TEMPERATURE || '0'),
@@ -30,7 +31,12 @@ const ENV = {
   IMAGE_MODEL_NAME: process.env.IMAGE_MODEL_NAME || 'gpt-4o-mini',
 };
 
+// Initialize shared resources
+const io = getIO();
 const openai = new OpenAIChat();
+
+// Cache for language detection results
+const languageCache = new Map<string, string>();
 
 // Type Definitions
 type SearchResult = [MyDocument, number];
@@ -40,11 +46,7 @@ interface DocumentInterface<T> {
   metadata: T;
 }
 
-// Constants
-const io = getIO();
-const MODEL_NAME = ENV.MODEL_NAME;
-const TEMPERATURE = ENV.TEMPERATURE;
-
+// Prompt Templates
 const contextualizeQSystemPrompt = `
 Given the conversation history and a follow-up question, rephrase the follow-up question to be a standalone question focused on SolidCAM-specific content. 
 
@@ -57,7 +59,6 @@ Replace any abbreviations with their full names:
 - HSR - High Speed Roughing
 - gpp - general post processor
 `;
-
 
 const qaSystemPrompt = 
   "You are a multilingual, helpful, and friendly assistant that can receive images but not files, " +
@@ -79,6 +80,7 @@ const qaSystemPrompt =
   "- You MUST NOT modify the image URLs in any way - use them exactly as provided\n" +
   "- You MUST include ALL image URLs that appear in the CONTEXT\n" +
   "- Do not reference 'the image' or 'as shown in the image' in your response; just incorporate the information from the image description directly into your answer.\n" +
+  "- When questions involve API, VBS scripts, or automation, prioritize including code examples in your response if they exist in the CONTEXT.\n" +
   "- If the user's question is valid and there is no documentation or CONTEXT about it, let them know that they can leave a comment, " +
   "and we will do our best to include it at a later stage.\n" +
   "- If a user asks for a competitor's advantage over SolidCAM, reply in a humorous way that SolidCAM is the best CAM, " +
@@ -97,40 +99,66 @@ Text: {text}`;
 const LANGUAGE_DETECTION_PROMPT = `Detect the language of the following text and respond with the language name only, nothing else. If the language cannot be detected, respond with "English".:
 Text: "{text}"`;
 
-// Utility Functions
-async function detectLanguageWithOpenAI(text: string, nonStreamingModel: ChatOpenAI): Promise<string> {
-  const prompt = LANGUAGE_DETECTION_PROMPT.replace('{text}', text);
-  const message = {
-    role: "user",
-    content: prompt
-  };
-  const response = await nonStreamingModel.generate([[message]]);
+// Helper Functions
+function isApiRelatedQuery(query: string): boolean {
+  return /\b(api|vbs|script|automation|calculate|automate|programming|code|operation|function)\b/i.test(query);
+}
 
-  if (response.generations.length > 0 && response.generations[0].length > 0) {
-    const firstGeneration = response.generations[0][0];
-    return firstGeneration.text.trim();
+async function detectLanguageWithOpenAI(text: string, model: ChatOpenAI): Promise<string> {
+  // Check cache first
+  const cacheKey = text.substring(0, 100); // Use first 100 chars as key
+  if (languageCache.has(cacheKey)) {
+    return languageCache.get(cacheKey) || 'English';
+  }
+
+  try {
+    const prompt = LANGUAGE_DETECTION_PROMPT.replace('{text}', text);
+    const message = { role: "user", content: prompt };
+    const response = await model.generate([[message]]);
+
+    if (response.generations.length > 0 && response.generations[0].length > 0) {
+      const language = response.generations[0][0].text.trim();
+      // Cache the result
+      languageCache.set(cacheKey, language);
+      return language;
+    }
+  } catch (error) {
+    console.error("Error detecting language:", error);
   }
 
   return 'English';
 }
 
+async function translateToEnglish(text: string, model: ChatOpenAI): Promise<string> {
+  try {
+    const prompt = TRANSLATION_PROMPT.replace('{text}', text);
+    const message = { role: "user", content: prompt };
+    const response = await model.generate([[message]]);
+
+    if (response.generations.length > 0 && response.generations[0].length > 0) {
+      return response.generations[0][0].text.trim();
+    }
+  } catch (error) {
+    console.error("Error translating text:", error);
+  }
+
+  return text; // Return original text if translation fails
+}
+
 function preprocessChatHistoryForDeepSeek(history: (HumanMessage | AIMessage)[]) {
   if (history.length <= 1) return history;
   
-  // Ensure alternating pattern: if two messages of same type are adjacent, keep only the latest one
   const processedHistory: (HumanMessage | AIMessage)[] = [];
   
   for (let i = 0; i < history.length; i++) {
     const currentMessage = history[i];
     const lastProcessedMessage = processedHistory[processedHistory.length - 1];
     
-    // If first message or different type from last processed message, add it
     if (!lastProcessedMessage || 
         (currentMessage instanceof HumanMessage && lastProcessedMessage instanceof AIMessage) ||
         (currentMessage instanceof AIMessage && lastProcessedMessage instanceof HumanMessage)) {
       processedHistory.push(currentMessage);
     } else {
-      // Same type as previous, replace the last message
       processedHistory[processedHistory.length - 1] = currentMessage;
     }
   }
@@ -138,57 +166,294 @@ function preprocessChatHistoryForDeepSeek(history: (HumanMessage | AIMessage)[])
   return processedHistory;
 }
 
-async function filteredSimilaritySearch(vectorStore: any, queryVector: number[], type: string, limit: number, minScore: number): Promise<SearchResult[]> {
+function generateUniqueId(): string {
+  return uuidv4();
+}
+
+async function isNewChatSession(roomId: string): Promise<boolean> {
+  const chatHistory = await MemoryService.getChatHistory(roomId);
+  return chatHistory.length === 0;
+}
+
+async function initializeChatHistory(roomId: string, userEmail: string) {
+  await MemoryService.updateChatMemory(roomId, "Hi", null, null, userEmail);
+}
+
+/**
+ * Process an image with OpenAI's vision model and return a description
+ */
+async function processImageWithOpenAI(
+  imageUrls: string[],
+  query: string,
+  modelName: string = ENV.IMAGE_MODEL_NAME
+): Promise<string> {
+  if (!imageUrls || imageUrls.length === 0) {
+    return '';
+  }
+
   try {
-    const results: SearchResult[] = await vectorStore.similaritySearchVectorWithScore(queryVector, limit, { type: type });
-    const filteredResults = results.filter(([document, score]: SearchResult) => score >= minScore);
-    return filteredResults;
+    const response = await openai.chat.completions.create({
+      model: modelName,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { 
+              type: "text", 
+              text: `Given the following question and images, provide necessary and concise data about the images to help answer the question.
+              Do not try to answer the question itself. This will be passed to another model which needs the data about the images. 
+              If the user asks about how to machine a part in the images, give specific details of the geometry of the part. 
+              If there are 2 images, check if they are the same part but viewed from different angles.`
+            },
+          ],
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: `Question: ${query}` },
+            ...imageUrls.map(url => ({
+              type: "image_url",
+              image_url: { url }
+            } as const))
+          ],
+        },
+      ],
+    });
+
+    return response.choices[0]?.message?.content ?? 'No image description available';
   } catch (error) {
-    console.error("Error in filteredSimilaritySearch:", error);
+    console.error('Error processing images:', error);
+    return 'Error processing image';
+  }
+}
+
+/**
+ * Determine if a follow-up question is related to previously shown images
+ */
+async function isQuestionRelatedToImage(
+  followUpQuestion: string,
+  chatHistory: (HumanMessage | AIMessage)[],
+  model: ChatOpenAI,
+  imageDescription: string,
+): Promise<boolean> {
+  const formattedHistory = chatHistory
+    .map((message) => {
+      const speaker = message instanceof HumanMessage ? 'User' : 'AI';
+      const content = message.content || 'No message content';
+      return `${speaker}: ${content}`;
+    })
+    .join('\n');
+
+  const descriptionPart = imageDescription
+    ? `Relevant Image Description:\n${imageDescription}\n`
+    : '';
+
+  const prompt = `
+  You are analyzing a conversation to determine whether a follow-up question is related to an image previously discussed in the conversation.
+  
+  Here is the chat history:
+  ${formattedHistory}
+  
+  ${descriptionPart}
+  
+  Here is the follow-up question:
+  "${followUpQuestion}"
+  
+  Determine if the follow-up question may be related to the image previously described in the conversation and if there is a need to have another look at the image to answer the question or you can use previous AI answers to answer the question. Answer "Yes" if you must see the image again and "No" if you don't. Provide no additional commentary.`;
+
+  try {
+    const response = await model.generate([[{role: "user", content: prompt}]]);
+    const answer = response.generations[0][0]?.text.trim().toLowerCase();
+    return answer === 'yes';
+  } catch (error) {
+    console.error("Error determining if question is related to image:", error);
+    return false;
+  }
+}
+
+/**
+ * Extract image URLs from chat history
+ */
+async function getImageUrlsFromHistory(roomId: string): Promise<string[]> {
+  try {
+    // Retrieve the full chat history for the given room
+    const memory = await MemoryService.getChatHistory(roomId);
+  
+    // Extract image URLs from the entire chat history
+    const extractedImageUrls: string[] = [];
+    for (const message of memory) {
+      if (message?.additional_kwargs?.imageUrls) {
+        const urls = Array.isArray(message.additional_kwargs.imageUrls)
+          ? message.additional_kwargs.imageUrls
+          : [message.additional_kwargs.imageUrls];
+        extractedImageUrls.push(...urls);
+      }
+    }
+  
+    // Return all unique image URLs
+    return Array.from(new Set(extractedImageUrls));
+  } catch (error) {
+    console.error("Error extracting image URLs from history:", error);
     return [];
   }
 }
 
-async function translateToEnglish(text: string, translationModel: ChatOpenAI): Promise<string> {
-  const prompt = TRANSLATION_PROMPT.replace('{text}', text);
-  const message = {
-    role: "user",
-    content: prompt
-  };
-
-  const response = await translationModel.generate([[message]]);
-
-  if (response.generations.length > 0 && response.generations[0].length > 0) {
-    const firstGeneration = response.generations[0][0];
-    return firstGeneration.text.trim();
+/**
+ * Generate a title for a new conversation
+ */
+async function generateConversationTitle(
+  input: string, 
+  answer: string, 
+  model: ChatOpenAI
+): Promise<string> {
+  try {
+    const titleResponse = await model.generate([[{
+      role: "user",
+      content: `Given this conversation:
+      Human: ${input}
+      AI: ${answer}
+    
+      Generate a short, descriptive title for this conversation (max 50 characters) in the used language.`
+    }]]);
+    
+    return titleResponse.generations[0][0].text.trim();
+  } catch (error) {
+    console.error("Error generating conversation title:", error);
+    return "New Conversation";
   }
-
-  return 'Translation not available.';
 }
 
-// Custom Retriever Class
+/**
+ * Update the conversation history and title
+ */
+async function updateConversationMemory(
+  roomId: string,
+  originalInput: string,
+  answer: string,
+  imageUrls: string[] | null,
+  userEmail: string,
+  documents: MyDocument[],
+  qaId: string,
+  existingTitle?: string
+): Promise<void> {
+  try {
+    let conversationTitle = existingTitle || '';
+    
+    if (!conversationTitle) {
+      // Get existing history to check if we need a new title
+      let existingHistory;
+      try {
+        existingHistory = await getChatHistoryByRoomId(roomId);
+      } catch (error) {
+        console.error('Error fetching chat history:', error);
+      }
+      
+      // Check if history exists and contains more than just the initial "Hi" message
+      const shouldGenerateNewTitle = !existingHistory || 
+        (existingHistory.conversation_json.length === 1 && 
+         existingHistory.conversation_json[0].type === 'userMessage' && 
+         existingHistory.conversation_json[0].message === 'Hi');
+      
+      if (shouldGenerateNewTitle) {
+        // Create a shared model instance for title generation - could be optimized further
+        const titleModel = new ChatOpenAI({
+          modelName: 'gpt-4o-mini',
+          temperature: ENV.TEMPERATURE,
+        });
+        conversationTitle = await generateConversationTitle(originalInput, answer, titleModel);
+      } else {
+        conversationTitle = existingHistory.conversation_title;
+      }
+    }
+    
+    // Update memory with conversation
+    await MemoryService.updateChatMemory(
+      roomId,
+      originalInput,
+      answer,
+      imageUrls,
+      userEmail,
+      documents,
+      qaId,
+      conversationTitle
+    );
+  } catch (error) {
+    console.error('Error updating conversation memory:', error);
+  }
+}
+
+// Custom Retriever Class with enhanced efficiency
 class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Record<string, any>> {
   lc_namespace = [];
-
-  constructor(private vectorStore: PineconeStore) {
+  private embedder: OpenAIEmbeddings;
+  
+  constructor(
+    private vectorStore: PineconeStore,
+    embeddingsModelName: string = "text-embedding-3-small"
+  ) {
     super();
+    // Initialize embedder once for reuse
+    this.embedder = new OpenAIEmbeddings({ 
+      modelName: embeddingsModelName, 
+      dimensions: 1536 
+    });
   }
 
   async getRelevantDocuments(query: string, options?: Partial<RunnableConfig>): Promise<DocumentInterface<Record<string, any>>[]> {
+    // Check if this is an API-related query
+    const isApiQuery = isApiRelatedQuery(query);
+    
+    // Get standard MMR results first
     const { k, fetchK, lambda } = this.getMMRSettings();
-
     const mmrOptions: MaxMarginalRelevanceSearchOptions<any> = {
       k: k,
       fetchK: fetchK,
       lambda: lambda,
     };
-
-    const results = await this.vectorStore.maxMarginalRelevanceSearch(query, mmrOptions);
     
-    return results.map(doc => new MyDocument({
-      ...doc,
-      metadata: { ...doc.metadata }
-    }));
+    // For API queries, modify the MMR options to get more results
+    if (isApiQuery) {
+      mmrOptions.fetchK = Math.max(mmrOptions.fetchK ?? 0, 20);
+    }
+    
+    try {
+      const mmrResults = await this.vectorStore.maxMarginalRelevanceSearch(query, mmrOptions);
+      
+      // For API queries, also get VBS files with lower threshold
+      if (isApiQuery) {
+        try {
+          const queryEmbedding = await this.embedder.embedQuery(query);
+          
+          // Get VBS files with lower threshold (0.3)
+          const vbsFilter = { type: 'vbs' };
+          const vbsResults = await this.vectorStore.similaritySearchVectorWithScore(queryEmbedding, 5, vbsFilter);
+          
+          // If we found any VBS files
+          if (vbsResults && vbsResults.length > 0) {
+            
+            // Create MyDocument objects for VBS files
+            const vbsDocs = vbsResults
+              .filter(([_, score]) => score >= 0.3) // Only keep those above threshold
+              .map(([doc, _]) => new MyDocument({
+                pageContent: typeof doc === 'object' && doc !== null ? doc.pageContent : '',
+                metadata: typeof doc === 'object' && doc !== null ? { ...doc.metadata } : {}
+              }));
+            
+            // Return VBS docs first, then MMR results to prioritize them
+            if (vbsDocs.length > 0) {
+              return [...vbsDocs, ...mmrResults];
+            }
+          }
+        } catch (error) {
+          console.error("Error getting VBS files:", error);
+        }
+      }
+      
+      return mmrResults;
+    } catch (error) {
+      console.error("Error in getRelevantDocuments:", error);
+      return [];
+    }
   }
 
   async invoke(input: string, options?: Partial<RunnableConfig>): Promise<DocumentInterface<Record<string, any>>[]> {
@@ -208,34 +473,70 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     return isNaN(value) ? defaultValue : value;
   }
 
+  async filteredSimilaritySearch(
+    queryVector: number[], 
+    type: string, 
+    limit: number, 
+    minScore: number
+  ): Promise<SearchResult[]> {
+    try {
+      const results: SearchResult[] = await this.vectorStore.similaritySearchVectorWithScore(
+        queryVector, 
+        limit, 
+        { type: type }
+      );
+      return results.filter(([_, score]: SearchResult) => score >= minScore);
+    } catch (error) {
+      console.error(`Error in filteredSimilaritySearch for type ${type}:`, error);
+      return [];
+    }
+  }
+
   async storeEmbeddings(query: string, minScoreSourcesThreshold: number) {
-    const embedder = new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 });
-    const embeddingsResponse = await embedder.embedQuery(query);
+    try {
+      const queryEmbedding = await this.embedder.embedQuery(query);
+      
+      // If query is API-related, include VBS files in the search
+      const isApiQuery = isApiRelatedQuery(query);
+      
+      // Use Promise.all to run searches in parallel
+      const [pdfResults, webinarResults, sentinelResults, vimeoResults, vbsResults] = await Promise.all([
+        this.filteredSimilaritySearch(queryEmbedding, 'pdf', 2, minScoreSourcesThreshold),
+        this.filteredSimilaritySearch(queryEmbedding, 'youtube', 2, minScoreSourcesThreshold),
+        this.filteredSimilaritySearch(queryEmbedding, 'sentinel', 2, minScoreSourcesThreshold),
+        this.filteredSimilaritySearch(queryEmbedding, 'vimeo', 2, minScoreSourcesThreshold),
+        // Only fetch VBS files for API-related queries
+        isApiQuery ? this.filteredSimilaritySearch(queryEmbedding, 'vbs', 5, 0.3) : Promise.resolve([])
+      ]);
     
-    const [pdfResults, webinarResults, sentinelResults, vimeoResults] = await Promise.all([
-      filteredSimilaritySearch(this.vectorStore, embeddingsResponse, 'pdf', 2, minScoreSourcesThreshold),
-      filteredSimilaritySearch(this.vectorStore, embeddingsResponse, 'youtube', 2, minScoreSourcesThreshold),
-      filteredSimilaritySearch(this.vectorStore, embeddingsResponse, 'sentinel', 2, minScoreSourcesThreshold),
-      filteredSimilaritySearch(this.vectorStore, embeddingsResponse, 'vimeo', 2, minScoreSourcesThreshold)
-    ]);
-  
-    const combinedResults = [...pdfResults, ...webinarResults, ...sentinelResults, ...vimeoResults];
-    return combinedResults.sort((a, b) => b[1] - a[1]);
+      const combinedResults = [...pdfResults, ...webinarResults, ...sentinelResults, ...vimeoResults];
+      
+      // If it's an API query, boost VBS scores and add them to results
+      if (isApiQuery && vbsResults.length > 0) {
+        const boostedVbsResults = vbsResults.map(([doc, score]) => {
+          const boostedScore = Math.min(score * 1.4, 0.98); // Boost by 40%, cap at 0.98
+          return [doc, boostedScore] as [any, number];
+        });
+        combinedResults.push(...boostedVbsResults);
+      }
+      
+      return combinedResults.sort((a, b) => b[1] - a[1]);
+    } catch (error) {
+      console.error("Error in storeEmbeddings:", error);
+      return [];
+    }
   }
 }
 
-function initializeChatHistory(roomId: any, userEmail: string) {
-  // Directly call updateChatMemory with "Hi" as the initial input
-  MemoryService.updateChatMemory(roomId, "Hi", null, null, userEmail);
-}
-export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: string) => void, userEmail: string, aiProvider: string = 'openai') => {
-  const nonStreamingModel = new ChatOpenAI({
-    modelName: 'gpt-4o-mini',
-    temperature: ENV.TEMPERATURE,
-    verbose: false,
-  });
-
-  const isImageRelatedModel = new ChatOpenAI({
+// Main function to make the chain
+export const makeChain = (
+  vectorstore: PineconeStore, 
+  onTokenStream: (token: string) => void, 
+  userEmail: string, 
+  aiProvider: string = 'openai'
+) => {
+  // Create shared model instances
+  const sharedModel = new ChatOpenAI({
     modelName: 'gpt-4o-mini',
     temperature: ENV.TEMPERATURE,
     verbose: false,
@@ -246,15 +547,7 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     temperature: ENV.TEMPERATURE,
   });
 
-  function generateUniqueId(): string {
-    return uuidv4();
-  }
-
-  async function isNewChatSession(roomId: any): Promise<boolean> {
-    const chatHistory = await MemoryService.getChatHistory(roomId);
-    return chatHistory.length === 0;
-  }
-
+  // Initialize prompt templates
   const contextualizeQPrompt = ChatPromptTemplate.fromMessages([
     ["system", contextualizeQSystemPrompt],
     new MessagesPlaceholder("chat_history"),
@@ -267,46 +560,26 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
     ["human", "{input}"],
   ]);
 
-  // Retrieve and process image URLs
-  // const getImageUrls = async (imageUrls: string[] | undefined, roomId: string): Promise<string[]> => {
-  //   if (imageUrls && imageUrls.length > 0) {
-  //     return imageUrls;
-  //   }
-  // };
-
-  const getImageUrlsinHistory = async (imageUrls: string[] | undefined, roomId: string): Promise<string[]> => {
-    // If imageUrls are provided, return them immediately
-    if (imageUrls && imageUrls.length > 0) {
-      return imageUrls;
-    }
-  
-    // Retrieve the full chat history for the given room
-    const memory = await MemoryService.getChatHistory(roomId);
-  
-    // Extract image URLs from the entire chat history
-    const extractedImageUrls: string[] = [];
-    for (const message of memory) {
-      if (message?.additional_kwargs?.imageUrls) {
-        const urls = Array.isArray(message.additional_kwargs.imageUrls)
-          ? message.additional_kwargs.imageUrls
-          : [message.additional_kwargs.imageUrls];
-        extractedImageUrls.push(...urls);
-      }
-    }
-  
-    // Return all unique image URLs
-    return Array.from(new Set(extractedImageUrls));
-  };
+  // Initialize custom retriever with the vectorstore
+  const customRetriever = new CustomRetriever(vectorstore);
 
   return {
-    call: async (input: string, Documents: MyDocument[], roomId: string, userEmail: string, imageUrls: string[]) => {
+    call: async (
+      input: string, 
+      Documents: MyDocument[], 
+      roomId: string, 
+      userEmail: string, 
+      imageUrls: string[]
+    ) => {
+      // Check if this is a new chat session
       if (await isNewChatSession(roomId)) {
-        initializeChatHistory(roomId, userEmail);
+        await initializeChatHistory(roomId, userEmail);
       }
 
+      // Generate a unique ID for this Q&A
       const qaId = generateUniqueId();
 
-      // Initialize streaming model based on AI provider preference using our new utility
+      // Initialize streaming model based on AI provider preference
       const streamingModel = createChatModel(aiProvider, {
         streaming: true,
         verbose: false,
@@ -321,248 +594,148 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
           },
         }],
       });
-      // Handle image processing
+
+      // Process images if provided
       let imageDescription = '';
       if (imageUrls && imageUrls.length > 0) {
-        try {
-          type ChatModel = 'gpt-4o' | 'gpt-4o-mini';
-          const IMAGE_MODEL_NAME: ChatModel = (ENV.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
-          
-          const response = await openai.chat.completions.create({
-            model: IMAGE_MODEL_NAME,
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { 
-                    type: "text", 
-                    text: `Given the following question and images, provide necessary and concise data about the images to help answer the question.
-                    Do not try to answer the question itself. This will be passed to another model which needs the data about the images. 
-                    If the user asks about how to machine a part in the images, give specific details of the geometry of the part. 
-                    If there are 2 images, check if they are the same part but viewed from different angles.`
-                  },
-                ],
-              },
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: `Question: ${input}` },
-                  ...imageUrls.map(url => ({
-                    type: "image_url",
-                    image_url: { url }
-                  } as const))
-                ],
-              },
-            ],
-          });
-      
-          imageDescription = response.choices[0]?.message?.content ?? 'No image description available';
-        } catch (error) {
-          console.error('Error processing images:', error);
-          imageDescription = imageDescription = 'Error processing image';
-        }
+        imageDescription = await processImageWithOpenAI(imageUrls, input);
       }
 
-      // Handle language detection and translation
-      const language = await detectLanguageWithOpenAI(input, nonStreamingModel);
+      // Detect language and translate if necessary
+      const language = await detectLanguageWithOpenAI(input, sharedModel);
       const originalInput = input;
 
       if (language !== 'English') {
         input = await translateToEnglish(input, translationModel);
       }
 
+      // Add image description to input if available
       if (imageDescription) {
         input = `${input} [Image model answer: ${imageDescription}]`;
       }
 
-      async function isQuestionRelatedToImage(
-        followUpQuestion: string,
-        chatHistory: (HumanMessage | AIMessage)[],
-        model: ChatOpenAI,
-        imageDescription: string,
-      ): Promise<boolean> {
-        const formattedHistory = chatHistory
-          .map((message) => {
-            const speaker = message instanceof HumanMessage ? 'User' : 'AI';
-            const content = message.content || 'No message content';
-            return `${speaker}: ${content}`;
-          })
-          .join('\n');
-      
-        const descriptionPart = imageDescription
-          ? `Relevant Image Description:\n${imageDescription}\n`
-          : '';
-      
-        const prompt = `
-      You are analyzing a conversation to determine whether a follow-up question is related to an image previously discussed in the conversation.
-      
-      Here is the chat history:
-      ${formattedHistory}
-      
-      ${descriptionPart}
-      
-      Here is the follow-up question:
-      "${followUpQuestion}"
-      
-      Determine if the follow-up question may be related to the image previously described in the conversation and if there is a need to have another look at the image to answer the question or you can use previous AI answers to answer the question. Answer "Yes" if you must see the image again and "No" if you don't. Provide no additional commentary.`;
-      
-      const response = await model.generate([[{role: "user", content: prompt}]]);
-      
-        const answer = response.generations[0][0]?.text.trim().toLowerCase();
-        return answer === 'yes';
-      }
-      
-      // Get chat history and format it
+      // Get chat history
       const rawChatHistory = await MemoryService.getChatHistory(roomId);
 
-      let hasImage = await getImageUrlsinHistory(imageUrls, roomId);
-      
-
-      // Only check history for images if current question has no images
-      if (imageUrls.length === 0 && hasImage.length > 0) {
+      // Check for images in history if current input doesn't have images
+      if (imageUrls.length === 0) {
+        const historyImageUrls = await getImageUrlsFromHistory(roomId);
         
-        const relatedToImage = await isQuestionRelatedToImage(input, rawChatHistory, isImageRelatedModel, imageDescription);
-      
-        if (relatedToImage) {
-      
-          try {
-            type ChatModel = 'gpt-4o' | 'gpt-4o-mini';
-            const IMAGE_MODEL_NAME: ChatModel = (ENV.IMAGE_MODEL_NAME as ChatModel) || 'gpt-4o-mini';
-      
-            const response = await openai.chat.completions.create({
-              model: IMAGE_MODEL_NAME,
-              messages: [
-                {
-                  role: "user",
-                  content: [
-                    {
-                      type: "text",
-                      text: `Given the following question and images, provide necessary and concise data about the images to help answer the question.
-                      Do not try to answer the question itself. This will be passed to another model which needs the data about the images. 
-                      If the user asks about how to machine a part in the images, give specific details of the geometry of the part. 
-                      If there are 2 images, check if they are the same part but viewed from different angles.`
-                    },
-                  ],
-                },
-                {
-                  role: "user",
-                  content: [
-                    { type: "text", text: `Question: ${input}` },
-                    ...hasImage.map(url => ({
-                      type: "image_url",
-                      image_url: { url }
-                    } as const))
-                  ],
-                },
-              ],
-            });
-      
-            imageDescription = response.choices[0]?.message?.content ?? 'No image description available';
-          } catch (error) {
-            console.error('Error processing images from history:', error);
-            imageDescription = 'Error processing image';
+        if (historyImageUrls.length > 0) {
+          const relatedToImage = await isQuestionRelatedToImage(
+            input, 
+            rawChatHistory, 
+            sharedModel, 
+            imageDescription
+          );
+          
+          if (relatedToImage) {
+            const historicalImageDescription = await processImageWithOpenAI(
+              historyImageUrls, 
+              input
+            );
+            
+            if (historicalImageDescription) {
+              input = `${input} [Image model answer: ${historicalImageDescription}]`;
+              imageDescription = historicalImageDescription;
+            }
           }
-      
-          // Add the image model answer to the input
-          if (imageDescription) {
-            input = `${input} [Image model answer: ${imageDescription}]`;
-          }
-        } else {
         }
-
-      } else {
       }
 
-      const customRetriever = new CustomRetriever(vectorstore);
-
+      // Process chat history based on AI provider
       let processedChatHistory = rawChatHistory;
-        if (aiProvider === 'deepseek') {
-          processedChatHistory = preprocessChatHistoryForDeepSeek(rawChatHistory);
-        }
+      if (aiProvider === 'deepseek') {
+        processedChatHistory = preprocessChatHistoryForDeepSeek(rawChatHistory);
+      }
 
+      // Log if this is an API-related query
+      const isApiQuery = isApiRelatedQuery(input);
 
-
+      // Create history-aware retriever
       const historyAwareRetriever = await createHistoryAwareRetriever({
-        llm: nonStreamingModel as any,
+        llm: sharedModel as any,
         retriever: customRetriever as any,
         rephrasePrompt: contextualizeQPrompt as any,
       });
 
+      // Create QA chain
       const questionAnswerChain = await createStuffDocumentsChain({
         llm: streamingModel as any,
         prompt: qaPrompt as any,
       });
 
+      // Create RAG chain
       const ragChain = await createRetrievalChain({
         retriever: historyAwareRetriever,
         combineDocsChain: questionAnswerChain,
       });
-      // Get optimized relevant history instead of using full history
+
+      // Get optimized relevant history
       const relevantHistory = await getRelevantHistory(rawChatHistory, input, {
-        maxTurns: 3, // Use only last 3 conversation turns by default
-        useSemanticSearch: false, // Simple approach is efficient and works well enough
-        recencyWeight: 0.7 // Prioritize recent exchanges
+        maxTurns: 3,
+        useSemanticSearch: false,
+        recencyWeight: 0.7
       });
 
-      console.log(`Using ${relevantHistory.length} messages out of ${rawChatHistory.length} total history items for context`);
-
+      // Invoke RAG chain to get answer
       const ragResponse = await ragChain.invoke({
         input,
-        chat_history: relevantHistory as any, // Use optimized history instead of full history
+        chat_history: relevantHistory as any,
         language,
         imageDescription,
       });
 
+      // Set threshold for document relevance
       let minScoreSourcesThreshold = ENV.MINSCORESOURCESTHRESHOLD !== undefined ? 
         ENV.MINSCORESOURCESTHRESHOLD : 0.78;
-      let embeddingsStore;
-
+      
+      // For non-English queries, use a lower threshold
       if (language !== 'English') {
         minScoreSourcesThreshold = 0.45;
-        embeddingsStore = await customRetriever.storeEmbeddings(input, minScoreSourcesThreshold);
-
-        for (const [doc, score] of embeddingsStore) {
-          if (doc.metadata.type !== "txt" && doc.metadata.type !== "user_input") {
-            const myDoc = new MyDocument({
-              pageContent: doc.pageContent,
-              metadata: {
-                source: doc.metadata.source,
-                type: doc.metadata.type,
-                videoLink: doc.metadata.videoLink,
-                file: doc.metadata.file,
-                score: score,
-                image: doc.metadata.image,
-              },
-            });
-
-            Documents.push(myDoc);
-          }
-        }
-        Documents.sort((a, b) => (b.metadata.score ? 1 : 0) - (a.metadata.score ? 1 : 0));
       }
 
-      if (language === 'English') {
-        embeddingsStore = await customRetriever.storeEmbeddings(ragResponse.answer, minScoreSourcesThreshold);
-        for (const [doc, score] of embeddingsStore) {
-          const myDoc = new MyDocument({
-            pageContent: doc.pageContent,
-            metadata: {
-              source: doc.metadata.source,
-              type: doc.metadata.type,
-              videoLink: doc.metadata.videoLink,
-              file: doc.metadata.file,
-              score: score,
-              image: doc.metadata.image,
-            },
-          });
+      // Get relevant documents based on embeddings
+      const embeddingsStore = await customRetriever.storeEmbeddings(
+        language === 'English' ? ragResponse.answer : input,
+        minScoreSourcesThreshold
+      );
 
-          Documents.push(myDoc);
+      // Process and add documents to the result
+      for (const [doc, score] of embeddingsStore) {
+        // Skip certain types for English queries
+        if (language === 'English' && (doc.metadata.type === 'other' || doc.metadata.type === 'vbs')) {
+          continue;
+        }
+        
+        // Skip txt and user_input types for non-English queries
+        if (language !== 'English' && (doc.metadata.type === 'txt' || doc.metadata.type === 'user_input')) {
+          continue;
         }
 
-        // Apply filtering after combining sources
-        Documents = Documents.filter(doc => doc.metadata.type !== 'other');
+        const myDoc = new MyDocument({
+          pageContent: doc.pageContent,
+          metadata: {
+            source: doc.metadata.source,
+            type: doc.metadata.type,
+            videoLink: doc.metadata.videoLink,
+            file: doc.metadata.file,
+            score: score,
+            image: doc.metadata.image,
+          },
+        });
+
+        Documents.push(myDoc);
       }
 
+      // Sort documents by score
+      Documents.sort((a, b) => {
+        const scoreA = a.metadata.score || 0;
+        const scoreB = b.metadata.score || 0;
+        return scoreB - scoreA;
+      });
+
+      // Send the full response to the client
       if (roomId) {
         io.to(roomId).emit(`fullResponse-${roomId}`, {
           roomId: roomId,
@@ -578,65 +751,30 @@ export const makeChain = (vectorstore: PineconeStore, onTokenStream: (token: str
         });
       }
 
-      await insertQA(originalInput, ragResponse.answer, ragResponse.context, Documents, qaId, roomId, userEmail, imageUrls, language, aiProvider);
+      // Store the Q&A in the database
+      await insertQA(
+        originalInput, 
+        ragResponse.answer, 
+        ragResponse.context, 
+        Documents, 
+        qaId, 
+        roomId, 
+        userEmail, 
+        imageUrls, 
+        language, 
+        aiProvider
+      );
 
-      try {
-        let existingHistory;
-        try {
-          existingHistory = await getChatHistoryByRoomId(roomId);
-        } catch (error) {
-          console.error('Error fetching chat history:', error);
-        }
-      
-        let conversationTitle = '';
-        
-        // Check if history exists and contains more than just the initial "Hi" message
-        const shouldGenerateNewTitle = !existingHistory || 
-          (existingHistory.conversation_json.length === 1 && 
-           existingHistory.conversation_json[0].type === 'userMessage' && 
-           existingHistory.conversation_json[0].message === 'Hi');
-      
-        if (shouldGenerateNewTitle) {
-          const titleResponse = await nonStreamingModel.generate([[{
-            role: "user",
-            content: `Given this conversation:
-            Human: ${originalInput}
-            AI: ${ragResponse.answer}
-          
-            Generate a short, descriptive title for this conversation (max 50 characters) in the used language.`
-          }]]);
-          conversationTitle = titleResponse.generations[0][0].text.trim();
-        } else {
-          conversationTitle = existingHistory.conversation_title;
-        }
-      
-        // Updated call to updateChatMemory including the conversation title
-        await MemoryService.updateChatMemory(
-          roomId,
-          originalInput,
-          ragResponse.answer,
-          imageUrls,
-          userEmail,
-          Documents,
-          qaId,
-          conversationTitle
-        );
-      
-      } catch (error) {
-        console.error('Error in chat history:', error);
-      }
-
-      let totalScore = 0;
-      let count = 0;
-      if (Documents && Documents.length > 0) {
-        for (let doc of Documents) {
-          if (doc.metadata) {
-            totalScore += doc.metadata.score || 0;
-            count++;
-          }
-        }
-        totalScore = count > 0 ? totalScore / count : 0;
-      }
+      // Update chat memory
+      await updateConversationMemory(
+        roomId,
+        originalInput,
+        ragResponse.answer,
+        imageUrls,
+        userEmail,
+        Documents,
+        qaId
+      );
 
       return {};
     },
