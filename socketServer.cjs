@@ -57,6 +57,19 @@ module.exports.init = (httpServer) => {
         global.io.to(roomId).emit(`fullResponse-${roomId}`, message);
         console.error(`Emitted fullResponse-${roomId} event to room ${roomId}`);
       });
+      
+      // New handler for stage updates
+      socket.on("stageUpdate", (roomId, stage) => {
+        console.error(`Stage update to stage ${stage} for room: ${roomId}`);
+        if (roomId !== currentRoom) {
+          console.error(`Room mismatch for stage update: current room is ${currentRoom}, update sent to ${roomId}`);
+          return;
+        }
+        // Emit both global and room-specific stage update events
+        global.io.to(roomId).emit("stageUpdate", stage);
+        global.io.to(roomId).emit(`stageUpdate-${roomId}`, stage);
+        console.error(`Emitted stageUpdate (${stage}) events to room ${roomId}`);
+      });
 
       socket.on("disconnect", () => {
         console.error(`Socket ${socket.id} disconnected`);

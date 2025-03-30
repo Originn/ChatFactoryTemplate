@@ -458,7 +458,10 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     setError(null);
     const trimmedQuery = query.trim();
   
-    if (!trimmedQuery && currentStage !== 4 && homeImagePreviews.length === 0) {
+    
+    // Skip validation completely if we're in embedding mode at stage 4
+    const skipValidation = isEmbeddingMode || currentStage === 4;
+    if (!skipValidation && !trimmedQuery && homeImagePreviews.length === 0) {
       alert('Please input a question or upload an image');
       return;
     }
@@ -556,19 +559,19 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
         }
       }
   
-    } catch (error) {
-      console.error('Error in submit:', error);
-      
-      // Check if it's a DeepSeek 503 error (which we want to suppress)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      if (errorMessage === 'Service temporarily unavailable') {
-        // Don't show the error to the user, just log it
+     } catch (error) {
+       console.error('Error in submit:', error);
+       
+       // Check if it's a DeepSeek 503 error (which we want to suppress)
+       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+       if (errorMessage === 'Service temporarily unavailable') {
+         // Don't show the error to the user, just log it
         console.log('Suppressing DeepSeek service unavailable error display');
-      } else {
-        // Display other errors normally
-        setError('An error occurred while fetching the data. Please try again.');
-      }
-    } finally {
+       } else {
+         // Display other errors normally
+         setError('An error occurred while fetching the data. Please try again.');
+       }
+     } finally {
       setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
       setLoading(false);
       setHomeImagePreviews([]);

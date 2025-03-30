@@ -207,22 +207,41 @@ const useSocket = (
     newSocket.on('uploadStatus', (status: string) => {
       setUploadStatus(status);
     });
-
+    
+    // Add explicit event handler for stage updates
+    newSocket.on('stageUpdate', (stage: number) => {
+      console.log('Stage update received:', stage);
+      setCurrentStage(stage);
+    });
+    
+    // Add room-specific stage update handler
+    if (roomIdRef.current) {
+      const stageUpdateEvent = `stageUpdate-${roomIdRef.current}`;
+      newSocket.on(stageUpdateEvent, (stage: number) => {
+        console.log(`${stageUpdateEvent} received:`, stage);
+        setCurrentStage(stage);
+      });
+    }
     return () => {
       newSocket.off('assignedRoom', handleAssignedRoom);
       newSocket.off('connect_error');
       newSocket.off('newToken');
       newSocket.off('storeHeader');
       newSocket.off('uploadStatus');
-      newSocket.off('removeThumbnails');
-      newSocket.off('embeddingComplete');
+      newSocket.off('stageUpdate'); // Remove global stage update handler
+      
+      // Remove room-specific event handlers
       if (roomIdRef.current) {
+        newSocket.off(`stageUpdate-${roomIdRef.current}`);
         setRequestsInProgress((prev: any) => {
           const updated = { ...prev };
           delete updated[roomIdRef.current!];
           return updated;
         });
       }
+      
+      newSocket.off('removeThumbnails');
+      newSocket.off('embeddingComplete');
       newSocket.disconnect();
     };
   }, [serverUrl, setRequestsInProgress, setMessageState, setCurrentStage, setRoomId, loadChatHistory]);
