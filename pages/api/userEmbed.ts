@@ -157,7 +157,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     // 1) Load the existing session row from DB
     let session = await getRoomSession(roomId);
-    console.log('DB session state before request:', session);
 
     // If user typed the code prefix but there's no session, create it
     if (sanitizedQuestion && sanitizedQuestion.startsWith(codePrefix)) {
