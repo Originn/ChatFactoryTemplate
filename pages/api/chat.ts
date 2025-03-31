@@ -53,7 +53,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let aiProvider: string;
     try {
       aiProvider = await getUserAIProvider(userEmail);
-      console.log(`Using AI provider: ${aiProvider} for user: ${userEmail}`);
     } catch (error) {
       console.error('Error getting user AI provider preference:', error);
       aiProvider = 'openai'; // Default to OpenAI if there's an error
