@@ -111,7 +111,7 @@ The application uses PostgreSQL with the following key tables:
 ## 🔌 Integrations
 
 - **AI Model Providers**:
-  - **OpenAI**: Primary language model provider (gpt-4o)
+  - **OpenAI**: Primary language model provider (gpt-4.1)
   - **DeepSeek**: Alternative language model provider (deepseek-chat)
   - **Text Embeddings**: Uses OpenAI text-embedding-3-small for semantic search
 
@@ -240,9 +240,9 @@ The application requires several environment variables:
 ### AI Model Configuration
 - `OPENAI_API_KEY`: API key for OpenAI
 - `DEEPSEEK_API_KEY`: API key for DeepSeek (optional)
-- `MODEL_NAME`: Name of the OpenAI model to use (default: gpt-4o)
+- `MODEL_NAME`: Name of the OpenAI model to use (default: gpt-4.1)
 - `TEMPERATURE`: Temperature setting for language model (default: 0)
-- `IMAGE_MODEL_NAME`: Model for image analysis (default: gpt-4o-mini)
+- `IMAGE_MODEL_NAME`: Model for image analysis (default: gpt-4.1-mini)
 
 ### Vector Database
 - `PINECONE_API_KEY`: API key for Pinecone

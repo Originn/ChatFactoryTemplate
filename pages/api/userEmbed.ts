@@ -25,7 +25,7 @@ async function getImageDescription(imageUrl: string, roomId: string) {
   const io = getIO();
   try {
     const response = await openAIClient.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1",
       messages: [
         {
           role: "user",
