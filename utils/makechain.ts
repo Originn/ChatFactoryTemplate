@@ -33,11 +33,11 @@ import {
 
 // Environment configuration
 const ENV = {
-  MODEL_NAME: process.env.MODEL_NAME || 'gpt-4o',
+  MODEL_NAME: process.env.MODEL_NAME || 'gpt-4.1',
   TEMPERATURE: parseFloat(process.env.TEMPERATURE || '0'),
   LAMBDA_EMBEDDINGS: parseFloat(process.env.LAMBDA_EMBEDDINGS || '0.1'),
   MINSCORESOURCESTHRESHOLD: parseFloat(process.env.MINSCORESOURCESTHRESHOLD || '0.78'),
-  IMAGE_MODEL_NAME: process.env.IMAGE_MODEL_NAME || 'gpt-4o-mini',
+  IMAGE_MODEL_NAME: process.env.IMAGE_MODEL_NAME || 'gpt-4.1-mini',
 };
 
 // Initialize shared resources
@@ -302,7 +302,7 @@ async function updateConversationMemory(
       if (shouldGenerateNewTitle) {
         // Create a shared model instance for title generation - could be optimized further
         const titleModel = new ChatOpenAI({
-          modelName: 'gpt-4o-mini',
+          modelName: 'gpt-4.1-nano',
           temperature: ENV.TEMPERATURE,
         });
         conversationTitle = await generateConversationTitle(originalInput, answer, titleModel);
@@ -482,13 +482,13 @@ export const makeChain = (
 ) => {
   // Create shared model instances
   const sharedModel = new ChatOpenAI({
-    modelName: 'gpt-4o-mini',
+    modelName: 'gpt-4.1-mini',
     temperature: ENV.TEMPERATURE,
     verbose: false,
   });
 
   const translationModel = new ChatOpenAI({
-    modelName: 'gpt-4o',
+    modelName: 'gpt-4.1-mini',
     temperature: ENV.TEMPERATURE,
   });
 
