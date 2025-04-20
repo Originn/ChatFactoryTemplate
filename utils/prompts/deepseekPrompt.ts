@@ -36,4 +36,5 @@ export const deepseekQASystemPrompt =
   "Image Description: {imageDescription}\n" +
   "=========\n" +
   "- FINAL REMINDER: You MUST include ALL image URLs from the CONTEXT in your response using this exact format: ![SolidCAM screenshot](exact_image_url)\n" +
+  "but if there are no images in the CONTEXT, don't mentioned it.\n" +
   "Answer in the {language} language:";
