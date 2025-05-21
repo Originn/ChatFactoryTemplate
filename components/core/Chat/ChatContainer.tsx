@@ -472,10 +472,10 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                 <div 
                   className={`${styles.cloud} ${homeImagePreviews.length > 0 && !loading ? styles.cloudWithImages : ''}`}
                   style={{
-                    border: theme === 'dark' ? '1px solid #333' : '1px solid #e0e0e0',
+                    border: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0',
                     borderRadius: '8px',
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-                    backgroundColor: theme === 'dark' ? '#0d0d0d' : 'white',
+                    boxShadow: theme === 'dark' ? 'none' : '0 2px 4px rgba(0, 0, 0, 0.05)',
+                    backgroundColor: theme === 'dark' ? '#121212' : 'white',
                     overflow: 'hidden' // This ensures child elements don't overflow the border radius
                   }}
                 >
@@ -488,6 +488,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                       botimageIcon={botIconPath}
                       imageUrlUserIcon={userIconPath}
                       roomId={roomId}
+                      theme={theme}
                     />
                   </div>
                 </div>

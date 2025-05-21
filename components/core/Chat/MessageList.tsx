@@ -32,6 +32,7 @@ interface MessageListProps {
   botimageIcon: string;
   imageUrlUserIcon: string;
   roomId: string | null;
+  theme: 'light' | 'dark';
 }
 
 // User message component
@@ -41,7 +42,8 @@ const UserMessage = memo(({
   loading,
   setEnlargedImage,
   backgroundColor = '#f5f5f5',
-  borderColor = '#eeeeee'
+  borderColor = '#eeeeee',
+  theme
 }: {
   message: ChatMessage;
   icon: JSX.Element;
@@ -49,6 +51,7 @@ const UserMessage = memo(({
   setEnlargedImage: (image: ImagePreviewData) => void;
   backgroundColor?: string;
   borderColor?: string;
+  theme: 'light' | 'dark';
 }) => {
   
   const formattedMessage = typeof message.message === 'string' 
@@ -77,7 +80,8 @@ const UserMessage = memo(({
         borderBottom: `1px solid ${borderColor}`,
         width: '100%',
         display: 'flex',
-        alignItems: 'flex-start'
+        alignItems: 'flex-start',
+        color: theme === 'dark' ? '#ffffff' : '#000000'
       }}
     >
       {icon}
@@ -113,7 +117,8 @@ const ApiMessage = memo(({
   answerStartRef,
   setEnlargedImage,
   backgroundColor = '#ffffff',
-  borderColor = '#eeeeee'
+  borderColor = '#eeeeee',
+  theme
 }: {
   message: ChatMessage;
   icon: JSX.Element;
@@ -121,6 +126,7 @@ const ApiMessage = memo(({
   setEnlargedImage: (image: ImagePreviewData) => void;
   backgroundColor?: string;
   borderColor?: string;
+  theme: 'light' | 'dark';
 }) => {
   const formattedMessage = typeof message.message === 'string'
     ? message.message.replace(/\[Image model answer:[\s\S]*?\]/g, '').trim()
@@ -148,7 +154,8 @@ const ApiMessage = memo(({
         borderBottom: `1px solid ${borderColor}`,
         width: '100%',
         display: 'flex',
-        alignItems: 'flex-start'
+        alignItems: 'flex-start',
+        color: theme === 'dark' ? '#ffffff' : '#000000'
       }}
     >
       {icon}
@@ -184,10 +191,12 @@ const ApiMessage = memo(({
 // Source Documents component
 const SourceDocuments = memo(({ 
   sourceDocs, 
-  index 
+  index,
+  theme
 }: { 
   sourceDocs: any[]; 
-  index: number 
+  index: number;
+  theme: 'light' | 'dark';
 }) => {
   if (!sourceDocs || sourceDocs.length === 0) return null;
   
@@ -198,9 +207,10 @@ const SourceDocuments = memo(({
     <div 
       key={`sourceDocsAccordion-${index}`}
       style={{
-        backgroundColor: isDarkMode ? '#242424' : '#f5f5f5',
+        backgroundColor: theme === 'dark' ? '#222222' : '#f5f5f5',
         padding: '0 15px 15px 75px',  // Increased left padding to match
-        borderBottom: `1px solid ${isDarkMode ? '#444444' : '#eeeeee'}`
+        borderBottom: `1px solid ${theme === 'dark' ? '#444444' : '#eeeeee'}`,
+        color: theme === 'dark' ? '#ffffff' : '#000000'
       }}
     >
       <Accordion type="single" collapsible className="flex-col">
@@ -334,14 +344,12 @@ const MessageList: React.FC<MessageListProps> = ({
   botimageIcon,
   imageUrlUserIcon,
   roomId,
+  theme
 }) => {
-  // Check if dark mode is enabled
-  const isDarkMode = document.body.classList.contains('dark');
-  
   // Define theme-based colors
-  const userMessageBg = isDarkMode ? '#1a1a1a' : '#ffffff';
-  const apiMessageBg = isDarkMode ? '#242424' : '#f5f5f5';
-  const borderColor = isDarkMode ? '#444444' : '#eeeeee';
+  const userMessageBg = theme === 'dark' ? '#333333' : '#ffffff';
+  const apiMessageBg = theme === 'dark' ? '#222222' : '#f5f5f5';
+  const borderColor = theme === 'dark' ? '#444444' : '#eeeeee';
 
   return (
     <List sx={{ padding: 0, width: '100%' }}>
@@ -384,6 +392,7 @@ const MessageList: React.FC<MessageListProps> = ({
                 setEnlargedImage={setEnlargedImage}
                 backgroundColor={apiMessageBg}
                 borderColor={borderColor}
+                theme={theme}
               />
             ) : (
               <UserMessage
@@ -393,11 +402,12 @@ const MessageList: React.FC<MessageListProps> = ({
                 setEnlargedImage={setEnlargedImage}
                 backgroundColor={userMessageBg}
                 borderColor={borderColor}
+                theme={theme}
               />
             )}
 
             {message.sourceDocs && message.sourceDocs.length > 0 && (
-              <SourceDocuments sourceDocs={message.sourceDocs} index={index} />
+              <SourceDocuments sourceDocs={message.sourceDocs} index={index} theme={theme} />
             )}
 
             {message.type === 'apiMessage' && message.isComplete && (
@@ -406,6 +416,7 @@ const MessageList: React.FC<MessageListProps> = ({
                 messageIndex={index}
                 qaId={message.qaId}
                 roomId={roomId}
+                theme={theme}
               />
             )}
           </React.Fragment>

@@ -21,35 +21,18 @@ interface FeedbackComponentProps {
   messageIndex: number;
   qaId: string | undefined;
   roomId: string | null;
+  theme: 'light' | 'dark';
 }
 
 const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ 
   messageIndex, 
   qaId, 
-  roomId 
+  roomId,
+  theme
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'up' | 'down' | 'comment'>('up');
   const { thumbUpIcon, thumbDownIcon, commentIcon } = getIconPaths();
-  
-  // Detect dark mode
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  
-  useEffect(() => {
-    setIsDarkMode(document.body.classList.contains('dark'));
-    
-    // Optional: listen for theme changes
-    const observer = new MutationObserver(() => {
-      setIsDarkMode(document.body.classList.contains('dark'));
-    });
-    
-    observer.observe(document.body, { 
-      attributes: true,
-      attributeFilter: ['class']
-    });
-    
-    return () => observer.disconnect();
-  }, []);
 
   const handleOpenModal = (type: 'up' | 'down' | 'comment') => {
     setFeedbackType(type);
@@ -104,9 +87,10 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({
       alignItems: 'center', 
       justifyContent: 'flex-start', 
       paddingLeft: '75px',  // Increased to compensate for icon drop
-      backgroundColor: isDarkMode ? '#242424' : '#f5f5f5',
+      backgroundColor: theme === 'dark' ? '#222222' : '#f5f5f5',
       paddingTop: '5px',
-      paddingBottom: '10px'
+      paddingBottom: '10px',
+      color: theme === 'dark' ? '#ffffff' : '#000000'
     }}>
       <Tooltip title="Give positive feedback">
         <IconButton onClick={() => handleOpenModal('up')} aria-label="Give positive feedback">
