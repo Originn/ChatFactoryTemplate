@@ -247,8 +247,9 @@ body.light .Home_messagelist__wIt78::-webkit-scrollbar-track {
   margin-top: 1rem;
 }
 
+
 .usermessage {
-  background: #ffffff;
+  /* Remove background bubble for a cleaner look */
   padding: 1.5rem;
   color: #000;
 }
@@ -256,7 +257,7 @@ body.light .Home_messagelist__wIt78::-webkit-scrollbar-track {
 /* Dark mode styling for user message from globals.css */
 body.dark .Home_usermessage__tWHWR,
 body.dark .Home_usermessage__i8g8V {
-  background-color: #333333;
+  background-color: transparent;
 }
 
 .usermessagewaiting {
@@ -296,7 +297,7 @@ body.dark .Home_usermessagewaiting__SNXox {
 }
 
 .apimessage {
-  background: #f9fafb;
+  /* Align with previous style without bubble */
   padding: 1.5rem;
   color: #000;
   animation: fadein 0.5s;
@@ -305,7 +306,7 @@ body.dark .Home_usermessagewaiting__SNXox {
 /* Dark mode styling for API message from globals.css */
 body.dark .Home_apimessage__VhfTn,
 body.dark .Home_apimessage___VZRe {
-  background-color: #4d4d4d;
+  background-color: transparent;
 }
 
 @keyframes fadein {
