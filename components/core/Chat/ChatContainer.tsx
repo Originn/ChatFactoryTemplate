@@ -12,7 +12,6 @@ import { auth } from '@/utils/firebase';
 import { handleSubmitClick } from '@/utils/tracking';
 import MemoryService from '@/utils/memoryService';
 import Cookies from 'js-cookie';
-import styles from '@/styles/Home.module.css';
 
 // Import components with the new structure
 import { MessageList, ChatInput } from '@/components/core/Chat';
@@ -461,42 +460,78 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
             />
           )}
 
-          <main className={styles.main}>
+          <Box
+            component="main"
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              p: 2,
+            }}
+          >
             <Typography variant="h4" align="center" fontWeight="bold" gutterBottom>
               SolidCAM ChatBot
             </Typography>
-            
-            <div className={styles.chatContainer}>
-              {/* Chat pane (top) */}
-              <div className={styles.chatBoxContainer} style={{ 
-                marginBottom: '30px',
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                width: '75vw',
+                height: 'calc(100vh - 250px)',
                 position: 'relative',
-                paddingBottom: '15px'
-              }}>
-                <div 
-                  className={`${styles.cloud} ${homeImagePreviews.length > 0 && !loading ? styles.cloudWithImages : ''}`}
-                  style={{
+              }}
+            >
+              {/* Chat pane (top) */}
+              <Box
+                sx={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflow: 'hidden',
+                  width: '100%',
+                  mb: '30px',
+                  borderRadius: 2,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  position: 'relative',
+                  pb: '15px',
+                }}
+              >
+                <Box
+                  sx={{
+                    width: '100%',
                     border: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0',
-                    borderBottom: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0', // Ensure visible bottom border
-                    borderRadius: '8px',
-                    boxShadow: theme === 'dark' ? '0 1px 3px rgba(0, 0, 0, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
+                    borderBottom: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0',
+                    borderRadius: 2,
+                    boxShadow: theme === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
                     backgroundColor: theme === 'dark' ? '#121212' : 'white',
-                    overflow: 'hidden', // This ensures child elements don't overflow the border radius
-                    marginBottom: '12px', // Add margin to create visual separation
-                    height: 'calc(68vh - 80px)', // Explicitly set height
-                    maxHeight: 'calc(68vh - 80px)', // Explicitly set max height
+                    overflow: 'hidden',
+                    mb: '12px',
+                    position: 'relative',
+                    transition: 'height 0.3s ease',
+                    ...(homeImagePreviews.length > 0 && !loading
+                      ? {
+                          height: 'calc(65vh - 111px)',
+                          maxHeight: 'calc(65vh - 111px)',
+                        }
+                      : {
+                          height: 'calc(68vh - 80px)',
+                          maxHeight: 'calc(68vh - 80px)',
+                        }),
                   }}
                 >
-                  <div 
-                    ref={messageListRef} 
-                    className={styles.messagelist} 
-                    style={{
+                  <Box
+                    ref={messageListRef}
+                    sx={{
+                      width: '100%',
                       height: 'calc(100% - 20px)',
                       maxHeight: 'calc(100% - 20px)',
+                      overflowY: 'auto',
+                      borderRadius: '0.5rem',
+                      position: 'relative',
                       paddingBottom: '20px',
                       marginBottom: '20px',
-                      border: 'none', // Remove default border
-                      borderBottom: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0', // Add explicit border here
+                      borderBottom: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0',
                     }}
                   >
                     <MessageList
@@ -509,12 +544,25 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                       roomId={roomId}
                       theme={theme}
                     />
-                  </div>
-                </div>
-              </div>              
+                  </Box>
+                </Box>
+              </Box>
               {/* Image thumbnails (middle) */}
               {homeImagePreviews.length > 0 && !loading && (
-                <div className={styles.imageThumbnailsContainer}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    justifyContent: 'flex-start',
+                    gap: '8px',
+                    width: '100%',
+                    p: '8px 0',
+                    mb: '30px',
+                    maxHeight: '166px',
+                    overflowY: 'auto',
+                    visibility: 'visible',
+                  }}
+                >
                   {homeImagePreviews.map((image, index) => (
                     <ImagePreview
                       key={image.fileName} // Use fileName as key
@@ -529,7 +577,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                       onClick={() => setEnlargedImage(image)}
                     />
                   ))}
-                </div>
+                </Box>
               )}
               
               {/* Section to display file errors */}
@@ -564,7 +612,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                 handleHomeFileChange={handleHomeFileChange}
                 fileInputRef={fileInputRef}
               />
-            </div>
+            </Box>
             
             {speechError && (
               <Box sx={{ border: '1px solid', borderColor: 'error.main', borderRadius: 1, p: 2 }}>
@@ -577,7 +625,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                 <Typography color="error">{chatError}</Typography>
               </Box>
             )}
-          </main>
+          </Box>
           </Box>
         </Container>
         <Box component="footer" sx={{ p: 2, textAlign: 'center', mt: 'auto' }}>
