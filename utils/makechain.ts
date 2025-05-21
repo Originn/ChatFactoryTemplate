@@ -17,19 +17,16 @@ import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retriever";
 import { createRetrievalChain } from "langchain/chains/retrieval";
-import OpenAIChat from "openai";
 import { createChatModel } from './modelProviders';
 import { getRelevantHistory } from './contextManager';
 import { deepseekQASystemPrompt } from './prompts/deepseekPrompt';
 import {
   contextualizeQSystemPrompt,
   qaSystemPrompt,
-  TRANSLATION_PROMPT,
-  LANGUAGE_DETECTION_PROMPT,
-  IMAGE_ANALYSIS_PROMPT,
-  IMAGE_RELATION_PROMPT,
   TITLE_GENERATION_PROMPT
 } from './prompts/promptTemplates';
+import { ensureChatSession } from './chatSession';
+import { prepareInput } from './inputProcessing';
 
 // Environment configuration
 const ENV = {
@@ -42,10 +39,6 @@ const ENV = {
 
 // Initialize shared resources
 const io = getIO();
-const openai = new OpenAIChat();
-
-// Cache for language detection results
-const languageCache = new Map<string, string>();
 
 // Type Definitions
 type SearchResult = [MyDocument, number];
@@ -58,47 +51,6 @@ interface DocumentInterface<T> {
 // Helper Functions
 function isApiRelatedQuery(query: string): boolean {
   return /\b(api|vbs|script|automation|calculate|automate|programming|code|operation|function)\b/i.test(query);
-}
-
-async function detectLanguageWithOpenAI(text: string, model: ChatOpenAI): Promise<string> {
-  // Check cache first
-  const cacheKey = text.substring(0, 100); // Use first 100 chars as key
-  if (languageCache.has(cacheKey)) {
-    return languageCache.get(cacheKey) || 'English';
-  }
-
-  try {
-    const prompt = LANGUAGE_DETECTION_PROMPT.replace('{text}', text);
-    const message = { role: "user", content: prompt };
-    const response = await model.generate([[message]]);
-
-    if (response.generations.length > 0 && response.generations[0].length > 0) {
-      const language = response.generations[0][0].text.trim();
-      // Cache the result
-      languageCache.set(cacheKey, language);
-      return language;
-    }
-  } catch (error) {
-    console.error("Error detecting language:", error);
-  }
-
-  return 'English';
-}
-
-async function translateToEnglish(text: string, model: ChatOpenAI): Promise<string> {
-  try {
-    const prompt = TRANSLATION_PROMPT.replace('{text}', text);
-    const message = { role: "user", content: prompt };
-    const response = await model.generate([[message]]);
-
-    if (response.generations.length > 0 && response.generations[0].length > 0) {
-      return response.generations[0][0].text.trim();
-    }
-  } catch (error) {
-    console.error("Error translating text:", error);
-  }
-
-  return text; // Return original text if translation fails
 }
 
 function preprocessChatHistoryForDeepSeek(history: (HumanMessage | AIMessage)[]) {
@@ -124,197 +76,6 @@ function preprocessChatHistoryForDeepSeek(history: (HumanMessage | AIMessage)[])
 
 function generateUniqueId(): string {
   return uuidv4();
-}
-
-async function isNewChatSession(roomId: string): Promise<boolean> {
-  const chatHistory = await MemoryService.getChatHistory(roomId);
-  return chatHistory.length === 0;
-}
-
-async function initializeChatHistory(roomId: string, userEmail: string) {
-  await MemoryService.updateChatMemory(roomId, "Hi", null, null, userEmail);
-}
-
-/**
- * Ensure a chat session exists and initialize it if needed
- */
-async function ensureChatSession(roomId: string, userEmail: string) {
-  if (await isNewChatSession(roomId)) {
-    await initializeChatHistory(roomId, userEmail);
-  }
-}
-
-/**
- * Pre-process user input: handle images, language detection and translation
- */
-async function prepareInput(
-  input: string,
-  imageUrls: string[],
-  roomId: string,
-  sharedModel: ChatOpenAI,
-  translationModel: ChatOpenAI
-): Promise<{
-  processedInput: string;
-  originalInput: string;
-  language: string;
-  imageDescription: string;
-}> {
-  let processedInput = input;
-  let imageDescription = '';
-
-  if (imageUrls && imageUrls.length > 0) {
-    imageDescription = await processImageWithOpenAI(imageUrls, input);
-  }
-
-  const language = await detectLanguageWithOpenAI(processedInput, sharedModel);
-  const originalInput = processedInput;
-
-  if (language !== 'English') {
-    processedInput = await translateToEnglish(processedInput, translationModel);
-  }
-
-  if (imageDescription) {
-    processedInput = `${processedInput} [Image model answer: ${imageDescription}]`;
-  }
-
-  if (imageUrls.length === 0) {
-    const historyImageUrls = await getImageUrlsFromHistory(roomId);
-    if (historyImageUrls.length > 0) {
-      const relatedToImage = await isQuestionRelatedToImage(
-        processedInput,
-        await MemoryService.getChatHistory(roomId),
-        sharedModel,
-        imageDescription
-      );
-
-      if (relatedToImage) {
-        const historicalImageDescription = await processImageWithOpenAI(
-          historyImageUrls,
-          processedInput
-        );
-
-        if (historicalImageDescription) {
-          processedInput = `${processedInput} [Image model answer: ${historicalImageDescription}]`;
-          imageDescription = historicalImageDescription;
-        }
-      }
-    }
-  }
-
-  return {
-    processedInput,
-    originalInput,
-    language,
-    imageDescription
-  };
-}
-
-/**
- * Process an image with OpenAI's vision model and return a description
- */
-async function processImageWithOpenAI(
-  imageUrls: string[],
-  query: string,
-  modelName: string = ENV.IMAGE_MODEL_NAME
-): Promise<string> {
-  if (!imageUrls || imageUrls.length === 0) {
-    return '';
-  }
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: modelName,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { 
-              type: "text", 
-              text: IMAGE_ANALYSIS_PROMPT
-            },
-          ],
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: `Question: ${query}` },
-            ...imageUrls.map(url => ({
-              type: "image_url",
-              image_url: { url }
-            } as const))
-          ],
-        },
-      ],
-    });
-
-    return response.choices[0]?.message?.content ?? 'No image description available';
-  } catch (error) {
-    console.error('Error processing images:', error);
-    return 'Error processing image';
-  }
-}
-
-/**
- * Determine if a follow-up question is related to previously shown images
- */
-async function isQuestionRelatedToImage(
-  followUpQuestion: string,
-  chatHistory: (HumanMessage | AIMessage)[],
-  model: ChatOpenAI,
-  imageDescription: string,
-): Promise<boolean> {
-  const formattedHistory = chatHistory
-    .map((message) => {
-      const speaker = message instanceof HumanMessage ? 'User' : 'AI';
-      const content = message.content || 'No message content';
-      return `${speaker}: ${content}`;
-    })
-    .join('\n');
-
-  const descriptionPart = imageDescription
-    ? `Relevant Image Description:\n${imageDescription}\n`
-    : '';
-
-  const prompt = IMAGE_RELATION_PROMPT
-    .replace('{chatHistory}', formattedHistory)
-    .replace('{descriptionPart}', descriptionPart)
-    .replace('{followUpQuestion}', followUpQuestion);
-
-  try {
-    const response = await model.generate([[{role: "user", content: prompt}]]);
-    const answer = response.generations[0][0]?.text.trim().toLowerCase();
-    return answer === 'yes';
-  } catch (error) {
-    console.error("Error determining if question is related to image:", error);
-    return false;
-  }
-}
-
-/**
- * Extract image URLs from chat history
- */
-async function getImageUrlsFromHistory(roomId: string): Promise<string[]> {
-  try {
-    // Retrieve the full chat history for the given room
-    const memory = await MemoryService.getChatHistory(roomId);
-  
-    // Extract image URLs from the entire chat history
-    const extractedImageUrls: string[] = [];
-    for (const message of memory) {
-      if (message?.additional_kwargs?.imageUrls) {
-        const urls = Array.isArray(message.additional_kwargs.imageUrls)
-          ? message.additional_kwargs.imageUrls
-          : [message.additional_kwargs.imageUrls];
-        extractedImageUrls.push(...urls);
-      }
-    }
-  
-    // Return all unique image URLs
-    return Array.from(new Set(extractedImageUrls));
-  } catch (error) {
-    console.error("Error extracting image URLs from history:", error);
-    return [];
-  }
 }
 
 /**
