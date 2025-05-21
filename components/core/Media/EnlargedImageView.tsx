@@ -1,5 +1,6 @@
 import React from 'react';
-import styles from '@/styles/Home.module.css';
+import { Dialog, DialogContent, IconButton, Box } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface EnlargedImageViewProps {
   imageUrl: string;
@@ -12,29 +13,24 @@ const EnlargedImageView: React.FC<EnlargedImageViewProps> = ({
   altText, 
   onClose 
 }) => {
-  // Prevent clicking inside the image from closing the view
-  const handleImageClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-
   return (
-    <div className={styles.enlargedImageOverlay} onClick={onClose}>
-      <div className={styles.enlargedImageContainer}>
-        <button 
-          className={styles.closeButton} 
+    <Dialog open onClose={onClose} maxWidth="xl">
+      <DialogContent sx={{ position: 'relative', p: 0 }}>
+        <IconButton
           onClick={onClose}
           aria-label="Close image view"
+          sx={{ position: 'absolute', top: 8, right: 8, bgcolor: 'white' }}
         >
-          ×
-        </button>
-        <img
+          <CloseIcon />
+        </IconButton>
+        <Box
+          component="img"
           src={imageUrl}
           alt={altText || 'Enlarged image'}
-          className={styles.enlargedImage}
-          onClick={handleImageClick}
+          sx={{ maxWidth: '90vw', maxHeight: '90vh', display: 'block' }}
         />
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

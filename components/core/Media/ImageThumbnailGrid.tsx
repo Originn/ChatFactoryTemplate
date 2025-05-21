@@ -1,6 +1,7 @@
 import React from 'react';
+import { Box, IconButton, LinearProgress } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { ImagePreviewData } from '@/components/core/Media';
-import styles from '@/styles/Home.module.css';
 
 interface ImageThumbnailGridProps {
   images: ImagePreviewData[];
@@ -20,35 +21,53 @@ const ImageThumbnailGrid: React.FC<ImageThumbnailGridProps> = ({
   if (images.length === 0) return null;
 
   return (
-    <div className={styles.imageThumbnailsContainer}>
-      {images.map((image, index) => {
+    <Box display="flex" flexWrap="wrap" gap={1} mb={3} sx={{ maxHeight: 166, overflowY: 'auto' }}>
+      {images.map((image) => {
         const progress = uploadProgress[image.fileName] || null;
-        
+
         return (
-          <div key={image.fileName} className={styles.imagePreviewContainer}>
-            <img
+          <Box
+            key={image.fileName}
+            position="relative"
+            sx={{ width: 75, height: 75, borderRadius: 1, overflow: 'hidden' }}
+          >
+            <Box
+              component="img"
               src={image.url}
               alt={`Preview: ${image.fileName}`}
-              className={styles.imagePreview}
               onClick={() => onImageClick(image)}
+              sx={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
             />
             {progress !== null && progress < 100 && (
-              <div className={styles.progressOverlay}>
-                <div className={styles.progressBar} style={{ width: `${progress}%` }}></div>
-                <div className={styles.progressText}>{`${Math.round(progress)}%`}</div>
-              </div>
+              <Box
+                position="absolute"
+                top={0}
+                left={0}
+                right={0}
+                bottom={0}
+                display="flex"
+                flexDirection="column"
+                alignItems="center"
+                justifyContent="center"
+                sx={{ bgcolor: 'rgba(0,0,0,0.5)' }}
+              >
+                <Box width="80%">
+                  <LinearProgress variant="determinate" value={progress} />
+                </Box>
+              </Box>
             )}
-            <button
-              className={styles.deleteButton}
+            <IconButton
+              size="small"
               onClick={() => onDelete(image.fileName, isPrivateDelete)}
               aria-label="Delete image"
+              sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'rgba(0,0,0,0.5)', width: 20, height: 20 }}
             >
-              ×
-            </button>
-          </div>
+              <CloseIcon fontSize="small" sx={{ color: 'white' }} />
+            </IconButton>
+          </Box>
         );
       })}
-    </div>
+    </Box>
   );
 };
 
