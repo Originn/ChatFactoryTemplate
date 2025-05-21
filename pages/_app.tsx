@@ -5,12 +5,20 @@ import Head from 'next/head';
 
 import { useEffect, useMemo } from 'react';
 
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
 import { getMuiTheme } from '@/utils/muiTheme';
 import { setUserIdForAnalytics } from '@/utils/tracking';
-import useTheme from '@/hooks/useTheme';
+import useTheme, { ThemeProvider as AppThemeProvider } from '@/hooks/useTheme';
 
 function MyApp({ Component, pageProps }: AppProps) {
+  return (
+    <AppThemeProvider>
+      <AppContent Component={Component} pageProps={pageProps} />
+    </AppThemeProvider>
+  );
+}
+
+function AppContent({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const { theme } = useTheme();
 
@@ -49,7 +57,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         />
         <title>SolidCAM Chat</title>
       </Head>
-      <ThemeProvider theme={muiTheme}>
+      <MuiThemeProvider theme={muiTheme}>
         <CssBaseline />
 
         {isAuthRequired ? (
@@ -60,7 +68,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           <Component {...pageProps} />
         )}
 
-      </ThemeProvider>
+      </MuiThemeProvider>
     </>
   );
 }
