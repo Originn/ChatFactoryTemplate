@@ -9,12 +9,13 @@ import fs from 'fs';
 // Initialize Firebase Admin SDK if not already initialized
 if (!admin.apps.length) {
   try {
-    const serviceAccountPath = path.join(process.cwd(), 'solidcamchat-firebase-adminsdk-6c5fy-fcfed248c9.json');
-    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-    
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      admin.initializeApp({
+        credential: admin.credential.applicationDefault()
+      });
+    } else {
+      throw new Error('GOOGLE_APPLICATION_CREDENTIALS not set');
+    }
   } catch (error) {
     console.error('Firebase Admin initialization error', error);
   }

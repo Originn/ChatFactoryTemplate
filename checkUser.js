@@ -1,13 +1,13 @@
 const admin = require('firebase-admin');
 
-// Initialize Firebase Admin with your service account
-const serviceAccount = require('./solidcamchat-firebase-adminsdk-6c5fy-fcfed248c9.json');  // Ensure the path is correct
-
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    // Optionally, specify your project ID here:
-    // databaseURL: 'https://your-project-id.firebaseio.com'
+// Initialize Firebase Admin using GOOGLE_APPLICATION_CREDENTIALS
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
   });
+} else {
+  throw new Error('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.');
+}
 
 // Function to fetch and display user details
 async function checkUserState(uid) {
