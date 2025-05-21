@@ -78,8 +78,6 @@ function generateUniqueId(): string {
   return uuidv4();
 }
 
-
-
 /**
  * Generate a title for a new conversation
  */
