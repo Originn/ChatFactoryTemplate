@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import styles from '@/styles/PasswordResetConfirmation.module.css';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
+import { Container, Typography, Button } from '@mui/material';
 
 const VerificationFailed: React.FC = () => {
   const [email, setEmail] = useState<string | null>(null);
@@ -26,32 +26,29 @@ const VerificationFailed: React.FC = () => {
   };
 
   return (
-    <div className={styles.passwordResetContainer}>
-      <div className={styles.imageContainer}>
-        <Image 
-          src={process.env.NODE_ENV === 'production' 
-              ? 'https://solidcam.herokuapp.com/solidcam.png' 
-              : '/solidcam.png'}
-          alt="SolidCAM Logo"
-          width={100}
-          height={100}
-          className={styles.image}
-        />
-      </div>
-      <h1 className={styles.header}>Verification Failed</h1>
-      <p className={styles.paragraph}>
+    <Container maxWidth="sm" sx={{ textAlign: 'center', py: 4 }}>
+      <Image
+        src={process.env.NODE_ENV === 'production'
+            ? 'https://solidcam.herokuapp.com/solidcam.png'
+            : '/solidcam.png'}
+        alt="SolidCAM Logo"
+        width={100}
+        height={100}
+        style={{ marginBottom: 16 }}
+      />
+      <Typography variant="h4" component="h1" gutterBottom>
+        Verification Failed
+      </Typography>
+      <Typography paragraph>
         It seems that your email verification link has expired or is invalid.
-      </p>
-      <p className={styles.paragraph}>
+      </Typography>
+      <Typography paragraph>
         Please click the button below to send a new verification email to {email}.
-      </p>
-      <button 
-        onClick={handleResendVerification}
-        style={{ color: '#fff', backgroundColor: '#0070f3', padding: '10px 20px', border: 'none', cursor: 'pointer', borderRadius: '5px', marginTop: '20px' }}
-      >
+      </Typography>
+      <Button variant="contained" onClick={handleResendVerification} sx={{ mt: 2 }}>
         Resend Verification Email
-      </button>
-    </div>
+      </Button>
+    </Container>
   );
 }
 

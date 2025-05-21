@@ -1,23 +1,26 @@
 import * as React from 'react';
-import clsx from 'clsx';
+import TextField, { TextFieldProps } from '@mui/material/TextField';
 
-export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
 
-const TextArea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, ...props }, ref) => {
-    return (
-      <textarea
-        className={clsx(
-          'flex h-20 w-full rounded-md border border-slate-300 bg-transparent py-2 px-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-50 dark:focus:ring-slate-400 dark:focus:ring-offset-slate-900',
-          className,
-        )}
-        ref={ref}
-        {...props}
-      />
-    );
-  },
+/**
+ * Wrapper component around MUI's {@link TextField} in multiline mode.
+ * This mirrors the previous TextArea API but uses Material UI styling.
+ */
+export interface TextAreaProps extends TextFieldProps {}
+
+
+const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
+  (props, ref) => (
+    <TextField
+      multiline
+      fullWidth
+      variant="outlined"
+      inputRef={ref}
+      {...props}
+    />
+  ),
 );
+
 TextArea.displayName = 'TextArea';
 
 export default TextArea;

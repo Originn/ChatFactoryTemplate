@@ -4,58 +4,42 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
+import { Container, Typography, Button, Box } from '@mui/material';
 
 const AccountDeleted = () => {
   const router = useRouter();
   
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-        <div className="flex justify-center mb-6">
-          <Image 
-            src="/solidcam.png" 
-            alt="SolidCAM Logo" 
-            width={150} 
-            height={150} 
-            className="mb-4" 
-          />
-        </div>
-        
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Account Successfully Deleted</h1>
-        
-        <div className="bg-green-100 border border-green-200 rounded-md p-4 mb-6">
-          <p className="text-green-800">
-            Your account and all associated data have been permanently deleted in accordance with GDPR requirements.
-          </p>
-        </div>
-        
-        <p className="text-gray-600 mb-6">
-          Thank you for using SolidCAM ChatBot. If you change your mind, you're always welcome to create a new account.
-        </p>
-        
-        <div className="flex flex-col space-y-3">
-          <Link href="/" className="w-full inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition duration-150">
-            Return to Home Page
-          </Link>
-          
-          <button
-            onClick={() => window.close()}
-            className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded transition duration-150"
-          >
-            Close Window
-          </button>
-        </div>
-      </div>
-      
-      <div className="mt-8 text-center text-sm text-gray-500">
-        <p>
-          For any questions about data policies, please contact{' '}
-          <a href="mailto:ai@solidcam.app" className="text-blue-500 hover:underline">
-            ai@solidcam.app
-          </a>
-        </p>
-      </div>
-    </div>
+    <Container maxWidth="sm" sx={{ py: 4, textAlign: 'center' }}>
+      <Box mb={3} display="flex" justifyContent="center">
+        <Image src="/solidcam.png" alt="SolidCAM Logo" width={150} height={150} style={{ marginBottom: 16 }} />
+      </Box>
+      <Typography variant="h5" component="h1" gutterBottom>
+        Account Successfully Deleted
+      </Typography>
+      <Box sx={{ backgroundColor: 'green.100', border: 1, borderColor: 'green.200', borderRadius: 1, p: 2, mb: 3 }}>
+        <Typography color="green.800">
+          Your account and all associated data have been permanently deleted in accordance with GDPR requirements.
+        </Typography>
+      </Box>
+      <Typography color="text.secondary" paragraph>
+        Thank you for using SolidCAM ChatBot. If you change your mind, you're always welcome to create a new account.
+      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 4 }}>
+        <Button component={Link} href="/" variant="contained" fullWidth>
+          Return to Home Page
+        </Button>
+        <Button onClick={() => window.close()} variant="outlined" fullWidth>
+          Close Window
+        </Button>
+      </Box>
+      <Typography variant="body2" color="text.secondary">
+        For any questions about data policies, please contact{' '}
+        <a href="mailto:ai@solidcam.app" style={{ color: '#1976d2' }}>
+          ai@solidcam.app
+        </a>
+      </Typography>
+    </Container>
   );
 };
 

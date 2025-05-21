@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Box, IconButton } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { CircularProgressBar } from '@/components/ui/Feedback';
 import { auth } from '@/utils/firebase';
-import styles from '@/styles/Home.module.css';
 
 export interface ImagePreviewData {
   url: string;
@@ -60,49 +61,47 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({
   };
 
   return (
-    <div className={styles.imagePreviewContainer}>
+    <Box position="relative" display="inline-block" sx={{ width: 75, height: 75, borderRadius: 1, overflow: 'hidden' }}>
       {isRefreshing ? (
-        <div className={styles.refreshingOverlay}>
-          <div className={styles.spinner} />
-        </div>
+        <Box position="absolute" top={0} left={0} right={0} bottom={0} display="flex" alignItems="center" justifyContent="center" sx={{ bgcolor: 'rgba(0,0,0,0.5)' }}>
+          <Box sx={{ width: 24, height: 24, border: '3px solid rgba(255,255,255,0.3)', borderRadius: '50%', borderTopColor: '#fff', animation: 'spin 1s linear infinite' }} />
+        </Box>
       ) : (
         <>
-          <img
+          <Box
+            component="img"
             src={imageUrl}
             alt={`Preview ${index + 1}`}
-            className={styles.imagePreview}
             onClick={onClick}
             onError={handleImageError}
-            style={{ cursor: onClick ? 'pointer' : 'default' }}
+            sx={{ width: '100%', height: '100%', objectFit: 'cover', cursor: onClick ? 'pointer' : 'default' }}
           />
-          
+
           {error && (
-            <div className={styles.errorOverlay}>
-              <button 
-                onClick={refreshImageUrl}
-                className={styles.retryButton}
-              >
+            <Box position="absolute" top={0} left={0} right={0} bottom={0} display="flex" alignItems="center" justifyContent="center" sx={{ bgcolor: 'rgba(255,0,0,0.3)' }}>
+              <IconButton size="small" onClick={refreshImageUrl} sx={{ bgcolor: 'white' }}>
                 Retry
-              </button>
-            </div>
+              </IconButton>
+            </Box>
           )}
         </>
       )}
 
-      <button 
+      <IconButton
+        size="small"
         onClick={() => onDelete(image.fileName, index)}
-        className={styles.deleteButton}
         aria-label="Delete image"
+        sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'rgba(0,0,0,0.5)', width: 20, height: 20 }}
       >
-        ×
-      </button>
+        <CloseIcon fontSize="small" sx={{ color: 'white' }} />
+      </IconButton>
 
       {uploadProgress !== null && uploadProgress < 100 && (
-        <div className={styles.progressIndicator}>
+        <Box position="absolute" bottom={2} right={2}>
           <CircularProgressBar progress={uploadProgress} />
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
