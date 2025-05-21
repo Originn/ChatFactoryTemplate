@@ -468,18 +468,37 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
             
             <div className={styles.chatContainer}>
               {/* Chat pane (top) */}
-              <div className={styles.chatBoxContainer}>
+              <div className={styles.chatBoxContainer} style={{ 
+                marginBottom: '30px',
+                position: 'relative',
+                paddingBottom: '15px'
+              }}>
                 <div 
                   className={`${styles.cloud} ${homeImagePreviews.length > 0 && !loading ? styles.cloudWithImages : ''}`}
                   style={{
                     border: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0',
+                    borderBottom: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0', // Ensure visible bottom border
                     borderRadius: '8px',
-                    boxShadow: theme === 'dark' ? 'none' : '0 2px 4px rgba(0, 0, 0, 0.05)',
+                    boxShadow: theme === 'dark' ? '0 1px 3px rgba(0, 0, 0, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
                     backgroundColor: theme === 'dark' ? '#121212' : 'white',
-                    overflow: 'hidden' // This ensures child elements don't overflow the border radius
+                    overflow: 'hidden', // This ensures child elements don't overflow the border radius
+                    marginBottom: '12px', // Add margin to create visual separation
+                    height: 'calc(68vh - 80px)', // Explicitly set height
+                    maxHeight: 'calc(68vh - 80px)', // Explicitly set max height
                   }}
                 >
-                  <div ref={messageListRef} className={styles.messagelist}>
+                  <div 
+                    ref={messageListRef} 
+                    className={styles.messagelist} 
+                    style={{
+                      height: 'calc(100% - 20px)',
+                      maxHeight: 'calc(100% - 20px)',
+                      paddingBottom: '20px',
+                      marginBottom: '20px',
+                      border: 'none', // Remove default border
+                      borderBottom: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0', // Add explicit border here
+                    }}
+                  >
                     <MessageList
                       messages={messages}
                       loading={loading}
