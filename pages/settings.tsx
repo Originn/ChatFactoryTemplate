@@ -10,6 +10,14 @@ import useTheme from '@/hooks/useTheme';
 import { LoadingDots } from '@/components/ui/Loaders';
 import { ChatHistoryItem } from '@/components/core/Chat/types';
 import { getIdToken } from 'firebase/auth';
+import {
+  Tabs,
+  Tab,
+  Box,
+  Typography,
+  Alert,
+  Button,
+} from '@mui/material';
 
 const Settings = () => {
   const { theme, toggleTheme } = useTheme();
@@ -434,314 +442,315 @@ const handleAiProviderUpdate = async () => {
   }, []);
 
   return (
-    <Layout 
+    <Layout
       theme={theme}
       toggleTheme={toggleTheme}
       onHistoryItemClick={onHistoryItemClick}
       handleNewChat={handleNewChat}
     >
-    <div className="flex-1 overflow-y-auto settings-container">
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* Back to Chat button */}
-      <div className="mb-6">
-        <Link href="/" className="flex items-center text-blue-500 hover:text-blue-700 dark:hover:text-blue-300">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-          </svg>
-          Back to Chat
-        </Link>
-      </div>
-      
-      <h1 className="text-2xl font-bold mb-6 dark:text-white">Settings & Privacy</h1>
-      
-      {/* Status message */}
-      {statusMessage && (
-        <div className={`mb-4 p-4 rounded text-white ${statusMessage.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
-          {statusMessage.text}
-        </div>
-      )}
-        <div className="flex border-b mb-6">
-          <button 
-            className={`py-2 px-4 dark:text-white ${activeTab === 'data' ? 'border-b-2 border-blue-500' : ''}`}
-            onClick={() => setActiveTab('data')}
+      <Box className="settings-container" sx={{ flex: 1, overflowY: 'auto' }}>
+        <Box sx={{ mx: 'auto', px: 4, py: 8, maxWidth: 640 }}>
+          {/* Back to Chat button */}
+          <Box sx={{ mb: 6 }}>
+            <Link
+              href="/"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                color: '#1976d2',
+                textDecoration: 'none',
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ marginRight: 4, height: 20, width: 20 }}
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Back to Chat
+            </Link>
+          </Box>
+
+          <Typography variant="h4" component="h1" sx={{ mb: 6 }}>
+            Settings & Privacy
+          </Typography>
+
+          {/* Status message */}
+          {statusMessage && (
+            <Alert severity={statusMessage.type} sx={{ mb: 4 }}>
+              {statusMessage.text}
+            </Alert>
+          )}
+
+          <Tabs
+            value={activeTab}
+            onChange={(_, val) => setActiveTab(val)}
+            sx={{ mb: 6, borderBottom: 1, borderColor: 'divider' }}
           >
-            Your Data
-          </button>
-          <button 
-            className={`py-2 px-4 dark:text-white ${activeTab === 'privacy' ? 'border-b-2 border-blue-500' : ''}`}
-            onClick={() => setActiveTab('privacy')}
-          >
-            Privacy Settings
-          </button>
-          <button 
-            className={`py-2 px-4 dark:text-white ${activeTab === 'aiprovider' ? 'border-b-2 border-blue-500' : ''}`}
-            onClick={() => setActiveTab('aiprovider')}
-          >
-            AI Provider
-          </button>
-          <button 
-            className={`py-2 px-4 dark:text-white ${activeTab === 'contact' ? 'border-b-2 border-blue-500' : ''}`}
-            onClick={() => setActiveTab('contact')}
-          >
-            Contact Information
-          </button>
-        </div>
+            <Tab label="Your Data" value="data" />
+            <Tab label="Privacy Settings" value="privacy" />
+            <Tab label="AI Provider" value="aiprovider" />
+            <Tab label="Contact Information" value="contact" />
+          </Tabs>
 
         {activeTab === 'data' && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4 dark:text-white">Your Data</h2>
-            
-            {/* Data summary */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-medium mb-4 dark:text-white">Your Data Summary</h3>
-              
-              <div className="space-y-3">
-                <div>
-                  <span className="text-gray-600 dark:text-gray-400">Email: </span> 
-                  <span className="font-medium dark:text-white">{userInfo?.email || 'Loading...'}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600 dark:text-gray-400">Chat history items: </span> 
-                  <span className="font-medium dark:text-white">{dataStats.chatHistoryCount}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600 dark:text-gray-400">Account created: </span> 
-                  <span className="font-medium dark:text-white">{formatDate(userInfo?.createdAt || null)}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600 dark:text-gray-400">Last activity: </span> 
-                  <span className="font-medium dark:text-white">{formatDate(dataStats.lastActive)}</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Data export */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-medium mb-2 dark:text-white">Access and Export Your Data</h3>
-              <p className="mb-4 text-gray-600 dark:text-gray-400">
-                Download a copy of your personal data including your chat history and account information.
-              </p>
-              <button 
-                onClick={handleDataExport}
-                disabled={loading && processingAction === 'export'}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-blue-300 flex items-center"
-              >
-                {loading && processingAction === 'export' ? (
-                  <>
-                    <span className="mr-2">Preparing Export</span>
-                    <LoadingDots color="#fff" />
-                  </>
-                ) : (
-                  'Export Your Data'
-                )}
-              </button>
-            </div>
-            
-            {/* NEW: Delete Chat History */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-medium mb-2 dark:text-white">Delete Chat History</h3>
-              <div className="mb-4">
-                <p className="mb-2 text-gray-600 dark:text-gray-400">
-                    Delete your chat history for a specific timeframe. This action only removes your conversation logs from the system but preserves the questions and answers database.
-                </p>
-                <p className="text-sm mb-3 text-gray-500 dark:text-gray-500 italic">
-                    Note: Q&A pairs are kept for a minimum of 1 month, and you can opt to anonymize them using the settings under <span className="font-medium">Data Retention</span>. Once deleted, your chat history cannot be recovered.
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-500">
-                    To request complete deletion of all your data including Q&A history, please email <a href="mailto:ai@solidcam.app" className="text-blue-500 hover:underline">ai@solidcam.app</a> with your account email address.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <select
-                  className="border dark:border-gray-700 dark:bg-gray-700 dark:text-white p-2 rounded"
-                  value={deleteTimeframe}
-                  onChange={(e) => setDeleteTimeframe(e.target.value)}
-                >
-                  <option value="all" className="bg-white dark:bg-gray-700">Delete All History</option>
-                  <option value="hour" className="bg-white dark:bg-gray-700">Delete Last Hour</option>
-                  <option value="day" className="bg-white dark:bg-gray-700">Delete Last Day</option>
-                  <option value="week" className="bg-white dark:bg-gray-700">Delete Last Week</option>
-                  <option value="month" className="bg-white dark:bg-gray-700">Delete Last Month</option>
-                </select>
-                <button 
-                  onClick={handleDeleteChatHistory}
-                  disabled={loading && processingAction === 'deleteHistory'}
-                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 disabled:bg-red-300 flex items-center"
-                >
-                  {loading && processingAction === 'deleteHistory' ? (
-                    <>
-                      <span className="mr-2">Deleting</span>
-                      <LoadingDots color="#fff" />
-                    </>
-                  ) : (
-                    'Delete History'
-                  )}
-                </button>
-              </div>
-            </div>
-            
-            {/* Account deletion */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-medium mb-2 dark:text-white">Delete Your Account</h3>
-              <p className="mb-4 text-gray-600 dark:text-gray-400">
-                Permanently delete your account and all associated data. This action cannot be undone.
-              </p>
-              <button 
-                onClick={handleAccountDeletion}
-                disabled={loading && processingAction === 'delete'}
-                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 disabled:bg-red-300 flex items-center"
-              >
-                {loading && processingAction === 'delete' ? (
-                  <>
-                    <span className="mr-2">Processing</span>
-                    <LoadingDots color="#fff" />
-                  </>
-                ) : (
-                  'Delete Account'
-                )}
-              </button>
-            </div>
-          </div>
+<Box>
+  <Typography variant="h6" sx={{ mb: 4 }}>
+    Your Data
+  </Typography>
+  <Box sx={{ bgcolor: 'background.paper', p: 6, borderRadius: 1, boxShadow: 1, mb: 6 }}>
+    <Typography variant="subtitle1" sx={{ mb: 4 }}>
+      Your Data Summary
+    </Typography>
+    <Typography>Email: {userInfo?.email || 'Loading...'}</Typography>
+    <Typography>Chat history items: {dataStats.chatHistoryCount}</Typography>
+    <Typography>Account created: {formatDate(userInfo?.createdAt || null)}</Typography>
+    <Typography>Last activity: {formatDate(dataStats.lastActive)}</Typography>
+  </Box>
+  <Box sx={{ bgcolor: 'background.paper', p: 6, borderRadius: 1, boxShadow: 1, mb: 6 }}>
+    <Typography variant="subtitle1" sx={{ mb: 2 }}>
+      Access and Export Your Data
+    </Typography>
+    <Typography sx={{ mb: 4 }} color="text.secondary">
+      Download a copy of your personal data including your chat history and account information.
+    </Typography>
+    <Button
+      variant="contained"
+      color="primary"
+      onClick={handleDataExport}
+      disabled={loading && processingAction === 'export'}
+      sx={{ display: 'flex', alignItems: 'center' }}
+    >
+      {loading && processingAction === 'export' ? (
+        <>
+          <span style={{ marginRight: 8 }}>Preparing Export</span>
+          <LoadingDots color="#fff" />
+        </>
+      ) : (
+        'Export Your Data'
+      )}
+    </Button>
+  </Box>
+  <Box sx={{ bgcolor: 'background.paper', p: 6, borderRadius: 1, boxShadow: 1, mb: 6 }}>
+    <Typography variant="subtitle1" sx={{ mb: 2 }}>
+      Delete Chat History
+    </Typography>
+    <Box sx={{ mb: 4 }}>
+      <Typography sx={{ mb: 2 }} color="text.secondary">
+        Delete your chat history for a specific timeframe. This action only removes your conversation logs from the system but preserves the questions and answers database.
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 3, fontStyle: 'italic' }} color="text.secondary">
+        Note: Q&A pairs are kept for a minimum of 1 month, and you can opt to anonymize them using the settings under <span >Data Retention</span>. Once deleted, your chat history cannot be recovered.
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        To request complete deletion of all your data including Q&A history, please email <a href="mailto:ai@solidcam.app">ai@solidcam.app</a> with your account email address.
+      </Typography>
+    </Box>
+    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: { sm: 'center' } }}>
+      <select
+        style={{ padding: '8px', borderRadius: '4px' }}
+        value={deleteTimeframe}
+        onChange={(e) => setDeleteTimeframe(e.target.value)}
+      >
+        <option value="all">Delete All History</option>
+        <option value="hour">Delete Last Hour</option>
+        <option value="day">Delete Last Day</option>
+        <option value="week">Delete Last Week</option>
+        <option value="month">Delete Last Month</option>
+      </select>
+      <Button
+        variant="contained"
+        color="error"
+        onClick={handleDeleteChatHistory}
+        disabled={loading && processingAction === 'deleteHistory'}
+        sx={{ display: 'flex', alignItems: 'center' }}
+      >
+        {loading && processingAction === 'deleteHistory' ? (
+          <>
+            <span style={{ marginRight: 8 }}>Deleting</span>
+            <LoadingDots color="#fff" />
+          </>
+        ) : (
+          'Delete History'
+        )}
+      </Button>
+    </Box>
+  </Box>
+  <Box sx={{ bgcolor: 'background.paper', p: 6, borderRadius: 1, boxShadow: 1 }}>
+    <Typography variant="subtitle1" sx={{ mb: 2 }}>
+      Delete Your Account
+    </Typography>
+    <Typography sx={{ mb: 4 }} color="text.secondary">
+      Permanently delete your account and all associated data. This action cannot be undone.
+    </Typography>
+    <Button
+      variant="contained"
+      color="error"
+      onClick={handleAccountDeletion}
+      disabled={loading && processingAction === 'delete'}
+      sx={{ display: 'flex', alignItems: 'center' }}
+    >
+      {loading && processingAction === 'delete' ? (
+        <>
+          <span style={{ marginRight: 8 }}>Processing</span>
+          <LoadingDots color="#fff" />
+        </>
+      ) : (
+        'Delete Account'
+      )}
+    </Button>
+  </Box>
+</Box>
         )}
 
         {activeTab === 'privacy' && (
           <div>
-            <h2 className="text-xl font-semibold mb-4 dark:text-white">Privacy Settings</h2>
+            <Typography variant="h6" sx={{ mb: 4 }}>Privacy Settings</Typography>
             
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-medium mb-4 dark:text-white">Data Collection and Processing</h3>
+            <div >
+              <Typography variant="subtitle1" sx={{ mb: 4 }}>Data Collection and Processing</Typography>
               
-              <div className="space-y-4">
+              <div >
                 {/* Removed "Allow Usage Analytics" toggle as per requirement */}
                 
-                <div className="flex items-start">
+                <div >
                   <input 
                     id="storeHistory" 
                     type="checkbox" 
-                    className="mt-1 mr-3" 
+                     
                     checked={privacySettings.storeHistory}
                     onChange={(e) => setPrivacySettings({...privacySettings, storeHistory: e.target.checked})}
                   />
                   <div>
-                    <label htmlFor="storeHistory" className="font-medium dark:text-white">Store Chat History</label>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <label htmlFor="storeHistory" >Store Chat History</label>
+                    <p >
                       Allow us to store your chat history so you can reference past conversations. Disabling will immediately delete your existing history and prevent new conversations from being saved.
                     </p>
                   </div>
                 </div>
                 
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                <div >
+                  <p >
                     Note: Usage analytics are now managed through the cookie consent banner. You can adjust these settings at any time through the cookie preferences link in the footer.
                   </p>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-medium mb-2 dark:text-white">Data Retention</h3>
-              <p className="mb-4 text-gray-600 dark:text-gray-400">
+            <div >
+              <Typography variant="subtitle1" sx={{ mb: 2 }}>Data Retention</Typography>
+              <p >
                 Choose how long we store your information. This applies to both chat history and Q&A data. Changing this will affect existing and future data.
               </p>
               <select 
-                className="border dark:border-gray-700 dark:bg-gray-700 dark:text-white p-2 rounded w-full max-w-xs"
+                
                 value={privacySettings.retentionPeriod}
                 onChange={(e) => setPrivacySettings({...privacySettings, retentionPeriod: e.target.value})}
               >
-                <option value="1month" className="bg-white dark:bg-gray-700">1 month (default)</option>
-                <option value="3months" className="bg-white dark:bg-gray-700">3 months</option>
-                <option value="6months" className="bg-white dark:bg-gray-700">6 months</option>
-                <option value="1year" className="bg-white dark:bg-gray-700">1 year</option>
-                <option value="forever" className="bg-white dark:bg-gray-700">Forever</option>
+                <option value="1month" >1 month (default)</option>
+                <option value="3months" >3 months</option>
+                <option value="6months" >6 months</option>
+                <option value="1year" >1 year</option>
+                <option value="forever" >Forever</option>
               </select>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              <p >
                 Note: When retention period expires, personal data is anonymized in our knowledge base while preserving the value of Q&A pairs.
               </p>
             </div>
             
-            <div className="mt-6">
-              <button 
+            <div>
+              <Button
+                variant="contained"
+                color="primary"
                 onClick={handlePrivacySettingsUpdate}
                 disabled={loading && processingAction === 'privacy'}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-blue-300 flex items-center"
+                sx={{ display: 'flex', alignItems: 'center' }}
               >
                 {loading && processingAction === 'privacy' ? (
                   <>
-                    <span className="mr-2">Saving</span>
+                    <span style={{ marginRight: 8 }}>Saving</span>
                     <LoadingDots color="#fff" />
                   </>
                 ) : (
                   'Save Privacy Settings'
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {activeTab === 'aiprovider' && (
           <div>
-            <h2 className="text-xl font-semibold mb-4 dark:text-white">AI Provider Settings</h2>
+            <Typography variant="h6" sx={{ mb: 4 }}>AI Provider Settings</Typography>
             
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-medium mb-4 dark:text-white">Select AI Provider</h3>
+            <div >
+              <Typography variant="subtitle1" sx={{ mb: 4 }}>Select AI Provider</Typography>
               
-              <p className="mb-4 text-gray-600 dark:text-gray-400">
+              <p >
                 Choose the AI provider that will power your chat experience. Different providers may offer varied capabilities and response styles.
               </p>
               
-              <div className="space-y-4">
-                <div className="flex items-center">
+              <div >
+                <div >
                   <input 
                     id="openai" 
                     type="radio" 
                     name="aiProvider"
                     value="openai"
-                    className="mr-3" 
+                     
                     checked={aiProvider === 'openai'}
                     onChange={() => setAiProvider('openai')}
                   />
                   <div>
-                    <label htmlFor="openai" className="font-medium dark:text-white">OpenAI</label>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <label htmlFor="openai" >OpenAI</label>
+                    <p >
                       Powered by OpenAI's advanced language models.
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center">
+                <div >
                   <input 
                     id="deepseek" 
                     type="radio" 
                     name="aiProvider"
                     value="deepseek"
-                    className="mr-3" 
+                     
                     checked={aiProvider === 'deepseek'}
                     onChange={() => setAiProvider('deepseek')}
                   />
                   <div>
-                    <label htmlFor="deepseek" className="font-medium dark:text-white">DeepSeek</label>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <label htmlFor="deepseek" >DeepSeek</label>
+                    <p >
                       Powered by DeepSeek's efficient and powerful language models.
                     </p>
                   </div>
                 </div>
               </div>
               
-              <div className="mt-6">
-                <button 
+              <div>
+                <Button
+                  variant="contained"
+                  color="primary"
                   onClick={handleAiProviderUpdate}
                   disabled={loading && processingAction === 'aiProvider'}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-blue-300 flex items-center"
+                  sx={{ display: 'flex', alignItems: 'center' }}
                 >
                   {loading && processingAction === 'aiProvider' ? (
                     <>
-                      <span className="mr-2">Saving</span>
+                      <span style={{ marginRight: 8 }}>Saving</span>
                       <LoadingDots color="#fff" />
                     </>
                   ) : (
                     'Save AI Provider Setting'
                   )}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -749,33 +758,33 @@ const handleAiProviderUpdate = async () => {
 
         {activeTab === 'contact' && (
           <div>
-            <h2 className="text-xl font-semibold mb-4 dark:text-white">Contact Information</h2>
+            <Typography variant="h6" sx={{ mb: 4 }}>Contact Information</Typography>
             
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-medium mb-4 dark:text-white">GDPR Requests</h3>
-              <p className="mb-2 text-gray-600 dark:text-gray-400">
+            <div >
+              <Typography variant="subtitle1" sx={{ mb: 4 }}>GDPR Requests</Typography>
+              <p >
                 For specific GDPR concerns or requests not handled through this interface, you can contact our data protection team:
               </p>
               
-              <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded mb-4">
-                <p className="font-medium dark:text-white">ai@solidcam.app</p>
+              <div >
+                <p >ai@solidcam.app</p>
               </div>
               
-              <p className="text-gray-600 dark:text-gray-400">
+              <p >
                 When contacting us about GDPR matters, please include your account email to help us process your request efficiently.
               </p>
             </div>
             
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-medium mb-4 dark:text-white">Legal Information</h3>
+            <div >
+              <Typography variant="subtitle1" sx={{ mb: 4 }}>Legal Information</Typography>
               
-              <div className="space-y-4">
+              <div >
                 <div>
-                  <h4 className="font-medium mb-2 dark:text-white">Privacy Policy</h4>
-                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                  <Typography variant="subtitle2" sx={{ mb: 2 }}>Privacy Policy</Typography>
+                  <p >
                     Our privacy policy details how we collect, process, and protect your data:
                   </p>
-                  <Link href="/privacy-policy" className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300">
+                  <Link href="/privacy-policy" >
                     Read our Privacy Policy
                   </Link>
                 </div>
@@ -784,8 +793,8 @@ const handleAiProviderUpdate = async () => {
             </div>
           </div>
         )}
-    </div>
-    </div>
+        </Box>
+      </Box>
     </Layout>
   );
 };
