@@ -1,11 +1,17 @@
 import React, { memo } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
+import {
+  List,
+  ListItem,
+  Card,
+  CardContent,
+  Box,
+} from '@mui/material';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import FeedbackComponent from './FeedbackComponent';
 import { ImagePreviewData } from '@/components/core/Media';
 import { handleWebinarClick, handleDocumentClick } from '@/utils/tracking';
-import styles from '@/styles/Home.module.css';
 import { ChatMessage } from './types';
 
 interface CustomLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
@@ -29,18 +35,17 @@ interface MessageListProps {
 }
 
 // User message component
-const UserMessage = memo(({ 
-  message, 
-  icon, 
-  loading, 
-  setEnlargedImage 
-}: { 
-  message: ChatMessage; 
-  icon: JSX.Element; 
+const UserMessage = memo(({
+  message,
+  icon,
+  loading,
+  setEnlargedImage,
+}: {
+  message: ChatMessage;
+  icon: JSX.Element;
   loading: boolean;
   setEnlargedImage: (image: ImagePreviewData) => void;
 }) => {
-  const className = loading ? styles.usermessagewaiting : styles.usermessage;
   
   const formattedMessage = typeof message.message === 'string' 
     ? message.message.replace(/\[Image model answer:[\s\S]*?\]/g, '').trim()
@@ -59,47 +64,34 @@ const UserMessage = memo(({
     : [];
 
   return (
-    <div className={className}>
+    <ListItem disableGutters alignItems="flex-start">
       {icon}
-      <div className={styles.markdownanswer}>
-        {images.length > 0 && (
-          <div
-            className="image-container"
-            style={{
-              marginBottom: '10px',
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '10px',
-              justifyContent: 'start',
-            }}
-          >
-            {images.map((image, imgIndex) => (
-              <div key={imgIndex}>
-                <img
-                  src={image.url}
-                  alt={`User uploaded: ${image.fileName}`}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setEnlargedImage(image)}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+      <Card sx={{ ml: 1, flex: 1, bgcolor: loading ? 'action.hover' : 'background.paper' }}>
+        <CardContent>
+          {images.length > 0 && (
+            <Box
+              sx={{
+                mb: 1,
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 1,
+                justifyContent: 'start',
+              }}
+            >
+              {images.map((image, imgIndex) => (
+                <Box key={imgIndex} onClick={() => setEnlargedImage(image)} sx={{ cursor: 'pointer' }}>
+                  <img src={image.url} alt={`User uploaded: ${image.fileName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </Box>
+              ))}
+            </Box>
+          )}
 
-        <ReactMarkdown
-          components={{
-            a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} />,
-          }}
-        >
-          {formattedMessage}
-        </ReactMarkdown>
-      </div>
-    </div>
+          <ReactMarkdown components={{ a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} /> }}>
+            {formattedMessage}
+          </ReactMarkdown>
+        </CardContent>
+      </Card>
+    </ListItem>
   );
 });// API message component
 const ApiMessage = memo(({
@@ -130,47 +122,34 @@ const ApiMessage = memo(({
     : [];
 
   return (
-    <div className={styles.apimessage}>
+    <ListItem disableGutters alignItems="flex-start">
       {icon}
-      <div className={styles.markdownanswer} ref={answerStartRef}>
-        {images.length > 0 && (
-          <div
-            className="image-container"
-            style={{
-              marginBottom: '10px',
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '10px',
-              justifyContent: 'start',
-            }}
-          >
-            {images.map((image, imgIndex) => (
-              <div key={imgIndex}>
-                <img
-                  src={image.url}
-                  alt={`AI response: ${image.fileName}`}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setEnlargedImage(image)}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+      <Card sx={{ ml: 1, flex: 1 }}>
+        <CardContent ref={answerStartRef}>
+          {images.length > 0 && (
+            <Box
+              sx={{
+                mb: 1,
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 1,
+                justifyContent: 'start',
+              }}
+            >
+              {images.map((image, imgIndex) => (
+                <Box key={imgIndex} onClick={() => setEnlargedImage(image)} sx={{ cursor: 'pointer' }}>
+                  <img src={image.url} alt={`AI response: ${image.fileName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </Box>
+              ))}
+            </Box>
+          )}
 
-        <ReactMarkdown
-          components={{
-            a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} />,
-          }}
-        >
-          {formattedMessage}
-        </ReactMarkdown>
-      </div>
-    </div>
+          <ReactMarkdown components={{ a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} /> }}>
+            {formattedMessage}
+          </ReactMarkdown>
+        </CardContent>
+      </Card>
+    </ListItem>
   );
 });
 
@@ -319,33 +298,17 @@ const MessageList: React.FC<MessageListProps> = ({
   roomId,
 }) => {
   return (
-    <>
+    <List>
       {messages.map((message, index) => {
         let icon;
         
         if (message.type === 'apiMessage') {
           icon = (
-            <Image
-              key={index}
-              src={botimageIcon}
-              alt="AI"
-              width={40}
-              height={40}
-              className={styles.boticon}
-              priority
-            />
+              <Image key={index} src={botimageIcon} alt="AI" width={40} height={40} priority />
           );
         } else {
           icon = (
-            <Image
-              key={index}
-              src={imageUrlUserIcon}
-              alt="Me"
-              width={30}
-              height={30}
-              className={styles.usericon}
-              priority
-            />
+              <Image key={index} src={imageUrlUserIcon} alt="Me" width={30} height={30} priority />
           );
         }
 
@@ -382,7 +345,7 @@ const MessageList: React.FC<MessageListProps> = ({
           </React.Fragment>
         );
       })}
-    </>
+    </List>
   );
 };
 

@@ -1,6 +1,7 @@
 // components/core/Chat/ChatContainer.tsx
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Box, Container, Typography } from '@mui/material';
 import useChat from '@/hooks/useChat';
 import useTextAreaHeight from '@/hooks/useTextAreaHeight';
 import useTheme from '@/hooks/useTheme';
@@ -14,7 +15,7 @@ import Cookies from 'js-cookie';
 import styles from '@/styles/Home.module.css';
 
 // Import components with the new structure
-import { MessageList } from '@/components/core/Chat';
+import { MessageList, ChatInput } from '@/components/core/Chat';
 import { 
   MicrophoneRecorder, 
   ImageUpload, 
@@ -434,7 +435,8 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
         }}
         handleNewChat={handleNewChat}
       >
-        <div className="mx-auto flex flex-col gap-4">
+        <Container maxWidth="md">
+          <Box display="flex" flexDirection="column" gap={2}>
           {/* For internal embedding - No change needed here */}
           {imagePreviews.length > 0 && (
             <div className="image-container-image-thumb">
@@ -460,9 +462,9 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
           )}
 
           <main className={styles.main}>
-            <h1 className="text-2xl font-bold leading-[1.1] tracking-tighter text-center">
+            <Typography variant="h4" align="center" fontWeight="bold" gutterBottom>
               SolidCAM ChatBot
-            </h1>
+            </Typography>
             
             <div className={styles.chatContainer}>
               {/* Chat pane (top) */}
@@ -503,169 +505,60 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
               
               {/* Section to display file errors */}
               {Object.entries(fileErrors).length > 0 && (
-                <div className="error-container">
+                <Box>
                   {Object.entries(fileErrors).map(([fileName, error]) => (
-                    <div
+                    <Box
                       key={fileName}
-                      className="border border-red-400 rounded-md p-2 mt-2"
+                      sx={{ border: '1px solid', borderColor: 'error.main', borderRadius: 1, p: 1, mt: 2 }}
                     >
-                      <p className="text-red-500 text-sm">{`Error uploading: ${error}`}</p>
-                    </div>
+                      <Typography color="error" variant="body2">{`Error uploading: ${error}`}</Typography>
+                    </Box>
                   ))}
-                </div>
+                </Box>
               )}
               
-              {/* Textarea fixed at bottom */}
-              <div className={styles.inputContainer}>
-                <div className={styles.cloudform}>
-                  <form className={styles.textareaContainer} onSubmit={handleSubmit}>
-                    <textarea
-                      disabled={loading}
-                      onKeyDown={handleEnter}
-                      onChange={handleChange}
-                      ref={textAreaRef}
-                      autoFocus={false}
-                      rows={1}
-                      maxLength={50000}
-                      id="userInput"
-                      name="userInput"
-                      placeholder={
-                        loading
-                          ? 'Waiting for response...'
-                          : isMicActive
-                          ? ''
-                          : 'Message SolidCAM ChatBot...'
-                      }
-                      value={query}
-                      className={styles.textarea}
-                      readOnly={currentStage === 4}
-                    />
-                    
-                    {/* Conditionally render the ImageUpload component */}
-                    {!loading && (
-                      <ImageUpload 
-                        handleFileChange={handleFileChange} 
-                      />
-                    )}
-                    
-                    {/* Conditionally render the general file input and label */}
-                    {!loading && (
-                      <>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          onChange={handleHomeFileChange}
-                          accept="image/*"
-                          multiple
-                          style={{ display: 'none' }}
-                          id="generalFileInput"
-                        />
-                        <label
-                          htmlFor="generalFileInput"
-                          className={styles.fileUploadButton}
-                          title="Upload image"
-                        >
-                          <Tooltip message="Upload image" hideOnClick={true}>
-                            <img
-                              src="/image-upload-48.png"
-                              alt="Upload JPG"
-                              width="30"
-                              height="30"
-                            />
-                          </Tooltip>
-                        </label>
-                      </>
-                    )}                    {currentStage === 4 ? (
-                      !loading && (
-                        <label
-                          htmlFor="fileInput"
-                          className={styles.fileUploadButton}
-                        >
-                          <input
-                            id="fileInput"
-                            type="file"
-                            accept="image/jpeg"
-                            style={{ display: 'none' }}
-                            onChange={handleFileChange}
-                            multiple
-                          />
-                          <Tooltip message="Upload image" hideOnClick={true}>
-                            <img
-                              src="/image-upload-48.png"
-                              alt="Upload JPG"
-                              width="30"
-                              height="30"
-                            />
-                          </Tooltip>
-                        </label>
-                      )
-                    ) : (
-                      <MicrophoneRecorder
-                        setQuery={setQuery}
-                        loading={loading}
-                        setIsTranscribing={setIsTranscribing}
-                        isTranscribing={isTranscribing}
-                        setIsMicActive={setIsMicActive}
-                      />
-                    )}
-
-                    {!isMicActive && (
-                      <button
-                        type="submit"
-                        id="submitButton"
-                        disabled={loading || isTranscribing}
-                        className={styles.generatebutton}
-                      >
-                        {loading || isTranscribing ? (
-                          <div className={styles.loadingwheel}>
-                            <LoadingDots color="#000" />
-                          </div>
-                        ) : (
-                          <svg
-                            viewBox="0 0 20 20"
-                            className={styles.svgicon}
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
-                          </svg>
-                        )}
-                      </button>
-                    )}
-                  </form>
-                  
-                  <div className="disclaimer-container">
-                    <div className={styles.disclaimerText}>
-                      <p style={{ fontSize: 'small', color: 'gray' }}>
-                        SolidCAM ChatBot may display inaccurate info so
-                        double-check its responses
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Text input section */}
+              <ChatInput
+                query={query}
+                setQuery={setQuery}
+                loading={loading}
+                isTranscribing={isTranscribing}
+                isMicActive={isMicActive}
+                setIsMicActive={setIsMicActive}
+                setIsTranscribing={setIsTranscribing}
+                handleSubmit={handleSubmit}
+                handleChange={handleChange}
+                handleEnter={handleEnter}
+                textAreaRef={textAreaRef}
+                currentStage={currentStage}
+                handleFileChange={handleFileChange}
+                handleHomeFileChange={handleHomeFileChange}
+                fileInputRef={fileInputRef}
+              />
             </div>
             
             {speechError && (
-              <div className="border border-red-400 rounded-md p-4">
-                <p className="text-red-500">{speechError}</p>
-              </div>
+              <Box sx={{ border: '1px solid', borderColor: 'error.main', borderRadius: 1, p: 2 }}>
+                <Typography color="error">{speechError}</Typography>
+              </Box>
             )}
-            
+
             {chatError && (
-              <div className="border border-red-400 rounded-md p-4">
-                <p className="text-red-500">{chatError}</p>
-              </div>
+              <Box sx={{ border: '1px solid', borderColor: 'error.main', borderRadius: 1, p: 2 }}>
+                <Typography color="error">{chatError}</Typography>
+              </Box>
             )}
           </main>
-        </div>
-        <footer className="footer p-4 text-center mt-auto">
+          </Box>
+        </Container>
+        <Box component="footer" sx={{ p: 2, textAlign: 'center', mt: 'auto' }}>
           © 2024 SolidCAM™. All rights reserved.
           <p>
             <Link href="/privacy-policy" passHref>
               Privacy Policy
             </Link>
           </p>
-        </footer>
+        </Box>
       </Layout>
     </>
   );
