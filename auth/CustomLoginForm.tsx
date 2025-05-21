@@ -6,6 +6,14 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Image from 'next/image';
 import Cookies from 'js-cookie';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+} from '@mui/material';
 
 const CustomLoginForm = () => {
     // Removed the name state since it's not needed anymore
@@ -323,19 +331,23 @@ useEffect(() => {
 
 
   const ConsentModal = () => (
-    <div className="backdropStyle">
-        <div className="modalStyle">
-            <h2 className="headerStyle">Your Privacy Matters</h2>
-            <p>To enhance your experience and create your account, we securely store your email and interaction history. By clicking 'Agree', you acknowledge and consent to this use.</p>
-            <button onClick={acceptConsent} className="agreeButtonStyle">
-                Agree
-            </button>
-            <button onClick={declineConsent} className="cancelButtonStyle">
-                Decline
-            </button>
-        </div>
-    </div>
-);
+    <Dialog open onClose={declineConsent} aria-labelledby="consent-title">
+      <DialogTitle id="consent-title">Your Privacy Matters</DialogTitle>
+      <DialogContent dividers>
+        <Typography gutterBottom>
+          To enhance your experience and create your account, we securely store your email and interaction history. By clicking 'Agree', you acknowledge and consent to this use.
+        </Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={acceptConsent} variant="contained" color="primary">
+          Agree
+        </Button>
+        <Button onClick={declineConsent} variant="outlined" color="secondary">
+          Decline
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
   
   
 const acceptConsent = () => {
