@@ -136,6 +136,80 @@ async function initializeChatHistory(roomId: string, userEmail: string) {
 }
 
 /**
+ * Ensure a chat session exists and initialize it if needed
+ */
+async function ensureChatSession(roomId: string, userEmail: string) {
+  if (await isNewChatSession(roomId)) {
+    await initializeChatHistory(roomId, userEmail);
+  }
+}
+
+/**
+ * Pre-process user input: handle images, language detection and translation
+ */
+async function prepareInput(
+  input: string,
+  imageUrls: string[],
+  roomId: string,
+  sharedModel: ChatOpenAI,
+  translationModel: ChatOpenAI
+): Promise<{
+  processedInput: string;
+  originalInput: string;
+  language: string;
+  imageDescription: string;
+}> {
+  let processedInput = input;
+  let imageDescription = '';
+
+  if (imageUrls && imageUrls.length > 0) {
+    imageDescription = await processImageWithOpenAI(imageUrls, input);
+  }
+
+  const language = await detectLanguageWithOpenAI(processedInput, sharedModel);
+  const originalInput = processedInput;
+
+  if (language !== 'English') {
+    processedInput = await translateToEnglish(processedInput, translationModel);
+  }
+
+  if (imageDescription) {
+    processedInput = `${processedInput} [Image model answer: ${imageDescription}]`;
+  }
+
+  if (imageUrls.length === 0) {
+    const historyImageUrls = await getImageUrlsFromHistory(roomId);
+    if (historyImageUrls.length > 0) {
+      const relatedToImage = await isQuestionRelatedToImage(
+        processedInput,
+        await MemoryService.getChatHistory(roomId),
+        sharedModel,
+        imageDescription
+      );
+
+      if (relatedToImage) {
+        const historicalImageDescription = await processImageWithOpenAI(
+          historyImageUrls,
+          processedInput
+        );
+
+        if (historicalImageDescription) {
+          processedInput = `${processedInput} [Image model answer: ${historicalImageDescription}]`;
+          imageDescription = historicalImageDescription;
+        }
+      }
+    }
+  }
+
+  return {
+    processedInput,
+    originalInput,
+    language,
+    imageDescription
+  };
+}
+
+/**
  * Process an image with OpenAI's vision model and return a description
  */
 async function processImageWithOpenAI(
@@ -516,10 +590,7 @@ export const makeChain = (
       userEmail: string, 
       imageUrls: string[]
     ) => {
-      // Check if this is a new chat session
-      if (await isNewChatSession(roomId)) {
-        await initializeChatHistory(roomId, userEmail);
-      }
+      await ensureChatSession(roomId, userEmail);
 
       // Generate a unique ID for this Q&A
       const qaId = generateUniqueId();
@@ -540,53 +611,20 @@ export const makeChain = (
         }],
       });
 
-      // Process images if provided
-      let imageDescription = '';
-      if (imageUrls && imageUrls.length > 0) {
-        imageDescription = await processImageWithOpenAI(imageUrls, input);
-      }
+      const {
+        processedInput,
+        originalInput,
+        language,
+        imageDescription
+      } = await prepareInput(
+        input,
+        imageUrls,
+        roomId,
+        sharedModel,
+        translationModel
+      );
 
-      // Detect language and translate if necessary
-      const language = await detectLanguageWithOpenAI(input, sharedModel);
-      const originalInput = input;
-
-      if (language !== 'English') {
-        input = await translateToEnglish(input, translationModel);
-      }
-
-      // Add image description to input if available
-      if (imageDescription) {
-        input = `${input} [Image model answer: ${imageDescription}]`;
-      }
-
-      // Get chat history
       const rawChatHistory = await MemoryService.getChatHistory(roomId);
-
-      // Check for images in history if current input doesn't have images
-      if (imageUrls.length === 0) {
-        const historyImageUrls = await getImageUrlsFromHistory(roomId);
-        
-        if (historyImageUrls.length > 0) {
-          const relatedToImage = await isQuestionRelatedToImage(
-            input, 
-            rawChatHistory, 
-            sharedModel, 
-            imageDescription
-          );
-          
-          if (relatedToImage) {
-            const historicalImageDescription = await processImageWithOpenAI(
-              historyImageUrls, 
-              input
-            );
-            
-            if (historicalImageDescription) {
-              input = `${input} [Image model answer: ${historicalImageDescription}]`;
-              imageDescription = historicalImageDescription;
-            }
-          }
-        }
-      }
 
       // Process chat history based on AI provider
       let processedChatHistory = rawChatHistory;
@@ -595,7 +633,7 @@ export const makeChain = (
       }
 
       // Log if this is an API-related query
-      const isApiQuery = isApiRelatedQuery(input);
+      const isApiQuery = isApiRelatedQuery(processedInput);
 
       // Create history-aware retriever
       const historyAwareRetriever = await createHistoryAwareRetriever({
@@ -625,7 +663,7 @@ export const makeChain = (
       });
 
       // Get optimized relevant history
-      const relevantHistory = await getRelevantHistory(rawChatHistory, input, {
+      const relevantHistory = await getRelevantHistory(rawChatHistory, processedInput, {
         maxTurns: 3,
         useSemanticSearch: false,
         recencyWeight: 0.7
@@ -633,7 +671,7 @@ export const makeChain = (
 
       // Invoke RAG chain to get answer
       const ragResponse = await ragChain.invoke({
-        input,
+        input: processedInput,
         chat_history: relevantHistory as any,
         language,
         imageDescription,
@@ -650,7 +688,7 @@ export const makeChain = (
 
       // Get relevant documents based on embeddings
       const embeddingsStore = await customRetriever.storeEmbeddings(
-        language === 'English' ? ragResponse.answer : input,
+        language === 'English' ? ragResponse.answer : processedInput,
         minScoreSourcesThreshold
       );
 
