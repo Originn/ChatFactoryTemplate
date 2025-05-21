@@ -39,6 +39,9 @@ next-env.d.ts
 #Notion_db
 /Notion_DB
 
+# Python virtual environment
+venv/
+
 my-drive-390208-ff51bf7bd1be.json
 my-drive-390208-f428ca482a32.json
 solidcamchat-d2e223321c7b.json
