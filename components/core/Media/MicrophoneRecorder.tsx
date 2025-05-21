@@ -1,9 +1,12 @@
 import React, { useState, useRef, FC, useEffect } from 'react';
 import Image from 'next/image';
+import { Box, IconButton } from '@mui/material';
+import StopIcon from '@mui/icons-material/Close';
+import CheckIcon from '@mui/icons-material/Check';
+import MicIcon from '@mui/icons-material/Mic';
 import { RecordAudioReturnType, recordAudio, transcribeAudio } from '@/utils/speechRecognition';
 import WaveSurfer from 'wavesurfer.js';
 import RecordPlugin from 'wavesurfer.js/dist/plugins/record.js';
-import styles from '@/styles/Home.module.css';
 import { handleMicClickEvent } from '@/utils/tracking';
 import { Tooltip } from '@/components/ui/Feedback';
 
@@ -194,58 +197,34 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({
 
 
   return (
-    <div>
+    <Box>
       {listening && (
-        <div className={styles.waveContainer}>
-          <div id="waveform" className={styles.soundVisual}></div>
-          <button
-            type="button"
-            className={`${styles.stopRecordingButton} ${styles.squareButton}`}
-            onClick={cleanup}
-            aria-label="Cancel recording"
-          >
-            X
-          </button>
-          <div className={styles.timer}>
+        <Box display="flex" justifyContent="center" position="absolute" top={-29} right={4} bgcolor="#ffffff" height={50} width="22%" borderRadius={1}>
+          <Box id="waveform" sx={{ width: '35%', height: 56, position: 'absolute', marginRight: 2 }}></Box>
+          <IconButton onClick={cleanup} aria-label="Cancel recording" size="small" sx={{ ml: 5, mt: 1 }}>
+            <StopIcon />
+          </IconButton>
+          <Box sx={{ fontSize: 16, ml: 'auto', display: 'flex', alignItems: 'center', p: 1 }}>
             {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
-          </div>
-          <button
-            type="button"
-            className={`${styles.checkRecordingButton} ${styles.circleButton}`}
-            onClick={stopRecording}
-            aria-label="Stop recording and transcribe"
-          >
-            ✓
-          </button>
-        </div>
+          </Box>
+          <IconButton onClick={stopRecording} aria-label="Stop recording and transcribe" size="small" sx={{ mr: 1, mt: 1 }}>
+            <CheckIcon />
+          </IconButton>
+        </Box>
       )}
       {!listening && !loading && (
-        <label htmlFor="micInput" className={styles.micButton}>
-          <input
-            id="micInput"
-            type="button"
-            style={{ display: 'none' }}
-            onClick={handleMicClick}
-            disabled={isTranscribing}
-          />
+        <IconButton onClick={handleMicClick} disabled={isTranscribing} size="small">
           <Tooltip message="Start recording" hideOnClick={true}>
-            <Image
-              src="/icons8-mic-50.png"
-              alt="Mic"
-              className={styles.micIcon}
-              width='30'
-              height='30'
-              style={{ opacity: listening || isTranscribing ? 0.5 : 1 }}
-            />
+            <MicIcon sx={{ opacity: listening || isTranscribing ? 0.5 : 1 }} />
           </Tooltip>
-        </label>
+        </IconButton>
       )}
       {speechError && (
-        <div className="border border-red-400 rounded-md p-4">
+        <Box className="border border-red-400 rounded-md p-4">
           <p className="text-red-500">{speechError}</p>
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
