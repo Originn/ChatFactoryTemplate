@@ -2,9 +2,16 @@ import Image from 'next/image';
 import { auth } from '@/utils/firebase';
 import { ChatHistoryItem } from '@/components/core/Chat/types';
 import ChatHistory from '@/components/core/Chat/ChatHistory';
-import { Tooltip } from '@/components/ui/Feedback';
 import UserMenu from '@/components/core/User';
 import { FC } from 'react';
+import {
+  AppBar,
+  Toolbar,
+  IconButton,
+  Tooltip,
+  Box,
+  Container,
+} from '@mui/material';
 
 interface LayoutProps {
   children?: React.ReactNode;
@@ -35,74 +42,52 @@ const Layout: FC<LayoutProps> = ({
   const userEmail = auth.currentUser ? auth.currentUser.email : '';
   const { moonIcon } = getIconPaths();
 
-  const iconButtonClass = "w-10 h-10 flex items-center justify-center bg-gray-200 dark:bg-gray-600 rounded-full mr-4";
-  const newChatButtonClass = "w-10 h-10 flex items-center justify-center bg-blue-500 text-white rounded-full mr-4";
+  const iconButtonSx = { width: 40, height: 40, mr: 1 };
 
   return (
-    <div className={`flex flex-col min-h-screen mx-auto`}>
-      <header className={`sticky top-0 z-40 w-full ${theme === 'light' ? 'bg-white' : 'bg-dark-header'}`}>
-        <div className="h-16 border-b border-b-slate-200 py-4">
-          <div className="mx-4 px-6 flex items-center justify-between">
-            {/* Left side navigation */}
-            <div className="flex items-center">
-              {/* Only show Chat History for non-solidcam.com users */}
-              {userEmail && (
-                <div className={iconButtonClass}>
-                  <Tooltip message="View chat history" hideOnClick={true}>
-                    <ChatHistory
-                      userEmail={userEmail}
-                      className="relative z-50"
-                      onHistoryItemClick={onHistoryItemClick}
-                    />
-                  </Tooltip>
-                </div>
-              )}
-
-              {/* New Chat button - shown for all users */}
-              <Tooltip message="Start a new chat">
-                <button 
-                  onClick={handleNewChat} 
-                  className={newChatButtonClass}
-                  aria-label="Start a new chat"
-                >
-                  <Image
-                    src="/new-chat.png"
-                    alt="Start New Chat"
-                    width={24}
-                    height={24}
-                  />
-                </button>
-              </Tooltip>
-
-              {/* Theme Toggle Button - show for all users */}
-              <Tooltip message={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-                <button 
-                  onClick={toggleTheme} 
-                  className={iconButtonClass}
-                  aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-                >
-                  {theme === 'dark' ? (
-                    <Image src="icons8-sun.svg" alt="Sun Icon" width={24} height={24} />
-                  ) : (
-                    <Image src={moonIcon} alt="Moon Icon" width={24} height={24} />
-                  )}
-                </button>
-              </Tooltip>
-            </div>
-
-            {/* Right side navigation - User Menu */}
+    <Box display="flex" flexDirection="column" minHeight="100vh">
+      <AppBar position="sticky" color="default" sx={{ height: '64px' }}>
+        <Toolbar sx={{ justifyContent: 'space-between', alignItems: 'center', height: '64px', minHeight: '64px' }}>
+          <Box display="flex" alignItems="center">
             {userEmail && (
-              <UserMenu className="ml-auto" />
+              <Tooltip title="View chat history">
+                <IconButton sx={iconButtonSx} aria-label="View chat history">
+                  <ChatHistory
+                    userEmail={userEmail}
+                    className="relative z-50"
+                    onHistoryItemClick={onHistoryItemClick}
+                  />
+                </IconButton>
+              </Tooltip>
             )}
-          </div>
-        </div>
-      </header>
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 flex flex-col overflow-hidden">
+
+            <Tooltip title="Start a new chat">
+              <IconButton onClick={handleNewChat} sx={{ ...iconButtonSx, bgcolor: 'primary.main', color: 'white' }} aria-label="Start a new chat">
+                <Image src="/new-chat.png" alt="Start New Chat" width={24} height={24} />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+              <IconButton onClick={toggleTheme} sx={iconButtonSx} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+                {theme === 'dark' ? (
+                  <Image src="icons8-sun.svg" alt="Sun Icon" width={24} height={24} />
+                ) : (
+                  <Image src={moonIcon} alt="Moon Icon" width={24} height={24} />
+                )}
+              </IconButton>
+            </Tooltip>
+          </Box>
+          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
+            {userEmail && <UserMenu />}
+          </Box>
+        </Toolbar>
+      </AppBar>
+      <Box flex={1} display="flex" flexDirection="column" overflow="hidden">
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {children}
         </main>
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 

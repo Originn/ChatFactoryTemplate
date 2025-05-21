@@ -6,6 +6,16 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Image from 'next/image';
 import Cookies from 'js-cookie';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  TextField,
+  Box,
+} from '@mui/material';
 
 const CustomLoginForm = () => {
     // Removed the name state since it's not needed anymore
@@ -323,19 +333,23 @@ useEffect(() => {
 
 
   const ConsentModal = () => (
-    <div className="backdropStyle">
-        <div className="modalStyle">
-            <h2 className="headerStyle">Your Privacy Matters</h2>
-            <p>To enhance your experience and create your account, we securely store your email and interaction history. By clicking 'Agree', you acknowledge and consent to this use.</p>
-            <button onClick={acceptConsent} className="agreeButtonStyle">
-                Agree
-            </button>
-            <button onClick={declineConsent} className="cancelButtonStyle">
-                Decline
-            </button>
-        </div>
-    </div>
-);
+    <Dialog open onClose={declineConsent} aria-labelledby="consent-title">
+      <DialogTitle id="consent-title">Your Privacy Matters</DialogTitle>
+      <DialogContent dividers>
+        <Typography gutterBottom>
+          To enhance your experience and create your account, we securely store your email and interaction history. By clicking 'Agree', you acknowledge and consent to this use.
+        </Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={acceptConsent} variant="contained" color="primary">
+          Agree
+        </Button>
+        <Button onClick={declineConsent} variant="outlined" color="secondary">
+          Decline
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
   
   
 const acceptConsent = () => {
@@ -429,172 +443,156 @@ const handleCreateAccountClick = (e: React.FormEvent) => {
                         Sign in with Email
                     </button>
                     {showModal && (
-                <div className="signup-popup-backdrop">
-                    <div className="signup-popup">
-                        <div className="signup-popup-header">
-                            <button onClick={closePopup} className="signup-popup-close">&times;</button>
-                            <h2>Create Your Account</h2>
-                        </div>
-                        <form onSubmit={handleCreateAccountClick} className="signup-popup-body">
-                            <input
-                                type="email"
-                                placeholder="Email"
-                                required
-                                value={email}
-                                onChange={(e) => {
-                                    setEmail(e.target.value);
-                                    setErrorMessage('');
-                                }}
-                                className="signup-popup-body-input"
+                      <Dialog open onClose={closePopup}>
+                        <DialogTitle>Create Your Account</DialogTitle>
+                        <DialogContent>
+                          <Box
+                            component="form"
+                            onSubmit={handleCreateAccountClick}
+                            sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
+                          >
+                            <TextField
+                              type="email"
+                              label="Email"
+                              required
+                              value={email}
+                              onChange={(e) => {
+                                setEmail(e.target.value);
+                                setErrorMessage('');
+                              }}
                             />
-                            <input
+                            <TextField
+                              type="password"
+                              label="Password"
+                              required
+                              value={password}
+                              onChange={(e) => {
+                                setPassword(e.target.value);
+                                setErrorMessage('');
+                              }}
+                              inputRef={passwordInputRef}
+                            />
+                            {errorMessage && <Typography color="error">{errorMessage}</Typography>}
+                            <Button
+                              type="submit"
+                              variant="contained"
+                              disabled={!isFormValid() || isSubmitting}
+                            >
+                              Create account
+                            </Button>
+                          </Box>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                    {showSignInModal && (
+                      <Dialog open onClose={closeSignInPopup}>
+                        <DialogTitle>{emailSubmitted ? 'Enter your password' : 'Sign In'}</DialogTitle>
+                        <DialogContent>
+                          {emailSubmitted ? (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <TextField type="text" value={email} disabled />
+                              <TextField
                                 type="password"
-                                placeholder="Password"
+                                label="Password"
                                 required
                                 value={password}
                                 onChange={(e) => {
-                                    setPassword(e.target.value);
-                                    setErrorMessage('');
+                                  setPassword(e.target.value);
+                                  setErrorMessage('');
                                 }}
-                                className="signup-popup-body-input"
-                                ref={passwordInputRef}
-                            />
-                            {errorMessage && <div className="error-message">{errorMessage}</div>}
-                            <button
-                                type="submit"
-                                className={`btn ${isFormValid() ? 'btn-enabled' : ''}`}
-                                disabled={!isFormValid() || isSubmitting}
-                            >
-                                Create account
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
-                    {showSignInModal && (
-                    <div className="signin-popup-backdrop">
-                        <div className="signin-popup">
-                            <div className="signin-popup-header">
-                                <button onClick={closeSignInPopup} className="signin-popup-close">&times;</button>
-                                <h2>{emailSubmitted ? "Enter your password" : "Sign In"}</h2>
-                            </div>
-                            <div className="signin-popup-body">
-                                {emailSubmitted ? (
+                                inputRef={passwordInputRef}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleSignInWithEmail();
+                                  }
+                                }}
+                              />
+                              {errorMessage && (
+                                <Typography color="error">
+                                  {errorMessage.includes('to resend the verification email') ? (
                                     <>
-                                        <input
-                                            type="text"
-                                            value={email}
-                                            className="signin-popup-body-input"
-                                            disabled
-                                        />
-                                        <input
-                                            type="password"
-                                            placeholder="Password"
-                                            required
-                                            value={password}
-                                            onChange={(e) => {
-                                                setPassword(e.target.value);
-                                                setErrorMessage(''); // Clear the error when the user starts typing
-                                            }}
-                                            ref={passwordInputRef}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault(); // Prevent the default action to avoid submitting the form
-                                                    handleSignInWithEmail();
-                                                }
-                                            }}
-                                            className="signin-popup-body-input"
-                                        />
-                                      {errorMessage && (
-                                        <div className="error-message">
-                                          {errorMessage.includes('to resend the verification email') ? (
-                                            <>
-                                              Please verify your email.{' '}
-                                              <span onClick={resendVerificationEmail} style={darkModeStyle}>
-                                                Click here
-                                              </span>
-                                              {' '}to resend the verification email.
-                                            </>
-                                          ) : errorMessage.includes('to reset your password') ? (
-                                            <>
-                                              The password you entered is incorrect.{' '}
-                                              <span onClick={openForgotPasswordPopup} style={darkModeStyle}>
-                                                Click here
-                                              </span>
-                                              {' '}to reset your password.
-                                            </>
-                                          ) : (
-                                            errorMessage
-                                          )}
-                                        </div>
-                                      )}
-                                        <button
-                                            onClick={handleSignInWithEmail}
-                                            className="btn sign-in-next-button"
-                                            disabled={!password.trim()}
-                                        >
-                                            Log in
-                                        </button>
+                                      Please verify your email.{' '}
+                                      <span onClick={resendVerificationEmail} style={darkModeStyle}>Click here</span>
+                                      {' '}to resend the verification email.
                                     </>
-                                ) : (
-                                    // Logic for the initial email input should go here if emailSubmitted is false
+                                  ) : errorMessage.includes('to reset your password') ? (
                                     <>
-                                        <input
-                                            type="email"
-                                            placeholder="Email"
-                                            required
-                                            value={email}
-                                            onChange={handleEmailChange}
-                                            onKeyDown={handleEmailChange}
-                                            className="signin-popup-body-input"
-                                        />
-                                        {errorMessage && !emailSubmitted && (
-                                        <div className="error-message">{errorMessage}</div>
-                                      )}
-                                      <button
-                                        onClick={handleNextClick}
-                                        className="btn sign-in-next-button"
-                                        disabled={!isEmailValid || !!errorMessage}
-                                      >
-                                        Next
-                                      </button>
+                                      The password you entered is incorrect.{' '}
+                                      <span onClick={openForgotPasswordPopup} style={darkModeStyle}>Click here</span>
+                                      {' '}to reset your password.
                                     </>
+                                  ) : (
+                                    errorMessage
                                   )}
-                            </div>
-                            <div className="signin-popup-footer">
-                              Don't have an account? <a href="#" className="create-account-link" onClick={toggleForm}>Sign up</a>
-                          </div>
-                        </div>
-                    </div>
-                )}
+                                </Typography>
+                              )}
+                              <Button
+                                onClick={handleSignInWithEmail}
+                                variant="contained"
+                                disabled={!password.trim()}
+                              >
+                                Log in
+                              </Button>
+                            </Box>
+                          ) : (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <TextField
+                                type="email"
+                                label="Email"
+                                required
+                                value={email}
+                                onChange={handleEmailChange}
+                                onKeyDown={handleEmailChange}
+                              />
+                              {errorMessage && !emailSubmitted && (
+                                <Typography color="error">{errorMessage}</Typography>
+                              )}
+                              <Button
+                                onClick={handleNextClick}
+                                variant="contained"
+                                disabled={!isEmailValid || !!errorMessage}
+                              >
+                                Next
+                              </Button>
+                            </Box>
+                          )}
+                        </DialogContent>
+                        <DialogActions>
+                          <Typography variant="body2" sx={{ mr: 'auto' }}>
+                            Don't have an account?{' '}
+                            <a href="#" className="create-account-link" onClick={toggleForm}>Sign up</a>
+                          </Typography>
+                        </DialogActions>
+                      </Dialog>
+                    )}
                     {showForgotPasswordModal && (
-                      <div className="forgot-password-popup-backdrop">
-                          <div className="forgot-password-popup">
-                              <div className="forgot-password-popup-header">
-                                  <h2>Reset Your Password</h2>
-                                  <button onClick={closeForgotPasswordPopup} className="forgot-password-popup-close">×</button>
-                                  <button onClick={backToSignInPopup} className="back-to-sign-in-button" style={{ position: 'absolute', left: '10px', top: '10px' }}>
-                                      ← Back
-                                  </button>
-                              </div>
-                              <div className="forgot-password-popup-body">
-                                  <form onSubmit={handleSendPasswordResetEmail}>
-                                      <input
-                                          type="email"
-                                          placeholder="Enter your email"
-                                          value={recoveryEmail} // Use recoveryEmail state here
-                                          onChange={(e) => setRecoveryEmail(e.target.value)}
-                                          required
-                                      />
-                                      {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                      <button type="submit" className="btn forgot-password-next-button">
-                                          Send reset email
-                                      </button>
-                                  </form>
-                              </div>
-                          </div>
-                      </div>
-                  )}
+                      <Dialog open onClose={closeForgotPasswordPopup}>
+                        <DialogTitle>Reset Your Password</DialogTitle>
+                        <DialogContent>
+                          <Box
+                            component="form"
+                            onSubmit={handleSendPasswordResetEmail}
+                            sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+                          >
+                            <TextField
+                              type="email"
+                              label="Enter your email"
+                              value={recoveryEmail}
+                              onChange={(e) => setRecoveryEmail(e.target.value)}
+                              required
+                            />
+                            {errorMessage && <Typography color="error">{errorMessage}</Typography>}
+                            <Button type="submit" variant="contained">
+                              Send reset email
+                            </Button>
+                          </Box>
+                        </DialogContent>
+                        <DialogActions>
+                          <Button onClick={backToSignInPopup}>Back</Button>
+                        </DialogActions>
+                      </Dialog>
+                    )}
                 </div>
             </div>
         </div>

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Tooltip } from '@/components/ui/Feedback';
 import { RemarksModal } from '@/components/ui/Modals';
+import { Tooltip, IconButton, Box } from '@mui/material';
 
 // Environment constants
 const PRODUCTION_ENV = 'production';
@@ -21,12 +21,14 @@ interface FeedbackComponentProps {
   messageIndex: number;
   qaId: string | undefined;
   roomId: string | null;
+  theme: 'light' | 'dark';
 }
 
 const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ 
   messageIndex, 
   qaId, 
-  roomId 
+  roomId,
+  theme
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'up' | 'down' | 'comment'>('up');
@@ -80,42 +82,31 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({
   if (!qaId) return null;
 
   return (
-    <div className="feedback-container">
-      {/* Thumbs up button */}
-      <div className="tooltip-container up">
-        <Tooltip message="Give positive feedback" alignPixels={95}> 
-          <button 
-            onClick={() => handleOpenModal('up')}
-            aria-label="Give positive feedback"
-          >
-            <Image src={thumbUpIcon} alt="Thumb Up" width={25} height={25} />
-          </button>
-        </Tooltip>
-      </div>
-      
-      {/* Thumbs down button */}
-      <div className="tooltip-container down">
-        <Tooltip message="Give negative feedback" alignPixels={75}>
-          <button 
-            onClick={() => handleOpenModal('down')}
-            aria-label="Give negative feedback"
-          >
-            <Image src={thumbDownIcon} alt="Thumb Down" width={25} height={25} />
-          </button>
-        </Tooltip>
-      </div>
-      
-      {/* Comment button */}
-      <div className="tooltip-container comment">
-        <Tooltip message="Add a comment">
-          <button 
-            onClick={() => handleOpenModal('comment')}
-            aria-label="Add a comment"
-          >
-            <Image src={commentIcon} alt="Comment" width={25} height={25} />
-          </button>
-        </Tooltip>
-      </div>
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'flex-start', 
+      paddingLeft: '75px',  // Increased to compensate for icon drop
+      backgroundColor: theme === 'dark' ? '#222222' : '#f5f5f5',
+      paddingTop: '5px',
+      paddingBottom: '10px',
+      color: theme === 'dark' ? '#ffffff' : '#000000'
+    }}>
+      <Tooltip title="Give positive feedback">
+        <IconButton onClick={() => handleOpenModal('up')} aria-label="Give positive feedback">
+          <Image src={thumbUpIcon} alt="Thumb Up" width={25} height={25} />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Give negative feedback">
+        <IconButton onClick={() => handleOpenModal('down')} aria-label="Give negative feedback">
+          <Image src={thumbDownIcon} alt="Thumb Down" width={25} height={25} />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Add a comment">
+        <IconButton onClick={() => handleOpenModal('comment')} aria-label="Add a comment">
+          <Image src={commentIcon} alt="Comment" width={25} height={25} />
+        </IconButton>
+      </Tooltip>
 
       {/* Remarks Modal for feedback submission */}
       {isModalOpen && (

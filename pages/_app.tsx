@@ -1,10 +1,10 @@
-import '@/styles/base.css';
-import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
 import AuthWrapper from '../auth/AuthWrapper';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+
 import { useEffect, useMemo } from 'react';
+
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { getMuiTheme } from '@/utils/muiTheme';
 import { setUserIdForAnalytics } from '@/utils/tracking';
@@ -39,6 +39,8 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   const muiTheme = useMemo(() => getMuiTheme(theme), [theme]);
 
+  const muiTheme = useMemo(() => getMuiTheme(theme), [theme]);
+
   return (
     <>
       <Head>
@@ -51,6 +53,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       </Head>
       <ThemeProvider theme={muiTheme}>
         <CssBaseline />
+
         {isAuthRequired ? (
           <AuthWrapper>
             <Component {...pageProps} />
@@ -58,6 +61,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         ) : (
           <Component {...pageProps} />
         )}
+
       </ThemeProvider>
     </>
   );
