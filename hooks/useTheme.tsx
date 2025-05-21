@@ -1,6 +1,21 @@
-import { useState, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+} from 'react';
 
-export const useTheme = (initialTheme?: 'light' | 'dark') => {
+interface ThemeContextValue {
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextValue>({
+  theme: 'light',
+  toggleTheme: () => {},
+});
+
+const useThemeState = (initialTheme?: 'light' | 'dark') => {
   // Use initialTheme from props if available, otherwise check localStorage
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (initialTheme) {
@@ -54,5 +69,16 @@ export const useTheme = (initialTheme?: 'light' | 'dark') => {
 
   return { theme, toggleTheme };
 };
+
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const themeState = useThemeState();
+  return (
+    <ThemeContext.Provider value={themeState}>{children}</ThemeContext.Provider>
+  );
+};
+
+export const useTheme = () => useContext(ThemeContext);
 
 export default useTheme;
