@@ -33,6 +33,7 @@
   min-height: 0; /* Important for flexbox to allow shrinking */
   overflow: hidden; /* Prevent overflow */
   width: 100%;
+  margin-bottom: 1rem; /* Space below the message area */
 }
 
 /* Class for the cloud when images are present */
@@ -381,6 +382,7 @@ body.dark .Home_center__O_TIN {
 
   .chatBoxContainer {
     height: 25vh !important;
+    margin-bottom: 1rem;
   }
   
   .cloud {
