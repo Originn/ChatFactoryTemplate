@@ -12,7 +12,6 @@ interface LayoutProps {
   toggleTheme: () => void;
   onHistoryItemClick: (conversation: ChatHistoryItem) => void;
   handleNewChat: () => void;
-  isFromSolidcamWeb?: boolean; // Add this prop
 }
 
 const PRODUCTION_ENV = 'production';
@@ -28,8 +27,7 @@ const Layout: FC<LayoutProps> = ({
   theme, 
   toggleTheme, 
   onHistoryItemClick, 
-  handleNewChat,
-  isFromSolidcamWeb 
+  handleNewChat
 }) => {
   const userEmail = auth.currentUser ? auth.currentUser.email : '';
 
@@ -44,7 +42,7 @@ const Layout: FC<LayoutProps> = ({
             {/* Left side navigation */}
             <div className="flex items-center">
               {/* Only show Chat History for non-solidcam.com users */}
-              {userEmail && !isFromSolidcamWeb && (
+              {userEmail && (
                 <div className={iconButtonClass}>
                   <Tooltip message="View chat history" hideOnClick={true}>
                     <ChatHistory
@@ -81,7 +79,7 @@ const Layout: FC<LayoutProps> = ({
             </div>
 
             {/* Right side navigation - User Menu */}
-            {!isFromSolidcamWeb && userEmail && (
+            {userEmail && (
               <UserMenu className="ml-auto" />
             )}
           </div>

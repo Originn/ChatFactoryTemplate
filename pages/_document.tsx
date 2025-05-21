@@ -27,42 +27,30 @@ export default function Document() {
       <body>
         <Main />
         <NextScript />
-        {/* Load gtag.js dynamically based on iframe status */}
+        {/* Load gtag.js */}
         <Script
           id="gtag-script"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                const isInIframe = window !== window.parent;
-
-                if (isInIframe) {
-                  // Load gtag.js dynamically in iframe
-                  var script = document.createElement('script');
-                  script.src = 'https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}';
-                  script.async = true;
-                  script.onload = function() {
-                    window.dataLayer = window.dataLayer || [];
-                    function gtag(){dataLayer.push(arguments);}
-                    window.gtag = gtag;
-                    gtag('js', new Date());
-                    gtag('config', '${GA_MEASUREMENT_ID}', {
-                      cookie_flags: 'SameSite=None;Secure',
-                    });
-                    gtag('event', 'session_start', {
-                      session_id: Date.now().toString(),
-                    });
-                    window.gtagReady = true; // Set the flag to indicate gtag is ready
-                  };
-                  document.head.appendChild(script);
-                } else {
-                  // Load gtag.js normally on the main site
-                  var script = document.createElement('script');
-                  script.src = 'https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}';
-                  script.async = true;
-                  script.setAttribute('data-cookie-consent', 'tracking');
-                  document.head.appendChild(script);
-                }
+                var script = document.createElement('script');
+                script.src = 'https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}';
+                script.async = true;
+                script.setAttribute('data-cookie-consent', 'tracking');
+                script.onload = function() {
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  window.gtag = gtag;
+                  gtag('js', new Date());
+                  gtag('config', '${GA_MEASUREMENT_ID}', {
+                    cookie_flags: 'SameSite=None;Secure',
+                  });
+                  gtag('event', 'session_start', {
+                    session_id: Date.now().toString(),
+                  });
+                };
+                document.head.appendChild(script);
               })();
             `,
           }}
@@ -74,16 +62,7 @@ export default function Document() {
           dangerouslySetInnerHTML={{
             __html: `
               document.addEventListener('DOMContentLoaded', function () {
-                const isInIframe = window !== window.parent;
-
-                if (isInIframe) {
-                  // Automatically accept cookies in iframe
-                  Cookies.set('cookie_consent_user_accepted', 'true', { expires: 365 });
-                  Cookies.set('cookieconsent_status', 'allow', { expires: 365 });
-                  // gtag is initialized in the previous script
-                } else {
-                  // Display cookie banner on main website
-                  cookieconsent.run({
+                cookieconsent.run({
                     "notice_banner_type": "simple",
                     "consent_type": "express",
                     "palette": "light",
@@ -102,30 +81,29 @@ export default function Document() {
                     }
                   });
 
-                  function handleConsentChange(status) {
-                    if (cookieconsent.hasConsented('tracking')) {
-                      enableTrackingScripts();
-                    } else {
-                      disableTrackingScripts();
-                    }
+                function handleConsentChange(status) {
+                  if (cookieconsent.hasConsented('tracking')) {
+                    enableTrackingScripts();
+                  } else {
+                    disableTrackingScripts();
                   }
+                }
 
-                  function enableTrackingScripts() {
-                    window.dataLayer = window.dataLayer || [];
-                    function gtag(){dataLayer.push(arguments);}
-                    window.gtag = gtag;
-                    gtag('js', new Date());
-                    gtag('config', '${GA_MEASUREMENT_ID}', {
-                      cookie_flags: 'SameSite=None;Secure',
-                    });
-                  }
+                function enableTrackingScripts() {
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  window.gtag = gtag;
+                  gtag('js', new Date());
+                  gtag('config', '${GA_MEASUREMENT_ID}', {
+                    cookie_flags: 'SameSite=None;Secure',
+                  });
+                }
 
-                  function disableTrackingScripts() {
-                    const trackingScripts = document.querySelectorAll('script[data-cookie-consent="tracking"]');
-                    trackingScripts.forEach(script => script.remove());
-                    window.gtag = function() {}; // Override gtag to prevent errors
-                    console.warn('Tracking scripts disabled.');
-                  }
+                function disableTrackingScripts() {
+                  const trackingScripts = document.querySelectorAll('script[data-cookie-consent="tracking"]');
+                  trackingScripts.forEach(script => script.remove());
+                  window.gtag = function() {}; // Override gtag to prevent errors
+                  console.warn('Tracking scripts disabled.');
                 }
               });
             `,

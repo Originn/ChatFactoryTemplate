@@ -6,11 +6,9 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { setUserIdForAnalytics } from '@/utils/tracking';
-import { v4 as uuidv4 } from 'uuid';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const [isFromSolidcamWeb, setIsFromSolidcamWeb] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   const noAuthRequired = [
@@ -40,54 +38,6 @@ function MyApp({ Component, pageProps }: AppProps) {
   }, []);
 
   useEffect(() => {
-    const checkStaging = async () => {
-      let isFromSolidcamWeb = false;
-      
-      try {
-        // Check if we're in an iframe
-        const isInIframe = window !== window.parent;
-        
-        if (isInIframe) {
-          // If we can access the parent, check its URL or origin
-          // Note: This may fail due to same-origin policy if on different domains
-          isFromSolidcamWeb = true;
-        } else {
-          // Fall back to referrer check
-          const queryParams = new URLSearchParams(window.location.search);
-          const referrer = queryParams.get('referrer') || document.referrer;
-          isFromSolidcamWeb = referrer.includes('solidcam.com');
-        }
-      } catch (e) {
-        // If we get a security error, assume we're in an iframe from solidcam.com
-        console.error("Security error checking iframe status:", e);
-        isFromSolidcamWeb = true;
-      }
-      
-      //console.log('isFromSolidcamWeb:', isFromSolidcamWeb);
-  
-      if (isFromSolidcamWeb) {
-        try {
-          let webBrowserId = localStorage.getItem('webBrowserId');
-          const isNewUser = !webBrowserId;
-  
-          if (!webBrowserId) {
-            webBrowserId = uuidv4();
-            localStorage.setItem('webBrowserId', webBrowserId);
-          }
-  
-          const roomId = `room-${webBrowserId.slice(0, 10)}`;
-          localStorage.setItem('roomId', roomId);
-  
-          setIsFromSolidcamWeb(true);
-        } catch (error) {
-          console.error('Error in staging setup:', error);
-          setIsFromSolidcamWeb(false);
-        }
-      }
-    };
-  
-    checkStaging();
-  
     try {
       setUserIdForAnalytics();
     } catch (error) {
@@ -97,13 +47,11 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   const isAuthRequired = !noAuthRequired.some((path) =>
     router.pathname.startsWith(path)
-  ) && !isFromSolidcamWeb;
+  );
 
-  // Pass `isFromSolidcamWeb` as a prop to the Component
   const enhancedProps = {
     ...pageProps,
-    isFromSolidcamWeb, // Add this line to ensure the prop is passed to all pages
-    initialTheme: theme, // Pass the initial theme to prevent flashing
+    initialTheme: theme,
   };
 
   return (

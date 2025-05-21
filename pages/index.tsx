@@ -3,12 +3,8 @@
 import React from 'react';
 import Home from '@/components/Home';
 
-interface IndexPageProps {
-  isFromSolidcamWeb?: boolean;
-}
-
-const IndexPage: React.FC<IndexPageProps> = ({ isFromSolidcamWeb }) => {
-  return <Home isFromSolidcamWeb={isFromSolidcamWeb} />;
+const IndexPage: React.FC = () => {
+  return <Home />;
 };
 
 export default IndexPage;
