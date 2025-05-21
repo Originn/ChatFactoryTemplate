@@ -209,7 +209,7 @@ The application can be embedded in SolidCAM's web application:
    ```
    npm install
    ```
-3. Create a `.env` file with the necessary environment variables
+3. Copy `.env.example` to `.env` and update the values for your environment
 4. Set up the PostgreSQL database with the required tables:
    ```
    # You can use the script in scripts/gdpr_tables_migration.sql
@@ -232,14 +232,15 @@ npm start
 
 ## 🔧 Environment Variables
 
-The application requires several environment variables:
+A `.env.example` file lists all required variables. Copy it to `.env` and provide your credentials:
 
 ### Database Configuration
 - `DATABASE_URL`: PostgreSQL connection string
 
-### AI Model Configuration
+### AI Configuration
 - `OPENAI_API_KEY`: API key for OpenAI
 - `DEEPSEEK_API_KEY`: API key for DeepSeek (optional)
+- `NEXT_PUBLIC_OPENAI_API_KEY`: Public API key for client requests
 - `MODEL_NAME`: Name of the OpenAI model to use (default: gpt-4.1)
 - `TEMPERATURE`: Temperature setting for language model (default: 0)
 - `IMAGE_MODEL_NAME`: Model for image analysis (default: gpt-4.1-mini)
@@ -247,27 +248,38 @@ The application requires several environment variables:
 ### Vector Database
 - `PINECONE_API_KEY`: API key for Pinecone
 - `PINECONE_ENVIRONMENT`: Pinecone environment
-- `PINECONE_INDEX`: Pinecone index name
+- `PINECONE_INDEX_NAME`: Pinecone index name
 - `K_EMBEDDINGS`: Number of embeddings to retrieve (default: 8)
 - `FETCH_K_EMBEDDINGS`: Number of embeddings to fetch before filtering (default: 12)
 - `LAMBDA_EMBEDDINGS`: Weight factor for MMR search (default: 0.1)
 - `MINSCORESOURCESTHRESHOLD`: Minimum score for relevant sources (default: 0.78)
 
-### Firebase Configuration
-- `FIREBASE_API_KEY`: Firebase API key
-- `FIREBASE_AUTH_DOMAIN`: Firebase auth domain
-- `FIREBASE_PROJECT_ID`: Firebase project ID
-- `FIREBASE_STORAGE_BUCKET`: Firebase storage bucket
-- `FIREBASE_MESSAGING_SENDER_ID`: Firebase messaging sender ID
-- `FIREBASE_APP_ID`: Firebase app ID
-- `FIREBASE_CLIENT_EMAIL`: Firebase client email (for admin)
-- `FIREBASE_PRIVATE_KEY`: Firebase private key (for admin)
+### Firebase Configuration (client)
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
 
-### Server Configuration
-- `PORT`: Server port (default: 3000)
-- `NODE_ENV`: Node environment (development/production)
+### Firebase Admin
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+
+### Google Cloud Storage
+- `GCLOUD_STORAGE_BUCKET`
+- `GCLOUD_PRIVATE_STORAGE_BUCKET`
+- `GOOGLE_APPLICATION_CREDENTIALS`
+- `GOOGLE_APPLICATION_CREDENTIALS_BASE64`
+
+### Analytics
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID`
+
+### Application
 - `NEXT_PUBLIC_SERVER_URL`: Public URL for the server
 - `NEXT_PUBLIC_CODE_PREFIX`: Prefix for code embedding mode
+- `PORT`: Server port (default: 3000)
 
 ## 📚 Contributing
 
