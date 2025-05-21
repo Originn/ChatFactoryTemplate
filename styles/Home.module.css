@@ -248,23 +248,21 @@ body.light .Home_messagelist__wIt78::-webkit-scrollbar-track {
 }
 
 .usermessage {
-  background: #ffffff;
   padding: 1.5rem;
   color: #000;
+  background: none;
 }
 
 /* Dark mode styling for user message from globals.css */
 body.dark .Home_usermessage__tWHWR,
 body.dark .Home_usermessage__i8g8V {
-  background-color: #333333;
+  background-color: transparent;
 }
 
 .usermessagewaiting {
   padding: 1.5rem;
   color: #000;
-  background: linear-gradient(to left, #07080938, #1a1c2024, #07080936);
-  background-size: 200% 200%;
-  background-position: -100% 0;
+  background: none;
   animation: loading-gradient 2s ease-in-out infinite;
   animation-direction: alternate;
   animation-name: loading-gradient;
@@ -272,7 +270,7 @@ body.dark .Home_usermessage__i8g8V {
 
 /* Dark mode styling for user message waiting from globals.css */
 body.dark .Home_usermessagewaiting__SNXox {
-  background-color: #333333;
+  background-color: transparent;
 }
 
 .warning {
@@ -296,16 +294,16 @@ body.dark .Home_usermessagewaiting__SNXox {
 }
 
 .apimessage {
-  background: #f9fafb;
   padding: 1.5rem;
   color: #000;
+  background: none;
   animation: fadein 0.5s;
 }
 
 /* Dark mode styling for API message from globals.css */
 body.dark .Home_apimessage__VhfTn,
 body.dark .Home_apimessage___VZRe {
-  background-color: #4d4d4d;
+  background-color: transparent;
 }
 
 @keyframes fadein {

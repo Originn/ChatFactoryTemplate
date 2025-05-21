@@ -4,7 +4,9 @@ import type { AppProps } from 'next/app';
 import AuthWrapper from '../auth/AuthWrapper';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { getMuiTheme } from '@/utils/muiTheme';
 import { setUserIdForAnalytics } from '@/utils/tracking';
 
 function MyApp({ Component, pageProps }: AppProps) {
@@ -54,6 +56,8 @@ function MyApp({ Component, pageProps }: AppProps) {
     initialTheme: theme,
   };
 
+  const muiTheme = useMemo(() => getMuiTheme(theme), [theme]);
+
   return (
     <>
       <Head>
@@ -64,15 +68,18 @@ function MyApp({ Component, pageProps }: AppProps) {
         />
         <title>SolidCAM Chat</title>
       </Head>
-      <div className={theme}>
-        {isAuthRequired ? (
-          <AuthWrapper>
+      <ThemeProvider theme={muiTheme}>
+        <CssBaseline />
+        <div className={theme}>
+          {isAuthRequired ? (
+            <AuthWrapper>
+              <Component {...enhancedProps} />
+            </AuthWrapper>
+          ) : (
             <Component {...enhancedProps} />
-          </AuthWrapper>
-        ) : (
-          <Component {...enhancedProps} />
-        )}
-      </div>
+          )}
+        </div>
+      </ThemeProvider>
     </>
   );
 }
