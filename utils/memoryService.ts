@@ -24,24 +24,12 @@ if (typeof window === 'undefined') {
   if (!admin.apps.length) {
     try {
       if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        // ✅ Production / encoded credentials method
         admin.initializeApp({
           credential: admin.credential.applicationDefault(),
         });
       } else {
-        // ✅ Local fallback: load from JSON file (development only)
-        const localPath = path.join(process.cwd(), 'solidcamchat-firebase-adminsdk-6c5fy-fcfed248c9.json');
-
-        if (fs.existsSync(localPath)) {
-          const serviceAccount = JSON.parse(fs.readFileSync(localPath, 'utf-8'));
-          admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-          });
-        } else {
-          console.warn('⚠️ Firebase Admin: No credentials found');
-        }
+        console.warn('⚠️ Firebase Admin: GOOGLE_APPLICATION_CREDENTIALS not set');
       }
-
     } catch (error) {
       console.error('❌ Firebase Admin initialization failed', error);
     }

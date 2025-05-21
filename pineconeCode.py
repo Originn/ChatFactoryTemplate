@@ -1,9 +1,9 @@
-# Import Pinecone correctly
+import os
 from pinecone import Pinecone
 
-# Initialize the Pinecone client
-pc = Pinecone(api_key='c67c46c1-c8f1-42ef-aa7f-c729c8fb6a99', environment='us-east-1')
+api_key = os.getenv("PINECONE_API_KEY")
+environment = os.getenv("PINECONE_ENVIRONMENT", "us-east-1")
 
-# List indexes and print the result
+pc = Pinecone(api_key=api_key, environment=environment)
 info = pc.list_indexes()
 print(info)
