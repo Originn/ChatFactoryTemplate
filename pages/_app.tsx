@@ -4,12 +4,15 @@ import type { AppProps } from 'next/app';
 import AuthWrapper from '../auth/AuthWrapper';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { getMuiTheme } from '@/utils/muiTheme';
 import { setUserIdForAnalytics } from '@/utils/tracking';
+import useTheme from '@/hooks/useTheme';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const { theme } = useTheme();
 
   const noAuthRequired = [
     '/verify-email',
@@ -21,21 +24,6 @@ function MyApp({ Component, pageProps }: AppProps) {
     '/privacy-policy',
   ];
 
-  // Load theme from localStorage on initial render
-  useEffect(() => {
-    // Apply the saved theme as early as possible
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
-      if (savedTheme) {
-        setTheme(savedTheme);
-        // Apply theme class to document immediately
-        document.documentElement.classList.remove('light', 'dark');
-        document.documentElement.classList.add(savedTheme);
-        document.body.classList.remove('light', 'dark');
-        document.body.classList.add(savedTheme);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     try {
@@ -49,10 +37,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     router.pathname.startsWith(path)
   );
 
-  const enhancedProps = {
-    ...pageProps,
-    initialTheme: theme,
-  };
+  const muiTheme = useMemo(() => getMuiTheme(theme), [theme]);
 
   return (
     <>
@@ -64,15 +49,16 @@ function MyApp({ Component, pageProps }: AppProps) {
         />
         <title>SolidCAM Chat</title>
       </Head>
-      <div className={theme}>
+      <ThemeProvider theme={muiTheme}>
+        <CssBaseline />
         {isAuthRequired ? (
           <AuthWrapper>
-            <Component {...enhancedProps} />
+            <Component {...pageProps} />
           </AuthWrapper>
         ) : (
-          <Component {...enhancedProps} />
+          <Component {...pageProps} />
         )}
-      </div>
+      </ThemeProvider>
     </>
   );
 }

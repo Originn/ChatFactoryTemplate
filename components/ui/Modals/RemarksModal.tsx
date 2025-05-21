@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  TextField,
+} from '@mui/material';
 
 interface RemarksModalProps {
   isOpen: boolean;
@@ -57,36 +66,38 @@ const RemarksModal: React.FC<RemarksModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal">
-        <div className="modal-header">
-          {iconSrc && (
-            <span style={{ marginRight: '10px' }}>
-              <Image 
-                src={iconSrc} 
-                alt="Feedback Icon" 
-                width={24} 
-                height={24} 
-                style={{ filter: 'brightness(0) invert(1)' }}
-              />
-            </span>
-          )}
-          <h2>Provide additional feedback</h2>
-          <span className="close" onClick={onClose}>&times;</span>
-        </div>
-        <div className="modal-body">
-          <p>{modalText}</p>
-          <textarea
-            placeholder="Your remarks..."
-            value={remark}
-            onChange={(e) => setRemark(e.target.value)}
-          ></textarea>
-        </div>
-        <div className="modal-footer">
-          <button className="btn" onClick={submitRemark}>Submit feedback</button>
-        </div>
-      </div>
-    </div>
+    <Dialog open onClose={onClose} aria-labelledby="remarks-title">
+      <DialogTitle id="remarks-title" sx={{ display: 'flex', alignItems: 'center' }}>
+        {iconSrc && (
+          <Image
+            src={iconSrc}
+            alt="Feedback Icon"
+            width={24}
+            height={24}
+            style={{ marginRight: 8, filter: 'brightness(0) invert(1)' }}
+          />
+        )}
+        Provide additional feedback
+      </DialogTitle>
+      <DialogContent dividers>
+        <Typography variant="body2" paragraph>
+          {modalText}
+        </Typography>
+        <TextField
+          fullWidth
+          multiline
+          minRows={3}
+          placeholder="Your remarks..."
+          value={remark}
+          onChange={(e) => setRemark(e.target.value)}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button variant="contained" onClick={submitRemark} color="primary">
+          Submit feedback
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
