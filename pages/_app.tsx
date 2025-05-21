@@ -39,8 +39,6 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   const muiTheme = useMemo(() => getMuiTheme(theme), [theme]);
 
-  const muiTheme = useMemo(() => getMuiTheme(theme), [theme]);
-
   return (
     <>
       <Head>
