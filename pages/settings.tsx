@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Link from 'next/link';
-import Layout from '@/components/layout';
+import Layout from '@/components/core/Layout';
 import { auth } from '@/utils/firebase';
 import useTheme from '@/hooks/useTheme';
-import LoadingDots from '@/components/ui/LoadingDots';
-import { ChatHistoryItem } from '@/components/ChatHistory';
+import { LoadingDots } from '@/components/ui/Loaders';
+import { ChatHistoryItem } from '@/components/core/Chat/types';
 import { getIdToken } from 'firebase/auth';
 
 const Settings = () => {
