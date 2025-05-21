@@ -17,7 +17,6 @@ SolidCAM ChatBot is a specialized AI assistant designed to help SolidCAM users w
 - **Dark/Light Mode**: Toggle between themes for better user experience
 - **Voice Input**: Microphone support for voice-to-text input
 - **Responsive Design**: Works on desktop and mobile devices
-- **Embedding Support**: Can be embedded into SolidCAM web applications
 
 ## 🏗️ Project Structure
 
@@ -178,17 +177,6 @@ The application includes comprehensive privacy features:
 - **GDPR Tables**: Database structure designed for GDPR compliance
 - **Data Minimization**: Only stores necessary user information
 
-### Embedding Mode
-
-The application can be embedded in SolidCAM's web application:
-
-- **Cross-Window Communication**: Communicates with the parent window via postMessage API
-- **State Synchronization**: Shares room IDs between embedded and standalone versions
-- **Responsive Design**: Customized UI when running in embedded mode
-- **Identifier Management**: Maintains consistent user identity between embedded and standalone modes
-- **Simplified Interface**: Hides certain elements when embedded for better integration
-- **Simplified Authentication**: Uses browserID for authentication in embedded mode
-- **Parent Notifications**: Notifies parent window about important state changes
 
 ## 🚀 Getting Started
 

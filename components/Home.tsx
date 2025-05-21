@@ -59,12 +59,9 @@ const CustomLink: FC<CustomLinkProps> = ({ href, children, ...props }) => {
   );
 };
 
-interface HomeProps {
-  isFromSolidcamWeb?: boolean;
-}
+interface HomeProps {}
 
-const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
-  const [isFromSolidcamWebState, setisFromSolidcamWebState] = useState(isFromSolidcamWeb);
+const Home: FC<HomeProps> = () => {
   const { theme, toggleTheme } = useTheme();
   const [query, setQuery] = useState<string>('');
   const [requestsInProgress, setRequestsInProgress] = useState<
@@ -78,17 +75,10 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       const storedRoomId = localStorage.getItem('roomId');
       if (storedRoomId) {
         return storedRoomId;
-      } else if (isFromSolidcamWeb) {
-        // Embedded in SolidCAM Web, wait for parent to send roomId
-        //console.log('Iframe: Embedded in SolidCAM Web, waiting for ROOM_ID from parent');
-        return null;
-      } else {
-        // Not embedded, generate new roomId
-        const newRoomId = `room-${Date.now()}`;
-        localStorage.setItem('roomId', newRoomId);
-        //console.log('Iframe: Not embedded, generated new roomId:', newRoomId);
-        return newRoomId;
       }
+      const newRoomId = `room-${Date.now()}`;
+      localStorage.setItem('roomId', newRoomId);
+      return newRoomId;
     }
     return null; // Fallback for SSR
   });
@@ -169,25 +159,15 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
   const [showDisclaimer, setShowDisclaimer] = useState(false);
 
   useEffect(() => {
-    //console.log('isFromSolidcamWeb in Home:', isFromSolidcamWeb);
-    setisFromSolidcamWebState(isFromSolidcamWeb || false);
-  }, [isFromSolidcamWeb]);
+    const timer = setTimeout(() => {
+      const hasAcceptedDisclaimer = Cookies.get('disclaimer_accepted');
+      if (!hasAcceptedDisclaimer) {
+        setShowDisclaimer(true);
+      }
+    }, 1000);
 
-  useEffect(() => {
-    if (!isFromSolidcamWebState) {
-      const timer = setTimeout(() => {
-        const hasAcceptedDisclaimer = Cookies.get('disclaimer_accepted');
-        if (!hasAcceptedDisclaimer) {
-          setShowDisclaimer(true);
-        }
-      }, 1000); // Show after 1 second delay for better UX
-  
-      return () => clearTimeout(timer);
-    } else {
-      // Don't show the disclaimer if coming from SolidCAM Web
-      setShowDisclaimer(false);
-    }
-  }, [isFromSolidcamWebState]);
+    return () => clearTimeout(timer);
+  }, []);
   
 
   // Add this handler function
@@ -361,8 +341,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user?.email) {
         // User is signed in with email
-        localStorage.removeItem('webBrowserId'); 
-        setisFromSolidcamWebState(false);
+        localStorage.removeItem('webBrowserId');
       }
     });
   
@@ -444,11 +423,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     if (e) e.preventDefault();
   
     // For Google Analytics
-    if (isFromSolidcamWeb) {
-      handleSubmitClickWeb();
-    } else {
-      handleSubmitClick();
-    }
+    handleSubmitClick();
   
     if (!roomId) {
       console.error('No roomId available');
@@ -483,7 +458,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     if (currentUser?.email) {
       userIdentifier = currentUser.email;
       localStorage.removeItem('webBrowserId');
-      setisFromSolidcamWebState(false);
     } else {
       const webBrowserId = localStorage.getItem('webBrowserId');
       userIdentifier = webBrowserId || 'anonymous';
@@ -632,13 +606,7 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     // Use only one method to change rooms instead of multiple calls
     changeRoom(newRoomId);
   
-    // Notify parent about the new roomId if in iframe mode
-    if (isFromSolidcamWeb) {
-      window.parent.postMessage(
-        { type: 'ROOM_ID_UPDATE', roomId: newRoomId },
-        '*'
-      );
-    }
+
   
     setIsNewChat(true);
     setIsEmbeddingMode(false);
@@ -725,46 +693,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
     return () => messageListElement?.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    const receiveMessage = (event: MessageEvent) => {
-      //console.log('Iframe: Received message:', event.origin, event.data);
-  
-      const allowedOrigins = [
-        'http://127.0.0.1:5500', // Parent's origin during development
-        'https://staging.solidcam.com', // Parent's production origin
-        'https://www.solidcam.com',
-        // Add any other allowed origins here
-      ];
-  
-      if (!allowedOrigins.includes(event.origin)) {
-        console.warn(event.origin);
-        return;
-      }
-  
-      if (event.data.type === 'ROOM_ID') {
-        const receivedRoomId = event.data.roomId;
-  
-        // Update roomId and localStorage
-        setRoomId(receivedRoomId);
-        localStorage.setItem('roomId', receivedRoomId);
-        changeRoom(receivedRoomId); // Update the socket connection
-        // Do NOT call loadChatHistory here
-      }
-    };
-  
-    window.addEventListener('message', receiveMessage);
-  
-    // Notify parent that iframe is ready
-    const parentOrigin = document.referrer
-      ? new URL(document.referrer).origin
-      : '*';
-    //console.log('Iframe: Sending IFRAME_READY to parent with origin:', parentOrigin);
-    window.parent.postMessage({ type: 'IFRAME_READY' }, parentOrigin);
-  
-    return () => {
-      window.removeEventListener('message', receiveMessage);
-    };
-  }, [changeRoom]); // Include changeRoom in dependencies
   
   
   useEffect(() => {
@@ -784,7 +712,6 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
       toggleTheme={toggleTheme}
       onHistoryItemClick={handleHistoryItemClick}
       handleNewChat={handleNewChat}
-      isFromSolidcamWeb={isFromSolidcamWebState}
     >
         <div className="mx-auto flex flex-col gap-4">
           {/* For internal embedding - No change needed here */}
@@ -896,15 +823,11 @@ const Home: FC<HomeProps> = ({ isFromSolidcamWeb }) => {
                       value={query}
                       className={styles.textarea}
                       readOnly={currentStage === 4}
-                      style={{
-                        height: isFromSolidcamWeb ? '58px' : 'auto',
-                        transform: isFromSolidcamWeb ? 'translateY(-34px)' : 'none',
-                      }}
                     />
                     {/* Conditionally render the ImageUpload component */}
-                    {!loading && !isFromSolidcamWeb && <ImageUpload handleFileChange={handleFileChange} />}
+                    {!loading && <ImageUpload handleFileChange={handleFileChange} />}
                     {/* Conditionally render the general file input and label */}
-                    {!loading && !isFromSolidcamWeb &&(
+                    {!loading && (
                       <>
                         <input
                           ref={fileInputRef}
