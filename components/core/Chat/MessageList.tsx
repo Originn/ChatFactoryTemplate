@@ -40,11 +40,15 @@ const UserMessage = memo(({
   icon,
   loading,
   setEnlargedImage,
+  backgroundColor = '#f5f5f5',
+  borderColor = '#eeeeee'
 }: {
   message: ChatMessage;
   icon: JSX.Element;
   loading: boolean;
   setEnlargedImage: (image: ImagePreviewData) => void;
+  backgroundColor?: string;
+  borderColor?: string;
 }) => {
   
   const formattedMessage = typeof message.message === 'string' 
@@ -64,33 +68,42 @@ const UserMessage = memo(({
     : [];
 
   return (
-    <ListItem disableGutters alignItems="flex-start">
+    <ListItem 
+      disableGutters 
+      alignItems="flex-start"
+      sx={{
+        backgroundColor: backgroundColor,
+        padding: '15px',
+        borderBottom: `1px solid ${borderColor}`,
+        width: '100%',
+        display: 'flex',
+        alignItems: 'flex-start'
+      }}
+    >
       {icon}
-      <Card sx={{ ml: 1, flex: 1, bgcolor: loading ? 'action.hover' : 'background.paper' }}>
-        <CardContent>
-          {images.length > 0 && (
-            <Box
-              sx={{
-                mb: 1,
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 1,
-                justifyContent: 'start',
-              }}
-            >
-              {images.map((image, imgIndex) => (
-                <Box key={imgIndex} onClick={() => setEnlargedImage(image)} sx={{ cursor: 'pointer' }}>
-                  <img src={image.url} alt={`User uploaded: ${image.fileName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </Box>
-              ))}
-            </Box>
-          )}
+      <Box sx={{ flex: 1 }}>
+        {images.length > 0 && (
+          <Box
+            sx={{
+              mb: 1,
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 1,
+              justifyContent: 'start',
+            }}
+          >
+            {images.map((image, imgIndex) => (
+              <Box key={imgIndex} onClick={() => setEnlargedImage(image)} sx={{ cursor: 'pointer' }}>
+                <img src={image.url} alt={`User uploaded: ${image.fileName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </Box>
+            ))}
+          </Box>
+        )}
 
-          <ReactMarkdown components={{ a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} /> }}>
-            {formattedMessage}
-          </ReactMarkdown>
-        </CardContent>
-      </Card>
+        <ReactMarkdown components={{ a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} /> }}>
+          {formattedMessage}
+        </ReactMarkdown>
+      </Box>
     </ListItem>
   );
 });// API message component
@@ -98,12 +111,16 @@ const ApiMessage = memo(({
   message,
   icon,
   answerStartRef,
-  setEnlargedImage
+  setEnlargedImage,
+  backgroundColor = '#ffffff',
+  borderColor = '#eeeeee'
 }: {
   message: ChatMessage;
   icon: JSX.Element;
   answerStartRef: React.RefObject<HTMLDivElement>;
   setEnlargedImage: (image: ImagePreviewData) => void;
+  backgroundColor?: string;
+  borderColor?: string;
 }) => {
   const formattedMessage = typeof message.message === 'string'
     ? message.message.replace(/\[Image model answer:[\s\S]*?\]/g, '').trim()
@@ -122,10 +139,21 @@ const ApiMessage = memo(({
     : [];
 
   return (
-    <ListItem disableGutters alignItems="flex-start">
+    <ListItem 
+      disableGutters 
+      alignItems="flex-start"
+      sx={{
+        backgroundColor: backgroundColor,
+        padding: '15px',
+        borderBottom: `1px solid ${borderColor}`,
+        width: '100%',
+        display: 'flex',
+        alignItems: 'flex-start'
+      }}
+    >
       {icon}
-      <Card sx={{ ml: 1, flex: 1 }}>
-        <CardContent ref={answerStartRef}>
+      <Box sx={{ flex: 1 }}>
+        <Box ref={answerStartRef}>
           {images.length > 0 && (
             <Box
               sx={{
@@ -147,8 +175,8 @@ const ApiMessage = memo(({
           <ReactMarkdown components={{ a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} /> }}>
             {formattedMessage}
           </ReactMarkdown>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     </ListItem>
   );
 });
@@ -162,9 +190,19 @@ const SourceDocuments = memo(({
   index: number 
 }) => {
   if (!sourceDocs || sourceDocs.length === 0) return null;
+  
+  // Check if dark mode is enabled
+  const isDarkMode = document.body.classList.contains('dark');
 
   return (
-    <div key={`sourceDocsAccordion-${index}`}>
+    <div 
+      key={`sourceDocsAccordion-${index}`}
+      style={{
+        backgroundColor: isDarkMode ? '#242424' : '#f5f5f5',
+        padding: '0 15px 15px 75px',  // Increased left padding to match
+        borderBottom: `1px solid ${isDarkMode ? '#444444' : '#eeeeee'}`
+      }}
+    >
       <Accordion type="single" collapsible className="flex-col">
         {(() => {
           let webinarCount = 0;
@@ -297,18 +335,42 @@ const MessageList: React.FC<MessageListProps> = ({
   imageUrlUserIcon,
   roomId,
 }) => {
+  // Check if dark mode is enabled
+  const isDarkMode = document.body.classList.contains('dark');
+  
+  // Define theme-based colors
+  const userMessageBg = isDarkMode ? '#1a1a1a' : '#ffffff';
+  const apiMessageBg = isDarkMode ? '#242424' : '#f5f5f5';
+  const borderColor = isDarkMode ? '#444444' : '#eeeeee';
+
   return (
-    <List>
+    <List sx={{ padding: 0, width: '100%' }}>
       {messages.map((message, index) => {
         let icon;
         
         if (message.type === 'apiMessage') {
           icon = (
-              <Image key={index} src={botimageIcon} alt="AI" width={40} height={40} priority />
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              position: 'relative',
+              top: '10px', // Drop icon by 10px
+              mr: 1
+            }}>
+              <Image key={index} src={botimageIcon} alt="AI" width={30} height={30} priority />
+            </Box>
           );
         } else {
           icon = (
-              <Image key={index} src={imageUrlUserIcon} alt="Me" width={30} height={30} priority />
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              position: 'relative',
+              top: '10px', // Drop icon by 10px
+              mr: 1
+            }}>
+              <Image key={index} src={imageUrlUserIcon} alt="Me" width={28} height={28} priority />
+            </Box>
           );
         }
 
@@ -320,6 +382,8 @@ const MessageList: React.FC<MessageListProps> = ({
                 icon={icon}
                 answerStartRef={answerStartRef}
                 setEnlargedImage={setEnlargedImage}
+                backgroundColor={apiMessageBg}
+                borderColor={borderColor}
               />
             ) : (
               <UserMessage
@@ -327,6 +391,8 @@ const MessageList: React.FC<MessageListProps> = ({
                 icon={icon}
                 loading={loading && index === messages.length - 1}
                 setEnlargedImage={setEnlargedImage}
+                backgroundColor={userMessageBg}
+                borderColor={borderColor}
               />
             )}
 

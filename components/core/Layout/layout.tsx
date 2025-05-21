@@ -46,8 +46,8 @@ const Layout: FC<LayoutProps> = ({
 
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
-      <AppBar position="sticky" color="default">
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
+      <AppBar position="sticky" color="default" sx={{ height: '64px' }}>
+        <Toolbar sx={{ justifyContent: 'space-between', alignItems: 'center', height: '64px', minHeight: '64px' }}>
           <Box display="flex" alignItems="center">
             {userEmail && (
               <Tooltip title="View chat history">
@@ -77,7 +77,9 @@ const Layout: FC<LayoutProps> = ({
               </IconButton>
             </Tooltip>
           </Box>
-          {userEmail && <UserMenu />}
+          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
+            {userEmail && <UserMenu />}
+          </Box>
         </Toolbar>
       </AppBar>
       <Box flex={1} display="flex" flexDirection="column" overflow="hidden">

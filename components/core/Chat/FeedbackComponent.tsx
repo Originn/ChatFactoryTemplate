@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { RemarksModal } from '@/components/ui/Modals';
-import { Tooltip, IconButton } from '@mui/material';
+import { Tooltip, IconButton, Box } from '@mui/material';
 
 // Environment constants
 const PRODUCTION_ENV = 'production';
@@ -31,6 +31,25 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'up' | 'down' | 'comment'>('up');
   const { thumbUpIcon, thumbDownIcon, commentIcon } = getIconPaths();
+  
+  // Detect dark mode
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  useEffect(() => {
+    setIsDarkMode(document.body.classList.contains('dark'));
+    
+    // Optional: listen for theme changes
+    const observer = new MutationObserver(() => {
+      setIsDarkMode(document.body.classList.contains('dark'));
+    });
+    
+    observer.observe(document.body, { 
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    return () => observer.disconnect();
+  }, []);
 
   const handleOpenModal = (type: 'up' | 'down' | 'comment') => {
     setFeedbackType(type);
@@ -80,7 +99,15 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({
   if (!qaId) return null;
 
   return (
-    <div className="feedback-container">
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'flex-start', 
+      paddingLeft: '75px',  // Increased to compensate for icon drop
+      backgroundColor: isDarkMode ? '#242424' : '#f5f5f5',
+      paddingTop: '5px',
+      paddingBottom: '10px'
+    }}>
       <Tooltip title="Give positive feedback">
         <IconButton onClick={() => handleOpenModal('up')} aria-label="Give positive feedback">
           <Image src={thumbUpIcon} alt="Thumb Up" width={25} height={25} />
