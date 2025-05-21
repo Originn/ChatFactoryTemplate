@@ -1,31 +1,38 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
-import Tooltip from './Tooltip';
-import RemarksModal from './RemarksModal';
+import { Tooltip } from '@/components/ui/Feedback';
+import { RemarksModal } from '@/components/ui/Modals';
 
-let thumbUpIcon = '/icons8-thumbs-up-30.png'
-let thumbDownIcon = '/icons8-thumbs-down-30.png'
-let commentIcon = '/icons8-message-30.png';
-const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
+// Environment constants
 const PRODUCTION_ENV = 'production';
+const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
 
-if (process.env.NODE_ENV === PRODUCTION_ENV) {
-    thumbUpIcon = `${PRODUCTION_URL}icons8-thumbs-up-30.png`
-    thumbDownIcon = `${PRODUCTION_URL}icons8-thumbs-down-30.png`
-    commentIcon = `${PRODUCTION_URL}icons8-message-30.png`
-}
+// Define icon paths with environment awareness
+const getIconPaths = () => {
+  const basePath = process.env.NODE_ENV === PRODUCTION_ENV ? PRODUCTION_URL : '/';
+  return {
+    thumbUpIcon: `${basePath}icons8-thumbs-up-30.png`,
+    thumbDownIcon: `${basePath}icons8-thumbs-down-30.png`,
+    commentIcon: `${basePath}icons8-message-30.png`,
+  };
+};
 
 interface FeedbackComponentProps {
   messageIndex: number;
-  qaId: string | undefined;  // Keep this as string | undefined
+  qaId: string | undefined;
   roomId: string | null;
 }
 
-const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ messageIndex, qaId, roomId }) => {
+const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ 
+  messageIndex, 
+  qaId, 
+  roomId 
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [feedbackType, setFeedbackType] = useState('');
+  const [feedbackType, setFeedbackType] = useState<'up' | 'down' | 'comment'>('up');
+  const { thumbUpIcon, thumbDownIcon, commentIcon } = getIconPaths();
 
-  const handleOpenModal = (type: string) => {
+  const handleOpenModal = (type: 'up' | 'down' | 'comment') => {
     setFeedbackType(type);
     setIsModalOpen(true);
   };
@@ -69,30 +76,42 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({ messageIndex, qaI
     }
   };
 
-  if (!qaId) {
-    return null; // Don't render the component if qaId is undefined
-  }
+  // Don't render the component if qaId is undefined
+  if (!qaId) return null;
 
   return (
     <div className="feedback-container">
-      {/* Buttons to open the modal with different feedback types */}
+      {/* Thumbs up button */}
       <div className="tooltip-container up">
         <Tooltip message="Give positive feedback" alignPixels={95}> 
-          <button onClick={() => handleOpenModal('up')}>
+          <button 
+            onClick={() => handleOpenModal('up')}
+            aria-label="Give positive feedback"
+          >
             <Image src={thumbUpIcon} alt="Thumb Up" width={25} height={25} />
           </button>
         </Tooltip>
       </div>
+      
+      {/* Thumbs down button */}
       <div className="tooltip-container down">
         <Tooltip message="Give negative feedback" alignPixels={75}>
-          <button onClick={() => handleOpenModal('down')}>
+          <button 
+            onClick={() => handleOpenModal('down')}
+            aria-label="Give negative feedback"
+          >
             <Image src={thumbDownIcon} alt="Thumb Down" width={25} height={25} />
           </button>
         </Tooltip>
       </div>
+      
+      {/* Comment button */}
       <div className="tooltip-container comment">
         <Tooltip message="Add a comment">
-          <button onClick={() => handleOpenModal('comment')}>
+          <button 
+            onClick={() => handleOpenModal('comment')}
+            aria-label="Add a comment"
+          >
             <Image src={commentIcon} alt="Comment" width={25} height={25} />
           </button>
         </Tooltip>

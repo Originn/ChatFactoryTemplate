@@ -1,9 +1,9 @@
-// components/ImagePreview.tsx
 import React, { useState, useEffect } from 'react';
-import CircularProgressBar from './CircularProgressBar';
+import { CircularProgressBar } from '@/components/ui/Feedback';
 import { auth } from '@/utils/firebase';
+import styles from '@/styles/Home.module.css';
 
-interface ImagePreviewData {
+export interface ImagePreviewData {
   url: string;
   fileName: string;
 }
@@ -11,17 +11,17 @@ interface ImagePreviewData {
 interface ImagePreviewProps {
   image: ImagePreviewData;
   index: number;
-  onDelete: (fileName: string, index: number) => void;
+  onDelete: (fileName: string, index?: number) => void;
   uploadProgress: number | null;
-  onClick?: () => void; // Add this new prop for click-to-enlarge
+  onClick?: () => void;
 }
 
-export const ImagePreview: React.FC<ImagePreviewProps> = ({ 
+const ImagePreview: React.FC<ImagePreviewProps> = ({ 
   image, 
   index, 
   onDelete, 
   uploadProgress,
-  onClick  // Add this to the destructuring
+  onClick
 }) => {
   const [imageUrl, setImageUrl] = useState(image.url);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -60,34 +60,27 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
   };
 
   return (
-    <div className="image-wrapper relative">
+    <div className={styles.imagePreviewContainer}>
       {isRefreshing ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900" />
+        <div className={styles.refreshingOverlay}>
+          <div className={styles.spinner} />
         </div>
       ) : (
         <>
-          {/* Wrap the image in a clickable div when onClick is provided */}
-          <div onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
-            <img
-              src={imageUrl}
-              alt={`Preview ${index + 1}`}
-              className="image-preview"
-              onError={handleImageError}
-              style={{ 
-                width: '75px', 
-                height: '75px', 
-                objectFit: 'cover',
-                borderRadius: '8px'
-              }}
-            />
-          </div>
+          <img
+            src={imageUrl}
+            alt={`Preview ${index + 1}`}
+            className={styles.imagePreview}
+            onClick={onClick}
+            onError={handleImageError}
+            style={{ cursor: onClick ? 'pointer' : 'default' }}
+          />
           
           {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-red-100 bg-opacity-75">
+            <div className={styles.errorOverlay}>
               <button 
                 onClick={refreshImageUrl}
-                className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                className={styles.retryButton}
               >
                 Retry
               </button>
@@ -98,13 +91,14 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
 
       <button 
         onClick={() => onDelete(image.fileName, index)}
-        className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md hover:bg-red-100"
+        className={styles.deleteButton}
+        aria-label="Delete image"
       >
         ×
       </button>
 
       {uploadProgress !== null && uploadProgress < 100 && (
-        <div className="absolute bottom-2 right-2">
+        <div className={styles.progressIndicator}>
           <CircularProgressBar progress={uploadProgress} />
         </div>
       )}
@@ -112,4 +106,4 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
   );
 };
 
-export type { ImagePreviewData };
+export default ImagePreview;

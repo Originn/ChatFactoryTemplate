@@ -744,4 +744,146 @@ body.dark .Home_waveContainer__1LLAo {
   flex-wrap: wrap;
   gap: 8px;
   margin: 8px 0;
+}/* Image preview related styles */
+.imagePreviewContainer {
+  position: relative;
+  display: inline-block;
+  margin: 4px;
+  width: 75px;
+  height: 75px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.imagePreview {
+  width: 75px;
+  height: 75px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.refreshingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.errorOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.retryButton {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.deleteButton {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.progressIndicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  z-index: 10;
+}
+
+/* Enlarged image view styles */
+.enlargedImageOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.enlargedImageContainer {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.enlargedImage {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+}
+
+.closeButton {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: white;
+  color: black;
+  border: none;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .closeButton {
+    top: -30px;
+    right: -10px;
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+  }
 }

@@ -1,10 +1,10 @@
 import Image from 'next/image';
-import { signOut } from 'firebase/auth';
 import { auth } from '@/utils/firebase';
-import ChatHistory, { ChatHistoryItem } from './ChatHistory';
+import { ChatHistoryItem } from '@/components/core/Chat/types';
+import ChatHistory from '@/components/core/Chat/ChatHistory';
+import { Tooltip } from '@/components/ui/Feedback';
+import UserMenu from '@/components/core/User';
 import { FC } from 'react';
-import Tooltip from './Tooltip';
-import UserMenu from './UserMenu';
 
 interface LayoutProps {
   children?: React.ReactNode;
@@ -16,11 +16,14 @@ interface LayoutProps {
 
 const PRODUCTION_ENV = 'production';
 const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
-let moonIcon = '/icons8-moon-50.png';
 
-if (process.env.NODE_ENV === PRODUCTION_ENV) {
-  moonIcon = `${PRODUCTION_URL}icons8-moon-50.png`;
-}
+// Define icon paths with environment awareness
+const getIconPaths = () => {
+  const basePath = process.env.NODE_ENV === PRODUCTION_ENV ? PRODUCTION_URL : '/';
+  return {
+    moonIcon: `${basePath}icons8-moon-50.png`,
+  };
+};
 
 const Layout: FC<LayoutProps> = ({ 
   children, 
@@ -30,6 +33,7 @@ const Layout: FC<LayoutProps> = ({
   handleNewChat
 }) => {
   const userEmail = auth.currentUser ? auth.currentUser.email : '';
+  const { moonIcon } = getIconPaths();
 
   const iconButtonClass = "w-10 h-10 flex items-center justify-center bg-gray-200 dark:bg-gray-600 rounded-full mr-4";
   const newChatButtonClass = "w-10 h-10 flex items-center justify-center bg-blue-500 text-white rounded-full mr-4";
@@ -56,7 +60,11 @@ const Layout: FC<LayoutProps> = ({
 
               {/* New Chat button - shown for all users */}
               <Tooltip message="Start a new chat">
-                <button onClick={handleNewChat} className={newChatButtonClass}>
+                <button 
+                  onClick={handleNewChat} 
+                  className={newChatButtonClass}
+                  aria-label="Start a new chat"
+                >
                   <Image
                     src="/new-chat.png"
                     alt="Start New Chat"
@@ -68,7 +76,11 @@ const Layout: FC<LayoutProps> = ({
 
               {/* Theme Toggle Button - show for all users */}
               <Tooltip message={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-                <button onClick={toggleTheme} className={iconButtonClass}>
+                <button 
+                  onClick={toggleTheme} 
+                  className={iconButtonClass}
+                  aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                >
                   {theme === 'dark' ? (
                     <Image src="icons8-sun.svg" alt="Sun Icon" width={24} height={24} />
                   ) : (
