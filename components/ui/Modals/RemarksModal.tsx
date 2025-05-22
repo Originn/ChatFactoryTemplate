@@ -66,34 +66,71 @@ const RemarksModal: React.FC<RemarksModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <Dialog open onClose={onClose} aria-labelledby="remarks-title">
-      <DialogTitle id="remarks-title" sx={{ display: 'flex', alignItems: 'center' }}>
+    <Dialog 
+      open 
+      onClose={onClose} 
+      aria-labelledby="remarks-title"
+      maxWidth="md" // Increased from default "sm" to "md" for wider dialog
+      fullWidth // Makes the dialog take up the full width of its maxWidth
+      PaperProps={{
+        sx: {
+          minHeight: '350px', // Make the dialog taller
+          width: '550px'      // Set a specific width
+        }
+      }}
+    >
+      <DialogTitle id="remarks-title" sx={{ 
+        display: 'flex', 
+        alignItems: 'center',
+        padding: '16px 20px',
+        fontSize: '18px',
+        fontWeight: 500
+      }}>
         {iconSrc && (
           <Image
             src={iconSrc}
             alt="Feedback Icon"
-            width={24}
-            height={24}
-            style={{ marginRight: 8, filter: 'brightness(0) invert(1)' }}
+            width={28}
+            height={28}
+            style={{ marginRight: 12, filter: 'brightness(0) invert(1)' }}
           />
         )}
         Provide additional feedback
       </DialogTitle>
-      <DialogContent dividers>
-        <Typography variant="body2" paragraph>
+      <DialogContent dividers sx={{ padding: '20px' }}>
+        <Typography variant="body1" paragraph sx={{ marginBottom: '15px', fontSize: '16px' }}>
           {modalText}
         </Typography>
         <TextField
           fullWidth
           multiline
-          minRows={3}
+          minRows={5}  // Increased from 3 to 5 rows
+          maxRows={12} // Added max rows
           placeholder="Your remarks..."
           value={remark}
           onChange={(e) => setRemark(e.target.value)}
+          sx={{ 
+            '& .MuiInputBase-root': { 
+              minHeight: '150px' // Set minimum height for the input
+            }
+          }}
         />
       </DialogContent>
-      <DialogActions>
-        <Button variant="contained" onClick={submitRemark} color="primary">
+      <DialogActions sx={{ padding: '16px 20px' }}>
+        <Button 
+          variant="outlined" 
+          onClick={onClose} 
+          color="primary" 
+          sx={{ marginRight: '10px', minWidth: '80px' }}
+        >
+          Cancel
+        </Button>
+        <Button 
+          variant="contained" 
+          onClick={submitRemark} 
+          color="primary"
+          sx={{ minWidth: '120px' }}
+        >
           Submit feedback
         </Button>
       </DialogActions>

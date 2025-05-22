@@ -12,6 +12,7 @@ import useTheme, { ThemeProvider as AppThemeProvider } from '@/hooks/useTheme';
 
 // Import custom styles
 import '@/styles/accordion-override.css';
+import '@/styles/chat-container.css';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -35,6 +36,24 @@ function AppContent({ Component, pageProps }: AppProps) {
     '/privacy-policy',
   ];
 
+  // Add effect to disable body scrolling on the home page
+  useEffect(() => {
+    // Check if we're on the home page (index)
+    const isHomePage = router.pathname === '/';
+    
+    if (isHomePage) {
+      // Disable scrolling on the body
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Enable scrolling on other pages
+      document.body.style.overflow = 'auto';
+    }
+    
+    // Cleanup function to restore scrolling when component unmounts
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [router.pathname]);
 
   useEffect(() => {
     try {

@@ -313,7 +313,7 @@ const SourceDocuments = memo(({
                     }}
                   >
                   <AccordionTrigger 
-                    className="w-full outline-none focus:outline-none"
+                    className="w-full outline-none focus:outline-none accordion-trigger"
                     style={{ 
                       width: '100%', 
                       maxWidth: '100%', 
@@ -324,13 +324,15 @@ const SourceDocuments = memo(({
                       background: 'transparent',
                       outline: 'none',
                       boxShadow: 'none',
-                      border: 'none'
+                      border: 'none',
+                      color: theme === 'dark' ? '#ffffff' : '#000000'
                     }}
                   >
                     <strong style={{ 
                       letterSpacing: '0.01em', // Slightly increase letter spacing
                       fontWeight: '600', // Medium bold (not too heavy)
-                      fontSize: '15px' // Slightly larger font
+                      fontSize: '15px', // Slightly larger font
+                      color: theme === 'dark' ? '#ffffff' : '#000000'
                     }}>{title}</strong>
                   </AccordionTrigger>
                   <AccordionContent 
@@ -459,7 +461,7 @@ const MessageList: React.FC<MessageListProps> = ({
   const borderColor = theme === 'dark' ? '#444444' : '#eeeeee';
 
   return (
-    <List sx={{ padding: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+    <List sx={{ padding: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }} className="chat-message-list">
       {messages.map((message, index) => {
         let icon;
         

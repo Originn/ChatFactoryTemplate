@@ -213,11 +213,19 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({
         </Box>
       )}
       {!listening && !loading && (
-        <IconButton onClick={handleMicClick} disabled={isTranscribing} size="small">
-          <Tooltip message="Start recording" hideOnClick={true}>
-            <MicIcon sx={{ opacity: listening || isTranscribing ? 0.5 : 1 }} />
-          </Tooltip>
-        </IconButton>
+        <Tooltip title="Start recording">
+          <IconButton 
+            onClick={handleMicClick} 
+            disabled={isTranscribing} 
+            size="small"
+            sx={{ padding: '4px' }}
+          >
+            <MicIcon sx={{ 
+              opacity: listening || isTranscribing ? 0.5 : 1,
+              fontSize: '20px'
+            }} />
+          </IconButton>
+        </Tooltip>
       )}
       {speechError && (
         <Box className="border border-red-400 rounded-md p-4">

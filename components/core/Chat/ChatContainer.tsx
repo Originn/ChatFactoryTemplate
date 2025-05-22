@@ -489,6 +489,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
               justifyContent: 'space-between',
               alignItems: 'center',
               p: 2,
+              height: '100%',
             }}
           >
             <Typography variant="h4" align="center" fontWeight="bold" gutterBottom>
@@ -500,60 +501,53 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 width: '75vw',
-                height: 'calc(100vh - 250px)',
+                height: 'calc(100vh - 250px)', 
                 position: 'relative',
               }}
             >
               {/* Chat pane (top) */}
               <Box
                 sx={{
-                  flex: 1,
+                  flex: '1 1 auto', // Allow shrinking
                   minHeight: 0,
                   overflow: 'hidden',
                   width: '100%',
-                  mb: '30px',
+                  mb: '5px',
                   borderRadius: 2,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                   position: 'relative',
-                  pb: '15px',
+                  display: 'flex',
+                  flexDirection: 'column',
                 }}
               >
                 <Box
                   sx={{
                     width: '100%',
                     border: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0',
-                    borderBottom: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0',
                     borderRadius: 2,
                     boxShadow: theme === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
                     backgroundColor: theme === 'dark' ? '#121212' : 'white',
                     overflow: 'hidden',
-                    mb: '12px',
+                    mb: '5px', // Reduced margin
                     position: 'relative',
                     transition: 'height 0.3s ease',
-                    ...(homeImagePreviews.length > 0 && !loading
-                      ? {
-                          height: 'calc(65vh - 111px)',
-                          maxHeight: 'calc(65vh - 111px)',
-                        }
-                      : {
-                          height: 'calc(68vh - 80px)',
-                          maxHeight: 'calc(68vh - 80px)',
-                        }),
+                    flex: '1 1 auto', // Allow shrinking
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: '100px', // Ensure a minimum height
                   }}
                 >
                   <Box
                     ref={messageListRef}
+                    className="chat-message-list"
                     sx={{
                       width: '100%',
-                      height: 'calc(100% - 20px)',
-                      maxHeight: 'calc(100% - 20px)',
-                      overflowY: 'auto',
+                      flex: '1 1 auto', // Allow this to shrink
+                      overflowY: 'auto', // This ensures the chat content scrolls
                       borderRadius: '0.5rem',
                       position: 'relative',
-                      paddingBottom: '40px', // Increased padding at the bottom to ensure thumbs are visible
-                      marginBottom: '20px',
-                      scrollPaddingBottom: '60px', // Add scroll padding to ensure visibility
-                      borderBottom: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0',
+                      paddingBottom: '10px', // Reduced padding
+                      marginBottom: '5px', // Reduced margin
+                      scrollPaddingBottom: '20px', // Reduced scroll padding
                     }}
                   >
                     <MessageList
@@ -585,6 +579,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                     overflowY: 'auto',
                     visibility: 'visible',
                   }}
+                  className="chat-message-list"
                 >
                   {homeImagePreviews.map((image, index) => (
                     <ImagePreview
@@ -618,23 +613,25 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
               )}
               
               {/* Text input section */}
-              <ChatInput
-                query={query}
-                setQuery={setQuery}
-                loading={loading}
-                isTranscribing={isTranscribing}
-                isMicActive={isMicActive}
-                setIsMicActive={setIsMicActive}
-                setIsTranscribing={setIsTranscribing}
-                handleSubmit={handleSubmit}
-                handleChange={handleChange}
-                handleEnter={handleEnter}
-                textAreaRef={textAreaRef}
-                currentStage={currentStage}
-                handleFileChange={handleFileChange}
-                handleHomeFileChange={handleHomeFileChange}
-                fileInputRef={fileInputRef}
-              />
+              <Box sx={{ flexShrink: 0 }}>
+                <ChatInput
+                  query={query}
+                  setQuery={setQuery}
+                  loading={loading}
+                  isTranscribing={isTranscribing}
+                  isMicActive={isMicActive}
+                  setIsMicActive={setIsMicActive}
+                  setIsTranscribing={setIsTranscribing}
+                  handleSubmit={handleSubmit}
+                  handleChange={handleChange}
+                  handleEnter={handleEnter}
+                  textAreaRef={textAreaRef}
+                  currentStage={currentStage}
+                  handleFileChange={handleFileChange}
+                  handleHomeFileChange={handleHomeFileChange}
+                  fileInputRef={fileInputRef}
+                />
+              </Box>
             </Box>
             
             {speechError && (

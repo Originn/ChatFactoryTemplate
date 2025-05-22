@@ -88,14 +88,14 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({
       justifyContent: 'flex-start', 
       paddingLeft: '15px', // Reduced from 45px to align much more to the left
       backgroundColor: 'transparent',
-      paddingTop: '10px',
-      paddingBottom: '20px',
+      paddingTop: '5px',
+      paddingBottom: '5px',
       color: theme === 'dark' ? '#ffffff' : '#000000',
       position: 'relative',
       width: '100%',
       zIndex: 10,
-      minHeight: '45px',
-      marginBottom: '10px',
+      minHeight: '35px',
+      marginBottom: '0px',
       gap: '2px' // Maintain small gap between icons
     }}>
       <Tooltip title="Give positive feedback">

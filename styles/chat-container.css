@@ -1,0 +1,114 @@
+/* Chat container specific styles */
+.chat-message-list {
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+}
+
+/* Light mode scrollbar styling */
+.chat-message-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-message-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-message-list::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+/* Dark mode scrollbar styling */
+body[data-theme="dark"] .chat-message-list::-webkit-scrollbar,
+.dark .chat-message-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+body[data-theme="dark"] .chat-message-list::-webkit-scrollbar-track,
+.dark .chat-message-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body[data-theme="dark"] .chat-message-list::-webkit-scrollbar-thumb,
+.dark .chat-message-list::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+}
+
+/* Firefox scrollbar styling for dark mode */
+@supports (scrollbar-color: auto) {
+  body[data-theme="dark"] .chat-message-list,
+  .dark .chat-message-list {
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    scrollbar-width: thin;
+  }
+  
+  .chat-message-list {
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+/* Make sure document headings are white in dark mode */
+body[data-theme="dark"] .accordion-trigger strong,
+.dark .accordion-trigger strong,
+[data-theme="dark"] .accordion-trigger strong {
+  color: #ffffff !important;
+}
+/* Additional textarea-specific scrollbar styling */
+textarea.chat-message-list {
+  scrollbar-width: thin;
+}
+
+textarea.chat-message-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+textarea.chat-message-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+textarea.chat-message-list::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+/* Dark mode textarea scrollbar */
+body[data-theme="dark"] textarea.chat-message-list::-webkit-scrollbar-thumb,
+.dark textarea.chat-message-list::-webkit-scrollbar-thumb,
+[data-theme="dark"] textarea.chat-message-list::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Firefox specific styling for textarea in dark mode */
+@supports (scrollbar-color: auto) {
+  body[data-theme="dark"] textarea.chat-message-list,
+  .dark textarea.chat-message-list,
+  [data-theme="dark"] textarea.chat-message-list {
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    scrollbar-width: thin;
+  }
+}
+/* Textarea placeholder color in dark mode */
+body[data-theme="dark"] textarea.chat-message-list::placeholder,
+.dark textarea.chat-message-list::placeholder,
+[data-theme="dark"] textarea.chat-message-list::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Textarea placeholder color in light mode */
+textarea.chat-message-list::placeholder {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+/* Make sure textarea text is always visible in dark mode */
+body[data-theme="dark"] textarea.chat-message-list,
+.dark textarea.chat-message-list,
+[data-theme="dark"] textarea.chat-message-list {
+  color: #ffffff !important;
+}
+
+/* Make sure textarea text is always visible in light mode */
+textarea.chat-message-list {
+  color: #000000;
+}

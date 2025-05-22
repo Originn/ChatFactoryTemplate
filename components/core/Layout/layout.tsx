@@ -83,7 +83,7 @@ const Layout: FC<LayoutProps> = ({
         </Toolbar>
       </AppBar>
       <Box flex={1} display="flex" flexDirection="column" overflow="hidden">
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {children}
         </main>
       </Box>
