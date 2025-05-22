@@ -25,6 +25,7 @@ import {
   qaSystemPrompt,
   TITLE_GENERATION_PROMPT
 } from './prompts/promptTemplates';
+import { getTemplateConfig } from '../config/template';
 import { ensureChatSession } from './chatSession';
 import { prepareInput } from './inputProcessing';
 
@@ -88,21 +89,23 @@ async function generateConversationTitle(
   detectedLanguage: string = 'English'
 ): Promise<string> {
   try {
+    const config = getTemplateConfig();
+    
     // For very short inputs, use a template in the detected language
     if (input.trim().length <= 5) {
       // Templates for common languages
       const templates: Record<string, string> = {
-        'English': 'New conversation about SolidCAM',
-        'Portuguese': 'Início da conversa sobre SolidCAM',
-        'Spanish': 'Inicio de conversación sobre SolidCAM',
-        'French': 'Début de conversation sur SolidCAM',
-        'German': 'Beginn des Gesprächs über SolidCAM',
-        'Italian': 'Inizio della conversazione su SolidCAM',
-        'Chinese': 'SolidCAM 对话开始',
-        'Japanese': 'SolidCAM についての会話の開始',
-        'Russian': 'Начало разговора о SolidCAM',
-        'Arabic': 'بداية المحادثة حول SolidCAM',
-        'Hebrew': 'תחילת שיחה על SolidCAM',
+        'English': `New conversation about ${config.productName}`,
+        'Portuguese': `Início da conversa sobre ${config.productName}`,
+        'Spanish': `Inicio de conversación sobre ${config.productName}`,
+        'French': `Début de conversation sur ${config.productName}`,
+        'German': `Beginn des Gesprächs über ${config.productName}`,
+        'Italian': `Inizio della conversazione su ${config.productName}`,
+        'Chinese': `${config.productName} 对话开始`,
+        'Japanese': `${config.productName} についての会話の開始`,
+        'Russian': `Начало разговора о ${config.productName}`,
+        'Arabic': `بداية المحادثة حول ${config.productName}`,
+        'Hebrew': `תחילת שיחה על ${config.productName}`,
       };
       
       // Return the template for the detected language, or English if not found

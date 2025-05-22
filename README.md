@@ -1,15 +1,15 @@
-# SolidCAM ChatBot
+# {{PRODUCT_NAME}} ChatBot
 
-A web-based chatbot application built specifically for SolidCAM users that provides intelligent assistance through natural language processing. The application allows users to ask questions about SolidCAM, upload images for analysis, and receive answers based on a knowledge base of SolidCAM documentation and resources.
+A web-based chatbot application built specifically for {{PRODUCT_NAME}} users that provides intelligent assistance through natural language processing. The application allows users to ask questions about {{PRODUCT_NAME}}, upload images for analysis, and receive answers based on a knowledge base of {{PRODUCT_NAME}} documentation and resources.
 
 ## Overview
 
-SolidCAM ChatBot is a specialized AI assistant designed to help SolidCAM users with technical questions, troubleshooting, and guidance. It leverages advanced language models and an extensive knowledge base to provide accurate and relevant information about SolidCAM software. The application supports multilingual conversations, image analysis, and maintains conversation context to provide increasingly relevant responses.
+{{PRODUCT_NAME}} ChatBot is a specialized AI assistant designed to help {{PRODUCT_NAME}} users with technical questions, troubleshooting, and guidance. It leverages advanced language models and an extensive knowledge base to provide accurate and relevant information about {{PRODUCT_NAME}} software. The application supports multilingual conversations, image analysis, and maintains conversation context to provide increasingly relevant responses.
 
 ## 🌟 Features
 
 - **Natural Language Processing**: Interact with the chatbot using natural language queries
-- **Image Analysis**: Upload images of CAM parts for detailed analysis and assistance
+- **Image Analysis**: Upload images for detailed analysis and assistance
 - **Multilingual Support**: Automatic language detection and translations
 - **Chat History**: Save and retrieve previous conversations
 - **User Authentication**: Secure login with multiple authentication methods
@@ -29,272 +29,125 @@ SolidCAM ChatBot is a specialized AI assistant designed to help SolidCAM users w
 - **Authentication**: Firebase Authentication
 - **Vector Database**: Pinecone for efficient document retrieval
 
-### Directory Layout
+### Key Directories
 
 ```
-solidcamChatBot/
-├── auth/                     # Authentication-related components
-├── components/               # React components
-│   ├── ui/                   # Reusable UI components
-│   └── [various components]  # Application-specific components
-├── config/                   # Configuration files
-├── declarations/             # TypeScript declarations
-├── hooks/                    # React hooks for state management
-├── interfaces/               # TypeScript interfaces
-├── pages/                    # Next.js pages
-│   ├── api/                  # API endpoints
-│   └── [various pages]       # Application pages
-├── public/                   # Static assets
-├── scripts/                  # Utility scripts
-├── styles/                   # CSS and styling files
-├── types/                    # TypeScript type definitions
-├── utils/                    # Utility functions
-│   ├── makechain.ts          # Logic for creating LLM chains
-│   ├── memoryService.ts      # Chat memory handling
-│   └── [other utilities]     # Various helper functions
-├── db.js                     # Database connection and queries
-├── server.cjs                # Express server setup
-└── socketServer.cjs          # Socket.IO server implementation
+├── components/          # React components
+│   ├── core/           # Main chatbot components
+│   ├── ui/             # UI components and modals
+│   └── analytics/      # Analytics and tracking
+├── pages/              # Next.js pages and API routes
+├── utils/              # Utility functions and configurations
+├── config/             # Configuration files
+├── auth/               # Authentication components
+├── hooks/              # Custom React hooks
+├── styles/             # Global styles and theme configurations
+└── public/             # Static assets
 ```
-
-## 🛠️ Key Components
-
-### 1. Frontend Components
-
-- **Home.tsx**: Main chat interface where users interact with the bot
-- **ChatHistory.tsx**: Displays and manages saved conversations
-- **FeedbackComponent.tsx**: Allows users to rate and comment on responses
-- **ImageUploadFromHome.tsx**: Handles image uploads from the chat interface
-- **MicrophoneRecorder.tsx**: Captures voice input
-- **EnlargedImageView.tsx**: Displays uploaded images in fullscreen view
-- **InitialDisclaimerModal.tsx**: Shows initial terms and conditions to users
-- **UserMenu.tsx**: User profile and settings management component
-
-### 2. Backend Services
-
-- **makechain.ts**: Core logic for handling user queries and generating responses
-- **memoryService.ts**: Manages conversation context and history
-- **contextManager.ts**: Manages the context window for AI processing with optimized retrieval
-- **streamManager.ts**: Handles streaming of responses to the client
-- **pinecone-client.ts**: Interface with Pinecone vector database
-- **modelProviders.ts**: Manages different AI model providers (OpenAI, DeepSeek)
-- **roomSessionsDb.ts**: Manages chat room sessions and persistence
-- **speechRecognition.ts**: Handles voice-to-text conversion
-- **BufferMemory.ts**: Custom implementation of memory buffer for conversation context
-
-### 3. API Endpoints
-
-- **/api/chat.ts**: Main endpoint for chat functionality
-- **/api/chat-history.ts**: Retrieves conversation history
-- **/api/latest-chat-history.ts**: Gets the most recent chat for a user
-- **/api/upload.ts**: Handles file uploads
-- **/api/delete.ts**: Removes uploaded files
-- **/api/submit-feedback.ts**: Records user feedback
-- **/api/userEmbed.ts**: Special endpoint for embedding mode
-- **/api/privacy-settings.ts**: Retrieves user privacy preferences
-- **/api/update-privacy-settings.ts**: Updates user privacy settings
-- **/api/delete-account.ts**: Handles account deletion requests
-- **/api/delete-chat-history.ts**: Removes user conversation history
-- **/api/export-user-data.ts**: Exports user data for GDPR compliance
-- **/api/refresh-image-url.ts**: Updates expired image URLs
-- **/api/user-data-stats.ts**: Retrieves usage statistics
-
-### 4. Database Structure
-
-The application uses PostgreSQL with the following key tables:
-
-- **QuestionsAndAnswers**: Stores user queries and bot responses
-- **user_chat_history**: Stores complete conversation history by room
-- **user_privacy_settings**: Stores user privacy preferences
-
-## 🔌 Integrations
-
-- **AI Model Providers**:
-  - **OpenAI**: Primary language model provider (gpt-4.1)
-  - **DeepSeek**: Alternative language model provider (deepseek-chat)
-  - **Text Embeddings**: Uses OpenAI text-embedding-3-small for semantic search
-
-- **Backend Services**:
-  - **Firebase**: Authentication, storage, and user management
-  - **Pinecone**: Vector database for retrieval augmented generation
-  - **PostgreSQL**: Database for conversation and feedback storage
-  - **Socket.IO**: Real-time communication between client and server
-
-- **Frontend Frameworks**:
-  - **Next.js**: React framework for server-side rendering
-  - **Tailwind CSS**: Utility-first CSS framework
-  - **LangChain**: Framework for building LLM applications
-  - **React Markdown**: For rendering markdown responses
-
-## 📋 Features in Detail
-
-### Chat System
-
-The chat system enables real-time communication between users and the AI assistant:
-
-- **Streaming Responses**: Answers appear gradually as they're generated
-- **Source Documents**: References to SolidCAM documentation and webinars that contributed to the answer
-- **Feedback Collection**: Users can rate the quality of responses with thumbs up/down and comments
-- **Context Awareness**: The system maintains conversation context and optimizes which parts of previous conversations to include
-- **Room-Based Sessions**: Conversations are organized into "rooms" with unique IDs for persistence
-- **Real-Time Updates**: Uses Socket.IO for real-time message streaming and state synchronization
-
-### Image Processing
-
-The system can analyze uploaded images to provide context-aware responses:
-
-- **Multiple Upload Methods**: Supports drag-and-drop, file selection, and paste functionality
-- **Progress Tracking**: Shows upload progress for each image
-- **Image Preview**: Displays thumbnails with options to enlarge or delete
-- **Persistent Context**: Remembers uploaded images across conversation turns
-- **CAM Analysis**: Analyzes image content for CAM-specific elements and geometry
-- **Follow-up Intelligence**: Automatically references previous images when relevant to new questions
-
-### Authentication and User Management
-
-User authentication is managed through Firebase with support for:
-
-- **Multiple Auth Methods**: Email/password, Google, Apple, and Microsoft authentication
-- **Custom Login Flow**: Managed through AuthWrapper and CustomLoginForm components
-- **Email Verification**: Required email verification process
-- **Password Reset**: Self-service password reset functionality
-- **Account Management**: User can manage their profile and settings
-- **Anonymous Mode**: Limited functionality for users who aren't logged in
-- **Session Persistence**: Maintains user sessions across visits
-- **Role-Based Access**: Different capabilities based on user authentication status
-
-### Privacy and GDPR Compliance
-
-The application includes comprehensive privacy features:
-
-- **Privacy Settings**: User-configurable privacy preferences
-- **Data Controls**: Optional analytics tracking and history storage
-- **Retention Periods**: Configurable history retention periods
-- **Data Export**: Users can export their conversation data
-- **Account Deletion**: Option to delete account and all associated data
-- **Consent Management**: Initial disclaimer and consent tracking
-- **Automated Anonymization**: Scripts for periodic data anonymization
-- **GDPR Tables**: Database structure designed for GDPR compliance
-- **Data Minimization**: Only stores necessary user information
-
-
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js (v16 or later)
+- Node.js (v20 or higher)
+- npm or yarn
 - PostgreSQL database
-- OpenAI API key
-- DeepSeek API key (optional)
-- Pinecone API key and index
-- Firebase project with Authentication enabled
-- Environment variables configured (see below)
+- Firebase project (for authentication)
+- Pinecone account (for vector database)
+- OpenAI API key (or other AI provider)
 
 ### Installation
 
-1. Clone the repository
-2. Install dependencies:
+1. **Clone the repository**
+   ```bash
+   git clone [repository-url]
+   cd chatbot-template
    ```
+
+2. **Install dependencies**
+   ```bash
    npm install
    ```
-3. Copy `.env.example` to `.env` and update the values for your environment
-4. Set up the PostgreSQL database with the required tables:
+
+3. **Environment Setup**
+   Copy `.env.example` to `.env` and configure the following variables:
+
+   ```env
+   # Database
+   DATABASE_URL=postgresql://username:password@localhost:5432/database_name
+
+   # AI Provider
+   OPENAI_API_KEY=your_openai_api_key
+   
+   # Pinecone Vector Database
+   PINECONE_API_KEY=your_pinecone_api_key
+   PINECONE_ENVIRONMENT=your_pinecone_environment
+   PINECONE_INDEX_NAME=your_index_name
+
+   # Firebase Authentication
+   NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+   # ... other Firebase config variables
+
+   # Google Cloud Storage
+   GCLOUD_STORAGE_BUCKET=your_storage_bucket
+   GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
    ```
-   # You can use the script in scripts/gdpr_tables_migration.sql
+
+4. **Database Setup**
+   Set up your PostgreSQL database and run any necessary migrations.
+
+5. **Run the development server**
+   ```bash
+   npm run dev
    ```
 
-### Development
+   The application will be available at `http://localhost:3000`
 
-Run the development server:
+## 🔧 Configuration
+
+### Template Customization
+
+This chatbot template can be customized for different products and companies by modifying the template configuration in `config/template.ts`:
+
+```typescript
+export const TEMPLATE_CONFIG: TemplateConfig = {
+  companyName: "{{COMPANY_NAME}}",
+  productName: "{{PRODUCT_NAME}}",
+  productLatestVersion: "{{PRODUCT_LATEST_VERSION}}",
+  technicalSupportUrl: "{{TECHNICAL_SUPPORT_URL}}",
+  // ... other configuration options
+};
 ```
-npm run dev
-```
 
-### Production
+The DocsAI hub will automatically replace these template variables when creating new chatbot instances.
 
-Build and start the production server:
-```
-npm run build
-npm start
-```
+## 📚 Documentation
 
-## 🔧 Environment Variables
+For detailed information about specific components and features:
 
-A `.env.example` file lists all required variables. Copy it to `.env` and provide your credentials:
+- **AI Integration**: See `utils/makechain.ts` for AI model configurations
+- **Authentication**: Check `auth/` directory for Firebase setup
+- **Database Operations**: Review `db.js` for database interactions
+- **Component Documentation**: Each component includes inline documentation
 
-### Database Configuration
-- `DATABASE_URL`: PostgreSQL connection string
+## 🤝 Contributing
 
-### AI Configuration
-- `OPENAI_API_KEY`: API key for OpenAI
-- `DEEPSEEK_API_KEY`: API key for DeepSeek (optional)
-- `NEXT_PUBLIC_OPENAI_API_KEY`: Public API key for client requests
-- `MODEL_NAME`: Name of the OpenAI model to use (default: gpt-4.1)
-- `TEMPERATURE`: Temperature setting for language model (default: 0)
-- `IMAGE_MODEL_NAME`: Model for image analysis (default: gpt-4.1-mini)
-
-### Vector Database
-- `PINECONE_API_KEY`: API key for Pinecone
-- `PINECONE_ENVIRONMENT`: Pinecone environment
-- `PINECONE_INDEX_NAME`: Pinecone index name
-- `K_EMBEDDINGS`: Number of embeddings to retrieve (default: 8)
-- `FETCH_K_EMBEDDINGS`: Number of embeddings to fetch before filtering (default: 12)
-- `LAMBDA_EMBEDDINGS`: Weight factor for MMR search (default: 0.1)
-- `MINSCORESOURCESTHRESHOLD`: Minimum score for relevant sources (default: 0.78)
-
-### Firebase Configuration (client)
-- `NEXT_PUBLIC_FIREBASE_API_KEY`
-- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
-- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-- `NEXT_PUBLIC_FIREBASE_APP_ID`
-
-### Firebase Admin
-- `FIREBASE_PROJECT_ID`
-- `FIREBASE_CLIENT_EMAIL`
-- `FIREBASE_PRIVATE_KEY`
-
-### Google Cloud Storage
-- `GCLOUD_STORAGE_BUCKET`
-- `GCLOUD_PRIVATE_STORAGE_BUCKET`
-- `GOOGLE_APPLICATION_CREDENTIALS`
-- `GOOGLE_APPLICATION_CREDENTIALS_BASE64`
-
-### Analytics
-- `NEXT_PUBLIC_GA_MEASUREMENT_ID`
-
-### Application
-- `NEXT_PUBLIC_SERVER_URL`: Public URL for the server
-- `NEXT_PUBLIC_CODE_PREFIX`: Prefix for code embedding mode
-- `PORT`: Server port (default: 3000)
-
-## 📚 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 🧰 Maintenance
-
-The application includes several maintenance scripts:
-
-- **deleteOldChatHistory.js**: Removes chat histories older than the retention period
-- **monthly-anonymization.js**: Performs GDPR-compliant anonymization of user data
-- **release-tasks.js**: Tasks to run during application deployment
-- **QuestionEmbedder.ts**: Tool for embedding questions into the knowledge base
-
-## 🔗 Related Resources
-
-- [SolidCAM Official Website](https://www.solidcam.com)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [LangChain Documentation](https://js.langchain.com/docs/)
-- [Pinecone Documentation](https://docs.pinecone.io/)
-- [Socket.IO Documentation](https://socket.io/docs/)
-- [Firebase Documentation](https://firebase.google.com/docs)
+This is a template project. Contributions should focus on:
+- Improving template flexibility
+- Adding new customization options
+- Bug fixes and performance improvements
+- Documentation enhancements
 
 ## 📄 License
 
-Proprietary - © 2024 SolidCAM™. All rights reserved.
+This project is proprietary and licensed for use with the DocsAI platform.
+
+## 🆘 Support
+
+For support with this template:
+- Contact: {{SUPPORT_EMAIL}}
+- Documentation: {{SUPPORT_URL}}
+
+---
+
+**Note**: This is a template project. Replace all template variables (format: `{``{VARIABLE_NAME}``}`) with actual values when deploying through the DocsAI hub.

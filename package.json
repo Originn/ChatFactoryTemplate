@@ -1,12 +1,11 @@
 {
-  "name": "solidcam-chat",
+  "name": "chatbot-template",
   "version": "0.1.0",
   "private": true,
   "license": "UNLICENSED",
-  "author": "orisomekh<orisomekh.solidcam.com>",
+  "author": "DocsAI",
   "scripts": {
-    "heroku-prebuild": "node scripts/decode-google-credentials.js",
-    "dev": "node --inspect server.cjs",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "type-check": "tsc --noEmit",
@@ -14,8 +13,8 @@
     "format": "prettier --ignore-path .gitignore \"**/*.+(ts|js|tsx)\" --write",
     "export": "next export",
     "delete-old-chat-history": "node scripts/deleteOldChatHistory.js",
-    "heroku-postbuild": "npm prune --omit=dev && npm install typescript && npm run build",
-    "gdpr-anonymize-data": "node scripts/monthly-anonymization.js"
+    "gdpr-anonymize-data": "node scripts/monthly-anonymization.js",
+    "test-template": "node test-template-deployment.js"
   },
   "dependencies": {
     "@google-cloud/storage": "^6.12.0",
@@ -64,17 +63,14 @@
     "prettier": "^2.8.4",
     "typescript": "^4.9.5"
   },
-  "engines": {
-    "node": ">=20.0.0",
-    "npm": "10.x"
-  },
   "browser": {
     "fs": false,
     "os": false,
     "path": false
   },
   "keywords": [
-    "solidcam",
+    "chatbot",
+    "ai",
     "gpt4",
     "pinecone",
     "typescript",

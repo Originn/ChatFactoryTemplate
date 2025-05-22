@@ -9,6 +9,7 @@ import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
 import { getMuiTheme } from '@/utils/muiTheme';
 import { setUserIdForAnalytics } from '@/utils/tracking';
 import useTheme, { ThemeProvider as AppThemeProvider } from '@/hooks/useTheme';
+import { getTemplateConfig } from '../config/template';
 
 // Import custom styles
 import '@/styles/accordion-override.css';
@@ -26,6 +27,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 function AppContent({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const { theme } = useTheme();
+  const config = getTemplateConfig();
 
   const noAuthRequired = [
     '/verify-email',
@@ -76,9 +78,9 @@ function AppContent({ Component, pageProps }: AppProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta
           name="description"
-          content="Visit our website to further your knowledge about SolidCAM using our LLM ChatBot. Get personalized assistance and detailed information to enhance your experience."
+          content={`Visit our website to further your knowledge about ${config.productName} using our LLM ChatBot. Get personalized assistance and detailed information to enhance your experience.`}
         />
-        <title>SolidCAM Chat</title>
+        <title>{`${config.productName} Chat`}</title>
       </Head>
       <MuiThemeProvider theme={muiTheme}>
         <CssBaseline />

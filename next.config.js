@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: false,
   swcMinify: true,
   images: {
-    domains: ['solidcam.herokuapp.com', 'localhost'],
+    domains: ['localhost'], // Additional domains will be configured during deployment
   },
   webpack(config, { dev, isServer }) {
     if (dev) {

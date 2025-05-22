@@ -8,6 +8,7 @@ import useTheme from '@/hooks/useTheme';
 import useFileUpload from '@/hooks/useFileUpload';
 import usePasteImageUpload from '@/hooks/usePasteImageUpload';
 import useFileUploadFromHome from '@/hooks/useFileUploadFromHome';
+import { getTemplateConfig } from '../../../config/template';
 import { auth } from '@/utils/firebase';
 import { handleSubmitClick } from '@/utils/tracking';
 import MemoryService from '@/utils/memoryService';
@@ -37,20 +38,22 @@ import {
 
 // Environment constants
 const PRODUCTION_ENV = 'production';
-const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
+const PRODUCTION_URL = '{{PRODUCTION_URL}}'; // Will be replaced during deployment
 
 // Image paths with environment awareness
+// NOTE: bot-icon-placeholder.svg should be replaced with client's custom bot icon during deployment
 const getImagePaths = () => {
   const basePath = process.env.NODE_ENV === PRODUCTION_ENV ? PRODUCTION_URL : '/';
   return {
     userIconPath: `${basePath}usericon.png`,
-    botIconPath: `${basePath}solidcam.png`,
+    botIconPath: `${basePath}bot-icon-placeholder.svg`, // Placeholder - will be replaced with client's icon
   };
 };
 
 interface ChatContainerProps {}
 
 const ChatContainer: React.FC<ChatContainerProps> = () => {
+  const config = getTemplateConfig();
   const { theme, toggleTheme } = useTheme();
   const [query, setQuery] = useState<string>('');
   const [textAreaHeight, setTextAreaHeight] = useState<string>('auto');
@@ -493,7 +496,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
             }}
           >
             <Typography variant="h4" align="center" fontWeight="bold" gutterBottom>
-              SolidCAM ChatBot
+              {config.productName} ChatBot
             </Typography>
 
             <Box
@@ -649,7 +652,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
           </Box>
         </Container>
         <Box component="footer" sx={{ p: 2, textAlign: 'center', mt: 'auto' }}>
-          © 2024 SolidCAM™. All rights reserved.
+          © 2024 {config.companyName}™. All rights reserved.
           <p>
             <Link href="/privacy-policy" passHref>
               Privacy Policy
