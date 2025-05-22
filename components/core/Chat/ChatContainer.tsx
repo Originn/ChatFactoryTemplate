@@ -438,7 +438,14 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
           <Box display="flex" flexDirection="column" gap={2}>
           {/* For internal embedding - No change needed here */}
           {imagePreviews.length > 0 && (
-            <div className="image-container-image-thumb">
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 1,
+                m: '8px 0',
+              }}
+            >
               {imagePreviews.map((image, index) => (
                 <ImagePreview
                   key={index}
@@ -448,7 +455,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                   uploadProgress={pasteUploadProgress[image.fileName] || null}
                 />
               ))}
-            </div>
+            </Box>
           )}
           
           {/* Render the EnlargedImageView when an image is clicked */}
