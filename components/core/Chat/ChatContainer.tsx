@@ -110,6 +110,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
   const [isEmbeddingMode, setIsEmbeddingMode] = useState(false);
   const [isNewChat, setIsNewChat] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [isAwaitingResponse, setIsAwaitingResponse] = useState(false);
 
   // User information
   const userEmail = auth.currentUser ? auth.currentUser.email : 'testuser@example.com';
@@ -264,8 +265,9 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
         messages: [...prevState.messages, newUserMessage],
         history: [...prevState.history, [trimmedQuery, ''] as [string, string]],
       }));
-  
+
       setQuery('');
+      setIsAwaitingResponse(true);
   
       let fullHistory: [string, string][] = [];
       try {
@@ -332,6 +334,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
     } finally {
       setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
       setLoading(false);
+      setIsAwaitingResponse(false);
       setHomeImagePreviews([]);
       clearPastedImagePreviews();
     }
@@ -340,6 +343,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
     handleNewChatInternal();
     setIsNewChat(true);
     setIsEmbeddingMode(false);
+    setIsAwaitingResponse(false);
   };
 
   // Scroll message list to bottom when messages change
@@ -348,6 +352,16 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
   }, [messageState.messages, userHasScrolled]);
+
+  // Stop highlight when first API token arrives
+  useEffect(() => {
+    if (isAwaitingResponse) {
+      const lastMsg = messageState.messages[messageState.messages.length - 1];
+      if (lastMsg && lastMsg.type === 'apiMessage' && !lastMsg.isComplete) {
+        setIsAwaitingResponse(false);
+      }
+    }
+  }, [messageState.messages, isAwaitingResponse]);
 
   // Handle message list scroll events
   useEffect(() => {
@@ -438,7 +452,14 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
           <Box display="flex" flexDirection="column" gap={2}>
           {/* For internal embedding - No change needed here */}
           {imagePreviews.length > 0 && (
-            <div className="image-container-image-thumb">
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 1,
+                m: '8px 0',
+              }}
+            >
               {imagePreviews.map((image, index) => (
                 <ImagePreview
                   key={index}
@@ -448,7 +469,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                   uploadProgress={pasteUploadProgress[image.fileName] || null}
                 />
               ))}
-            </div>
+            </Box>
           )}
           
           {/* Render the EnlargedImageView when an image is clicked */}
@@ -543,6 +564,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                       imageUrlUserIcon={userIconPath}
                       roomId={roomId}
                       theme={theme}
+                      highlightLastUserMessage={isAwaitingResponse}
                     />
                   </Box>
                 </Box>

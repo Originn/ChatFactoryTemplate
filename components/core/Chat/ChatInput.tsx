@@ -57,6 +57,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
           autoFocus={false}
           multiline
           maxRows={4}
+          minRows={2}
+          sx={{
+            '& .MuiInputBase-input': {
+              fontSize: '0.9rem',
+              minHeight: '58px',
+              maxHeight: '240px',
+            },
+          }}
           id="userInput"
           name="userInput"
           placeholder={
