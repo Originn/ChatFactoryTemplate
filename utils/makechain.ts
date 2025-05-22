@@ -84,14 +84,40 @@ function generateUniqueId(): string {
 async function generateConversationTitle(
   input: string, 
   answer: string, 
-  model: ChatOpenAI
+  model: ChatOpenAI,
+  detectedLanguage: string = 'English'
 ): Promise<string> {
   try {
+    // For very short inputs, use a template in the detected language
+    if (input.trim().length <= 5) {
+      // Templates for common languages
+      const templates: Record<string, string> = {
+        'English': 'New conversation about SolidCAM',
+        'Portuguese': 'Início da conversa sobre SolidCAM',
+        'Spanish': 'Inicio de conversación sobre SolidCAM',
+        'French': 'Début de conversation sur SolidCAM',
+        'German': 'Beginn des Gesprächs über SolidCAM',
+        'Italian': 'Inizio della conversazione su SolidCAM',
+        'Chinese': 'SolidCAM 对话开始',
+        'Japanese': 'SolidCAM についての会話の開始',
+        'Russian': 'Начало разговора о SolidCAM',
+        'Arabic': 'بداية المحادثة حول SolidCAM',
+        'Hebrew': 'תחילת שיחה על SolidCAM',
+      };
+      
+      // Return the template for the detected language, or English if not found
+      return templates[detectedLanguage] || templates['English'];
+    }
+    
+    // For normal-length inputs, generate a custom title
     const titlePrompt = TITLE_GENERATION_PROMPT
       .replace('{input}', input)
       .replace('{answer}', answer);
       
     const titleResponse = await model.generate([[{
+      role: "system",
+      content: `You must generate a title in ${detectedLanguage} language. The title should reflect the content of the conversation.`
+    }, {
       role: "user",
       content: titlePrompt
     }]]);
@@ -114,7 +140,8 @@ async function updateConversationMemory(
   userEmail: string,
   documents: MyDocument[],
   qaId: string,
-  existingTitle?: string
+  existingTitle?: string,
+  language: string = 'English'
 ): Promise<void> {
   try {
     let conversationTitle = existingTitle || '';
@@ -140,7 +167,7 @@ async function updateConversationMemory(
           modelName: 'gpt-4.1-nano',
           temperature: ENV.TEMPERATURE,
         });
-        conversationTitle = await generateConversationTitle(originalInput, answer, titleModel);
+        conversationTitle = await generateConversationTitle(originalInput, answer, titleModel, language);
       } else {
         conversationTitle = existingHistory.conversation_title;
       }
@@ -525,7 +552,9 @@ export const makeChain = (
         imageUrls,
         userEmail,
         Documents,
-        qaId
+        qaId,
+        undefined,
+        language
       );
 
       return {};

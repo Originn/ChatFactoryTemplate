@@ -1,6 +1,6 @@
 import React, { useState, useRef, FC, useEffect } from 'react';
 import Image from 'next/image';
-import { Box, IconButton } from '@mui/material';
+import { Box, IconButton, Tooltip } from '@mui/material';
 import StopIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
 import MicIcon from '@mui/icons-material/Mic';
@@ -8,7 +8,6 @@ import { RecordAudioReturnType, recordAudio, transcribeAudio } from '@/utils/spe
 import WaveSurfer from 'wavesurfer.js';
 import RecordPlugin from 'wavesurfer.js/dist/plugins/record.js';
 import { handleMicClickEvent } from '@/utils/tracking';
-import { Tooltip } from '@/components/ui/Feedback';
 
 interface MicrophoneRecorderProps {
   setQuery: React.Dispatch<React.SetStateAction<string>>;
@@ -213,12 +212,13 @@ const MicrophoneRecorder: FC<MicrophoneRecorderProps> = ({
         </Box>
       )}
       {!listening && !loading && (
-        <Tooltip title="Start recording">
+        <Tooltip title="Record audio">
           <IconButton 
             onClick={handleMicClick} 
             disabled={isTranscribing} 
             size="small"
             sx={{ padding: '4px' }}
+            aria-label="Record audio"
           >
             <MicIcon sx={{ 
               opacity: listening || isTranscribing ? 0.5 : 1,

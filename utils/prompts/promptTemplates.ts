@@ -97,4 +97,4 @@ export const TITLE_GENERATION_PROMPT = `Given this conversation:
 Human: {input}
 AI: {answer}
 
-Generate a short, descriptive title for this conversation (max 50 characters) in the used language.`;
+Generate a short, descriptive title for this conversation (max 50 characters) in the EXACT SAME LANGUAGE as the conversation. It's critical that you maintain the original language of the user's question without translating it.`;
