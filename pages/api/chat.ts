@@ -41,37 +41,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'No question in the request' });
   }
 
-  // Store original environment variables
+  // Store original environment variable
   const originalOpenAIKey = process.env.OPENAI_API_KEY;
-  const originalDeepSeekKey = process.env.DEEPSEEK_API_KEY;
 
   try {
     // Sync chat history first
     await syncChatHistory(roomId, history, userEmail);
 
-    // Get the user's AI provider preference
-    let aiProvider: string;
+    // Get the appropriate API key for the user
     try {
-      aiProvider = await getUserAIProvider(userEmail);
+      const apiKey = await getAPIKeyForProvider('openai', userEmail);
+      process.env.OPENAI_API_KEY = apiKey;
     } catch (error) {
-      console.error('Error getting user AI provider preference:', error);
-      aiProvider = 'openai'; // Default to OpenAI if there's an error
-    }
-
-    // Get the appropriate API key based on provider
-    try {
-      const apiKey = await getAPIKeyForProvider(aiProvider, userEmail);
-      
-      // Set the appropriate environment variable based on provider
-      if (aiProvider === 'deepseek') {
-        process.env.DEEPSEEK_API_KEY = apiKey;
-      } else {
-        // For OpenAI or any other provider
-        process.env.OPENAI_API_KEY = apiKey;
-      }
-    } catch (error) {
-      console.error('Error getting API key for provider:', error);
-      // Continue with default keys if we can't get the user-specific key
+      console.error('Error getting API key:', error);
+      // Continue with default key if we can't get the user-specific key
     }
 
     // Initialize Pinecone
@@ -102,8 +85,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Create documents array for results
     const documents: MyDocument[] = [];
 
-    // Create chain with the user's AI provider preference
-    const chain = makeChain(vectorStore, sendToken, userEmail, aiProvider);
+    // Create chain with OpenAI
+    const chain = makeChain(vectorStore, sendToken, userEmail);
     
     // Execute the chain
     await chain.call(question, documents, roomId, userEmail, imageUrls);
@@ -119,8 +102,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   } finally {
-    // Restore original environment variables to prevent leaking between requests
+    // Restore original environment variable to prevent leaking between requests
     process.env.OPENAI_API_KEY = originalOpenAIKey;
-    process.env.DEEPSEEK_API_KEY = originalDeepSeekKey;
   }
 }

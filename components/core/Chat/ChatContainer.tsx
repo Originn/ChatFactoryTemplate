@@ -313,7 +313,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
   
       if (!response.ok) {
         if (response.status === 503) {
-          // This is likely a DeepSeek service unavailable error
+          // Service temporarily unavailable error  
           console.error('Service temporarily unavailable (503)');
           throw new Error('Service temporarily unavailable');
         } else {
@@ -325,11 +325,11 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
     } catch (error) {
       console.error('Error in submit:', error);
        
-      // Check if it's a DeepSeek 503 error (which we want to suppress)
+      // Check if it's a 503 error (which we want to suppress)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       if (errorMessage === 'Service temporarily unavailable') {
         // Don't show the error to the user, just log it
-        console.log('Suppressing DeepSeek service unavailable error display');
+        console.log('Suppressing service unavailable error display');
       } else {
         // Display other errors normally
         setError('An error occurred while fetching the data. Please try again.');

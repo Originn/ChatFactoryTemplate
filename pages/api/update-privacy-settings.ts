@@ -80,7 +80,7 @@ export default async function handler(
 
     // Validate AI provider if set
     if (aiProvider !== undefined) {
-      const validProviders = ['openai', 'deepseek'];
+      const validProviders = ['openai'];
       if (!validProviders.includes(aiProvider)) {
         return res.status(400).json({ message: 'Invalid AI provider' });
       }

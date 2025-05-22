@@ -19,7 +19,6 @@ import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retr
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createChatModel } from './modelProviders';
 import { getRelevantHistory } from './contextManager';
-import { deepseekQASystemPrompt } from './prompts/deepseekPrompt';
 import {
   contextualizeQSystemPrompt,
   qaSystemPrompt,
@@ -52,27 +51,6 @@ interface DocumentInterface<T> {
 // Helper Functions
 function isApiRelatedQuery(query: string): boolean {
   return /\b(api|vbs|script|automation|calculate|automate|programming|code|operation|function)\b/i.test(query);
-}
-
-function preprocessChatHistoryForDeepSeek(history: (HumanMessage | AIMessage)[]) {
-  if (history.length <= 1) return history;
-  
-  const processedHistory: (HumanMessage | AIMessage)[] = [];
-  
-  for (let i = 0; i < history.length; i++) {
-    const currentMessage = history[i];
-    const lastProcessedMessage = processedHistory[processedHistory.length - 1];
-    
-    if (!lastProcessedMessage || 
-        (currentMessage instanceof HumanMessage && lastProcessedMessage instanceof AIMessage) ||
-        (currentMessage instanceof AIMessage && lastProcessedMessage instanceof HumanMessage)) {
-      processedHistory.push(currentMessage);
-    } else {
-      processedHistory[processedHistory.length - 1] = currentMessage;
-    }
-  }
-  
-  return processedHistory;
 }
 
 function generateUniqueId(): string {
@@ -342,8 +320,7 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
 export const makeChain = (
   vectorstore: PineconeStore, 
   onTokenStream: (token: string) => void, 
-  userEmail: string, 
-  aiProvider: string = 'openai'
+  userEmail: string
 ) => {
   // Create shared model instances
   const sharedModel = new ChatOpenAI({
@@ -417,12 +394,6 @@ export const makeChain = (
 
       const rawChatHistory = await MemoryService.getChatHistory(roomId);
 
-      // Process chat history based on AI provider
-      let processedChatHistory = rawChatHistory;
-      if (aiProvider === 'deepseek') {
-        processedChatHistory = preprocessChatHistoryForDeepSeek(rawChatHistory);
-      }
-
       // Log if this is an API-related query
       const isApiQuery = isApiRelatedQuery(processedInput);
 
@@ -433,18 +404,10 @@ export const makeChain = (
         rephrasePrompt: contextualizeQPrompt as any,
       });
       
-      // Create QA chain with the appropriate prompt based on AI provider
-      const selectedPrompt = aiProvider === 'deepseek' 
-        ? ChatPromptTemplate.fromMessages([
-            ["system", deepseekQASystemPrompt],
-            new MessagesPlaceholder("chat_history"),
-            ["human", "{input}"],
-          ])
-        : qaPrompt;
-      
+      // Create QA chain with OpenAI prompt
       const questionAnswerChain = await createStuffDocumentsChain({
         llm: streamingModel as any,
-        prompt: selectedPrompt as any,
+        prompt: qaPrompt as any,
       });
 
       // Create RAG chain

@@ -133,7 +133,6 @@ const envVars = {
   
   // AI Provider (use client's keys or your managed keys)
   OPENAI_API_KEY: userConfig.openaiApiKey || managedOpenAIKey,
-  DEEPSEEK_API_KEY: userConfig.deepseekApiKey || managedDeepseekKey,
   
   // Pinecone (client-specific index)
   PINECONE_API_KEY: userConfig.pineconeApiKey || managedPineconeKey,

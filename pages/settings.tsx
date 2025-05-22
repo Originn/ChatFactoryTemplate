@@ -714,24 +714,6 @@ const handleAiProviderUpdate = async () => {
                     </p>
                   </div>
                 </div>
-                
-                <div >
-                  <input 
-                    id="deepseek" 
-                    type="radio" 
-                    name="aiProvider"
-                    value="deepseek"
-                     
-                    checked={aiProvider === 'deepseek'}
-                    onChange={() => setAiProvider('deepseek')}
-                  />
-                  <div>
-                    <label htmlFor="deepseek" >DeepSeek</label>
-                    <p >
-                      Powered by DeepSeek's efficient and powerful language models.
-                    </p>
-                  </div>
-                </div>
               </div>
               
               <div>

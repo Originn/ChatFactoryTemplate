@@ -108,7 +108,6 @@ DATABASE_URL=
 
 # AI Provider Keys (client-specific)  
 OPENAI_API_KEY=
-DEEPSEEK_API_KEY=
 
 # Pinecone (client-specific)
 PINECONE_API_KEY=

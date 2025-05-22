@@ -326,50 +326,20 @@ const updateUserPrivacySettings = async (uid, email, allowAnalytics, storeHistor
   }
 };
 
-// Get the user's AI provider preference
+// Get the user's AI provider preference (always returns 'openai' since DeepSeek is removed)
 const getUserAIProvider = async (userEmail) => {
-  // Check if pool is available (server-side only)
-  if (!pool) {
-    console.warn("Database connection pool is not available on the client side.");
-    return 'openai'; // Default to openai when client-side
-  }
-  
-  const query = `
-    SELECT ups.ai_provider 
-    FROM user_privacy_settings ups 
-    WHERE ups.email = $1;
-  `;
-
-  try {
-    const res = await pool.query(query, [userEmail]);
-    if (res.rows.length > 0) {
-      return res.rows[0].ai_provider || 'openai'; // Default to openai if null
-    }
-    return 'openai'; // Default to openai if no record found
-  } catch (err) {
-    console.error('Error fetching user AI provider:', err);
-    return 'openai'; // Default to openai on error
-  }
+  return 'openai'; // Always use OpenAI
 };
 
-// Get the API key for the selected provider
+// Get the API key for OpenAI
 const getAPIKeyForProvider = async (provider, userEmail) => {
   // API keys should only be available on the server side
   if (typeof window !== 'undefined') {
     console.warn("API keys are only available on the server side.");
     return null; // Return null on client-side
   }
-  // For OpenAI, we use the default system-wide API key
-  if (provider === 'openai') {
-    return process.env.OPENAI_API_KEY;
-  }
   
-  // For DeepSeek, use the system-wide API key
-  if (provider === 'deepseek') {
-    return process.env.DEEPSEEK_API_KEY;
-  }
-  
-  // Default fallback
+  // Return OpenAI API key
   return process.env.OPENAI_API_KEY;
 };
 
