@@ -22,7 +22,6 @@ import {
 const Settings = () => {
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('data');
-  const [aiProvider, setAiProvider] = useState('openai'); // Default AI provider
   const [loading, setLoading] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
@@ -118,11 +117,6 @@ const Settings = () => {
           storeHistory: data.storeHistory ?? true,
           retentionPeriod: data.retentionPeriod || '1month' // Changed default to 1 month
         });
-        
-        // Also set the AI provider if it exists
-        if (data.aiProvider) {
-          setAiProvider(data.aiProvider);
-        }
       } else {
         console.error('Error loading privacy settings:', await response.text());
       }
@@ -351,59 +345,6 @@ const handlePrivacySettingsUpdate = async () => {
     setProcessingAction(null);
   }
 };
-
-// Handler for saving AI provider setting
-const handleAiProviderUpdate = async () => {
-  if (!userInfo?.uid) return;
-  
-  setProcessingAction('aiProvider');
-  setLoading(true);
-  
-  try {
-    // Get the current user's ID token
-    const user = auth.currentUser;
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-    
-    const idToken = await getIdToken(user);
-    
-    const response = await fetch('/api/update-privacy-settings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`
-      },
-      body: JSON.stringify({
-        uid: userInfo.uid,
-        settings: {
-          storeHistory: privacySettings.storeHistory,
-          retentionPeriod: privacySettings.retentionPeriod,
-          aiProvider: aiProvider
-        }
-      }),
-    });
-    
-    if (response.ok) {
-      setStatusMessage({
-        type: 'success',
-        text: 'Your AI provider preference has been updated successfully.'
-      });
-    } else {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to update AI provider');
-    }
-  } catch (error) {
-    console.error('Error updating AI provider:', error);
-    setStatusMessage({
-      type: 'error',
-      text: error instanceof Error ? error.message : 'An error occurred while updating your AI provider.'
-    });
-  } finally {
-    setLoading(false);
-    setProcessingAction(null);
-  }
-};
   
   // Properly implement navigation functions
   const onHistoryItemClick = (conversation: ChatHistoryItem) => {
@@ -495,7 +436,6 @@ const handleAiProviderUpdate = async () => {
           >
             <Tab label="Your Data" value="data" />
             <Tab label="Privacy Settings" value="privacy" />
-            <Tab label="AI Provider" value="aiprovider" />
             <Tab label="Contact Information" value="contact" />
           </Tabs>
 
@@ -681,59 +621,6 @@ const handleAiProviderUpdate = async () => {
                   'Save Privacy Settings'
                 )}
               </Button>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'aiprovider' && (
-          <div>
-            <Typography variant="h6" sx={{ mb: 4 }}>AI Provider Settings</Typography>
-            
-            <div >
-              <Typography variant="subtitle1" sx={{ mb: 4 }}>Select AI Provider</Typography>
-              
-              <p >
-                Choose the AI provider that will power your chat experience. Different providers may offer varied capabilities and response styles.
-              </p>
-              
-              <div >
-                <div >
-                  <input 
-                    id="openai" 
-                    type="radio" 
-                    name="aiProvider"
-                    value="openai"
-                     
-                    checked={aiProvider === 'openai'}
-                    onChange={() => setAiProvider('openai')}
-                  />
-                  <div>
-                    <label htmlFor="openai" >OpenAI</label>
-                    <p >
-                      Powered by OpenAI's advanced language models.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleAiProviderUpdate}
-                  disabled={loading && processingAction === 'aiProvider'}
-                  sx={{ display: 'flex', alignItems: 'center' }}
-                >
-                  {loading && processingAction === 'aiProvider' ? (
-                    <>
-                      <span style={{ marginRight: 8 }}>Saving</span>
-                      <LoadingDots color="#fff" />
-                    </>
-                  ) : (
-                    'Save AI Provider Setting'
-                  )}
-                </Button>
-              </div>
             </div>
           </div>
         )}
