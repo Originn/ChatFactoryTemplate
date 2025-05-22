@@ -13,6 +13,7 @@ import useTheme, { ThemeProvider as AppThemeProvider } from '@/hooks/useTheme';
 // Import custom styles
 import '@/styles/accordion-override.css';
 import '@/styles/chat-container.css';
+import '@/styles/settings-page.css';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (

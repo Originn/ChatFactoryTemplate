@@ -112,3 +112,26 @@ body[data-theme="dark"] textarea.chat-message-list,
 textarea.chat-message-list {
   color: #000000;
 }
+/* Make cursor a pointing hand when hovering over accordion headers */
+.accordion-trigger,
+[data-state="closed"],
+[data-state="open"] {
+  cursor: pointer !important;
+}
+
+/* Also ensure all link elements in the source documents show the pointer cursor */
+.accordion-content a {
+  cursor: pointer;
+}
+
+/* Add a subtle hover effect to make it more obvious it's clickable */
+.accordion-trigger:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Dark mode hover effect */
+body[data-theme="dark"] .accordion-trigger:hover,
+.dark .accordion-trigger:hover,
+[data-theme="dark"] .accordion-trigger:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}

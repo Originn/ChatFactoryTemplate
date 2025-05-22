@@ -1,0 +1,32 @@
+/* Settings and Privacy Policy page styles */
+.settings-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (max-width: 960px) {
+  .settings-container {
+    width: 90%;
+  }
+}
+
+/* Dark mode specific styling for settings page */
+body[data-theme="dark"] .settings-container,
+.dark .settings-container,
+[data-theme="dark"] .settings-container {
+  color: #ffffff;
+}
+
+/* Make sure tab labels are visible in dark mode */
+body[data-theme="dark"] .MuiTab-root,
+.dark .MuiTab-root,
+[data-theme="dark"] .MuiTab-root {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+body[data-theme="dark"] .MuiTab-root.Mui-selected,
+.dark .MuiTab-root.Mui-selected,
+[data-theme="dark"] .MuiTab-root.Mui-selected {
+  color: #ffffff;
+}

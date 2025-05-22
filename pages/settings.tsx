@@ -449,7 +449,7 @@ const handleAiProviderUpdate = async () => {
       handleNewChat={handleNewChat}
     >
       <Box className="settings-container" sx={{ flex: 1, overflowY: 'auto' }}>
-        <Box sx={{ mx: 'auto', px: 4, py: 8, maxWidth: 640 }}>
+        <Box sx={{ mx: 'auto', px: 4, py: 8, maxWidth: 900 }}>
           {/* Back to Chat button */}
           <Box sx={{ mb: 6 }}>
             <Link

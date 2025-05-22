@@ -15,7 +15,7 @@ if (process.env.NODE_ENV === PRODUCTION_ENV) {
 
 export default function PrivacyPolicy() {
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box mb={2} textAlign="center">
         <Link href="/">
           <Image src={scimageIcon} alt="SolidCAM Logo" width={100} height={100} style={{ borderRadius: '50%' }} />

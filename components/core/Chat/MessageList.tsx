@@ -325,7 +325,8 @@ const SourceDocuments = memo(({
                       outline: 'none',
                       boxShadow: 'none',
                       border: 'none',
-                      color: theme === 'dark' ? '#ffffff' : '#000000'
+                      color: theme === 'dark' ? '#ffffff' : '#000000',
+                      cursor: 'pointer' // Change cursor to pointing hand on hover
                     }}
                   >
                     <strong style={{ 
