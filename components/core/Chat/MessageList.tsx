@@ -235,13 +235,14 @@ const SourceDocuments = memo(({
   const isDarkMode = document.body.classList.contains('dark');
 
   return (
-    <div 
+    <div
       key={`sourceDocsAccordion-${index}`}
       style={{
-        backgroundColor: theme === 'dark' ? '#222222' : '#f5f5f5',
-        padding: '0 15px 15px 75px',  // Increased left padding to match
+        backgroundColor: 'transparent',
+        padding: '0 15px 15px 15px',
         borderBottom: `1px solid ${theme === 'dark' ? '#444444' : '#eeeeee'}`,
-        color: theme === 'dark' ? '#ffffff' : '#000000'
+        color: theme === 'dark' ? '#ffffff' : '#000000',
+        marginTop: '-15px'
       }}
     >
       <Accordion type="single" collapsible className="flex-col">
