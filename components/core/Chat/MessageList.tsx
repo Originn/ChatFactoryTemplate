@@ -105,8 +105,9 @@ const UserMessage = memo(({
             left: 0,
             right: 0,
             bottom: 0,
-            background:
-              'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+            background: `linear-gradient(90deg, transparent, ${
+              theme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'
+            }, transparent)`,
             backgroundSize: '200% 100%',
             animation: `${shine} 1.5s linear infinite alternate`,
             pointerEvents: 'none',
