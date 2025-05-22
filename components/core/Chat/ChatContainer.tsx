@@ -550,8 +550,9 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                       overflowY: 'auto',
                       borderRadius: '0.5rem',
                       position: 'relative',
-                      paddingBottom: '20px',
+                      paddingBottom: '40px', // Increased padding at the bottom to ensure thumbs are visible
                       marginBottom: '20px',
+                      scrollPaddingBottom: '60px', // Add scroll padding to ensure visibility
                       borderBottom: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0',
                     }}
                   >

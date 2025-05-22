@@ -239,39 +239,111 @@ const SourceDocuments = memo(({
       key={`sourceDocsAccordion-${index}`}
       style={{
         backgroundColor: 'transparent',
-        padding: '0 15px 15px 15px',
-        borderBottom: `1px solid ${theme === 'dark' ? '#444444' : '#eeeeee'}`,
+        padding: '0',
+        borderBottom: 'none',
         color: theme === 'dark' ? '#ffffff' : '#000000',
-        marginTop: '-15px'
+        marginTop: '0', // Remove gap above first box
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
       }}
     >
-      <Accordion type="single" collapsible className="flex-col">
-        {(() => {
-          let webinarCount = 0;
-          let documentCount = 0;
-          const webinarTimestamps = new Set();
+      <div style={{ 
+        width: '100%', 
+        maxWidth: '100%', 
+        boxSizing: 'border-box',
+        margin: 0,
+        padding: 0 
+      }}>
+        <Accordion 
+          type="single" 
+          collapsible 
+          className="w-full" 
+          style={{ 
+            margin: 0, 
+            padding: 0, 
+            width: '100%',
+            boxSizing: 'border-box'
+          }}>
+          {(() => {
+            let webinarCount = 0;
+            let documentCount = 0;
+            const webinarTimestamps = new Set();
 
-          return sourceDocs.map((doc, docIndex) => {
-            let title;
-            if (doc.metadata.type === 'youtube' || doc.metadata.type === 'vimeo') {
-              if (!webinarTimestamps.has(doc.metadata.timestamp)) {
-                webinarCount++;
-                webinarTimestamps.add(doc.metadata.timestamp);
-                title = `Webinar ${webinarCount}`;
+            return sourceDocs.map((doc, docIndex) => {
+              let title;
+              if (doc.metadata.type === 'youtube' || doc.metadata.type === 'vimeo') {
+                if (!webinarTimestamps.has(doc.metadata.timestamp)) {
+                  webinarCount++;
+                  webinarTimestamps.add(doc.metadata.timestamp);
+                  title = `Webinar ${webinarCount}`;
+                } else {
+                  return null;
+                }
               } else {
-                return null;
+                documentCount++;
+                title = `Document ${documentCount}`;
               }
-            } else {
-              documentCount++;
-              title = `Document ${documentCount}`;
-            }
 
-            if (!title) return null;            return (
-              <AccordionItem key={`messageSourceDocs-${docIndex}`} value={`item-${docIndex}`}>
-                <AccordionTrigger>
-                  <h3>{title}</h3>
-                </AccordionTrigger>
-                <AccordionContent>
+              if (!title) return null;
+              
+              return (
+                <div key={`accordion-item-wrapper-${docIndex}`} style={{ 
+                  width: '100%', 
+                  maxWidth: '100%', 
+                  boxSizing: 'border-box',
+                  marginBottom: 0, // Remove gap between accordion items
+                }}>
+                  <AccordionItem 
+                    key={`messageSourceDocs-${docIndex}`} 
+                    value={`item-${docIndex}`}
+                    className="w-full outline-none focus:outline-none border-0 border-t border-b border-gray-200 dark:border-gray-700 focus:ring-0 focus:ring-offset-0"
+                    style={{ 
+                      width: '100%',
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
+                      border: 'none',
+                      borderTop: `1px solid ${theme === 'dark' ? '#444444' : '#dddddd'}`,
+                      borderBottom: `1px solid ${theme === 'dark' ? '#444444' : '#dddddd'}`,
+                      marginTop: docIndex === 0 ? 0 : '-1px', // Collapse borders
+                      marginBottom: 0,
+                      background: 'transparent',
+                      outline: 'none',
+                      boxShadow: 'none'
+                    }}
+                  >
+                  <AccordionTrigger 
+                    className="w-full outline-none focus:outline-none"
+                    style={{ 
+                      width: '100%', 
+                      maxWidth: '100%', 
+                      boxSizing: 'border-box',
+                      paddingLeft: '15px',
+                      paddingRight: '15px',
+                      minHeight: '34px', // Reduced from 40px
+                      background: 'transparent',
+                      outline: 'none',
+                      boxShadow: 'none',
+                      border: 'none'
+                    }}
+                  >
+                    <strong style={{ 
+                      letterSpacing: '0.01em', // Slightly increase letter spacing
+                      fontWeight: '600', // Medium bold (not too heavy)
+                      fontSize: '15px' // Slightly larger font
+                    }}>{title}</strong>
+                  </AccordionTrigger>
+                  <AccordionContent 
+                    className="w-full outline-none focus:outline-none"
+                    style={{ 
+                      width: '100%', 
+                      maxWidth: '100%', 
+                      boxSizing: 'border-box',
+                      outline: 'none',
+                      boxShadow: 'none',
+                      border: 'none'
+                    }}
+                  >
                   {(() => {
                     if (doc.metadata.type === 'youtube' || doc.metadata.type === 'vimeo') {
                       return (
@@ -359,12 +431,14 @@ const SourceDocuments = memo(({
                       );
                     }
                   })()}
-                </AccordionContent>
-              </AccordionItem>
-            );
-          });
-        })()}
-      </Accordion>
+                  </AccordionContent>
+                </AccordionItem>
+                </div>
+              );
+            });
+          })()}
+        </Accordion>
+      </div>
     </div>
   );
 });// Main MessageList component
@@ -385,7 +459,7 @@ const MessageList: React.FC<MessageListProps> = ({
   const borderColor = theme === 'dark' ? '#444444' : '#eeeeee';
 
   return (
-    <List sx={{ padding: 0, width: '100%' }}>
+    <List sx={{ padding: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
       {messages.map((message, index) => {
         let icon;
         
@@ -426,6 +500,7 @@ const MessageList: React.FC<MessageListProps> = ({
                 backgroundColor={apiMessageBg}
                 borderColor={borderColor}
                 theme={theme}
+                sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               />
             ) : (
               <UserMessage
@@ -437,6 +512,7 @@ const MessageList: React.FC<MessageListProps> = ({
                 borderColor={borderColor}
                 theme={theme}
                 highlight={highlightLastUserMessage && index === messages.length - 1}
+                sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               />
             )}
 
@@ -445,13 +521,21 @@ const MessageList: React.FC<MessageListProps> = ({
             )}
 
             {message.type === 'apiMessage' && message.isComplete && (
-              <FeedbackComponent
-                key={index}
-                messageIndex={index}
-                qaId={message.qaId}
-                roomId={roomId}
-                theme={theme}
-              />
+              <div style={{ 
+                position: 'relative', 
+                width: '100%', 
+                zIndex: 1,
+                marginBottom: '10px',
+                paddingBottom: '10px'
+              }}>
+                <FeedbackComponent
+                  key={index}
+                  messageIndex={index}
+                  qaId={message.qaId}
+                  roomId={roomId}
+                  theme={theme}
+                />
+              </div>
             )}
           </React.Fragment>
         );

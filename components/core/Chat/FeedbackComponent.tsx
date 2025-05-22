@@ -86,24 +86,42 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'flex-start', 
-      paddingLeft: '75px',  // Increased to compensate for icon drop
-      backgroundColor: theme === 'dark' ? '#222222' : '#f5f5f5',
-      paddingTop: '5px',
-      paddingBottom: '10px',
-      color: theme === 'dark' ? '#ffffff' : '#000000'
+      paddingLeft: '15px', // Reduced from 45px to align much more to the left
+      backgroundColor: 'transparent',
+      paddingTop: '10px',
+      paddingBottom: '20px',
+      color: theme === 'dark' ? '#ffffff' : '#000000',
+      position: 'relative',
+      width: '100%',
+      zIndex: 10,
+      minHeight: '45px',
+      marginBottom: '10px',
+      gap: '2px' // Maintain small gap between icons
     }}>
       <Tooltip title="Give positive feedback">
-        <IconButton onClick={() => handleOpenModal('up')} aria-label="Give positive feedback">
+        <IconButton 
+          onClick={() => handleOpenModal('up')} 
+          aria-label="Give positive feedback"
+          sx={{ padding: '4px', marginRight: '0px' }} // Reduced padding and margin
+        >
           <Image src={thumbUpIcon} alt="Thumb Up" width={25} height={25} />
         </IconButton>
       </Tooltip>
       <Tooltip title="Give negative feedback">
-        <IconButton onClick={() => handleOpenModal('down')} aria-label="Give negative feedback">
+        <IconButton 
+          onClick={() => handleOpenModal('down')} 
+          aria-label="Give negative feedback"
+          sx={{ padding: '4px', marginRight: '0px' }} // Reduced padding and margin
+        >
           <Image src={thumbDownIcon} alt="Thumb Down" width={25} height={25} />
         </IconButton>
       </Tooltip>
       <Tooltip title="Add a comment">
-        <IconButton onClick={() => handleOpenModal('comment')} aria-label="Add a comment">
+        <IconButton 
+          onClick={() => handleOpenModal('comment')} 
+          aria-label="Add a comment"
+          sx={{ padding: '4px', marginRight: '0px' }} // Reduced padding and margin
+        >
           <Image src={commentIcon} alt="Comment" width={25} height={25} />
         </IconButton>
       </Tooltip>

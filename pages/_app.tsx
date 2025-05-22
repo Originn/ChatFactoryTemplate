@@ -10,6 +10,9 @@ import { getMuiTheme } from '@/utils/muiTheme';
 import { setUserIdForAnalytics } from '@/utils/tracking';
 import useTheme, { ThemeProvider as AppThemeProvider } from '@/hooks/useTheme';
 
+// Import custom styles
+import '@/styles/accordion-override.css';
+
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <AppThemeProvider>
