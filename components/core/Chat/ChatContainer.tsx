@@ -73,9 +73,10 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
     (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 
   // Use custom hooks
-  const { 
-    roomId, 
-    setRoomId, 
+  const {
+    socket,
+    roomId,
+    setRoomId,
     requestsInProgress, 
     setRequestsInProgress,
     loading, 
@@ -110,6 +111,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
   const [isEmbeddingMode, setIsEmbeddingMode] = useState(false);
   const [isNewChat, setIsNewChat] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [highlightLastUserMessage, setHighlightLastUserMessage] = useState(false);
 
   // User information
   const userEmail = auth.currentUser ? auth.currentUser.email : 'testuser@example.com';
@@ -238,6 +240,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
     setRequestsInProgress((prev) => ({ ...prev, [roomId!]: true }));
     setUserHasScrolled(false);
     setLoading(true);
+    setHighlightLastUserMessage(true);
   
     // Check if user is now authenticated
     const currentUser = auth.currentUser;
@@ -319,6 +322,8 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
   
     } catch (error) {
       console.error('Error in submit:', error);
+
+      setHighlightLastUserMessage(false);
        
       // Check if it's a DeepSeek 503 error (which we want to suppress)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -332,6 +337,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
     } finally {
       setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
       setLoading(false);
+      setHighlightLastUserMessage(false);
       setHomeImagePreviews([]);
       clearPastedImagePreviews();
     }
@@ -348,6 +354,16 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
   }, [messageState.messages, userHasScrolled]);
+
+  // Stop highlight when the first token is streamed back
+  useEffect(() => {
+    if (!socket || !roomId) return;
+    const stopHighlight = () => setHighlightLastUserMessage(false);
+    socket.once(`tokenStream-${roomId}`, stopHighlight);
+    return () => {
+      socket.off(`tokenStream-${roomId}`, stopHighlight);
+    };
+  }, [socket, roomId]);
 
   // Handle message list scroll events
   useEffect(() => {
@@ -438,7 +454,14 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
           <Box display="flex" flexDirection="column" gap={2}>
           {/* For internal embedding - No change needed here */}
           {imagePreviews.length > 0 && (
-            <div className="image-container-image-thumb">
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 1,
+                m: '8px 0',
+              }}
+            >
               {imagePreviews.map((image, index) => (
                 <ImagePreview
                   key={index}
@@ -448,7 +471,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                   uploadProgress={pasteUploadProgress[image.fileName] || null}
                 />
               ))}
-            </div>
+            </Box>
           )}
           
           {/* Render the EnlargedImageView when an image is clicked */}
@@ -543,6 +566,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                       imageUrlUserIcon={userIconPath}
                       roomId={roomId}
                       theme={theme}
+                      highlightLastUserMessage={highlightLastUserMessage}
                     />
                   </Box>
                 </Box>

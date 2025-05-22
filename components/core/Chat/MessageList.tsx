@@ -1,4 +1,10 @@
 import React, { memo } from 'react';
+import { keyframes } from '@mui/material';
+
+const shine = keyframes`
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+`;
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -33,6 +39,7 @@ interface MessageListProps {
   imageUrlUserIcon: string;
   roomId: string | null;
   theme: 'light' | 'dark';
+  highlightLastUserMessage: boolean;
 }
 
 // User message component
@@ -43,7 +50,8 @@ const UserMessage = memo(({
   setEnlargedImage,
   backgroundColor = '#f5f5f5',
   borderColor = '#eeeeee',
-  theme
+  theme,
+  highlight = false
 }: {
   message: ChatMessage;
   icon: JSX.Element;
@@ -52,6 +60,7 @@ const UserMessage = memo(({
   backgroundColor?: string;
   borderColor?: string;
   theme: 'light' | 'dark';
+  highlight?: boolean;
 }) => {
   
   const formattedMessage = typeof message.message === 'string' 
@@ -71,8 +80,8 @@ const UserMessage = memo(({
     : [];
 
   return (
-    <ListItem 
-      disableGutters 
+    <ListItem
+      disableGutters
       alignItems="flex-start"
       sx={{
         backgroundColor: backgroundColor,
@@ -81,7 +90,15 @@ const UserMessage = memo(({
         width: '100%',
         display: 'flex',
         alignItems: 'flex-start',
-        color: theme === 'dark' ? '#ffffff' : '#000000'
+        color: theme === 'dark' ? '#ffffff' : '#000000',
+        ...(highlight && {
+          backgroundImage:
+            theme === 'dark'
+              ? 'linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.1) 100%)'
+              : 'linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.05) 100%)',
+          backgroundSize: '200% 100%',
+          animation: `${shine} 1.5s linear infinite`,
+        })
       }}
     >
       {icon}
@@ -344,7 +361,8 @@ const MessageList: React.FC<MessageListProps> = ({
   botimageIcon,
   imageUrlUserIcon,
   roomId,
-  theme
+  theme,
+  highlightLastUserMessage
 }) => {
   // Define theme-based colors
   const userMessageBg = theme === 'dark' ? '#333333' : '#ffffff';
@@ -403,6 +421,7 @@ const MessageList: React.FC<MessageListProps> = ({
                 backgroundColor={userMessageBg}
                 borderColor={borderColor}
                 theme={theme}
+                highlight={highlightLastUserMessage && index === messages.length - 1}
               />
             )}
 
