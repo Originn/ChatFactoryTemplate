@@ -110,6 +110,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
   const [isEmbeddingMode, setIsEmbeddingMode] = useState(false);
   const [isNewChat, setIsNewChat] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [isAwaitingResponse, setIsAwaitingResponse] = useState(false);
 
   // User information
   const userEmail = auth.currentUser ? auth.currentUser.email : 'testuser@example.com';
@@ -264,8 +265,9 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
         messages: [...prevState.messages, newUserMessage],
         history: [...prevState.history, [trimmedQuery, ''] as [string, string]],
       }));
-  
+
       setQuery('');
+      setIsAwaitingResponse(true);
   
       let fullHistory: [string, string][] = [];
       try {
@@ -332,6 +334,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
     } finally {
       setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
       setLoading(false);
+      setIsAwaitingResponse(false);
       setHomeImagePreviews([]);
       clearPastedImagePreviews();
     }
@@ -340,6 +343,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
     handleNewChatInternal();
     setIsNewChat(true);
     setIsEmbeddingMode(false);
+    setIsAwaitingResponse(false);
   };
 
   // Scroll message list to bottom when messages change
@@ -348,6 +352,16 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
   }, [messageState.messages, userHasScrolled]);
+
+  // Stop highlight when first API token arrives
+  useEffect(() => {
+    if (isAwaitingResponse) {
+      const lastMsg = messageState.messages[messageState.messages.length - 1];
+      if (lastMsg && lastMsg.type === 'apiMessage' && !lastMsg.isComplete) {
+        setIsAwaitingResponse(false);
+      }
+    }
+  }, [messageState.messages, isAwaitingResponse]);
 
   // Handle message list scroll events
   useEffect(() => {
@@ -550,6 +564,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                       imageUrlUserIcon={userIconPath}
                       roomId={roomId}
                       theme={theme}
+                      highlightLastUserMessage={isAwaitingResponse}
                     />
                   </Box>
                 </Box>
