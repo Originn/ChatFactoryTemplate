@@ -364,7 +364,7 @@ export const makeChain = (
       const qaId = generateUniqueId();
 
       // Initialize streaming model based on AI provider preference
-      const streamingModel = createChatModel(aiProvider, {
+      const streamingModel = createChatModel('openai', {
         streaming: true,
         verbose: false,
         maxTokens: 4000,
@@ -507,7 +507,7 @@ export const makeChain = (
         userEmail, 
         imageUrls, 
         language, 
-        aiProvider
+        'openai'
       );
 
       // Update chat memory

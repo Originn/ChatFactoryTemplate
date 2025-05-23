@@ -1,4 +1,5 @@
-import { ChatOpenAI, HumanMessage, AIMessage } from '@langchain/openai';
+import { ChatOpenAI } from '@langchain/openai';
+import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import OpenAIChat from 'openai';
 import MemoryService from '@/utils/memoryService';
 import {

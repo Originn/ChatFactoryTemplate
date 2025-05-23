@@ -24,7 +24,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   );
 }
 
-function AppContent({ Component, pageProps }: AppProps) {
+function AppContent({ Component, pageProps }: { Component: AppProps['Component']; pageProps: AppProps['pageProps'] }) {
   const router = useRouter();
   const { theme } = useTheme();
   const config = getTemplateConfig();

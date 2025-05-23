@@ -160,11 +160,29 @@ const ChatInput: React.FC<ChatInputProps> = ({
             zIndex: 1 
           }}>
             <MicrophoneRecorder
-              setQuery={setQuery}
+              setQuery={(value) => {
+                if (typeof value === 'function') {
+                  setQuery(value(query));
+                } else {
+                  setQuery(value);
+                }
+              }}
               loading={loading}
-              setIsTranscribing={setIsTranscribing}
+              setIsTranscribing={(value) => {
+                if (typeof value === 'function') {
+                  setIsTranscribing(value(isTranscribing));
+                } else {
+                  setIsTranscribing(value);
+                }
+              }}
               isTranscribing={isTranscribing}
-              setIsMicActive={setIsMicActive}
+              setIsMicActive={(value) => {
+                if (typeof value === 'function') {
+                  setIsMicActive(value(isMicActive));
+                } else {
+                  setIsMicActive(value);
+                }
+              }}
             />
           </Box>
         )}

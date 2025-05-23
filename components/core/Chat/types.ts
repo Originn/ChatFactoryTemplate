@@ -9,8 +9,11 @@ export interface ChatMessage {
 }
 
 export interface ChatHistoryItem {
+  id: string;
   roomId: string;
   conversation_json: any;
+  conversation_title?: string;
+  date: string;
 }
 
 export interface RequestsInProgressType {

@@ -398,7 +398,7 @@ const SourceDocuments = memo(({
                               ? (() => {
                                   const pageNumbers = Array.from(
                                     doc.pageContent.matchAll(/\((\d+)\)/g),
-                                    m => parseInt(m[1], 10)
+                                    (m: RegExpMatchArray) => parseInt(m[1], 10)
                                   );
                                   const largestPageNumber =
                                     pageNumbers.length > 0 ? Math.max(...pageNumbers) : null;
@@ -503,7 +503,6 @@ const MessageList: React.FC<MessageListProps> = ({
                 backgroundColor={apiMessageBg}
                 borderColor={borderColor}
                 theme={theme}
-                sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               />
             ) : (
               <UserMessage
@@ -515,7 +514,6 @@ const MessageList: React.FC<MessageListProps> = ({
                 borderColor={borderColor}
                 theme={theme}
                 highlight={highlightLastUserMessage && index === messages.length - 1}
-                sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               />
             )}
 

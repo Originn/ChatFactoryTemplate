@@ -16,6 +16,7 @@ import Cookies from 'js-cookie';
 
 // Import components with the new structure
 import { MessageList, ChatInput } from '@/components/core/Chat';
+import { ChatMessage } from '@/components/core/Chat/types';
 import { 
   MicrophoneRecorder, 
   ImageUpload, 
@@ -258,8 +259,8 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
   
     try {
       // Add user message to state
-      const newUserMessage = {
-        type: 'userMessage',
+      const newUserMessage: ChatMessage = {
+        type: 'userMessage' as const,
         message: trimmedQuery,
         isComplete: true,
         images: homeImagePreviews.slice(0, 3),
@@ -468,7 +469,7 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
                   key={index}
                   image={image}
                   index={index}
-                  onDelete={handleDeleteImage}
+                  onDelete={(fileName, idx) => handleDeleteImage(fileName, idx || index)}
                   uploadProgress={pasteUploadProgress[image.fileName] || null}
                 />
               ))}

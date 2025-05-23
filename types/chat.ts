@@ -1,5 +1,5 @@
 import { Document } from 'langchain/document';
-import { ImagePreviewData } from 'components/ImagePreview'
+import { ImagePreviewData } from '@/components/core/Media';
 
 export type Message = {
   type: 'apiMessage' | 'userMessage';
