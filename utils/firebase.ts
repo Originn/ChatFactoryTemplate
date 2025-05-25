@@ -1,5 +1,5 @@
 // utils/firebase.ts
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 // Your Firebase configuration object from your Firebase project settings
@@ -12,20 +12,22 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase only if not already initialized
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
-// Initialize Firebase Auth and set persistence
+// Initialize Firebase Auth
 const auth = getAuth(app);
 
-// Set the session persistence
-setPersistence(auth, browserLocalPersistence)
-  .then(() => {
-    // Persistence is set. Future sign-in requests will use the session persistence.
-  })
-  .catch((error) => {
-    // Handle errors
-    console.error("Error setting persistence:", error);
-  });
+// Set the session persistence only in browser environment
+if (typeof window !== 'undefined') {
+  setPersistence(auth, browserLocalPersistence)
+    .then(() => {
+      console.log('Firebase persistence set successfully');
+    })
+    .catch((error) => {
+      console.error("Error setting persistence:", error);
+    });
+}
 
-export { auth };
+export { auth, app };
+
