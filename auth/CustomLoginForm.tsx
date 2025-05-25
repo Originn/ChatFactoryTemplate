@@ -7,159 +7,167 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Cookies from 'js-cookie';
 import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  TextField,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
-  Typography,
-  TextField,
-  Box,
+  Divider,
+  Container,
+  IconButton,
+  Stack,
+  Alert,
+  Link,
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
+import useTheme from '@/hooks/useTheme';
+
+// Styled components for provider buttons
+const ProviderButton = styled(Button)(({ theme }) => ({
+  width: '100%',
+  padding: '12px 16px',
+  marginBottom: '12px',
+  border: `1px solid ${theme.palette.divider}`,
+  borderRadius: '4px',
+  textTransform: 'none',
+  fontSize: '14px',
+  fontWeight: 500,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  '&:hover': {
+    boxShadow: theme.shadows[2],
+  },
+}));
+
+const AppleButton = styled(ProviderButton)(({ theme }) => ({
+  backgroundColor: '#000',
+  color: '#fff',
+  '&:hover': {
+    backgroundColor: '#333',
+  },
+}));
+
+const GoogleButton = styled(ProviderButton)(({ theme }) => ({
+  backgroundColor: theme.palette.background.paper,
+  color: theme.palette.text.primary,
+}));
+
+const ThemeToggleButton = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  top: 20,
+  left: 20,
+  padding: '8px',
+  borderRadius: '50%',
+  backgroundColor: theme.palette.mode === 'dark' ? 'white' : theme.palette.grey[600],
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'background-color 0.2s ease',
+  '&:hover': {
+    backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[200] : theme.palette.grey[700],
+  },
+}));
 
 const CustomLoginForm = () => {
-    // Removed the name state since it's not needed anymore
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const [showModal, setShowModal] = useState(false); // State to control modal visibility
+    const [showModal, setShowModal] = useState(false);
     const [showSignInModal, setShowSignInModal] = useState(false);
-    const [isSignIn, setIsSignIn] = useState(false);
     const [emailSubmitted, setEmailSubmitted] = useState(false);
     const [isEmailValid, setIsEmailValid] = useState(false);
     const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
     const [recoveryEmail, setRecoveryEmail] = useState('');
-    const [theme, setTheme] = useState('light');
     const [consentGiven, setConsentGiven] = useState(false);
     const [showConsentModal, setShowConsentModal] = useState(false);
     const [selectedProvider, setSelectedProvider] = useState(null);
-    const passwordInputRef = useRef<HTMLInputElement>(null);
     const [consentDeclined, setConsentDeclined] = useState(false);
+    const passwordInputRef = useRef<HTMLInputElement>(null);
 
-
+    const { theme, toggleTheme } = useTheme();
     const router = useRouter();
 
-    useEffect(() => {
-        document.body.className = theme;
-    }, [theme]);
-
-    const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-        localStorage.setItem('theme', newTheme); // Save theme preference
-    };
-
     const baseURL = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : '/';
-    
-
-    // Use the base URL with your image path
     const moonIcon = `${baseURL}icons8-moon-50.png`;
-
-    // Determine which icon to show based on the current theme
     const iconPath = theme === 'light' ? moonIcon : "/icons8-sun.svg";
-    const buttonBgClass = theme === 'dark' ? "bg-white" : "bg-gray-600";
+
+    useEffect(() => {
+        const consentCookie = Cookies.get('userConsent');
+        if (consentCookie === 'true') {
+            setConsentGiven(true);
+        }
+    }, []);
 
     const handleSignInWithEmail = async () => {
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        if (userCredential.user.emailVerified) {
-          router.push('/'); // Redirect to home page or dashboard
-        } else {
-          // User is signed in but the email is not verified
-          setErrorMessage('Your email is not verified. Please check your inbox or click here to resend the verification email.');
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            if (userCredential.user.emailVerified) {
+                router.push('/');
+            } else {
+                setErrorMessage('Your email is not verified. Please check your inbox or click here to resend the verification email.');
+            }
+        } catch (error: any) {
+            console.error('Error during email sign-in:', error);
+            switch (error.code) {
+                case 'auth/wrong-password':
+                    setErrorMessage('The password you entered is incorrect. Click here to reset your password.');
+                    break;
+                case 'auth/user-not-found':
+                    setErrorMessage('No account found with this email. Please sign up.');
+                    break;
+                case 'auth/too-many-requests':
+                    setErrorMessage('Too many requests detected. Click here to reset your password, or wait and try again.');
+                    break;
+                default:
+                    setErrorMessage('An error occurred during sign in. Please try again later.');
+            }
         }
-      } catch (error : any) {
-        console.error('Error during email sign-in:', error);
-        switch (error.code) {
-          case 'auth/wrong-password':
-            // Incorrect password error
-            setErrorMessage('The password you entered is incorrect. Click here to reset your password.');
-            break;
-          case 'auth/user-not-found':
-            setErrorMessage('No account found with this email. Please sign up.');
-            break;
-          case 'auth/too-many-requests':
-            // Handle the too many requests error specifically, suggest resetting password
-            setErrorMessage('We have detected too many requests from your device. It seems you might have forgotten your password. Click here to reset your password, or please wait a while then try again.');
-            break;
-          default:
-            setErrorMessage('An error occurred during sign in. Please try again later.');
-        }
-      }
     };
-    
+
     const resendVerificationEmail = async () => {
-      if (auth.currentUser) {  // Check if currentUser is not null
-          try {
-              await sendEmailVerification(auth.currentUser);
-              router.push('/verification-sent'); // Redirect to the verification sent page
-          } catch (error) {
-              console.error('Error resending verification email:', error);
-              setErrorMessage('Failed to resend verification email. Please try again later.');
-          }
-      } else {
-          setErrorMessage('No user is signed in to resend verification to.'); // Handle case where no user is logged in
-      }
-  };
-
-    const signInWithMicrosoft = async () => {
-        // Pre-attempt log: you might want to log the current state before attempting to sign in.
-      
-        try {
-          const provider = new OAuthProvider('microsoft.com');
-          provider.addScope('User.Read');
-          provider.setCustomParameters({
-            prompt: 'select_account',
-          });
-      
-          // Logging the custom parameters to verify if they are set correctly.
-          //console.log('Custom Parameters set for Microsoft provider:', provider.setCustomParameters);
-      
-          const result = await signInWithPopup(auth, provider);
-          // Success log
-          //console.log('Successfully signed in with Microsoft:', result);
-      
-          router.push('/'); // Redirect on successful sign in
-        } catch (error : any) {
-          // Error log: capture and log the complete error object
-          console.error('Error during Microsoft sign-in:', error);
-          
-          // Depending on the error, it could be related to the company mail configuration
-          if (error.email && error.email === email) {
-            console.error(`Sign-in failed for company email ${email}.`, error);
-          } else {
-            console.error('Sign-in failed for an unknown reason.', error);
-          }
-      
-          // Set error message for UI. You might want to handle sensitive error info differently.
-          setErrorMessage(`Error during sign-in with Microsoft: ${error.message}`);
+        if (auth.currentUser) {
+            try {
+                await sendEmailVerification(auth.currentUser);
+                router.push('/verification-sent');
+            } catch (error) {
+                console.error('Error resending verification email:', error);
+                setErrorMessage('Failed to resend verification email. Please try again later.');
+            }
+        } else {
+            setErrorMessage('No user is signed in to resend verification to.');
         }
-      };
+    };
 
-      const signInWithGoogle = async () => {
+    const signInWithGoogle = async () => {
         try {
-          const provider = new GoogleAuthProvider();
-          await signInWithPopup(auth, provider);
-          router.push('/'); // Redirect on successful sign in
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
+            router.push('/');
         } catch (error) {
-          console.error('Error during Google sign-in:', error);
-          setErrorMessage('Failed to sign in with Google. Please try again.');
+            console.error('Error during Google sign-in:', error);
+            setErrorMessage('Failed to sign in with Google. Please try again.');
         }
-      };
+    };
 
-      const signInWithApple = async () => {
+    const signInWithApple = async () => {
         try {
-          const provider = new OAuthProvider('apple.com');
-          await signInWithPopup(auth, provider);
-          router.push('/'); // Redirect on successful sign in
+            const provider = new OAuthProvider('apple.com');
+            await signInWithPopup(auth, provider);
+            router.push('/');
         } catch (error) {
-          console.error('Error during Apple sign-in:', error);
-          setErrorMessage('Failed to sign in with Apple. Please try again.');
+            console.error('Error during Apple sign-in:', error);
+            setErrorMessage('Failed to sign in with Apple. Please try again.');
         }
-      };
+    };
 
-      const createAccountWithEmail = async () => {
+    const createAccountWithEmail = async () => {
         setIsSubmitting(true);
         setErrorMessage('');
         try {
@@ -177,429 +185,431 @@ const CustomLoginForm = () => {
             setIsSubmitting(false);
         }
     };
-const backToSignInPopup = () => {
-  setShowForgotPasswordModal(false); // Close the Forgot Password popup
-  setShowSignInModal(true); // Open the Sign In popup
-};
 
-const isFormValid = () => {
-  return email.trim() !== '' && password.trim() !== '';
-};
+    const handleNextClick = async () => {
+        if (!validateEmail(email)) {
+            setErrorMessage('Please enter a valid email address.');
+            return;
+        }
+        setEmailSubmitted(true);
+        setErrorMessage('');
+    };
 
-const toggleForm = () => {
-  setShowSignInModal(false); // Close the Sign In popup
-  setShowModal(true); // Open the Sign Up popup
-};
+    useEffect(() => {
+        if (emailSubmitted && passwordInputRef.current) {
+            passwordInputRef.current.focus();
+        }
+    }, [emailSubmitted]);
 
-const handleNextClick = async () => {
-  //console.log('Starting handleNextClick with email:', email);
+    const validateEmail = (email: any) => {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(String(email).toLowerCase());
+    };
 
-  if (!validateEmail(email)) {
-      //console.log('Email validation failed');
-      setErrorMessage('Please enter a valid email address.');
-      return;
-  }
-    setEmailSubmitted(true);
-    setErrorMessage('');
-};
+    const handleEmailChange = (e: any) => {
+        const inputEmail = e.target.value;
+        setEmail(inputEmail);
+        const isValid = validateEmail(inputEmail);
+        setIsEmailValid(isValid);
+        if (errorMessage && isValid) {
+            setErrorMessage('');
+        }
+        if (e.key === 'Enter' && isValid && !errorMessage) {
+            e.preventDefault();
+            handleNextClick();
+        }
+    };
 
-useEffect(() => {
-    // Automatically focus the password input when the email has been submitted
-    if (emailSubmitted && passwordInputRef.current) {
-        passwordInputRef.current.focus();
-    }
-}, [emailSubmitted]); // Depend on emailSubmitted to trigger the focus
+    const openSignInPopup = () => {
+        setEmail('');
+        setPassword('');
+        setErrorMessage('');
+        setShowSignInModal(true);
+    };
 
-  
-  
-  const validateEmail = (email : any) => {
-    // Simple regex for email validation
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(String(email).toLowerCase());
-  };
+    const closeSignInPopup = () => {
+        setShowSignInModal(false);
+        setEmail('');
+        setEmailSubmitted(false);
+        setIsEmailValid(false);
+        setErrorMessage('');
+    };
 
-  const handleEmailChange = (e: any) => {
-    const inputEmail = e.target.value;
-    setEmail(inputEmail);
-    const isValid = validateEmail(inputEmail);
-    setIsEmailValid(isValid);
-    if (errorMessage && isValid) {
-      setErrorMessage('');
-    }
-  
-    // Check if Enter key is pressed
-    if (e.key === 'Enter' && isValid && !errorMessage) {
-      e.preventDefault(); // Prevent the default form submit
-      handleNextClick(); // Programmatically trigger the next button click
-    }
-  };
+    const openForgotPasswordPopup = () => {
+        setShowSignInModal(false);
+        setShowModal(false);
+        setErrorMessage('');
+        setRecoveryEmail(email);
+        setShowForgotPasswordModal(true);
+    };
 
-  
+    const handleSendPasswordResetEmail = async (e: any) => {
+        e.preventDefault();
+        if (!validateEmail(recoveryEmail)) {
+            setErrorMessage("Please enter a valid email address.");
+            return;
+        }
 
-  const openPopup = () => setShowModal(true);
-  const closePopup = () => setShowModal(false);
+        try {
+            await sendPasswordResetEmail(auth, recoveryEmail);
+            router.push('/password-reset-confirmation');
+        } catch (error) {
+            console.error("Failed to send password reset email:", error);
+            setErrorMessage("Failed to send password reset email. Please try again later.");
+        }
+    };
 
+    const handleProviderSignUp = (provider: any) => {
+        setSelectedProvider(provider);
+        
+        const consentCookie = Cookies.get('userConsent');
+        if (consentCookie !== 'true') {
+            setShowConsentModal(true);
+        } else {
+            proceedWithProviderSignIn(provider);
+        }
+    };
 
-  const openSignInPopup = () => {
-    setEmail(''); // Clear the email field
-    setPassword(''); // Clear the password field, if you also want to clear this
-    setErrorMessage(''); // Clear any error messages
-    setShowSignInModal(true); // Open the sign-in popup
-  };
-  const closeSignInPopup = () => {
-    setShowSignInModal(false);
-    setEmail(''); // Clear the email field
-    setEmailSubmitted(false); // Reset to initial state
-    setIsEmailValid(false); // Reset email validity
-    setErrorMessage(''); // Clear any error messages
-  };
+    const proceedWithProviderSignIn = (provider: string | null) => {
+        if (!provider) {
+            console.error("Provider is null, cannot proceed with sign-in.");
+            return;
+        }
 
-  const openForgotPasswordPopup = () => {
-    closeAllPopups(); // Close all other popups first
-    setErrorMessage(''); // Clear any existing error messages
-    setRecoveryEmail(email); // Set the recovery email to the currently entered email
-    setShowForgotPasswordModal(true); // Open the Forgot Password popup
-};
-  
-  const closeForgotPasswordPopup = () => {
-    setShowForgotPasswordModal(false); // Close the forgot password popup
-  };
+        if (provider === 'google') {
+            signInWithGoogle();
+        } else if (provider === 'apple') {
+            signInWithApple();
+        }
+    };
 
-  const sendPasswordReset = async () => {
-    if (!validateEmail(email)) {
-      setErrorMessage('Please enter a valid email address.');
-      return;
-    }
-    try {
-      await sendPasswordResetEmail(auth, email);
-      // Show message to check their email
-      setErrorMessage('Check your email for a link to reset your password.');
-    } catch (error) {
-      console.error('Error sending password reset email:', error);
-      setErrorMessage('Failed to send password reset email. Please try again.');
-    }
-  };
+    const acceptConsent = () => {
+        setShowConsentModal(false);
+        setConsentGiven(true);
+        setConsentDeclined(false);
+        Cookies.set('userConsent', 'true', { expires: 365 });
 
-  const closeAllPopups = () => {
-    closeSignInPopup();
-    closeForgotPasswordPopup();
-  };
+        if (selectedProvider) {
+            proceedWithProviderSignIn(selectedProvider);
+        } else {
+            createAccountWithEmail();
+        }
+    };
 
-  const handleSendPasswordResetEmail = async (e: any) => {
-    e.preventDefault();
-    if (!validateEmail(recoveryEmail)) {
-      setErrorMessage("Please enter a valid email address.");
-      return;
-    }
-  
-    try {
-      await sendPasswordResetEmail(auth, recoveryEmail);
-      // Redirect to the password reset confirmation page after successful email send
-      router.push('/password-reset-confirmation');
-    } catch (error) {
-      console.error("Failed to send password reset email:", error);
-      setErrorMessage("Failed to send password reset email. Please try again later.");
-      // Optionally, you can handle different types of errors differently
-    }
-  };
+    const declineConsent = () => {
+        setShowConsentModal(false);
+        setConsentDeclined(true);
+        setSelectedProvider(null);
+    };
 
+    const handleCreateAccountClick = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (email.trim() !== '' && password.trim() !== '') {
+            if (!consentGiven) {
+                setShowConsentModal(true);
+            } else {
+                createAccountWithEmail();
+            }
+        }
+    };
 
+    const toggleForm = () => {
+        setShowSignInModal(false);
+        setShowModal(true);
+    };
 
-  const darkModeStyle = theme === 'dark' ? { color: 'lightblue', textDecoration: 'underline', cursor: 'pointer' } : { color: 'blue', textDecoration: 'underline', cursor: 'pointer' };
-  
-  const handleProviderSignUp = (provider: any) => {
-    setSelectedProvider(provider);
-    
-    const consentCookie = Cookies.get('userConsent');
-    if (consentCookie !== 'true') {
-        setShowConsentModal(true);
-    } else {
-        proceedWithProviderSignIn(provider);
-    }
-};
+    const backToSignInPopup = () => {
+        setShowForgotPasswordModal(false);
+        setShowSignInModal(true);
+    };
 
-  const proceedWithProviderSignIn = (provider: string | null) => {
-    if (!provider) {
-      console.error("Provider is null, cannot proceed with sign-in.");
-      return; // Optionally add more handling logic here.
-    }
-  
-    if (provider === 'google') {
-      signInWithGoogle();
-    } else if (provider === 'apple') {
-      signInWithApple();
-    }
-  };
+    return (
+        <>
+            <Head>
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+            </Head>
+            
+            <ThemeToggleButton onClick={toggleTheme}>
+                <Image src={iconPath} alt={theme === 'dark' ? 'Light mode icon' : 'Dark mode icon'} width={24} height={24} />
+            </ThemeToggleButton>
 
+            <Container maxWidth="sm">
+                <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                    justifyContent="center"
+                    minHeight="100vh"
+                    py={3}
+                >
+                    <Box mb={4} textAlign="center" sx={{ maxWidth: 200, mx: 'auto' }}>
+                        <Image 
+                            src="/solidcam.png" 
+                            alt="SolidCAM Logo" 
+                            width={0}
+                            height={0}
+                            sizes="100vw"
+                            style={{ width: '100%', height: 'auto' }}
+                        />
+                    </Box>
 
-  const ConsentModal = () => (
-    <Dialog open onClose={declineConsent} aria-labelledby="consent-title">
-      <DialogTitle id="consent-title">Your Privacy Matters</DialogTitle>
-      <DialogContent dividers>
-        <Typography gutterBottom>
-          To enhance your experience and create your account, we securely store your email and interaction history. By clicking 'Agree', you acknowledge and consent to this use.
-        </Typography>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={acceptConsent} variant="contained" color="primary">
-          Agree
-        </Button>
-        <Button onClick={declineConsent} variant="outlined" color="secondary">
-          Decline
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-  
-  
-const acceptConsent = () => {
-  setShowConsentModal(false);
-  setConsentGiven(true);
-  setConsentDeclined(false);
-  Cookies.set('userConsent', 'true', { expires: 365 });
-
-  if (selectedProvider) {
-      proceedWithProviderSignIn(selectedProvider);
-  } else {
-      createAccountWithEmail();
-  }
-};
-
-  useEffect(() => {
-    document.body.className = theme;
-  
-    // Check if consent has already been given when the component mounts
-    const consentCookie = Cookies.get('userConsent');
-    if (consentCookie === 'true') {
-      setConsentGiven(true);
-    }
-  }, []);
-  
-  const declineConsent = () => {
-    setShowConsentModal(false);
-    setConsentDeclined(true);
-    setSelectedProvider(null);
-};
-
-const handleCreateAccountClick = (e: React.FormEvent) => {
-  e.preventDefault();
-  if (isFormValid()) {
-      if (!consentGiven) {
-          setShowConsentModal(true);
-      } else {
-          createAccountWithEmail();
-      }
-  }
-};
-
-
-  return (
-    <>
-        <Head>
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            {/* other head elements */}
-        </Head>
-        <div style={{ position: 'absolute', top: '20px', left: '20px' }}>
-          <button onClick={toggleTheme} className="toggle-theme-button">
-          <div className={`${buttonBgClass} p-2 rounded-full`}>
-            <Image src={iconPath} alt={theme === 'dark' ? 'Light mode icon' : 'Light mode icon'} width={24} height={24} />
-          </div>
-          </button>
-        </div>
-        <div className="center-wrapper">
-            <div className="image-container">
-                <img src="/solidcam.png" alt="SolidCAM Logo"/>
-            </div>
-            <div className="firebaseui-container">
-                <div className="firebaseui-card-content">
-                    <div className="heading">Let's Chat!</div>
-                    <button onClick={() => handleProviderSignUp('google')} className="firebaseui-idp-button firebaseui-idp-google">
-                      <span className="firebaseui-idp-icon-wrapper">
-                        <img className="firebaseui-idp-icon" src="/google.svg" alt="Google" />
-                      </span>
-                      <span className="firebaseui-idp-text">Sign in with Google</span>
-                    </button>
-                    <button onClick={() => handleProviderSignUp('apple')} className="firebaseui-idp-button firebaseui-idp-apple">
-                      <span className="firebaseui-idp-icon-wrapper">
-                        <img className="firebaseui-idp-icon" src="/apple.svg" alt="Apple" />
-                      </span>
-                      <span className="firebaseui-idp-text">Sign in with Apple</span>
-                    </button>
-                    {/* <button onClick={signInWithMicrosoft} className="firebaseui-idp-button firebaseui-idp-microsoft">
-                        <span className="firebaseui-idp-icon-wrapper">
-                            <img className="firebaseui-idp-icon" src="/microsoft.svg" alt="Microsoft" />
-                        </span>
-                        <span className="firebaseui-idp-text">Sign up with Microsoft</span>
-                    </button> */}
-                    <div className="divider-container">
-                        <div className="divider">or</div>
-                    </div>
-                    <button onClick={openPopup} className="create-account-button">Create account</button>
-                    <div className="account-exists-text">Already have an account?</div>
-                    <button
-                        onClick={openSignInPopup} // Update this line
-                        className="btn sign-in-button"
+                    <Paper
+                        elevation={3}
+                        sx={{
+                            width: '100%',
+                            maxWidth: 400,
+                            p: 4,
+                            borderRadius: 2,
+                        }}
                     >
-                        Sign in with Email
-                    </button>
-                    {showModal && (
-                      <Dialog open onClose={closePopup}>
-                        <DialogTitle>Create Your Account</DialogTitle>
-                        <DialogContent>
-                          <Box
-                            component="form"
-                            onSubmit={handleCreateAccountClick}
-                            sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
-                          >
-                            <TextField
-                              type="email"
-                              label="Email"
-                              required
-                              value={email}
-                              onChange={(e) => {
+                        <Typography variant="h4" component="h1" gutterBottom textAlign="center" fontWeight={600}>
+                            Let's Chat!
+                        </Typography>
+
+                        <Stack spacing={2}>
+                            <GoogleButton
+                                onClick={() => handleProviderSignUp('google')}
+                                startIcon={<Image src="/google.svg" alt="Google" width={20} height={20} />}
+                            >
+                                Sign in with Google
+                            </GoogleButton>
+
+                            <AppleButton
+                                onClick={() => handleProviderSignUp('apple')}
+                                startIcon={<Image src="/apple.svg" alt="Apple" width={20} height={20} />}
+                            >
+                                Sign in with Apple
+                            </AppleButton>
+
+                            <Box position="relative" textAlign="center" my={2}>
+                                <Divider>
+                                    <Typography variant="body2" color="text.secondary" px={2}>
+                                        or
+                                    </Typography>
+                                </Divider>
+                            </Box>
+
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                fullWidth
+                                onClick={() => setShowModal(true)}
+                                sx={{ mb: 1 }}
+                            >
+                                Create account
+                            </Button>
+
+                            <Typography variant="body2" textAlign="center" color="text.secondary">
+                                Already have an account?
+                            </Typography>
+
+                            <Button
+                                variant="outlined"
+                                color="primary"
+                                fullWidth
+                                onClick={openSignInPopup}
+                            >
+                                Sign in with Email
+                            </Button>
+                        </Stack>
+                    </Paper>
+                </Box>
+            </Container>
+
+            {/* Sign Up Modal */}
+            <Dialog open={showModal} onClose={() => setShowModal(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>Create Your Account</DialogTitle>
+                <DialogContent>
+                    <Box
+                        component="form"
+                        onSubmit={handleCreateAccountClick}
+                        sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
+                    >
+                        <TextField
+                            type="email"
+                            label="Email"
+                            required
+                            fullWidth
+                            value={email}
+                            onChange={(e) => {
                                 setEmail(e.target.value);
                                 setErrorMessage('');
-                              }}
-                            />
-                            <TextField
-                              type="password"
-                              label="Password"
-                              required
-                              value={password}
-                              onChange={(e) => {
+                            }}
+                        />
+                        <TextField
+                            type="password"
+                            label="Password"
+                            required
+                            fullWidth
+                            value={password}
+                            onChange={(e) => {
                                 setPassword(e.target.value);
                                 setErrorMessage('');
-                              }}
-                              inputRef={passwordInputRef}
+                            }}
+                            inputRef={passwordInputRef}
+                        />
+                        {errorMessage && (
+                            <Alert severity="error">{errorMessage}</Alert>
+                        )}
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            fullWidth
+                            disabled={!email.trim() || !password.trim() || isSubmitting}
+                        >
+                            {isSubmitting ? 'Creating account...' : 'Create account'}
+                        </Button>
+                    </Box>
+                </DialogContent>
+            </Dialog>
+
+            {/* Sign In Modal */}
+            <Dialog open={showSignInModal} onClose={closeSignInPopup} maxWidth="xs" fullWidth>
+                <DialogTitle>{emailSubmitted ? 'Enter your password' : 'Sign In'}</DialogTitle>
+                <DialogContent>
+                    {emailSubmitted ? (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                            <TextField 
+                                type="text" 
+                                value={email} 
+                                disabled 
+                                fullWidth
+                                label="Email"
                             />
-                            {errorMessage && <Typography color="error">{errorMessage}</Typography>}
-                            <Button
-                              type="submit"
-                              variant="contained"
-                              disabled={!isFormValid() || isSubmitting}
-                            >
-                              Create account
-                            </Button>
-                          </Box>
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                    {showSignInModal && (
-                      <Dialog open onClose={closeSignInPopup}>
-                        <DialogTitle>{emailSubmitted ? 'Enter your password' : 'Sign In'}</DialogTitle>
-                        <DialogContent>
-                          {emailSubmitted ? (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <TextField type="text" value={email} disabled />
-                              <TextField
+                            <TextField
                                 type="password"
                                 label="Password"
                                 required
+                                fullWidth
                                 value={password}
                                 onChange={(e) => {
-                                  setPassword(e.target.value);
-                                  setErrorMessage('');
+                                    setPassword(e.target.value);
+                                    setErrorMessage('');
                                 }}
                                 inputRef={passwordInputRef}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    handleSignInWithEmail();
-                                  }
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleSignInWithEmail();
+                                    }
                                 }}
-                              />
-                              {errorMessage && (
-                                <Typography color="error">
-                                  {errorMessage.includes('to resend the verification email') ? (
-                                    <>
-                                      Please verify your email.{' '}
-                                      <span onClick={resendVerificationEmail} style={darkModeStyle}>Click here</span>
-                                      {' '}to resend the verification email.
-                                    </>
-                                  ) : errorMessage.includes('to reset your password') ? (
-                                    <>
-                                      The password you entered is incorrect.{' '}
-                                      <span onClick={openForgotPasswordPopup} style={darkModeStyle}>Click here</span>
-                                      {' '}to reset your password.
-                                    </>
-                                  ) : (
-                                    errorMessage
-                                  )}
-                                </Typography>
-                              )}
-                              <Button
+                            />
+                            {errorMessage && (
+                                <Alert severity="error">
+                                    {errorMessage.includes('to resend the verification email') ? (
+                                        <>
+                                            Please verify your email.{' '}
+                                            <Link component="button" onClick={resendVerificationEmail}>
+                                                Click here
+                                            </Link>
+                                            {' '}to resend the verification email.
+                                        </>
+                                    ) : errorMessage.includes('to reset your password') ? (
+                                        <>
+                                            The password you entered is incorrect.{' '}
+                                            <Link component="button" onClick={openForgotPasswordPopup}>
+                                                Click here
+                                            </Link>
+                                            {' '}to reset your password.
+                                        </>
+                                    ) : (
+                                        errorMessage
+                                    )}
+                                </Alert>
+                            )}
+                            <Button
                                 onClick={handleSignInWithEmail}
                                 variant="contained"
+                                fullWidth
                                 disabled={!password.trim()}
-                              >
+                            >
                                 Log in
-                              </Button>
-                            </Box>
-                          ) : (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <TextField
+                            </Button>
+                        </Box>
+                    ) : (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                            <TextField
                                 type="email"
                                 label="Email"
                                 required
+                                fullWidth
                                 value={email}
                                 onChange={handleEmailChange}
                                 onKeyDown={handleEmailChange}
-                              />
-                              {errorMessage && !emailSubmitted && (
-                                <Typography color="error">{errorMessage}</Typography>
-                              )}
-                              <Button
+                            />
+                            {errorMessage && !emailSubmitted && (
+                                <Alert severity="error">{errorMessage}</Alert>
+                            )}
+                            <Button
                                 onClick={handleNextClick}
                                 variant="contained"
+                                fullWidth
                                 disabled={!isEmailValid || !!errorMessage}
-                              >
+                            >
                                 Next
-                              </Button>
-                            </Box>
-                          )}
-                        </DialogContent>
-                        <DialogActions>
-                          <Typography variant="body2" sx={{ mr: 'auto' }}>
-                            Don't have an account?{' '}
-                            <a href="#" className="create-account-link" onClick={toggleForm}>Sign up</a>
-                          </Typography>
-                        </DialogActions>
-                      </Dialog>
-                    )}
-                    {showForgotPasswordModal && (
-                      <Dialog open onClose={closeForgotPasswordPopup}>
-                        <DialogTitle>Reset Your Password</DialogTitle>
-                        <DialogContent>
-                          <Box
-                            component="form"
-                            onSubmit={handleSendPasswordResetEmail}
-                            sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
-                          >
-                            <TextField
-                              type="email"
-                              label="Enter your email"
-                              value={recoveryEmail}
-                              onChange={(e) => setRecoveryEmail(e.target.value)}
-                              required
-                            />
-                            {errorMessage && <Typography color="error">{errorMessage}</Typography>}
-                            <Button type="submit" variant="contained">
-                              Send reset email
                             </Button>
-                          </Box>
-                        </DialogContent>
-                        <DialogActions>
-                          <Button onClick={backToSignInPopup}>Back</Button>
-                        </DialogActions>
-                      </Dialog>
+                        </Box>
                     )}
-                </div>
-            </div>
-        </div>
-        {showConsentModal && <ConsentModal />}
-    </>
-);
+                </DialogContent>
+                <DialogActions>
+                    <Typography variant="body2" sx={{ mr: 'auto' }}>
+                        Don't have an account?{' '}
+                        <Link component="button" onClick={toggleForm}>
+                            Sign up
+                        </Link>
+                    </Typography>
+                </DialogActions>
+            </Dialog>
 
-   };
+            {/* Forgot Password Modal */}
+            <Dialog open={showForgotPasswordModal} onClose={() => setShowForgotPasswordModal(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>Reset Your Password</DialogTitle>
+                <DialogContent>
+                    <Box
+                        component="form"
+                        onSubmit={handleSendPasswordResetEmail}
+                        sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
+                    >
+                        <TextField
+                            type="email"
+                            label="Enter your email"
+                            fullWidth
+                            value={recoveryEmail}
+                            onChange={(e) => setRecoveryEmail(e.target.value)}
+                            required
+                        />
+                        {errorMessage && (
+                            <Alert severity="error">{errorMessage}</Alert>
+                        )}
+                        <Button type="submit" variant="contained" fullWidth>
+                            Send reset email
+                        </Button>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={backToSignInPopup}>Back</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Consent Modal */}
+            <Dialog open={showConsentModal} onClose={declineConsent} maxWidth="sm" fullWidth>
+                <DialogTitle>Your Privacy Matters</DialogTitle>
+                <DialogContent dividers>
+                    <Typography gutterBottom>
+                        To enhance your experience and create your account, we securely store your email and interaction history. By clicking 'Agree', you acknowledge and consent to this use.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={acceptConsent} variant="contained" color="primary">
+                        Agree
+                    </Button>
+                    <Button onClick={declineConsent} variant="outlined" color="secondary">
+                        Decline
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </>
+    );
+};
 
 export default CustomLoginForm;
