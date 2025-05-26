@@ -42,12 +42,16 @@ const PRODUCTION_ENV = 'production';
 const PRODUCTION_URL = '{{PRODUCTION_URL}}'; // Will be replaced during deployment
 
 // Image paths with environment awareness
-// NOTE: bot-icon-placeholder.svg should be replaced with client's custom bot icon during deployment
+// Use custom logo from environment if available, otherwise fallback to generic icon
 const getImagePaths = () => {
   const basePath = process.env.NODE_ENV === PRODUCTION_ENV ? PRODUCTION_URL : '/';
+  const customLogoUrl = process.env.NEXT_PUBLIC_CHATBOT_LOGO_URL;
+  
   return {
     userIconPath: `${basePath}usericon.png`,
-    botIconPath: `${basePath}bot-icon-placeholder.svg`, // Placeholder - will be replaced with client's icon
+    botIconPath: customLogoUrl && customLogoUrl.trim() !== '' 
+      ? customLogoUrl 
+      : `${basePath}bot-icon-generic.svg`, // Generic fallback icon
   };
 };
 
