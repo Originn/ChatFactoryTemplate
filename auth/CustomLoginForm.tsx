@@ -94,6 +94,10 @@ const CustomLoginForm = () => {
     const [selectedProvider, setSelectedProvider] = useState(null);
     const [consentDeclined, setConsentDeclined] = useState(false);
     const passwordInputRef = useRef<HTMLInputElement>(null);
+    
+    // Logo loading state
+    const [logoError, setLogoError] = useState(false);
+    const [logoLoaded, setLogoLoaded] = useState(false);
 
     const { theme, toggleTheme } = useTheme();
     const router = useRouter();
@@ -108,6 +112,25 @@ const CustomLoginForm = () => {
             setConsentGiven(true);
         }
     }, []);
+
+    // Logo handling functions
+    const handleLogoLoad = () => {
+        console.log('✅ Logo loaded successfully:', chatbotBranding.logoUrl);
+        setLogoLoaded(true);
+        setLogoError(false);
+    };
+
+    const handleLogoError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+        console.error('❌ Logo failed to load:', chatbotBranding.logoUrl);
+        console.log('🔄 Switching to fallback logo...');
+        setLogoError(true);
+        
+        // Force fallback to generic bot icon
+        const target = e.target as HTMLImageElement;
+        if (target.src !== '/bot-icon-generic.svg') {
+            target.src = '/bot-icon-generic.svg';
+        }
+    };
 
     const handleSignInWithEmail = async () => {
         try {
@@ -347,18 +370,49 @@ const CustomLoginForm = () => {
                     py={3}
                 >
                     <Box mb={4} textAlign="center" sx={{ maxWidth: 200, mx: 'auto' }}>
+                        {/* Debug info - only show in development */}
+                        {process.env.NODE_ENV === 'development' && (
+                            <Typography variant="caption" display="block" sx={{ mb: 1, color: 'text.secondary' }}>
+                                Logo: {logoError ? 'Fallback' : logoLoaded ? 'Loaded' : 'Loading...'}
+                            </Typography>
+                        )}
+                        
                         <Image 
-                            src={chatbotBranding.logoUrl} 
+                            src={logoError ? '/bot-icon-generic.svg' : chatbotBranding.logoUrl} 
                             alt={`${chatbotBranding.name} Logo`} 
                             width={0}
                             height={0}
                             sizes="100vw"
-                            style={{ width: '100%', height: 'auto', maxHeight: '120px', objectFit: 'contain' }}
-                            onError={(e) => {
-                                // Fallback to generic bot icon if custom logo fails to load
-                                e.currentTarget.src = '/bot-icon-generic.svg';
+                            style={{ 
+                                width: '100%', 
+                                height: 'auto', 
+                                maxHeight: '120px', 
+                                objectFit: 'contain',
+                                display: logoLoaded || logoError ? 'block' : 'none'
                             }}
+                            onLoad={handleLogoLoad}
+                            onError={handleLogoError}
+                            priority
                         />
+                        
+                        {/* Loading placeholder */}
+                        {!logoLoaded && !logoError && (
+                            <Box
+                                sx={{
+                                    width: '100%',
+                                    height: '120px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: 'grey.100',
+                                    borderRadius: 1
+                                }}
+                            >
+                                <Typography variant="body2" color="text.secondary">
+                                    Loading logo...
+                                </Typography>
+                            </Box>
+                        )}
                     </Box>
 
                     <Paper
