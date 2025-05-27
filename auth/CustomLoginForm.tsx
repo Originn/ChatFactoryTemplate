@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Image from 'next/image';
 import Cookies from 'js-cookie';
+import { getChatbotBranding } from 'utils/logo';
 import {
   Box,
   Paper,
@@ -75,6 +76,9 @@ const ThemeToggleButton = styled(Box)(({ theme }) => ({
 }));
 
 const CustomLoginForm = () => {
+    // Get chatbot branding from environment variables
+    const chatbotBranding = getChatbotBranding();
+    
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,7 +98,7 @@ const CustomLoginForm = () => {
     const { theme, toggleTheme } = useTheme();
     const router = useRouter();
 
-    const baseURL = process.env.NODE_ENV === 'production' ? 'https://solidcam.herokuapp.com/' : '/';
+    const baseURL = process.env.NODE_ENV === 'production' ? '/' : '/';
     const moonIcon = `${baseURL}icons8-moon-50.png`;
     const iconPath = theme === 'light' ? moonIcon : "/icons8-sun.svg";
 
@@ -344,12 +348,16 @@ const CustomLoginForm = () => {
                 >
                     <Box mb={4} textAlign="center" sx={{ maxWidth: 200, mx: 'auto' }}>
                         <Image 
-                            src="/solidcam.png" 
-                            alt="SolidCAM Logo" 
+                            src={chatbotBranding.logoUrl} 
+                            alt={`${chatbotBranding.name} Logo`} 
                             width={0}
                             height={0}
                             sizes="100vw"
-                            style={{ width: '100%', height: 'auto' }}
+                            style={{ width: '100%', height: 'auto', maxHeight: '120px', objectFit: 'contain' }}
+                            onError={(e) => {
+                                // Fallback to generic bot icon if custom logo fails to load
+                                e.currentTarget.src = '/bot-icon-generic.svg';
+                            }}
                         />
                     </Box>
 

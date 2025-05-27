@@ -22,11 +22,10 @@ interface LayoutProps {
 }
 
 const PRODUCTION_ENV = 'production';
-const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
 
 // Define icon paths with environment awareness
 const getIconPaths = () => {
-  const basePath = process.env.NODE_ENV === PRODUCTION_ENV ? PRODUCTION_URL : '/';
+  const basePath = '/';
   return {
     moonIcon: `${basePath}icons8-moon-50.png`,
   };

@@ -1,20 +1,22 @@
 import React from 'react';
 import Image from 'next/image';
 import { Container, Typography } from '@mui/material';
+import { getChatbotBranding } from 'utils/logo';
 
 const AccountCreatedConfirmation: React.FC = () => {
-  const scimageIcon = process.env.NODE_ENV === 'production'
-    ? 'https://solidcam.herokuapp.com/solidcam.png'
-    : '/solidcam.png';
+  const chatbotBranding = getChatbotBranding();
 
   return (
     <Container maxWidth="sm" sx={{ textAlign: 'center', py: 4 }}>
       <Image
-        src={scimageIcon}
-        alt="SolidCAM Logo"
+        src={chatbotBranding.logoUrl}
+        alt={`${chatbotBranding.name} Logo`}
         width={100}
         height={100}
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: 16, objectFit: 'contain' }}
+        onError={(e) => {
+          e.currentTarget.src = '/bot-icon-generic.svg';
+        }}
       />
       <Typography variant="h4" component="h1" gutterBottom>
         Account Successfully Created
@@ -24,8 +26,8 @@ const AccountCreatedConfirmation: React.FC = () => {
       </Typography>
       <Typography paragraph>You can now log in to your account using the link below:</Typography>
       <Typography paragraph>
-        <a href="https://www.solidcamchat.com/" style={{ color: '#0070f3', textDecoration: 'underline' }}>
-          Go to SolidCAM Chat Login
+        <a href="/" style={{ color: '#0070f3', textDecoration: 'underline' }}>
+          Go to {chatbotBranding.name} Login
         </a>
       </Typography>
     </Container>

@@ -5,8 +5,8 @@ import formidable from 'formidable';
 import fs from 'fs';
 
 const storage = new Storage();
-const publicBucket = process.env.GCLOUD_STORAGE_BUCKET || 'solidcam-chatbot-documents';
-const privateBucket = process.env.GCLOUD_PRIVATE_STORAGE_BUCKET || 'solidcam-chatbot-private-images';
+const publicBucket = process.env.GCLOUD_STORAGE_BUCKET || 'chatbot-documents';
+const privateBucket = process.env.GCLOUD_PRIVATE_STORAGE_BUCKET || 'chatbot-private-images';
 
 export const config = {
   api: {

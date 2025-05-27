@@ -154,7 +154,7 @@ const Settings = () => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `solidcam-data-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `chatbot-data-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -489,7 +489,7 @@ const handlePrivacySettingsUpdate = async () => {
         Note: Q&A pairs are kept for a minimum of 1 month, and you can opt to anonymize them using the settings under <span >Data Retention</span>. Once deleted, your chat history cannot be recovered.
       </Typography>
       <Typography variant="body2" color="text.secondary">
-        To request complete deletion of all your data including Q&A history, please email <a href="mailto:ai@solidcam.app">ai@solidcam.app</a> with your account email address.
+        To request complete deletion of all your data including Q&A history, please contact support with your account email address.
       </Typography>
     </Box>
     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: { sm: 'center' } }}>
@@ -636,7 +636,7 @@ const handlePrivacySettingsUpdate = async () => {
               </p>
               
               <div >
-                <p >ai@solidcam.app</p>
+                <p >Contact Support</p>
               </div>
               
               <p >

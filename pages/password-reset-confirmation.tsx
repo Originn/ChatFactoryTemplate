@@ -1,27 +1,22 @@
 // pages/password-reset-confirmation.tsx
 import Image from 'next/image';
 import { Container, Typography } from '@mui/material';
-
-const PRODUCTION_ENV = 'production';
-const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
-
-// Image URLs
-let scimageIcon = '/solidcam.png';
-
-
-if (process.env.NODE_ENV === PRODUCTION_ENV) {
-  scimageIcon = `${PRODUCTION_URL}solidcam.png`;
-}
+import { getChatbotBranding } from 'utils/logo';
 
 export default function PasswordResetConfirmation() {
+  const chatbotBranding = getChatbotBranding();
+
   return (
     <Container maxWidth="sm" sx={{ textAlign: 'center', py: 4 }}>
       <Image
-        src={scimageIcon}
-        alt="SolidCAM Logo"
+        src={chatbotBranding.logoUrl}
+        alt={`${chatbotBranding.name} Logo`}
         width={100}
         height={100}
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: 16, objectFit: 'contain' }}
+        onError={(e) => {
+          e.currentTarget.src = '/bot-icon-generic.svg';
+        }}
       />
       <Typography variant="h4" component="h1" gutterBottom>
         Reset Your Password

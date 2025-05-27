@@ -71,8 +71,8 @@ export default function Document() {
                     "notice_banner_reject_button_hide": false,
                     "preferences_center_close_button_hide": false,
                     "page_refresh_confirmation_buttons": false,
-                    "website_name": "solidcamchat",
-                    "website_privacy_policy_url": "https://www.solidcamchat.com/privacy-policy",
+                    "website_name": process.env.NEXT_PUBLIC_CHATBOT_NAME || "AI Assistant",
+                    "website_privacy_policy_url": process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/privacy-policy` : "/privacy-policy",
                     onInitialConsent: function(status) {
                       handleConsentChange(status);
                     },

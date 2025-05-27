@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { Storage, GetSignedUrlConfig } from '@google-cloud/storage';
 
 const storage = new Storage();
-const privateBucketName = process.env.GCLOUD_PRIVATE_STORAGE_BUCKET || 'solidcam-chatbot-private-images';
+const privateBucketName = process.env.GCLOUD_PRIVATE_STORAGE_BUCKET || 'chatbot-private-images';
 
 // Define the metadata interface
 interface FileMetadata {

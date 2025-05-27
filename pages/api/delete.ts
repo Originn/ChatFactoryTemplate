@@ -1,10 +1,11 @@
 import { Storage } from '@google-cloud/storage';
 import { NextApiRequest, NextApiResponse } from 'next';
+import { Storage } from '@google-cloud/storage';
 
 // Define both public and private buckets
 const storage = new Storage();
-const publicBucketName = process.env.GCLOUD_STORAGE_BUCKET || 'solidcam-chatbot-documents';
-const privateBucketName = process.env.GCLOUD_PRIVATE_STORAGE_BUCKET || 'solidcam-chatbot-private-images';
+const publicBucketName = process.env.GCLOUD_STORAGE_BUCKET || 'chatbot-documents';
+const privateBucketName = process.env.GCLOUD_PRIVATE_STORAGE_BUCKET || 'chatbot-private-images';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
