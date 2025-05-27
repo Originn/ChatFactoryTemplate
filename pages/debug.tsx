@@ -1,6 +1,39 @@
 import { GetServerSideProps } from 'next';
-import { Container, Typography, Box, Paper, Divider } from '@mui/material';
+import { Container, Typography, Box, Paper, Divider, Button } from '@mui/material';
 import Head from 'next/head';
+import { useState } from 'react';
+
+interface DebugPageProps {
+  envVars: Record<string, string>;
+  buildTime: string;
+}
+
+export default function DebugPage({ envVars, buildTime }: DebugPageProps) {
+  const [imageTestResult, setImageTestResult] = useState<any>(null);
+  const [testing, setTesting] = useState(false);
+
+  const testImageUrl = async () => {
+    if (!envVars.NEXT_PUBLIC_CHATBOT_LOGO_URL) {
+      alert('No logo URL to test');
+      return;
+    }
+
+    setTesting(true);
+    try {
+      const response = await fetch('/api/test-image-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: envVars.NEXT_PUBLIC_CHATBOT_LOGO_URL })
+      });
+      
+      const result = await response.json();
+      setImageTestResult(result);
+    } catch (error) {
+      setImageTestResult({ success: false, error: (error as Error).message });
+    } finally {
+      setTesting(false);
+    }
+  };
 
 interface DebugPageProps {
   envVars: Record<string, string>;
@@ -58,10 +91,53 @@ export default function DebugPage({ envVars, buildTime }: DebugPageProps) {
         
         <Paper sx={{ p: 3, mt: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Logo Test
+            Logo Test & Diagnostics
           </Typography>
           
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          {envVars.NEXT_PUBLIC_CHATBOT_LOGO_URL && (
+            <>
+              <Typography variant="body2" gutterBottom>
+                <strong>Logo URL:</strong> {envVars.NEXT_PUBLIC_CHATBOT_LOGO_URL}
+              </Typography>
+              
+              <Button 
+                variant="contained" 
+                onClick={testImageUrl} 
+                disabled={testing}
+                sx={{ mb: 2 }}
+              >
+                {testing ? 'Testing...' : 'Test Logo URL'}
+              </Button>
+              
+              {imageTestResult && (
+                <Box sx={{ mt: 2, p: 2, backgroundColor: imageTestResult.success ? 'success.light' : 'error.light', borderRadius: 1 }}>
+                  <Typography variant="body2">
+                    <strong>Test Result:</strong> {imageTestResult.success ? '✅ Success' : '❌ Failed'}
+                  </Typography>
+                  {imageTestResult.status && (
+                    <Typography variant="body2">
+                      <strong>HTTP Status:</strong> {imageTestResult.status}
+                    </Typography>
+                  )}
+                  {imageTestResult.error && (
+                    <Typography variant="body2">
+                      <strong>Error:</strong> {imageTestResult.error}
+                    </Typography>
+                  )}
+                  {imageTestResult.headers && (
+                    <details>
+                      <summary>Response Headers</summary>
+                      <pre style={{ fontSize: '12px', overflow: 'auto' }}>
+                        {JSON.stringify(imageTestResult.headers, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </Box>
+              )}
+            </>
+          )}
+          
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', mt: 2 }}>
             {envVars.NEXT_PUBLIC_CHATBOT_LOGO_URL && (
               <Box>
                 <Typography variant="body2" gutterBottom>Custom Logo:</Typography>
