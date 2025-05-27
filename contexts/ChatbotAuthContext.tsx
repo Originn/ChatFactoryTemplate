@@ -25,7 +25,7 @@ export const ChatbotAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [loading, setLoading] = useState(true);
   
   // Get the auth requirement from environment variable
-  const requireAuth = process.env.NEXT_PUBLIC_CHATBOT_REQUIRE_AUTH === 'true';
+  const requireAuth = process.env.NEXT_PUBLIC_CHATBOT_LOGIN_REQUIRED === 'true';
 
   useEffect(() => {
     console.log('🔐 Chatbot Auth Settings:', {
