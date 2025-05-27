@@ -22,9 +22,15 @@ const MainChatApp: React.FC = () => {
         justifyContent="center" 
         alignItems="center" 
         minHeight="100vh"
+        width="100%"
+        sx={{ 
+          backgroundColor: 'background.default',
+          color: 'text.primary'
+        }}
+        suppressHydrationWarning
       >
-        <CircularProgress />
-        <Typography variant="body2" sx={{ ml: 2 }}>
+        <CircularProgress suppressHydrationWarning />
+        <Typography variant="body2" sx={{ ml: 2 }} suppressHydrationWarning>
           Loading chatbot...
         </Typography>
       </Box>
@@ -46,7 +52,17 @@ const MainChatApp: React.FC = () => {
   // Scenario 2: Auth required - Check if user is logged in
   if (isAuthRequired() && !canAccessChat()) {
     console.log('🔐 Auth required but user not logged in - showing login form');
-    return <CustomLoginForm />;
+    return (
+      <Box 
+        sx={{ 
+          minHeight: '100vh',
+          width: '100%',
+          backgroundColor: 'background.default'
+        }}
+      >
+        <CustomLoginForm />
+      </Box>
+    );
   }
 
   // Scenario 3: Auth required and user is logged in
@@ -63,7 +79,17 @@ const MainChatApp: React.FC = () => {
 
   // Fallback - shouldn't reach here
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+    <Box 
+      display="flex" 
+      justifyContent="center" 
+      alignItems="center" 
+      minHeight="100vh"
+      width="100%"
+      sx={{ 
+        backgroundColor: 'background.default',
+        color: 'text.primary'
+      }}
+    >
       <Typography variant="h6">Something went wrong</Typography>
     </Box>
   );

@@ -1,27 +1,52 @@
-import type { AppProps } from 'next/app';
+import { AppProps } from 'next/app';
 import AuthWrapper from '../auth/AuthWrapper';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 
 import { useEffect, useMemo } from 'react';
-
+import { CacheProvider, EmotionCache } from '@emotion/react';
 import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
 import { getMuiTheme } from '@/utils/muiTheme';
 import { setUserIdForAnalytics } from '@/utils/tracking';
 import useTheme, { ThemeProvider as AppThemeProvider } from '@/hooks/useTheme';
 import { getTemplateConfig } from '../config/template';
+import createEmotionCache from '../utils/createEmotionCache';
 
 // Import custom styles
 import '@/styles/accordion-override.css';
 import '@/styles/chat-container.css';
 import '@/styles/settings-page.css';
+import '@/styles/dark-mode.css';
 
-function MyApp({ Component, pageProps }: AppProps) {
-  return (
-    <AppThemeProvider>
-      <AppContent Component={Component} pageProps={pageProps} />
-    </AppThemeProvider>
-  );
+// Client-side cache, shared for the whole session of the user in the browser.
+const clientSideEmotionCache = createEmotionCache();
+
+interface MyAppProps extends AppProps {
+  emotionCache?: EmotionCache;
+}
+
+function MyApp(props: MyAppProps) {
+  const { Component, emotionCache = clientSideEmotionCache, pageProps } = props;
+  
+  // Fallback: If emotion cache causes issues, use without it
+  const useEmotionCache = process.env.NODE_ENV !== 'production' || true; // Enable for now
+  
+  if (useEmotionCache) {
+    return (
+      <CacheProvider value={emotionCache}>
+        <AppThemeProvider>
+          <AppContent Component={Component} pageProps={pageProps} />
+        </AppThemeProvider>
+      </CacheProvider>
+    );
+  } else {
+    // Fallback without emotion cache
+    return (
+      <AppThemeProvider>
+        <AppContent Component={Component} pageProps={pageProps} />
+      </AppThemeProvider>
+    );
+  }
 }
 
 function AppContent({ Component, pageProps }: { Component: AppProps['Component']; pageProps: AppProps['pageProps'] }) {
@@ -72,7 +97,11 @@ function AppContent({ Component, pageProps }: { Component: AppProps['Component']
     chatbotLoginRequired &&
     !noAuthRequired.some((path) => router.pathname.startsWith(path));
 
-  const muiTheme = useMemo(() => getMuiTheme(theme), [theme]);
+  const muiTheme = useMemo(() => {
+    const generatedTheme = getMuiTheme(theme as 'light' | 'dark');
+    console.log('MUI Theme generated:', { mode: theme, generatedTheme });
+    return generatedTheme;
+  }, [theme]);
 
   return (
     <>
@@ -84,6 +113,7 @@ function AppContent({ Component, pageProps }: { Component: AppProps['Component']
         />
         <title>{`${config.productName} Chat`}</title>
       </Head>
+      
       <MuiThemeProvider theme={muiTheme}>
         <CssBaseline />
 

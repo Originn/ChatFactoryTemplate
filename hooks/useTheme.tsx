@@ -45,8 +45,15 @@ const useThemeState = (initialTheme?: 'light' | 'dark') => {
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(theme);
     
+    // Set data-theme attribute for CSS targeting
+    document.documentElement.setAttribute('data-theme', theme);
+    
     document.body.classList.remove('light', 'dark');
     document.body.classList.add(theme);
+    
+    // Force background color update
+    document.body.style.backgroundColor = theme === 'dark' ? '#0f172a' : '#f8fafc';
+    document.body.style.color = theme === 'dark' ? '#f1f5f9' : '#1e293b';
   }, [theme]);
 
   useEffect(() => {

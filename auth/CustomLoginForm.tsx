@@ -360,7 +360,15 @@ const CustomLoginForm = () => {
                 <Image src={iconPath} alt={theme === 'dark' ? 'Light mode icon' : 'Dark mode icon'} width={24} height={24} />
             </ThemeToggleButton>
 
-            <Container maxWidth="sm">
+            <Container 
+                maxWidth="sm" 
+                sx={{ 
+                    minHeight: '100vh',
+                    backgroundColor: 'transparent',  // Let parent handle background
+                    display: 'flex',
+                    flexDirection: 'column'
+                }}
+            >
                 <Box
                     display="flex"
                     flexDirection="column"
@@ -368,6 +376,9 @@ const CustomLoginForm = () => {
                     justifyContent="center"
                     minHeight="100vh"
                     py={3}
+                    sx={{
+                        backgroundColor: 'transparent'  // Let parent handle background
+                    }}
                 >
                     <Box mb={4} textAlign="center" sx={{ maxWidth: 200, mx: 'auto' }}>
                         {/* Debug info - only show in development */}
