@@ -66,9 +66,11 @@ function AppContent({ Component, pageProps }: { Component: AppProps['Component']
     }
   }, []);
 
-  const isAuthRequired = !noAuthRequired.some((path) =>
-    router.pathname.startsWith(path)
-  );
+  const chatbotLoginRequired =
+    process.env.NEXT_PUBLIC_CHATBOT_LOGIN_REQUIRED === 'true';
+  const isAuthRequired =
+    chatbotLoginRequired &&
+    !noAuthRequired.some((path) => router.pathname.startsWith(path));
 
   const muiTheme = useMemo(() => getMuiTheme(theme), [theme]);
 
