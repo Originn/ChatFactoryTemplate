@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Container, Typography } from '@mui/material';
-import { getChatbotBranding } from 'utils/logo';
+import { getChatbotBranding } from '../utils/logo';
 
 const VerificationSent: React.FC = () => {
   const chatbotBranding = getChatbotBranding();

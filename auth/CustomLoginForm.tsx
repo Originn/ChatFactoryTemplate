@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Image from 'next/image';
 import Cookies from 'js-cookie';
-import { getChatbotBranding } from 'utils/logo';
+import { getChatbotBranding } from '../utils/logo';
 import {
   Box,
   Paper,

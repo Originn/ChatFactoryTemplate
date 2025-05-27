@@ -1,7 +1,7 @@
 // pages/password-reset-confirmation.tsx
 import Image from 'next/image';
 import { Container, Typography } from '@mui/material';
-import { getChatbotBranding } from 'utils/logo';
+import { getChatbotBranding } from '../utils/logo';
 
 export default function PasswordResetConfirmation() {
   const chatbotBranding = getChatbotBranding();

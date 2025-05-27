@@ -72,7 +72,7 @@ export default function Document() {
                     "preferences_center_close_button_hide": false,
                     "page_refresh_confirmation_buttons": false,
                     "website_name": process.env.NEXT_PUBLIC_CHATBOT_NAME || "AI Assistant",
-                    "website_privacy_policy_url": process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/privacy-policy` : "/privacy-policy",
+                    "website_privacy_policy_url": "/privacy-policy",
                     onInitialConsent: function(status) {
                       handleConsentChange(status);
                     },
