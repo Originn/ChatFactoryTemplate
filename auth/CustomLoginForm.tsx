@@ -377,23 +377,40 @@ const CustomLoginForm = () => {
                             </Typography>
                         )}
                         
-                        <Image 
-                            src={logoError ? '/bot-icon-generic.svg' : chatbotBranding.logoUrl} 
-                            alt={`${chatbotBranding.name} Logo`} 
-                            width={0}
-                            height={0}
-                            sizes="100vw"
-                            style={{ 
-                                width: '100%', 
-                                height: 'auto', 
-                                maxHeight: '120px', 
-                                objectFit: 'contain',
-                                display: logoLoaded || logoError ? 'block' : 'none'
-                            }}
-                            onLoad={handleLogoLoad}
-                            onError={handleLogoError}
-                            priority
-                        />
+                        {/* Use regular img tag for Firebase Storage URLs to avoid Next.js image optimization issues */}
+                        {chatbotBranding.logoUrl.includes('firebasestorage.googleapis.com') ? (
+                            <img
+                                src={logoError ? '/bot-icon-generic.svg' : chatbotBranding.logoUrl}
+                                alt={`${chatbotBranding.name} Logo`}
+                                style={{
+                                    width: '100%',
+                                    height: 'auto',
+                                    maxHeight: '120px',
+                                    objectFit: 'contain',
+                                    display: logoLoaded || logoError ? 'block' : 'none'
+                                }}
+                                onLoad={handleLogoLoad}
+                                onError={handleLogoError}
+                            />
+                        ) : (
+                            <Image 
+                                src={logoError ? '/bot-icon-generic.svg' : chatbotBranding.logoUrl} 
+                                alt={`${chatbotBranding.name} Logo`} 
+                                width={0}
+                                height={0}
+                                sizes="100vw"
+                                style={{ 
+                                    width: '100%', 
+                                    height: 'auto', 
+                                    maxHeight: '120px', 
+                                    objectFit: 'contain',
+                                    display: logoLoaded || logoError ? 'block' : 'none'
+                                }}
+                                onLoad={handleLogoLoad}
+                                onError={handleLogoError}
+                                priority
+                            />
+                        )}
                         
                         {/* Loading placeholder */}
                         {!logoLoaded && !logoError && (

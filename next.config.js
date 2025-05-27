@@ -3,7 +3,25 @@ const nextConfig = {
   reactStrictMode: false,
   swcMinify: true,
   images: {
-    domains: ['localhost'], // Additional domains will be configured during deployment
+    domains: [
+      'localhost',
+      'firebasestorage.googleapis.com', // Allow Firebase Storage
+      'storage.googleapis.com'          // Alternative Firebase Storage domain
+    ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https', 
+        hostname: 'storage.googleapis.com',
+        port: '',
+        pathname: '/**',
+      }
+    ]
   },
   webpack(config, { dev, isServer }) {
     if (dev) {
