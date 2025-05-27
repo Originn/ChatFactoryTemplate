@@ -3,6 +3,7 @@ import { Html, Head, Main, NextScript } from "next/document";
 import Script from "next/script";
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+const CHATBOT_NAME = process.env.NEXT_PUBLIC_CHATBOT_NAME || "AI Assistant";
 
 export default function Document() {
   return (
@@ -71,7 +72,7 @@ export default function Document() {
                     "notice_banner_reject_button_hide": false,
                     "preferences_center_close_button_hide": false,
                     "page_refresh_confirmation_buttons": false,
-                    "website_name": process.env.NEXT_PUBLIC_CHATBOT_NAME || "AI Assistant",
+                    "website_name": "AI Assistant",
                     "website_privacy_policy_url": "/privacy-policy",
                     onInitialConsent: function(status) {
                       handleConsentChange(status);
