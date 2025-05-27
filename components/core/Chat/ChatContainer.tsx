@@ -2,6 +2,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Box, Container, Typography } from '@mui/material';
+import { User } from 'firebase/auth';
 import useChat from '@/hooks/useChat';
 import useTextAreaHeight from '@/hooks/useTextAreaHeight';
 import useTheme from '@/hooks/useTheme';
@@ -37,6 +38,13 @@ import {
   GoogleAnalytics 
 } from '@/components/analytics';
 
+// Props interface for ChatContainer
+interface ChatContainerProps {
+  user: User | null;
+  userProfile: any | null;
+  isAnonymous: boolean;
+}
+
 // Environment constants
 const PRODUCTION_ENV = 'production';
 const PRODUCTION_URL = '{{PRODUCTION_URL}}'; // Will be replaced during deployment
@@ -55,9 +63,13 @@ const getImagePaths = () => {
   };
 };
 
-interface ChatContainerProps {}
+interface ChatContainerProps {
+  user: User | null;
+  userProfile: any | null;
+  isAnonymous: boolean;
+}
 
-const ChatContainer: React.FC<ChatContainerProps> = () => {
+const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnonymous }) => {
   const config = getTemplateConfig();
   const { theme, toggleTheme } = useTheme();
   const [query, setQuery] = useState<string>('');
@@ -67,13 +79,51 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
   const messageListRef = useRef<HTMLDivElement>(null);
   const { userIconPath, botIconPath } = getImagePaths();
 
-  // Room ID initialization
-  const initialRoomId = typeof window !== 'undefined' 
-    ? localStorage.getItem('roomId') || `room-${Date.now()}`
+  // Log the authentication status
+  useEffect(() => {
+    console.log('🎯 ChatContainer initialized with:', {
+      isAnonymous,
+      hasUser: !!user,
+      hasUserProfile: !!userProfile,
+      userEmail: isAnonymous ? 'Anonymous' : (userProfile?.originalEmail || user?.email || 'Unknown')
+    });
+  }, [user, userProfile, isAnonymous]);
+
+  // Room ID initialization - different strategy for anonymous vs authenticated users
+  const initialRoomId = (() => {
+    if (typeof window === 'undefined') return `room-${Date.now()}`;
+    
+    if (isAnonymous) {
+      // For anonymous users, use session storage (cleared when browser closes)
+      return sessionStorage.getItem('anonymousRoomId') || `anon-room-${Date.now()}`;
+    } else {
+      // For authenticated users, use localStorage (persistent)
+      return localStorage.getItem('roomId') || `auth-room-${Date.now()}`;
+    }
+  })();
     : null;
 
-  if (typeof window !== 'undefined' && initialRoomId && !localStorage.getItem('roomId')) {
-    localStorage.setItem('roomId', initialRoomId);
+  // Helper functions for storage operations based on user type
+  const getStorageValue = (key: string): string | null => {
+    if (typeof window === 'undefined') return null;
+    return isAnonymous ? sessionStorage.getItem(key) : localStorage.getItem(key);
+  };
+
+  const setStorageValue = (key: string, value: string): void => {
+    if (typeof window === 'undefined') return;
+    if (isAnonymous) {
+      sessionStorage.setItem(key, value);
+    } else {
+      localStorage.setItem(key, value);
+    }
+  };
+
+  // Store the initial room ID
+  if (typeof window !== 'undefined' && initialRoomId) {
+    const storageKey = isAnonymous ? 'anonymousRoomId' : 'roomId';
+    if (!getStorageValue(storageKey)) {
+      setStorageValue(storageKey, initialRoomId);
+    }
   }
 
   // Get server URL
@@ -173,12 +223,13 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
     setShowDisclaimer(false);
   };
 
-  // Update localStorage whenever roomId changes
+  // Update storage whenever roomId changes
   useEffect(() => {
     if (roomId) {
-      localStorage.setItem('roomId', roomId);
+      const storageKey = isAnonymous ? 'anonymousRoomId' : 'roomId';
+      setStorageValue(storageKey, roomId);
     }
-  }, [roomId]);
+  }, [roomId, isAnonymous]);
 
   // Process transcription
   useEffect(() => {
@@ -451,7 +502,8 @@ const ChatContainer: React.FC<ChatContainerProps> = () => {
           );
 
           setRoomId(conversation.roomId);
-          localStorage.setItem('roomId', conversation.roomId);
+          const storageKey = isAnonymous ? 'anonymousRoomId' : 'roomId';
+          setStorageValue(storageKey, conversation.roomId);
           changeRoom(conversation.roomId);
         }}
         handleNewChat={handleNewChat}

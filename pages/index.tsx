@@ -1,10 +1,13 @@
-// pages/index.tsx
-
-import React from 'react';
-import { ChatContainer } from '@/components/core/Chat';
+// pages/index.tsximport React from 'react';
+import { ChatbotAuthProvider } from '../contexts/ChatbotAuthContext';
+import MainChatApp from '../components/MainChatApp';
 
 const IndexPage: React.FC = () => {
-  return <ChatContainer />;
+  return (
+    <ChatbotAuthProvider>
+      <MainChatApp />
+    </ChatbotAuthProvider>
+  );
 };
 
 export default IndexPage;
