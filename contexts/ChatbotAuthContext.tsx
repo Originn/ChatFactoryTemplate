@@ -11,6 +11,7 @@ interface ChatbotAuthContextType {
   requireAuth: boolean;
   isAuthRequired: () => boolean;
   canAccessChat: () => boolean;
+  isAnonymous: () => boolean;
   signUp: (email: string, password: string, displayName?: string) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
@@ -76,6 +77,13 @@ export const ChatbotAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     return !!user; // Auth required, user must be logged in
   };
 
+  const isAnonymous = (): boolean => {
+    // User is anonymous if:
+    // 1. Auth is not required (anonymous access allowed), OR
+    // 2. Auth is required but user is not logged in
+    return !requireAuth || !user;
+  };
+
   const value: ChatbotAuthContextType = {
     user,
     userProfile,
@@ -83,6 +91,7 @@ export const ChatbotAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     requireAuth,
     isAuthRequired,
     canAccessChat,
+    isAnonymous,
     signUp,
     signIn,
     signOut

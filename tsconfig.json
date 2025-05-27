@@ -33,6 +33,7 @@
   ],
   "exclude": [
     "node_modules",
-    ".next/**/*" // Exclude build output
+    ".next/**/*", // Exclude build output
+    "examples/**/*" // Exclude example files
   ]
 }

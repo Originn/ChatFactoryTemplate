@@ -1,8 +1,8 @@
 import React from 'react';
 import { useChatbotAuth } from '../contexts/ChatbotAuthContext';
-import { ChatContainer } from '../components/core/Chat/ChatContainer';
+import ChatContainer from '../components/core/Chat/ChatContainer';
 import { Box, Typography, CircularProgress } from '@mui/material';
-import { CustomLoginForm } from '../auth/CustomLoginForm';
+import CustomLoginForm from '../auth/CustomLoginForm';
 
 const MainChatApp: React.FC = () => {
   const { 

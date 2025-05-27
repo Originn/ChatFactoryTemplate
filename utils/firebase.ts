@@ -1,6 +1,7 @@
 // utils/firebase.ts
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 // Your Firebase configuration object from your Firebase project settings
 const firebaseConfig = {
@@ -18,6 +19,9 @@ const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 // Initialize Firebase Auth
 const auth = getAuth(app);
 
+// Initialize Firestore
+const db = getFirestore(app);
+
 // Set the session persistence only in browser environment
 if (typeof window !== 'undefined') {
   setPersistence(auth, browserLocalPersistence)
@@ -29,5 +33,5 @@ if (typeof window !== 'undefined') {
     });
 }
 
-export { auth, app };
+export { auth, app, db };
 

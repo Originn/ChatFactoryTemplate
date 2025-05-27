@@ -101,7 +101,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
       return localStorage.getItem('roomId') || `auth-room-${Date.now()}`;
     }
   })();
-    : null;
 
   // Helper functions for storage operations based on user type
   const getStorageValue = (key: string): string | null => {

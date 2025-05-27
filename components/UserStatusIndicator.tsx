@@ -20,8 +20,29 @@ export const UserStatusIndicator: React.FC<UserStatusIndicatorProps> = ({
     }
   };
 
-  // Anonymous user display
-  if (!isAuthRequired() || !user) {
+  // If auth is required but no user is logged in, show login required status
+  if (isAuthRequired() && !user) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Chip
+          icon={<PersonOff />}
+          label="Login Required"
+          variant="outlined"
+          size="small"
+          color="warning"
+          sx={{ borderColor: 'warning.main', color: 'warning.main' }}
+        />
+        {showDetails && (
+          <Tooltip title="This chatbot requires authentication to use">
+            <Info sx={{ fontSize: 16, color: 'warning.main' }} />
+          </Tooltip>
+        )}
+      </Box>
+    );
+  }
+
+  // Anonymous user display (auth not required)
+  if (isAnonymous()) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Chip
@@ -45,7 +66,7 @@ export const UserStatusIndicator: React.FC<UserStatusIndicatorProps> = ({
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       <Chip
         icon={<Person />}
-        label={userProfile?.originalEmail || user.email || 'User'}
+        label={userProfile?.originalEmail || user?.email || 'User'}
         variant="filled"
         size="small"
         color="primary"
