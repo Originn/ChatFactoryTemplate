@@ -1,7 +1,3 @@
--- COMPLETE HIGH-PERFORMANCE MULTI-TENANT SETUP
--- Run this in Neon Console for 1000+ chatbots with lightning-fast performance
-
--- Create partitioned questions_and_answers (16x faster queries)
 CREATE TABLE questions_and_answers (
   id BIGSERIAL,
   chatbot_id VARCHAR(255) NOT NULL,
@@ -16,7 +12,6 @@ CREATE TABLE questions_and_answers (
   PRIMARY KEY (id, chatbot_id)
 ) PARTITION BY HASH (chatbot_id);
 
--- Create partitioned chat history
 CREATE TABLE user_chat_history (
   id BIGSERIAL,
   chatbot_id VARCHAR(255) NOT NULL,
@@ -28,7 +23,6 @@ CREATE TABLE user_chat_history (
   UNIQUE (room_id, chatbot_id)
 ) PARTITION BY HASH (chatbot_id);
 
--- Create partitioned embeddings cache
 CREATE TABLE document_embeddings (
   id BIGSERIAL,
   chatbot_id VARCHAR(255) NOT NULL,
@@ -41,7 +35,6 @@ CREATE TABLE document_embeddings (
   UNIQUE (chatbot_id, content_hash, model_name)
 ) PARTITION BY HASH (chatbot_id);
 
--- Create 16 partitions (auto-distributes 1000 chatbots)
 DO $$ 
 DECLARE i INT;
 BEGIN
@@ -52,12 +45,10 @@ BEGIN
     END LOOP;
 END $$;
 
--- Add lightning-fast indexes
 CREATE INDEX idx_qa_fast ON questions_and_answers (chatbot_id, room_id);
 CREATE INDEX idx_history_fast ON user_chat_history (chatbot_id, room_id);
 CREATE INDEX idx_embeddings_fast ON document_embeddings (chatbot_id, content_hash);
 
--- Enable perfect security isolation
 ALTER TABLE questions_and_answers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_chat_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE document_embeddings ENABLE ROW LEVEL SECURITY;
@@ -65,5 +56,3 @@ ALTER TABLE document_embeddings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY qa_isolation ON questions_and_answers FOR ALL USING (chatbot_id = current_setting('app.current_chatbot_id', true));
 CREATE POLICY history_isolation ON user_chat_history FOR ALL USING (chatbot_id = current_setting('app.current_chatbot_id', true));
 CREATE POLICY embeddings_isolation ON document_embeddings FOR ALL USING (chatbot_id = current_setting('app.current_chatbot_id', true));
-
--- ⚡ Setup complete! 100x faster performance for 1000+ chatbots! ⚡
