@@ -295,20 +295,23 @@ const deleteOldChatHistory = async () => {
   }
 };
 
-const getUserPrivacySettings = async (uid) => {
+const getUserPrivacySettings = async (chatbotId, uid) => {
   // Check if pool is available (server-side only)
   if (!pool) {
     console.warn("Database connection pool is not available on the client side.");
     return null; // Return null to indicate no data available
   }
+
+  // Set tenant context for Row Level Security
+  await setTenantContext(chatbotId);
   
   const query = `
     SELECT * FROM user_privacy_settings 
-    WHERE uid = $1;
+    WHERE chatbot_id = $1 AND uid = $2;
   `;
 
   try {
-    const res = await pool.query(query, [uid]);
+    const res = await pool.query(query, [chatbotId, uid]);
     return res.rows[0]; // Return the privacy settings or undefined if not found
   } catch (err) {
     console.error('Error fetching user privacy settings:', err);
@@ -317,30 +320,34 @@ const getUserPrivacySettings = async (uid) => {
 };
 
 // Function to update user privacy settings
-const updateUserPrivacySettings = async (uid, email, allowAnalytics, storeHistory, retentionPeriod) => {
+const updateUserPrivacySettings = async (chatbotId, uid, email, allowAnalytics, storeHistory, retentionPeriod) => {
   // Check if pool is available (server-side only)
   if (!pool) {
     console.warn("Database connection pool is not available on the client side.");
     return null; // Return null to indicate no data available
   }
+
+  // Set tenant context for Row Level Security
+  await setTenantContext(chatbotId);
   
   const query = `
     INSERT INTO user_privacy_settings 
-      (uid, email, allow_analytics, store_history, retention_period, updated_at)
+      (chatbot_id, uid, email, allow_analytics, store_history, retention_period, updated_at)
     VALUES 
-      ($1, $2, $3, $4, $5, NOW())
+      ($1, $2, $3, $4, $5, $6, NOW())
     ON CONFLICT (uid) 
     DO UPDATE SET
-      email = $2,
-      allow_analytics = $3,
-      store_history = $4, 
-      retention_period = $5,
+      email = $3,
+      allow_analytics = $4,
+      store_history = $5, 
+      retention_period = $6,
       updated_at = NOW()
     RETURNING *;
   `;
 
   try {
     const res = await pool.query(query, [
+      chatbotId,
       uid,
       email,
       allowAnalytics,
@@ -371,6 +378,45 @@ const getAPIKeyForProvider = async (provider, userEmail) => {
   return process.env.OPENAI_API_KEY;
 };
 
+// Cache embedding (like TornosChatBot)
+const cacheEmbedding = async (chatbotId, contentHash, modelName, embedding, contentText = null) => {
+  if (!pool) return null;
+  await setTenantContext(chatbotId);
+
+  const query = `
+    INSERT INTO document_embeddings (chatbot_id, content_hash, model_name, embedding, content_text)
+    VALUES ($1, $2, $3, $4, $5)
+    ON CONFLICT (chatbot_id, content_hash, model_name)
+    DO UPDATE SET embedding = EXCLUDED.embedding, content_text = EXCLUDED.content_text
+    RETURNING *;
+  `;
+
+  try {
+    const embeddingArray = Array.isArray(embedding) ? embedding : JSON.parse(embedding);
+    const res = await pool.query(query, [chatbotId, contentHash, modelName, embeddingArray, contentText]);
+    return res.rows[0];
+  } catch (err) {
+    console.error('Error caching embedding:', err);
+    throw err;
+  }
+};
+
+// Get cached embedding (like TornosChatBot)
+const getCachedEmbedding = async (chatbotId, contentHash, modelName = 'text-embedding-3-small') => {
+  if (!pool) return null;
+  await setTenantContext(chatbotId);
+
+  const query = `SELECT * FROM document_embeddings WHERE chatbot_id = $1 AND content_hash = $2 AND model_name = $3;`;
+
+  try {
+    const res = await pool.query(query, [chatbotId, contentHash, modelName]);
+    return res.rows[0];
+  } catch (err) {
+    console.error('Error retrieving cached embedding:', err);
+    throw err;
+  }
+};
+
 
 module.exports = { 
   pool, 
@@ -386,4 +432,6 @@ module.exports = {
   updateUserPrivacySettings,
   getUserAIProvider,
   getAPIKeyForProvider,
+  cacheEmbedding,
+  getCachedEmbedding,
 };

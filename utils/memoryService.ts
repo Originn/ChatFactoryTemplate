@@ -109,7 +109,7 @@ class MemoryService {
         }
         if (uid) {
           // Get the user's privacy settings
-          const privacySettings = await getUserPrivacySettings(uid);
+          const privacySettings = await db.getUserPrivacySettings(uid);
           
           // If storeHistory is explicitly set to false, don't save anything
           if (privacySettings && privacySettings.store_history === false) {

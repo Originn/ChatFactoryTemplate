@@ -5,9 +5,11 @@ const {
   insertQuestionEmbedderDetails,
   insertChatHistory, 
   getChatHistoryByRoomId, 
+  getUserPrivacySettings,
+  updateUserPrivacySettings,
   getUserAIProvider,
   getAPIKeyForProvider,
-} = require('./db');
+} = require('../db');
 
 class TenantDB {
   constructor() {
@@ -37,6 +39,14 @@ class TenantDB {
 
   async getChatHistoryByRoomId(...args) {
     return getChatHistoryByRoomId(this.chatbotId, ...args);
+  }
+
+  async getUserPrivacySettings(...args) {
+    return getUserPrivacySettings(this.chatbotId, ...args);
+  }
+
+  async updateUserPrivacySettings(...args) {
+    return updateUserPrivacySettings(this.chatbotId, ...args);
   }
 
   // Global methods (no chatbot_id needed)
