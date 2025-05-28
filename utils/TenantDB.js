@@ -13,10 +13,10 @@ const {
 
 class TenantDB {
   constructor() {
-    this.chatbotId = process.env.CHATBOT_ID || 'dev-fallback';
+    this.chatbotId = process.env.NEXT_PUBLIC_CHATBOT_ID || 'dev-fallback';
     
-    if (!process.env.CHATBOT_ID) {
-      console.warn('⚠️ CHATBOT_ID not set - using fallback');
+    if (!process.env.NEXT_PUBLIC_CHATBOT_ID) {
+      console.warn('⚠️ NEXT_PUBLIC_CHATBOT_ID not set - using fallback');
     }
   }
 
