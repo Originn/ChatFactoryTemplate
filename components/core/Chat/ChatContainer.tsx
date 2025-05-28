@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Box, Container, Typography } from '@mui/material';
 import { User } from 'firebase/auth';
-import useChat from '@/hooks/useChat';
+import useChatSSE from '@/hooks/useChatSSE';
 import useTextAreaHeight from '@/hooks/useTextAreaHeight';
 import useTheme from '@/hooks/useTheme';
 import useFileUpload from '@/hooks/useFileUpload';
@@ -146,8 +146,9 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
     submitTimeRef,
     changeRoom,
     handleNewChat: handleNewChatInternal,
-    loadChatHistory
-  } = useChat({ 
+    loadChatHistory,
+    streamChat
+  } = useChatSSE({ 
     serverUrl, 
     initialRoomId 
   });  const { adjustTextAreaHeight } = useTextAreaHeight({
@@ -164,13 +165,13 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [isMicActive, setIsMicActive] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState<any>(null);
-  const [isEmbeddingMode, setIsEmbeddingMode] = useState(false);
+
   const [isNewChat, setIsNewChat] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [isAwaitingResponse, setIsAwaitingResponse] = useState(false);
 
   // User information
-  const userEmail = auth.currentUser ? auth.currentUser.email : 'testuser@example.com';
+  const userEmail = (auth.currentUser && auth.currentUser.email) ? auth.currentUser.email : 'testuser@example.com';
 
   // Image upload hooks
   const {
@@ -283,8 +284,8 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
     setError(null);
     const trimmedQuery = query.trim();
   
-    // Skip validation completely if we're in embedding mode at stage 4
-    const skipValidation = isEmbeddingMode || currentStage === 4;
+    // Skip validation if we're at stage 4
+    const skipValidation = currentStage === 4;
     if (!skipValidation && !trimmedQuery && homeImagePreviews.length === 0) {
       alert('Please input a question or upload an image');
       return;
@@ -335,47 +336,12 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
         console.error('Failed to fetch chat history:', error);
       }
   
-      // Activate embedding mode if the query starts with respective keyword
-      const codePrefix = process.env.NEXT_PUBLIC_CODE_PREFIX ?? "";
-      if (trimmedQuery.startsWith(codePrefix)) {
-        setIsEmbeddingMode(true);
-      }
+      // Use the regular chat-stream endpoint
+      const endpoint = '/api/chat-stream';
+      const imageUrls = homeImagePreviews.slice(0, 3).map(preview => preview.url);
   
-      // Determine the endpoint based on the active mode
-      const isEmbedding = isEmbeddingMode || trimmedQuery.startsWith(codePrefix);
-      const endpoint = isEmbedding ? '/api/userEmbed' : '/api/chat';
-      const imagePreviewsToUse = isEmbedding ? imagePreviews : homeImagePreviews;
-      const imageUrls = imagePreviewsToUse.slice(0, 3).map(preview => preview.url);
-  
-      // Prepare the request body
-      const requestBody = JSON.stringify({
-        question: trimmedQuery,
-        history: fullHistory,
-        roomId,
-        imageUrls,
-        userEmail: userIdentifier,
-      });
-  
-      // Send the request
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: userIdentifier,
-        },
-        body: requestBody,
-      });
-  
-      if (!response.ok) {
-        if (response.status === 503) {
-          // Service temporarily unavailable error  
-          console.error('Service temporarily unavailable (503)');
-          throw new Error('Service temporarily unavailable');
-        } else {
-          // For other errors, throw normally
-          throw new Error(`Server responded with status: ${response.status}`);
-        }
-      }
+      // Use SSE streaming for both regular chat and embedding
+      await streamChat(trimmedQuery, fullHistory, imageUrls, userIdentifier, endpoint);
   
     } catch (error) {
       console.error('Error in submit:', error);
@@ -400,7 +366,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
   const handleNewChat = () => {
     handleNewChatInternal();
     setIsNewChat(true);
-    setIsEmbeddingMode(false);
     setIsAwaitingResponse(false);
   };
 

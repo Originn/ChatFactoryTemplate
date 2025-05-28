@@ -90,6 +90,13 @@ class MemoryService {
     // GDPR CHECK: Skip storing history if user has disabled it
     if (userEmail) {
       try {
+        // Validate email format before attempting Firebase Auth
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(userEmail)) {
+          console.warn('Invalid email format provided:', userEmail);
+          return;
+        }
+
         // Get the current user's UID directly
         let uid = null;
         

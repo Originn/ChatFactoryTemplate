@@ -82,8 +82,14 @@ export default async function handler(
     // Get account creation date from Firebase
     let accountCreated = null;
     try {
-      const userRecord = await admin.auth().getUserByEmail(email);
-      accountCreated = userRecord.metadata.creationTime;
+      // Validate email format before attempting Firebase Auth
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        console.warn('Invalid email format provided to user-data-stats:', email);
+      } else {
+        const userRecord = await admin.auth().getUserByEmail(email);
+        accountCreated = userRecord.metadata.creationTime;
+      }
     } catch (error) {
       console.error('Error fetching user creation date:', error);
     }
