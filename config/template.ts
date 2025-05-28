@@ -32,6 +32,7 @@ export const getTemplateConfig = (): TemplateConfig => {
     
     // Product Information
     productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || process.env.NEXT_PUBLIC_CHATBOT_NAME || "AI Assistant",
+    productLatestVersion: process.env.NEXT_PUBLIC_PRODUCT_LATEST_VERSION || "2024",
     productAbbreviation: process.env.NEXT_PUBLIC_PRODUCT_ABBREVIATION || "AI",
     
     // Branding
