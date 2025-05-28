@@ -55,6 +55,14 @@ const nextConfig = {
     GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
     NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/chat-stream',
+        destination: '/api/chat-stream',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
