@@ -1,5 +1,5 @@
 // Template configuration for chatbot customization
-// These variables will be replaced by the ChatFactory hub when creating new chatbot instances
+// Configure these values via environment variables in your .env file
 
 export interface TemplateConfig {
   // Company Information
@@ -21,40 +21,24 @@ export interface TemplateConfig {
   technicalSupportUrl: string;
 }
 
-// Default template configuration - will be replaced during chatbot creation
-export const TEMPLATE_CONFIG: TemplateConfig = {  // Company placeholders
-  companyName: "{{COMPANY_NAME}}",
-  companyDomain: "{{COMPANY_DOMAIN}}", 
-  companyDescription: "{{COMPANY_DESCRIPTION}}",
-  supportUrl: "{{SUPPORT_URL}}",
-  
-  // Product placeholders
-  productName: "{{PRODUCT_NAME}}",
-  productLatestVersion: "{{PRODUCT_LATEST_VERSION}}", 
-  productAbbreviation: "{{PRODUCT_ABBREVIATION}}",
-  
-  // Branding placeholders
-  screenshotAltText: "{{PRODUCT_NAME}} screenshot",
-  
-  // Support placeholders
-  supportEmail: "{{SUPPORT_EMAIL}}",
-  technicalSupportUrl: "{{TECHNICAL_SUPPORT_URL}}"
-};
-
-// Helper function to get template values (for development/testing)
+// Helper function to get template values from environment variables
 export const getTemplateConfig = (): TemplateConfig => {
-  // In production, these would be replaced during template instantiation
-  // For development, we can provide fallback values
-  return process.env.NODE_ENV === 'development' ? {
-    companyName: "Your Company",
-    companyDomain: "yourcompany.com",
-    companyDescription: "software",
-    supportUrl: "https://yourcompany.com/support",
-    productName: "Your Product",
-    productLatestVersion: "2024",
-    productAbbreviation: "YP",
-    screenshotAltText: "Product screenshot", 
-    supportEmail: "support@yourcompany.com",
-    technicalSupportUrl: "https://yourcompany.com/technical-support"
-  } : TEMPLATE_CONFIG;
+  return {
+    // Company Information
+    companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || "Your Company",
+    companyDomain: process.env.NEXT_PUBLIC_COMPANY_DOMAIN || "yourcompany.com",
+    companyDescription: process.env.NEXT_PUBLIC_COMPANY_DESCRIPTION || "AI-powered software",
+    supportUrl: process.env.NEXT_PUBLIC_SUPPORT_URL || "https://yourcompany.com/support",
+    
+    // Product Information
+    productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || process.env.NEXT_PUBLIC_CHATBOT_NAME || "AI Assistant",
+    productAbbreviation: process.env.NEXT_PUBLIC_PRODUCT_ABBREVIATION || "AI",
+    
+    // Branding
+    screenshotAltText: `${process.env.NEXT_PUBLIC_PRODUCT_NAME || process.env.NEXT_PUBLIC_CHATBOT_NAME || "AI Assistant"} screenshot`,
+    
+    // Support & Contact
+    supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@yourcompany.com",
+    technicalSupportUrl: process.env.NEXT_PUBLIC_TECHNICAL_SUPPORT_URL || process.env.NEXT_PUBLIC_SUPPORT_URL || "https://yourcompany.com/support"
+  };
 };

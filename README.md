@@ -1,10 +1,52 @@
-# {{PRODUCT_NAME}} ChatBot
+# AI ChatBot Template
 
-A web-based chatbot application built specifically for {{PRODUCT_NAME}} users that provides intelligent assistance through natural language processing. The application allows users to ask questions about {{PRODUCT_NAME}}, upload images for analysis, and receive answers based on a knowledge base of {{PRODUCT_NAME}} documentation and resources.
+A customizable web-based chatbot application that provides intelligent assistance through natural language processing. The application allows users to ask questions, upload images for analysis, and receive answers based on your knowledge base and documentation.
 
 ## Overview
 
-{{PRODUCT_NAME}} ChatBot is a specialized AI assistant designed to help {{PRODUCT_NAME}} users with technical questions, troubleshooting, and guidance. It leverages advanced language models and an extensive knowledge base to provide accurate and relevant information about {{PRODUCT_NAME}} software. The application supports multilingual conversations, image analysis, and maintains conversation context to provide increasingly relevant responses.
+This ChatBot Template is a specialized AI assistant that can be configured for any product or service. It leverages advanced language models and an extensive knowledge base to provide accurate and relevant information. The application supports multilingual conversations, image analysis, and maintains conversation context to provide increasingly relevant responses.
+
+## 🚀 Quick Setup
+
+### 1. Environment Configuration
+
+Copy the example environment file and customize it for your chatbot:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` with your specific configuration:
+
+```bash
+# Company & Product Configuration
+NEXT_PUBLIC_COMPANY_NAME=Your Company Name
+NEXT_PUBLIC_PRODUCT_NAME=Your Product Name
+NEXT_PUBLIC_COMPANY_DOMAIN=yourcompany.com
+NEXT_PUBLIC_SUPPORT_URL=https://yourcompany.com/support
+NEXT_PUBLIC_SUPPORT_EMAIL=support@yourcompany.com
+
+# Chatbot Appearance
+NEXT_PUBLIC_CHATBOT_NAME=AI Assistant
+NEXT_PUBLIC_CHATBOT_DESCRIPTION=AI-powered assistant for your product
+NEXT_PUBLIC_CHATBOT_PRIMARY_COLOR=#3b82f6
+```
+
+### 2. Database Setup
+
+Set up your Neon PostgreSQL database:
+```bash
+DATABASE_URL=your_neon_database_url
+```
+
+### 3. AI Configuration  
+
+Configure your AI provider:
+```bash
+OPENAI_API_KEY=your_openai_api_key
+PINECONE_API_KEY=your_pinecone_api_key
+PINECONE_INDEX_NAME=your_index_name
+```
 
 ## 🌟 Features
 
@@ -107,19 +149,17 @@ A web-based chatbot application built specifically for {{PRODUCT_NAME}} users th
 
 ### Template Customization
 
-This chatbot template can be customized for different products and companies by modifying the template configuration in `config/template.ts`:
+This chatbot template can be customized for different products and companies by setting environment variables in your `.env` file:
 
-```typescript
-export const TEMPLATE_CONFIG: TemplateConfig = {
-  companyName: "{{COMPANY_NAME}}",
-  productName: "{{PRODUCT_NAME}}",
-  productLatestVersion: "{{PRODUCT_LATEST_VERSION}}",
-  technicalSupportUrl: "{{TECHNICAL_SUPPORT_URL}}",
-  // ... other configuration options
-};
+```bash
+# Company & Product Configuration
+NEXT_PUBLIC_COMPANY_NAME=Your Company Name
+NEXT_PUBLIC_PRODUCT_NAME=Your Product Name
+NEXT_PUBLIC_TECHNICAL_SUPPORT_URL=https://yourcompany.com/support
+# ... other configuration options
 ```
 
-The ChatFactory hub will automatically replace these template variables when creating new chatbot instances.
+The template configuration system automatically reads these environment variables at runtime, making it easy to customize your chatbot without modifying code.
 
 ## 📚 Documentation
 
@@ -145,9 +185,16 @@ This project is proprietary and licensed for use with the ChatFactory platform.
 ## 🆘 Support
 
 For support with this template:
-- Contact: {{SUPPORT_EMAIL}}
-- Documentation: {{SUPPORT_URL}}
+- Contact: Set `NEXT_PUBLIC_SUPPORT_EMAIL` in your .env file
+- Documentation: Set `NEXT_PUBLIC_SUPPORT_URL` in your .env file  
+
+## 🚀 Production Deployment
+
+1. Configure all environment variables in your `.env` file
+2. Set up your Neon PostgreSQL database using the partitioning setup
+3. Configure Firebase authentication 
+4. Deploy to Vercel or your preferred hosting platform
 
 ---
 
-**Note**: This is a template project. Replace all template variables (format: `{``{VARIABLE_NAME}``}`) with actual values when deploying through the ChatFactory hub.
+**Ready to deploy your AI chatbot!** All template variables are now environment-driven for easy customization.
