@@ -7,6 +7,7 @@ import { auth } from '@/utils/firebase';
 interface UseChatSSEParams {
   serverUrl: string;
   initialRoomId: string | null;
+  isAnonymous?: boolean;
 }
 
 interface ChatState {
@@ -15,7 +16,7 @@ interface ChatState {
   pendingSourceDocs?: Document[];
 }
 
-const useChatSSE = ({ serverUrl, initialRoomId }: UseChatSSEParams) => {
+const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSSEParams) => {
   const [roomId, setRoomId] = useState<string | null>(initialRoomId);
   const [requestsInProgress, setRequestsInProgress] = useState<RequestsInProgressType>({});
   const [loading, setLoading] = useState<boolean>(false);
@@ -251,9 +252,15 @@ const useChatSSE = ({ serverUrl, initialRoomId }: UseChatSSEParams) => {
     });
   
     MemoryService.clearChatMemory(roomId!);
-    const newRoomId = `room-${Date.now()}`;
+    const newRoomId = isAnonymous ? `anon-room-${Date.now()}` : `auth-room-${Date.now()}`;
     setRoomId(newRoomId);
-    localStorage.setItem('roomId', newRoomId);
+    
+    // Use appropriate storage based on user type
+    if (isAnonymous) {
+      sessionStorage.setItem('anonymousRoomId', newRoomId);
+    } else {
+      localStorage.setItem('roomId', newRoomId);
+    }
     
     changeRoom(newRoomId);
     setIsNewChat(true);
@@ -268,7 +275,13 @@ const useChatSSE = ({ serverUrl, initialRoomId }: UseChatSSEParams) => {
     }
     
     setRoomId(newRoomId);
-    localStorage.setItem('roomId', newRoomId);
+    
+    // Use appropriate storage based on user type
+    if (isAnonymous) {
+      sessionStorage.setItem('anonymousRoomId', newRoomId);
+    } else {
+      localStorage.setItem('roomId', newRoomId);
+    }
   };
 
   // Clean up SSE connection on unmount
@@ -280,12 +293,12 @@ const useChatSSE = ({ serverUrl, initialRoomId }: UseChatSSEParams) => {
     };
   }, []);
 
-  // Load chat history on initialization
+  // Load chat history on initialization (skip for anonymous users)
   useEffect(() => {
-    if (roomId && !isNewChat) {
+    if (!isAnonymous && roomId && !isNewChat) {
       loadChatHistory();
     }
-  }, [roomId, isNewChat, loadChatHistory]);
+  }, [roomId, isNewChat, loadChatHistory, isAnonymous]);
 
   return {
     roomId,

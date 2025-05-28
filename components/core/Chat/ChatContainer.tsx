@@ -150,7 +150,8 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
     streamChat
   } = useChatSSE({ 
     serverUrl, 
-    initialRoomId 
+    initialRoomId,
+    isAnonymous 
   });  const { adjustTextAreaHeight } = useTextAreaHeight({
     textAreaRef,
     content: query,
@@ -406,12 +407,12 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
     return () => messageListElement?.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Load chat history on initial load
+  // Load chat history on initial load (skip for anonymous users)
   useEffect(() => {
-    if (userEmail && roomId && !isNewChat) {
+    if (!isAnonymous && userEmail && roomId && !isNewChat) {
       loadChatHistory();
     }
-  }, [userEmail, roomId, isNewChat, loadChatHistory]);
+  }, [userEmail, roomId, isNewChat, loadChatHistory, isAnonymous]);
 
   // Scroll to top on load
   useEffect(() => {
