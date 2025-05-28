@@ -4,7 +4,6 @@ import { OpenAI as LangchainOpenAI, ChatOpenAI } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
 import { MyDocument } from 'interfaces/Document';
 import { BaseRetriever } from "@langchain/core/retrievers";
-import { getIO } from "@/socketServer.cjs";
 import { v4 as uuidv4 } from 'uuid';
 import { insertQA, getChatHistoryByRoomId } from '../db';
 import { OpenAIEmbeddings } from '@langchain/openai';
@@ -37,8 +36,7 @@ const ENV = {
   IMAGE_MODEL_NAME: process.env.IMAGE_MODEL_NAME || 'gpt-4.1-mini',
 };
 
-// Initialize shared resources
-const io = getIO();
+// No shared socket resources needed for SSE
 
 // Type Definitions
 type SearchResult = [MyDocument, number];
@@ -318,8 +316,9 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
 
 // Main function to make the chain
 export const makeChain = (
-  vectorstore: PineconeStore, 
-  onTokenStream: (token: string) => void, 
+  vectorstore: PineconeStore,
+  onTokenStream: (token: string) => void,
+  onFinalResponse: (data: { roomId: string; sourceDocs: MyDocument[]; qaId: string; answer: string }) => void,
   userEmail: string
 ) => {
   // Create shared model instances
@@ -370,11 +369,7 @@ export const makeChain = (
         maxTokens: 4000,
         callbacks: [{
           handleLLMNewToken: (token: any) => {
-            if (roomId) {
-              io.to(roomId).emit(`tokenStream-${roomId}`, token);
-            } else {
-              console.error('No roomId available for token stream');
-            }
+            onTokenStream(token);
           },
         }],
       });
@@ -480,21 +475,13 @@ export const makeChain = (
         return scoreB - scoreA;
       });
 
-      // Send the full response to the client
-      if (roomId) {
-        io.to(roomId).emit(`fullResponse-${roomId}`, {
-          roomId: roomId,
-          sourceDocs: Documents,
-          qaId: qaId,
-          answer: ragResponse.answer,
-        });
-      } else {
-        io.emit("fullResponse", {
-          sourceDocs: Documents,
-          qaId: qaId,
-          answer: ragResponse.answer,
-        });
-      }
+      // Send the full response using the provided callback
+      onFinalResponse({
+        roomId,
+        sourceDocs: Documents,
+        qaId,
+        answer: ragResponse.answer,
+      });
 
       // Store the Q&A in the database
       await insertQA(

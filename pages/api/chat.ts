@@ -1,6 +1,5 @@
 // pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getIO } from "@/socketServer.cjs";
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
 import { getPinecone } from '@/utils/pinecone-client';
@@ -72,35 +71,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     );
 
-    // Send tokens to client
-    const io = getIO();
+    // Set SSE headers
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    });
+
     const sendToken = (token: string) => {
-      if (roomId) {
-        io.to(roomId).emit(`tokenStream-${roomId}`, token);
-      } else {
-        console.error('No roomId available for token stream');
-      }
+      res.write(`data: ${token}\n\n`);
+    };
+
+    const sendFullResponse = (data: { roomId: string; sourceDocs: MyDocument[]; qaId: string; answer: string }) => {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
     };
 
     // Create documents array for results
     const documents: MyDocument[] = [];
 
     // Create chain with OpenAI
-    const chain = makeChain(vectorStore, sendToken, userEmail);
+    const chain = makeChain(vectorStore, sendToken, sendFullResponse, userEmail);
     
-    // Execute the chain
+    // Execute the chain and close the stream when done
     await chain.call(question, documents, roomId, userEmail, imageUrls);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Processing chat request'
-    });
+    res.end();
+    return;
   } catch (error: any) {
     console.error('Error in chat handler:', error);
-    return res.status(500).json({ 
-      error: error.message || 'Something went wrong',
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.write(`data: ${JSON.stringify({ error: error.message || 'Something went wrong' })}\n\n`);
+    res.end();
+    return;
   } finally {
     // Restore original environment variable to prevent leaking between requests
     process.env.OPENAI_API_KEY = originalOpenAIKey;

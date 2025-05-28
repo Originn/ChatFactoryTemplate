@@ -23,7 +23,7 @@ A web-based chatbot application built specifically for {{PRODUCT_NAME}} users th
 ### Core Components
 
 - **Frontend**: Built with Next.js and React
-- **Backend**: Node.js, Express, and Socket.IO
+- **Backend**: Node.js, Express, and Server-Sent Events (SSE)
 - **Database**: PostgreSQL for storing conversations and feedback
 - **AI Processing**: Integration with OpenAI and other AI providers
 - **Authentication**: Firebase Authentication

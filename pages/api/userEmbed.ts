@@ -1,6 +1,5 @@
 // pages/api/userEmbed.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getIO } from "@/socketServer.cjs";
 import createClient from "openai";
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
@@ -21,8 +20,7 @@ import {
 const openAIClient = new createClient({});
 
 // Utility to fetch an image description (if you're using a standard GPT model)
-async function getImageDescription(imageUrl: string, roomId: string) {
-  const io = getIO();
+async function getImageDescription(imageUrl: string, roomId: string, sendToken: (msg: string) => void) {
   try {
     const response = await openAIClient.chat.completions.create({
       model: "gpt-4.1",
@@ -42,18 +40,17 @@ async function getImageDescription(imageUrl: string, roomId: string) {
     });
 
     const description = response.choices?.[0]?.message?.content || "No description found.";
-    io.to(roomId).emit(`tokenStream-${roomId}`, description);
+    sendToken(description);
     return description;
   } catch (error) {
     console.error('Error getting image description:', error);
-    io.to(roomId).emit(`tokenStream-${roomId}`, 'Error getting image description.');
+    sendToken('Error getting image description.');
     return 'Error getting image description.';
   }
 }
 
 // Embedding + response
-async function handleEmbeddingAndResponse(roomId: string, userEmail: string) {
-  const io = getIO();
+async function handleEmbeddingAndResponse(roomId: string, userEmail: string, sendToken: (msg: string) => void) {
 
   // 1) Retrieve the current row from DB again, in case it's updated
   const session = await getRoomSession(roomId);
@@ -97,11 +94,7 @@ async function handleEmbeddingAndResponse(roomId: string, userEmail: string) {
 
     // 5) Notify UI
     const message = '\n\n**Your text and images (if provided) have been successfully embedded.**';
-    io.to(roomId).emit(`tokenStream-${roomId}`, message);
-    io.to(roomId).emit("removeThumbnails");
-    io.to(roomId).emit(`resetStages-${roomId}`, 4);
-    io.to(roomId).emit('embeddingComplete');
-    io.to(roomId).emit("uploadStatus", "Upload and processing complete.");
+    sendToken(message);
 
     // 6) Delete the session from DB now that we are finished
     await deleteRoomSession(roomId);
@@ -109,8 +102,7 @@ async function handleEmbeddingAndResponse(roomId: string, userEmail: string) {
     return { status: 200, message };
   } catch (err) {
     console.error('Error during embedding for roomId:', roomId, err);
-    io.to(roomId).emit(`tokenStream-${roomId}`, 'Embedding process encountered an error. Please try again.');
-    io.to(roomId).emit("uploadStatus", "Upload and processing failed.");
+    sendToken('Embedding process encountered an error. Please try again.');
     return { status: 500, message: (err as Error).message || 'Error in embedding' };
   }
 }
@@ -152,7 +144,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const sanitizedQuestion = question?.trim().replaceAll('\n', ' ');
   const codePrefix = 'embed-4831-embed-4831';
-  const io = getIO();
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+
+  const sendToken = (msg: string) => {
+    res.write(`data: ${msg}\n\n`);
+  };
 
   try {
     // 1) Load the existing session row from DB
@@ -205,7 +206,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           if (img.url.includes("linkedin")) {
             img.description = "LinkedIn image URL, no description fetched.";
           } else {
-            img.description = await getImageDescription(img.url, roomId);
+            img.description = await getImageDescription(img.url, roomId, sendToken);
           }
         }
       }
@@ -214,15 +215,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       session = await updateRoomSession(roomId, stage, header ?? '', text ?? '', images);
 
       // 2d) Now embed and finalize
-      io.to(roomId).emit("uploadStatus", "Uploading and processing your data...");
-      const result = await handleEmbeddingAndResponse(roomId, userEmail);
-      return res.status(result.status).json({ message: result.message });
+      sendToken('Uploading and processing your data...');
+      const result = await handleEmbeddingAndResponse(roomId, userEmail, sendToken);
+      sendToken(result.message);
+      res.end();
+      return;
     }
 
     // 3) If user is not uploading images but we are at stage=4 => embed final
     if (stage === 4) {
-      const result = await handleEmbeddingAndResponse(roomId, userEmail);
-      return res.status(result.status).json({ message: result.message });
+      const result = await handleEmbeddingAndResponse(roomId, userEmail, sendToken);
+      sendToken(result.message);
+      res.end();
+      return;
     }
 
     // 4) If user is providing normal text input (stage=1 => ask for header, stage=2 => get header => ask for text, etc.)
@@ -234,8 +239,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await updateRoomSession(roomId, stage, newHeader, text ?? '', images);
 
       const msg = 'You have entered embedding mode. Please provide a **header** (and link if relevant).';
-      io.to(roomId).emit(`tokenStream-${roomId}`, msg);
-      return res.status(200).json({ message: msg });
+      sendToken(msg);
+      res.end();
+      return;
     } 
     else if (stage === 2) {
       // user is providing the actual header text
@@ -244,8 +250,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await updateRoomSession(roomId, stage, sanitizedQuestion, text ?? '', images);
 
       const msg = 'Thank you! Now, please provide the **text** associated with that header.';
-      io.to(roomId).emit(`tokenStream-${roomId}`, msg);
-      return res.status(200).json({ message: msg });
+      sendToken(msg);
+      res.end();
+      return;
     }
     else if (stage === 3) {
       // user provided the main text => proceed to stage=4 for image or final embed
@@ -253,16 +260,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await updateRoomSession(roomId, stage, header ?? '', sanitizedQuestion, images);
 
       const msg = 'If you have an **image** to upload, do so now. Or click submit to finalize embedding.';
-      io.to(roomId).emit(`tokenStream-${roomId}`, msg);
-      io.to(roomId).emit(`stageUpdate-${roomId}`, 4);
-      return res.status(200).json({ message: msg });
+      sendToken(msg);
+      res.end();
+      return;
     }
 
     // If none of the above matched, we consider it invalid
-    return res.status(400).json({ message: 'Invalid request flow.' });
+    sendToken('Invalid request flow.');
+    res.end();
+    return;
 
   } catch (error: any) {
     console.error('Error in userEmbed handler:', error);
-    return res.status(500).json({ error: error.message || 'Something went wrong' });
+    sendToken(error.message || 'Something went wrong');
+    res.end();
+    return;
   }
 }

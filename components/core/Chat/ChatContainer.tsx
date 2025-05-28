@@ -368,12 +368,54 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
   
       if (!response.ok) {
         if (response.status === 503) {
-          // Service temporarily unavailable error  
+          // Service temporarily unavailable error
           console.error('Service temporarily unavailable (503)');
           throw new Error('Service temporarily unavailable');
         } else {
           // For other errors, throw normally
           throw new Error(`Server responded with status: ${response.status}`);
+        }
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      if (reader) {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value);
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop() || '';
+          for (const part of parts) {
+            const line = part.trim();
+            if (!line.startsWith('data:')) continue;
+            const dataStr = line.slice(5).trim();
+            try {
+              const obj = JSON.parse(dataStr);
+              setMessageState(prev => {
+                const idx = prev.messages.length - 1;
+                const updated = [...prev.messages];
+                if (idx >= 0 && updated[idx].type === 'apiMessage') {
+                  updated[idx] = { ...updated[idx], message: obj.answer, sourceDocs: obj.sourceDocs || [], isComplete: true, qaId: obj.qaId };
+                }
+                return { ...prev, messages: updated };
+              });
+            } catch {
+              const token = dataStr;
+              setMessageState(prev => {
+                const idx = prev.messages.length - 1;
+                const last = prev.messages[idx];
+                if (last && last.type === 'apiMessage' && !last.isComplete) {
+                  const msgs = [...prev.messages];
+                  msgs[idx] = { ...last, message: last.message + token };
+                  return { ...prev, messages: msgs };
+                } else {
+                  return { ...prev, messages: [...prev.messages, { type: 'apiMessage', message: token, sourceDocs: [], isComplete: false, qaId: undefined }] };
+                }
+              });
+            }
+          }
         }
       }
   
