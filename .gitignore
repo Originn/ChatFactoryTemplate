@@ -59,6 +59,7 @@ htmlcov/
 !package-lock.json
 !tsconfig.json
 !jsconfig.json
+!vercel.json
 
 # Misc
 .vercel
