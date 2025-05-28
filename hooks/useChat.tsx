@@ -7,6 +7,7 @@ import { auth } from '@/utils/firebase';
 interface UseChatParams {
   serverUrl: string;
   initialRoomId: string | null;
+  isAnonymous?: boolean;
 }
 
 interface ChatState {
@@ -15,7 +16,7 @@ interface ChatState {
   pendingSourceDocs?: Document[];
 }
 
-const useChat = ({ serverUrl, initialRoomId }: UseChatParams) => {
+const useChat = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatParams) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [roomId, setRoomId] = useState<string | null>(initialRoomId);
   const [requestsInProgress, setRequestsInProgress] = useState<RequestsInProgressType>({});
@@ -223,12 +224,12 @@ const useChat = ({ serverUrl, initialRoomId }: UseChatParams) => {
     localStorage.setItem('roomId', newRoomId);
   };
 
-  // Load chat history on initialization
+  // Load chat history on initialization (skip for anonymous users)
   useEffect(() => {
-    if (roomId && !isNewChat) {
+    if (!isAnonymous && roomId && !isNewChat) {
       loadChatHistory();
     }
-  }, [roomId, isNewChat, loadChatHistory]);
+  }, [roomId, isNewChat, loadChatHistory, isAnonymous]);
 
   return {
     socket,
