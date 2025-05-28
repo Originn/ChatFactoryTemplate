@@ -69,14 +69,13 @@ const pollChat = async () => {
 
 ### 5. Verify Deployment Configuration
 
-Make sure your `vercel.json` has the correct configuration:
+Make sure your `vercel.json` has the correct configuration. Recent versions of Vercel no longer accept a `streaming` flag, so your config should only specify the timeout:
 
 ```json
 {
   "functions": {
     "pages/api/chat-stream.ts": {
-      "maxDuration": 60,
-      "streaming": true
+      "maxDuration": 60
     }
   }
 }
