@@ -342,11 +342,15 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
       const imageUrls = homeImagePreviews.slice(0, 3).map(preview => preview.url);
   
       // Use SSE streaming for both regular chat and embedding
-      await streamChat(trimmedQuery, fullHistory, imageUrls, userIdentifier, endpoint);
+      await streamChat(trimmedQuery, fullHistory, imageUrls, userIdentifier, endpoint, setLoading, setIsAwaitingResponse);
   
     } catch (error) {
       console.error('Error in submit:', error);
        
+      // Stop loading indicators on error
+      setLoading(false);
+      setIsAwaitingResponse(false);
+      
       // Check if it's a 503 error (which we want to suppress)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       if (errorMessage === 'Service temporarily unavailable') {
@@ -358,8 +362,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
       }
     } finally {
       setRequestsInProgress((prev) => ({ ...prev, [roomId!]: false }));
-      setLoading(false);
-      setIsAwaitingResponse(false);
+      // Don't set loading/awaiting to false here - let SSE handler do it when first token arrives
       setHomeImagePreviews([]);
       clearPastedImagePreviews();
     }
@@ -376,16 +379,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
   }, [messageState.messages, userHasScrolled]);
-
-  // Stop highlight when first API token arrives WITH CONTENT
-  useEffect(() => {
-    if (isAwaitingResponse) {
-      const lastMsg = messageState.messages[messageState.messages.length - 1];
-      if (lastMsg && lastMsg.type === 'apiMessage' && !lastMsg.isComplete && lastMsg.message && lastMsg.message.trim().length > 0) {
-        setIsAwaitingResponse(false);
-      }
-    }
-  }, [messageState.messages, isAwaitingResponse]);
 
   // Handle message list scroll events
   useEffect(() => {

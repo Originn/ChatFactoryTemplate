@@ -31,12 +31,16 @@ const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSS
   const eventSourceRef = useRef<EventSource | null>(null);
 
   // Function to handle SSE messages
-  const handleSSEMessage = useCallback((event: MessageEvent) => {
+  const handleSSEMessage = useCallback((event: MessageEvent, setLoadingCallback?: (loading: boolean) => void, setAwaitingCallback?: (awaiting: boolean) => void) => {
     try {
       const data = JSON.parse(event.data);
       
       switch (event.type) {
         case 'token':
+          // Stop loading indicators on first token
+          if (setLoadingCallback) setLoadingCallback(false);
+          if (setAwaitingCallback) setAwaitingCallback(false);
+          
           setMessageState((prevState) => {
             const lastMessageIndex = prevState.messages.length - 1;
             const lastMessage = prevState.messages[lastMessageIndex];
@@ -74,6 +78,10 @@ const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSS
           break;
         case 'complete':
           const { answer, sourceDocs, qaId } = data;
+          
+          // Ensure loading indicators are stopped
+          if (setLoadingCallback) setLoadingCallback(false);
+          if (setAwaitingCallback) setAwaitingCallback(false);
       
           if (!answer) {
             console.error('No answer found in the complete response.');
@@ -107,6 +115,9 @@ const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSS
           break;
 
         case 'error':
+          // Stop loading indicators on error
+          if (setLoadingCallback) setLoadingCallback(false);
+          if (setAwaitingCallback) setAwaitingCallback(false);
           setError(data.message || 'An error occurred');
           break;
 
@@ -124,7 +135,9 @@ const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSS
     history: [string, string][],
     imageUrls: string[],
     userEmail: string,
-    endpoint: string = '/api/chat-stream'
+    endpoint: string = '/api/chat-stream',
+    setLoadingCallback?: (loading: boolean) => void,
+    setAwaitingCallback?: (awaiting: boolean) => void
   ) => {
     if (!roomId) return;
 
@@ -208,7 +221,7 @@ const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSS
                       data: data,
                     });
                     Object.defineProperty(messageEvent, 'type', { value: eventType });
-                    handleSSEMessage(messageEvent);
+                    handleSSEMessage(messageEvent, setLoadingCallback, setAwaitingCallback);
                     
                     i++; // Skip the data line
                   } catch (e) {
@@ -221,6 +234,9 @@ const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSS
         } catch (error:any) {
           if (error.name !== 'AbortError') {
             console.error('Stream processing error:', error);
+            // Stop loading indicators on stream error
+            if (setLoadingCallback) setLoadingCallback(false);
+            if (setAwaitingCallback) setAwaitingCallback(false);
             setError('Connection lost. Please try again.');
           }
         } finally {
@@ -236,6 +252,9 @@ const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSS
 
     } catch (error) {
       console.error('Error initiating chat stream:', error);
+      // Stop loading indicators on fetch error
+      if (setLoadingCallback) setLoadingCallback(false);
+      if (setAwaitingCallback) setAwaitingCallback(false);
       setError('Failed to start chat. Please try again.');
     }
   }, [roomId, handleSSEMessage]);
