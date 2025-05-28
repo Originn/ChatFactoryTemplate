@@ -377,11 +377,11 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
     }
   }, [messageState.messages, userHasScrolled]);
 
-  // Stop highlight when first API token arrives
+  // Stop highlight when first API token arrives WITH CONTENT
   useEffect(() => {
     if (isAwaitingResponse) {
       const lastMsg = messageState.messages[messageState.messages.length - 1];
-      if (lastMsg && lastMsg.type === 'apiMessage' && !lastMsg.isComplete) {
+      if (lastMsg && lastMsg.type === 'apiMessage' && !lastMsg.isComplete && lastMsg.message && lastMsg.message.trim().length > 0) {
         setIsAwaitingResponse(false);
       }
     }
