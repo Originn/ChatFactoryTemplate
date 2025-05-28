@@ -14,61 +14,78 @@ async function syncChatHistory(roomId: string, clientHistory: any[], userEmail: 
   const serverHistory = await MemoryService.getChatHistory(roomId);
 
   if (clientHistory.length > serverHistory.length) {
-    // Clear existing server history
     MemoryService.clearChatMemory(roomId);
-    // Reconstruct the history from client data
     for (const [input, output] of clientHistory) {
       await MemoryService.updateChatMemory(roomId, input, output, [], userEmail);
     }
-  } else {
-    console.log('Server history is up to date');
   }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Log the request for debugging
+  console.log('[chat-stream] Request method:', req.method);
+  console.log('[chat-stream] Request headers:', req.headers);
+
+  // Handle CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.status(405).json({ error: `Method ${req.method} not allowed` });
+    return;
   }
 
   const { question, history, roomId, imageUrls = [], userEmail } = req.body;
 
-  if (!roomId) {
-    return res.status(400).json({ message: 'No roomId in the request' });
+  // Validate required fields
+  if (!roomId || !question) {
+    res.status(400).json({ 
+      error: 'Missing required fields',
+      roomId: !!roomId,
+      question: !!question 
+    });
+    return;
   }
 
-  if (!question) {
-    return res.status(400).json({ message: 'No question in the request' });
-  }
-
-  // Set SSE headers
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
-
-  // Store original environment variable
+  console.log('[chat-stream] Starting SSE stream for room:', roomId);
   const originalOpenAIKey = process.env.OPENAI_API_KEY;
 
-  // Helper function to send SSE events
-  const sendSSEEvent = (event: string, data: any) => {
-    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-  };
-
-  // Send initial connection event
-  sendSSEEvent('connected', { roomId });
-
   try {
-    // Sync chat history first
-    await syncChatHistory(roomId, history, userEmail);
+    // Configure response for SSE
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      // Important for Vercel
+      'X-Vercel-Skip-Middleware': '1',
+    });
 
-    // Get the appropriate API key for the user
+    // Helper to write SSE
+    const sendEvent = (event: string, data: any) => {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+      // Flush the response
+      if ((res as any).flush) (res as any).flush();
+    };
+
+    // Send initial connection
+    sendEvent('connected', { roomId, timestamp: Date.now() });
+
+    // Sync chat history
+    await syncChatHistory(roomId, history || [], userEmail);
+
+    // Get API key
     try {
       const apiKey = await getAPIKeyForProvider('openai', userEmail);
       process.env.OPENAI_API_KEY = apiKey;
     } catch (error) {
-      console.error('Error getting API key:', error);
-      // Continue with default key if we can't get the user-specific key
+      console.error('[chat-stream] Error getting API key:', error);
     }
 
     // Initialize Pinecone
@@ -86,50 +103,60 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     );
 
-    // Token streaming callback
-    const sendToken = (token: string) => {
-      sendSSEEvent('token', { token });
-    };
-
-    // Create documents array for results
+    // Create documents array
     const documents: MyDocument[] = [];
 
-    // Create chain with SSE callbacks
-    const chain = makeChainSSE(vectorStore, sendToken, userEmail);
-    
-    // Execute the chain
-    const result = await chain.call(question, documents, roomId, userEmail, imageUrls);
+    // Token callback
+    const sendToken = (token: string) => {
+      sendEvent('token', { token });
+    };
 
-    // Send the complete response
-    sendSSEEvent('complete', {
-      roomId: roomId,
+    // Create and execute chain
+    const chain = makeChainSSE(vectorStore, sendToken, userEmail);
+    const result = await chain.call(question, documents, roomId, userEmail, imageUrls);
+    // Send complete response
+    sendEvent('complete', {
+      roomId,
       sourceDocs: documents,
       qaId: result.qaId,
       answer: result.answer,
     });
 
-    // Send done event
-    sendSSEEvent('done', {});
+    // Send done
+    sendEvent('done', { timestamp: Date.now() });
+
+    console.log('[chat-stream] Stream completed for room:', roomId);
 
   } catch (error: any) {
-    console.error('Error in chat-stream handler:', error);
-    sendSSEEvent('error', { 
-      message: error.message || 'Something went wrong',
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    console.error('[chat-stream] Error:', error);
+    
+    // Try to send error event
+    try {
+      res.write(`event: error\n`);
+      res.write(`data: ${JSON.stringify({ 
+        message: error.message || 'An error occurred',
+        code: error.code || 'UNKNOWN_ERROR'
+      })}\n\n`);
+    } catch (writeError) {
+      console.error('[chat-stream] Failed to write error:', writeError);
+    }
   } finally {
-    // Restore original environment variable
+    // Restore API key
     process.env.OPENAI_API_KEY = originalOpenAIKey;
-    // End the SSE stream
-    res.end();
+    
+    // End response
+    try {
+      res.end();
+    } catch (endError) {
+      console.error('[chat-stream] Failed to end response:', endError);
+    }
   }
 }
 
-// Disable body parsing to handle streaming
+// Important: Configure Next.js API route
 export const config = {
   api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
+    bodyParser: true, // We need the body parsed
+    responseLimit: false, // Allow streaming
   },
 };

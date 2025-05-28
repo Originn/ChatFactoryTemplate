@@ -134,6 +134,9 @@ const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSS
     }
 
     try {
+      // Create an AbortController for cleanup
+      const abortController = new AbortController();
+      
       // Send POST request to initiate SSE stream
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -148,13 +151,25 @@ const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSS
           imageUrls,
           userEmail,
         }),
+        signal: abortController.signal,
       });
 
+      console.log('SSE Response status:', response.status);
+      console.log('SSE Response headers:', response.headers.get('content-type'));
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('SSE Error response:', errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // The response itself is the SSE stream
+      // Check if response is SSE
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('text/event-stream')) {
+        throw new Error('Response is not an SSE stream');
+      }
+
+      // Read the SSE stream using the Streams API
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
@@ -164,44 +179,60 @@ const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSS
 
       let buffer = '';
       
-      // Read the SSE stream
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      // Process the stream
+      const processStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        
-        // Process complete lines, keep incomplete line in buffer
-        buffer = lines.pop() || '';
-        
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim();
-          
-          if (line.startsWith('event: ')) {
-            const eventType = line.slice(7);
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
             
-            // Look for the corresponding data line
-            if (i + 1 < lines.length && lines[i + 1].startsWith('data: ')) {
-              const dataLine = lines[i + 1];
-              const data = dataLine.slice(6);
+            // Keep the last incomplete line in the buffer
+            buffer = lines.pop() || '';
+            
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i].trim();
               
-              try {
-                const messageEvent = new MessageEvent('message', {
-                  data: data,
-                });
-                Object.defineProperty(messageEvent, 'type', { value: eventType });
-                handleSSEMessage(messageEvent);
+              if (line.startsWith('event: ')) {
+                const eventType = line.slice(7).trim();
                 
-                // Skip the data line since we've processed it
-                i++;
-              } catch (e) {
-                console.error('Error processing SSE message:', e);
+                // Look for the data line
+                if (i + 1 < lines.length && lines[i + 1].startsWith('data: ')) {
+                  const dataLine = lines[i + 1];
+                  const data = dataLine.slice(6);
+                  
+                  try {
+                    const messageEvent = new MessageEvent('message', {
+                      data: data,
+                    });
+                    Object.defineProperty(messageEvent, 'type', { value: eventType });
+                    handleSSEMessage(messageEvent);
+                    
+                    i++; // Skip the data line
+                  } catch (e) {
+                    console.error('Error processing SSE message:', e);
+                  }
+                }
               }
             }
           }
+        } catch (error) {
+          if (error.name !== 'AbortError') {
+            console.error('Stream processing error:', error);
+            setError('Connection lost. Please try again.');
+          }
+        } finally {
+          reader.releaseLock();
         }
-      }
+      };
+
+      // Start processing the stream
+      processStream();
+
+      // Store abort controller for cleanup
+      eventSourceRef.current = { close: () => abortController.abort() } as any;
 
     } catch (error) {
       console.error('Error initiating chat stream:', error);
