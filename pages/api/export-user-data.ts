@@ -75,7 +75,7 @@ export default async function handler(
 
     // Set response headers for file download with pretty-printing enabled
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename=solidcam-data-${Date.now()}.json`);
+    res.setHeader('Content-Disposition', `attachment; filename=chatbot-data-${Date.now()}.json`);
     
     // Send the data with 2-space indentation for nice formatting
     return res.status(200).send(JSON.stringify(userData, null, 2));

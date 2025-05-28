@@ -5,6 +5,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { Container, Typography, Button, Box } from '@mui/material';
+import { getTemplateConfig } from '../config/template';
+
+const config = getTemplateConfig();
 
 const AccountDeleted = () => {
   const router = useRouter();
@@ -12,7 +15,7 @@ const AccountDeleted = () => {
   return (
     <Container maxWidth="sm" sx={{ py: 4, textAlign: 'center' }}>
       <Box mb={3} display="flex" justifyContent="center">
-        <Image src="/solidcam.png" alt="SolidCAM Logo" width={150} height={150} style={{ marginBottom: 16 }} />
+        <Image src="/bot-icon-generic.svg" alt={`${config.productName} Logo`} width={150} height={150} style={{ marginBottom: 16 }} />
       </Box>
       <Typography variant="h5" component="h1" gutterBottom>
         Account Successfully Deleted
@@ -23,7 +26,7 @@ const AccountDeleted = () => {
         </Typography>
       </Box>
       <Typography color="text.secondary" paragraph>
-        Thank you for using SolidCAM ChatBot. If you change your mind, you're always welcome to create a new account.
+        Thank you for using {config.productName} ChatBot. If you change your mind, you're always welcome to create a new account.
       </Typography>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 4 }}>
         <Button component={Link} href="/" variant="contained" fullWidth>
@@ -35,8 +38,8 @@ const AccountDeleted = () => {
       </Box>
       <Typography variant="body2" color="text.secondary">
         For any questions about data policies, please contact{' '}
-        <a href="mailto:ai@solidcam.app" style={{ color: '#1976d2' }}>
-          ai@solidcam.app
+        <a href={`mailto:${config.supportEmail}`} style={{ color: '#1976d2' }}>
+          {config.supportEmail}
         </a>
       </Typography>
     </Container>

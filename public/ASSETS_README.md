@@ -1,6 +1,6 @@
 # Public Assets - Template Placeholders
 
-This directory contains placeholder assets that should be replaced during deployment through the DocsAI hub.
+This directory contains placeholder assets that should be replaced during deployment through the ChatFactory hub.
 
 ## Assets to Replace
 
@@ -9,14 +9,14 @@ This directory contains placeholder assets that should be replaced during deploy
 - **Description**: Chatbot avatar displayed in conversations
 - **Recommended Size**: 64x64 pixels
 - **Formats**: SVG (preferred), PNG, JPG
-- **Usage**: Users upload their custom bot icon through DocsAI hub interface
+- **Usage**: Users upload their custom bot icon through ChatFactory hub interface
 
 ### Favicon  
 - **File**: `favicon.ico`
 - **Description**: Browser tab icon
 - **Recommended Size**: 32x32 pixels (multi-size ICO preferred)
 - **Formats**: ICO (preferred), PNG
-- **Usage**: Users upload their custom favicon through DocsAI hub interface
+- **Usage**: Users upload their custom favicon through ChatFactory hub interface
 
 ### User Icon
 - **File**: `usericon.png` 
@@ -26,7 +26,7 @@ This directory contains placeholder assets that should be replaced during deploy
 
 ## Deployment Process
 
-During chatbot deployment, the DocsAI hub will:
+During chatbot deployment, the ChatFactory hub will:
 
 1. **Collect Assets**: User uploads bot icon and favicon through hub interface
 2. **Validate Assets**: Check file size, format, and dimensions
@@ -48,4 +48,4 @@ During chatbot deployment, the DocsAI hub will:
 
 ---
 
-*Note: These are placeholder assets for the ChatFactoryTemplate. They will be automatically replaced during deployment through the DocsAI hub.*
+*Note: These are placeholder assets for the ChatFactoryTemplate. They will be automatically replaced during deployment through the ChatFactory hub.*

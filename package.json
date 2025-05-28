@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "UNLICENSED",
-  "author": "DocsAI",
+  "author": "ChatFactory",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

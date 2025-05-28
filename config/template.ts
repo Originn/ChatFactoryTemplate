@@ -1,5 +1,5 @@
 // Template configuration for chatbot customization
-// These variables will be replaced by the DocsAI hub when creating new chatbot instances
+// These variables will be replaced by the ChatFactory hub when creating new chatbot instances
 
 export interface TemplateConfig {
   // Company Information

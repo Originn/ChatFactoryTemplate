@@ -2,25 +2,27 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Container, Typography, Box } from '@mui/material';
+import { getTemplateConfig } from '../config/template';
 
+const config = getTemplateConfig();
 const PRODUCTION_ENV = 'production';
 
 // Image URL - use relative path for all environments
-let scimageIcon = '/bot-icon-generic.svg'; // Use existing generic bot icon
+let botIcon = '/bot-icon-generic.svg'; // Use existing generic bot icon
 
 export default function PrivacyPolicy() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box mb={2} textAlign="center">
         <Link href="/">
-          <Image src={scimageIcon} alt="SolidCAM Logo" width={100} height={100} style={{ borderRadius: '50%' }} />
+          <Image src={botIcon} alt={`${config.productName} Logo`} width={100} height={100} style={{ borderRadius: '50%' }} />
         </Link>
       </Box>
       <Box sx={{ maxHeight: 'calc(100vh - 140px)', overflowY: 'auto', px: 1 }}>
-      <Typography variant="h4" component="h1" align="center" gutterBottom>Privacy Policy for SolidCAM ChatBot</Typography>
+      <Typography variant="h4" component="h1" align="center" gutterBottom>Privacy Policy for {config.productName} ChatBot</Typography>
       <Typography variant="h6" component="h2" align="center" gutterBottom>Effective Date: 27th February 2025</Typography>
       <Typography paragraph>
-        SolidCAM ChatBot utilizes leading-edge language learning models (LLMs) to provide responsive and accurate answers to users&apos; inquiries regarding SolidCAM software. This document outlines our commitment to your privacy and details the measures we take to protect the personal information you share with us while interacting with our service.
+        {config.productName} ChatBot utilizes leading-edge language learning models (LLMs) to provide responsive and accurate answers to users&apos; inquiries regarding {config.productName} software. This document outlines our commitment to your privacy and details the measures we take to protect the personal information you share with us while interacting with our service.
       </Typography>
 
       <Typography variant="h6" component="h3" gutterBottom>Information Collection</Typography>
@@ -34,7 +36,7 @@ export default function PrivacyPolicy() {
         <strong>Comments and Feedback:</strong> We actively collect user feedback submitted through our platform. This input is invaluable as it helps us to continually refine our offerings and address user needs more effectively.
       </Typography>
       <Typography paragraph>
-        <strong>Image Uploads:</strong> We collect and securely store images that you upload during interactions with our ChatBot. These images help us better understand your inquiries related to SolidCAM software and provide more accurate assistance.
+        <strong>Image Uploads:</strong> We collect and securely store images that you upload during interactions with our ChatBot. These images help us better understand your inquiries related to {config.productName} software and provide more accurate assistance.
       </Typography>
 
       <Typography variant="h6" component="h3" gutterBottom>Use of Information</Typography>
@@ -42,7 +44,7 @@ export default function PrivacyPolicy() {
         <strong>Service Improvement:</strong> The primary use of collected data is to enhance the functionality and effectiveness of the ChatBot. By analyzing questions and responses, we are able to continually train our model to better serve your needs.
       </Typography>
       <Typography paragraph>
-        <strong>Communication:</strong> We may use your email address to contact you with updates about our service, respond to inquiries, or provide assistance with any issues related to SolidCAM.
+        <strong>Communication:</strong> We may use your email address to contact you with updates about our service, respond to inquiries, or provide assistance with any issues related to {config.productName}.
       </Typography>
 
       <Typography variant="h6" component="h3" gutterBottom>Data Retention and Deletion</Typography>
@@ -64,7 +66,7 @@ export default function PrivacyPolicy() {
         <strong>Retention Periods:</strong> By default, we retain your data for 1 month. Through your account settings under "Data Retention," you can choose to extend this period to 3 months, 6 months, 1 year, or forever. When this retention period expires, personal data is anonymized in our knowledge base while preserving the value of Q&A pairs for service improvement. Note that uploaded images are always deleted after 30 days regardless of these settings.
       </Typography>
       <Typography paragraph>
-        <strong>Complete Data Deletion:</strong> If you wish to request complete deletion of all your data, including anonymized Q&A pairs and any uploaded images, please email <a href="mailto:ai@solidcam.app">ai@solidcam.app</a> with your account email address. We will process your request within 30 days as required by applicable regulations.
+        <strong>Complete Data Deletion:</strong> If you wish to request complete deletion of all your data, including anonymized Q&A pairs and any uploaded images, please email <a href={`mailto:${config.supportEmail}`}>{config.supportEmail}</a> with your account email address. We will process your request within 30 days as required by applicable regulations.
       </Typography>
       <Typography paragraph>
         <strong>Account Deletion:</strong> When you choose to delete your account through the Settings page, we:
@@ -135,7 +137,7 @@ export default function PrivacyPolicy() {
         </li>
       </Box>
       <Typography paragraph>
-        To exercise these rights, please email <a href="mailto:ai@solidcam.app">ai@solidcam.app</a> or use the relevant features in your account settings.
+        To exercise these rights, please email <a href={`mailto:${config.supportEmail}`}>{config.supportEmail}</a> or use the relevant features in your account settings.
       </Typography>
 
       <Typography variant="h6" component="h3" gutterBottom>Data Security</Typography>
@@ -171,7 +173,7 @@ export default function PrivacyPolicy() {
 
       <Typography variant="h6" component="h3" gutterBottom>Contact Information and Complaints</Typography>
       <Typography paragraph>
-        For any questions or concerns regarding our privacy practices, please contact us at <a href="mailto:ai@solidcam.app">ai@solidcam.app</a> or via our designated support channels.
+        For any questions or concerns regarding our privacy practices, please contact us at <a href={`mailto:${config.supportEmail}`}>{config.supportEmail}</a> or via our designated support channels.
       </Typography>
       <Typography paragraph>
         If you are located in the EEA and believe that we have not adequately addressed your data privacy concerns, you have the right to lodge a complaint with your local supervisory authority.

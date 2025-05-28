@@ -1,4 +1,7 @@
 const MicRecorder = require('mic-recorder-to-mp3');
+import { getTemplateConfig } from '../config/template';
+
+const config = getTemplateConfig();
 
 export type RecordAudioReturnType = {
   start: () => void;
@@ -41,7 +44,7 @@ export const transcribeAudio = async (audioBase64: string): Promise<string> => {
   const blob = new Blob([Buffer.from(audioBase64, 'base64')], { type: 'audio/mp3' });
   formData.append('file', blob, 'audio.mp3');
   formData.append('model', 'whisper-1');
-  formData.append('prompt', 'SolidCAM');
+  formData.append('prompt', config.productName);
   formData.append('response_format', 'json');
 
   try {

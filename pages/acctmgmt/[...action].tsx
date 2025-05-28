@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { applyActionCode, reload, confirmPasswordReset, checkActionCode } from 'firebase/auth';
 import { auth } from 'utils/firebase';
+import { getTemplateConfig } from '../../config/template';
+
+const config = getTemplateConfig();
 
 const ActionHandlerPage = () => {
     const router = useRouter();
@@ -67,7 +70,7 @@ const ActionHandlerPage = () => {
             await confirmPasswordReset(auth, actionCode, newPassword);
             setConfirmationMessage('Your password has been reset successfully.');
             setTimeout(() => {
-              window.location.href = 'https://www.solidcamchat.com/';
+              window.location.href = '/';
             }, 2000);
         } catch (error) {
             console.error('Error resetting password:', error);

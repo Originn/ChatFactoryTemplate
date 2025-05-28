@@ -1,5 +1,8 @@
 import Cookies from 'js-cookie';
 import { auth } from "@/utils/firebase";
+import { getTemplateConfig } from '../config/template';
+
+const config = getTemplateConfig();
 
 const getCookieConsent = () => {
   const cookiesConsent = Cookies.get('cookie_consent_user_accepted');
@@ -105,7 +108,7 @@ export const handleSubmitClickWeb = async () => {
 
   safelyTrackEvent('submit_click_web', {
     event_category: 'ChatBot',
-    event_label: 'User Submission from SolidCAM Web',
+    event_label: `User Submission from ${config.productName} Web`,
     user_id: userId,
   });
 };

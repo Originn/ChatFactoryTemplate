@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { Container, Typography, Button } from '@mui/material';
+import { getTemplateConfig } from '../config/template';
+
+const config = getTemplateConfig();
 
 const VerificationFailed: React.FC = () => {
   const [email, setEmail] = useState<string | null>(null);
@@ -28,10 +31,8 @@ const VerificationFailed: React.FC = () => {
   return (
     <Container maxWidth="sm" sx={{ textAlign: 'center', py: 4 }}>
       <Image
-        src={process.env.NODE_ENV === 'production'
-            ? 'https://solidcam.herokuapp.com/solidcam.png'
-            : '/solidcam.png'}
-        alt="SolidCAM Logo"
+        src="/bot-icon-generic.svg"
+        alt={`${config.productName} Logo`}
         width={100}
         height={100}
         style={{ marginBottom: 16 }}

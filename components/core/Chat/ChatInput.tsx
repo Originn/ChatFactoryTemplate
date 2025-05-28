@@ -11,6 +11,9 @@ import { LoadingDots } from '@/components/ui/Loaders';
 import { MicrophoneRecorder } from '@/components/core/Media';
 import Image from 'next/image';
 import useTheme from '@/hooks/useTheme';
+import { getTemplateConfig } from '../../../config/template';
+
+const config = getTemplateConfig();
 
 interface ChatInputProps {
   query: string;
@@ -97,7 +100,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 ? 'Waiting for response...'
                 : isMicActive
                 ? ''
-                : 'Message SolidCAM ChatBot...'
+                : `Message ${config.productName} ChatBot...`
             }
             value={query}
             rows={1}
@@ -244,7 +247,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
       <Box textAlign="center" mt={1}>
         <Typography variant="caption" color="text.secondary">
-          SolidCAM ChatBot may display inaccurate info so double-check its responses
+          {config.productName} ChatBot may display inaccurate info so double-check its responses
         </Typography>
       </Box>
     </Box>

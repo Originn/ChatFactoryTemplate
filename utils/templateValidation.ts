@@ -1,4 +1,4 @@
-// Template validation and testing utilities for DocsAI hub integration
+// Template validation and testing utilities for ChatFactory hub integration
 // This file provides functions to validate template variables and test deployments
 
 export interface TemplateValidationResult {

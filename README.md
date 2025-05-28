@@ -119,7 +119,7 @@ export const TEMPLATE_CONFIG: TemplateConfig = {
 };
 ```
 
-The DocsAI hub will automatically replace these template variables when creating new chatbot instances.
+The ChatFactory hub will automatically replace these template variables when creating new chatbot instances.
 
 ## 📚 Documentation
 
@@ -140,7 +140,7 @@ This is a template project. Contributions should focus on:
 
 ## 📄 License
 
-This project is proprietary and licensed for use with the DocsAI platform.
+This project is proprietary and licensed for use with the ChatFactory platform.
 
 ## 🆘 Support
 
@@ -150,4 +150,4 @@ For support with this template:
 
 ---
 
-**Note**: This is a template project. Replace all template variables (format: `{``{VARIABLE_NAME}``}`) with actual values when deploying through the DocsAI hub.
+**Note**: This is a template project. Replace all template variables (format: `{``{VARIABLE_NAME}``}`) with actual values when deploying through the ChatFactory hub.
