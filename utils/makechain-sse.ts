@@ -5,7 +5,7 @@ import { PineconeStore } from '@langchain/pinecone';
 import { MyDocument } from 'interfaces/Document';
 import { BaseRetriever } from "@langchain/core/retrievers";
 import { v4 as uuidv4 } from 'uuid';
-import { insertQA, getChatHistoryByRoomId } from '../db';
+const TenantDB = require('./TenantDB');
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { MaxMarginalRelevanceSearchOptions } from "@langchain/core/vectorstores";
@@ -122,7 +122,8 @@ async function updateConversationMemory(
     if (!conversationTitle) {
       let existingHistory;
       try {
-        existingHistory = await getChatHistoryByRoomId(roomId);
+        const db = new TenantDB();
+        existingHistory = await db.getChatHistoryByRoomId(roomId);
       } catch (error) {
         console.error('Error fetching chat history:', error);
       }
@@ -444,7 +445,8 @@ export const makeChainSSE = (
       });
 
       // Store the Q&A in the database
-      await insertQA(
+      const db = new TenantDB();
+      await db.insertQA(
         originalInput, 
         ragResponse.answer, 
         ragResponse.context, 

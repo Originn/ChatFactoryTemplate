@@ -1,13 +1,14 @@
 // pages/api/submit-feedback.js
 
-import { updateFeedback } from '../../db';
+const TenantDB = require('../../utils/TenantDB');
 
 export default async function handler(req: any, res: any) {
     if (req.method === 'POST') {
       //console.log('Received feedback submission:', req.body);  // Log the incoming request body
       try {
         const { qaId, thumb, comment, roomId } = req.body;
-        const result = await updateFeedback(qaId, thumb, comment, roomId);
+        const db = new TenantDB();
+        const result = await db.updateFeedback(qaId, thumb, comment, roomId);
         res.status(200).json(result);
       } catch (error: any) {  // Notice the 'any' type annotation
         console.error('Error in submit-feedback:', error.message, 'Stack:', error.stack);

@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getChatHistoryByRoomId } from '../../db';
+const TenantDB = require('../../utils/TenantDB');
 
 export default async function handler(
   req: NextApiRequest,
@@ -22,7 +22,8 @@ export default async function handler(
     }
 
     try {
-      const history = await getChatHistoryByRoomId(roomId);
+      const db = new TenantDB();
+      const history = await db.getChatHistoryByRoomId(roomId);
       // Return 200 OK with empty conversation_json array if no history found
       res.status(200).json(history || { conversation_json: [] });
     } catch (error) {
