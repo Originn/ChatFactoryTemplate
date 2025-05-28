@@ -337,8 +337,8 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
         console.error('Failed to fetch chat history:', error);
       }
   
-      // Use the regular chat-stream endpoint
-      const endpoint = '/api/chat-stream';
+      // Use the regular chat endpoint
+      const endpoint = '/api/chat';
       const imageUrls = homeImagePreviews.slice(0, 3).map(preview => preview.url);
   
       // Use SSE streaming for both regular chat and embedding

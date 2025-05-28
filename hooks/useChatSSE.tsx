@@ -124,7 +124,7 @@ const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSS
     history: [string, string][],
     imageUrls: string[],
     userEmail: string,
-    endpoint: string = '/api/chat-stream'
+    endpoint: string = '/api/chat'
   ) => {
     if (!roomId) return;
 
