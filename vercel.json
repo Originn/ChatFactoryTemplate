@@ -1,8 +1,7 @@
 {
   "functions": {
     "pages/api/chat-stream.ts": {
-      "maxDuration": 60,
-      "streaming": true
+      "maxDuration": 60
     }
   }
 }
