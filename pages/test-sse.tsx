@@ -64,7 +64,7 @@ export default function TestSSE() {
           setMessages(prev => [...prev, `Chunk: ${chunk}`]);
         }
       }
-    } catch (err) {
+    } catch (err:any) {
       setError(`Fetch error: ${err.message}`);
     }
   };

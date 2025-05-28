@@ -218,7 +218,7 @@ const useChatSSE = ({ serverUrl, initialRoomId, isAnonymous = false }: UseChatSS
               }
             }
           }
-        } catch (error) {
+        } catch (error:any) {
           if (error.name !== 'AbortError') {
             console.error('Stream processing error:', error);
             setError('Connection lost. Please try again.');
