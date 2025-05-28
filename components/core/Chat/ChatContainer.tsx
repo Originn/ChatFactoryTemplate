@@ -47,12 +47,12 @@ interface ChatContainerProps {
 
 // Environment constants
 const PRODUCTION_ENV = 'production';
-const PRODUCTION_URL = '{{PRODUCTION_URL}}'; // Will be replaced during deployment
 
 // Image paths with environment awareness
 // Use custom logo from environment if available, otherwise fallback to generic icon
 const getImagePaths = () => {
-  const basePath = process.env.NODE_ENV === PRODUCTION_ENV ? PRODUCTION_URL : '/';
+  // For Vercel deployments, use relative paths since static files are served correctly
+  const basePath = '/';
   const customLogoUrl = process.env.NEXT_PUBLIC_CHATBOT_LOGO_URL;
   
   return {

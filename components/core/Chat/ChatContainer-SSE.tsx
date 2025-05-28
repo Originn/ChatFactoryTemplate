@@ -47,6 +47,5 @@ interface ChatContainerProps {
 
 // Environment constants
 const PRODUCTION_ENV = 'production';
-const PRODUCTION_URL = '{{PRODUCTION_URL}}'; // Will be replaced during deployment
 
 // Image paths with environment awareness

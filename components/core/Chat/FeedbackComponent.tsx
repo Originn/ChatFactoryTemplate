@@ -5,11 +5,11 @@ import { Tooltip, IconButton, Box } from '@mui/material';
 
 // Environment constants
 const PRODUCTION_ENV = 'production';
-const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
 
 // Define icon paths with environment awareness
 const getIconPaths = () => {
-  const basePath = process.env.NODE_ENV === PRODUCTION_ENV ? PRODUCTION_URL : '/';
+  // Use relative paths for all environments since Vercel handles static assets correctly
+  const basePath = '/';
   return {
     thumbUpIcon: `${basePath}icons8-thumbs-up-30.png`,
     thumbDownIcon: `${basePath}icons8-thumbs-down-30.png`,

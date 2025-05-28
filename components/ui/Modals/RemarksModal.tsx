@@ -18,12 +18,12 @@ interface RemarksModalProps {
   feedbackType: 'up' | 'down' | 'comment';
 }
 
-const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
 const PRODUCTION_ENV = 'production';
 
 // Define icon paths with environment awareness
 const getIconPaths = () => {
-  const basePath = process.env.NODE_ENV === PRODUCTION_ENV ? PRODUCTION_URL : '/';
+  // Use relative paths for all environments since Vercel handles static assets correctly
+  const basePath = '/';
   return {
     thumbUpIcon: `${basePath}icons8-thumb-up-50.png`,
     thumbDownIcon: `${basePath}icons8-thumbs-down-50.png`,

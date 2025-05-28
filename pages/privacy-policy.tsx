@@ -4,14 +4,9 @@ import Link from 'next/link';
 import { Container, Typography, Box } from '@mui/material';
 
 const PRODUCTION_ENV = 'production';
-const PRODUCTION_URL = 'https://solidcam.herokuapp.com/';
 
-// Image URL
-let scimageIcon = '/solidcam.png';
-
-if (process.env.NODE_ENV === PRODUCTION_ENV) {
-    scimageIcon = `${PRODUCTION_URL}solidcam.png`;
-}
+// Image URL - use relative path for all environments
+let scimageIcon = '/bot-icon-generic.svg'; // Use existing generic bot icon
 
 export default function PrivacyPolicy() {
   return (
