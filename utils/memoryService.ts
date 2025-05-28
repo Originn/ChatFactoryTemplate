@@ -2,16 +2,14 @@
 
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
 import BufferMemory from "./BufferMemory";
-import { 
-  insertChatHistory, 
-  getChatHistoryByRoomId, 
-  getTitleByRoomId, 
-  getUserPrivacySettings 
-} from '../db';
 import { Message } from '@/types/chat';
 import { auth as clientAuth } from '@/utils/firebase'; // For client-side access
 import path from 'path';
 import fs from 'fs';
+
+// Import tenant-isolated database wrapper
+const TenantDB = require('./TenantDB');
+const db = new TenantDB();
 
 // Only import firebase-admin on the server side
 let admin: any = null;
@@ -125,11 +123,12 @@ class MemoryService {
     }
     
     // Retrieve existing chat history from the database
-    let chatHistoryRecord = await getChatHistoryByRoomId(roomId);
+    let chatHistoryRecord = await db.getChatHistoryByRoomId(roomId);
   
     // Fetch the title by roomId and extract the conversation_title property
-    let titleRecord = await getTitleByRoomId(roomId);
-    let title = titleRecord?.conversation_title || ''; // Extract the conversation_title or default to an empty string
+    // let titleRecord = await getTitleByRoomId(roomId);
+    // let title = titleRecord?.conversation_title || ''; // Extract the conversation_title or default to an empty string
+    let title = ''; // Temporarily simplified - will use conversationTitle fallback
   
     // Use conversationTitle if title is empty or undefined
     title = title.trim() || conversationTitle.trim();
@@ -173,7 +172,7 @@ class MemoryService {
     }
   
     // Update chat history in the database with the validated title
-    await insertChatHistory(userEmail || '', title, roomId, messages);
+    await db.insertChatHistory(userEmail || '', title, roomId, messages);
   }
   
   // Rest of the methods remain the same...
@@ -188,7 +187,7 @@ class MemoryService {
     }
     
     // Server-side code proceeds with database access
-    const chatHistoryRecord = await getChatHistoryByRoomId(roomId);
+    const chatHistoryRecord = await db.getChatHistoryByRoomId(roomId);
   
     // Check if any userMessage in conversation_json has non-empty imageUrls
     if (chatHistoryRecord && Array.isArray(chatHistoryRecord.conversation_json)) {
@@ -212,7 +211,7 @@ class MemoryService {
     }
     
     // Server-side code proceeds with database access
-    const chatHistoryRecord = await getChatHistoryByRoomId(roomId);
+    const chatHistoryRecord = await db.getChatHistoryByRoomId(roomId);
     if (!chatHistoryRecord || !chatHistoryRecord.conversation_json) {
       return [];
     }

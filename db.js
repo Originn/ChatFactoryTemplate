@@ -29,24 +29,39 @@ if (typeof window === 'undefined') {
   pool = null; // On the client side, pool should be null to prevent usage
 }
 
+// Helper function to set tenant context for Row Level Security
+const setTenantContext = async (chatbotId) => {
+  if (!pool || !chatbotId) return;
+  
+  try {
+    await pool.query(`SET app.current_chatbot_id = '${chatbotId}'`);
+  } catch (error) {
+    console.error('Failed to set tenant context:', error);
+  }
+};
+
 // Continue defining your functions below, with checks for `pool` availability
 
-const insertQA = async (question, answer, embeddings, sources, qaId, roomId, userEmail, imageurl, language, modelType = 'openai') => {
+const insertQA = async (chatbotId, question, answer, embeddings, sources, qaId, roomId, userEmail, imageurl, language, modelType = 'openai') => {
   // Check if pool is available (server-side only)
   if (!pool) {
     console.warn("Database connection pool is not available on the client side.");
     return null; // Return null to indicate no data available
   }
+
+  // Set tenant context for Row Level Security
+  await setTenantContext(chatbotId);
+
   const query = `
-    INSERT INTO QuestionsAndAnswers (question, answer, embeddings, sources, "qaId", "roomId", userEmail, imageurl, language, model_type)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    INSERT INTO questions_and_answers (chatbot_id, question, answer, embeddings, sources, qa_id, room_id, user_email, imageurl, language, model_type)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     RETURNING *;
   `;
 
   try {
     const embeddingsJson = JSON.stringify(embeddings);
     const sourcesJson = JSON.stringify(sources);
-    const res = await pool.query(query, [question, answer, embeddingsJson, sourcesJson, qaId, roomId, userEmail, imageurl, language, modelType]);
+    const res = await pool.query(query, [chatbotId, question, answer, embeddingsJson, sourcesJson, qaId, roomId, userEmail, imageurl, language, modelType]);
     return res.rows[0]; // Return the inserted row
   } catch (err) {
     console.error('Error running query', err);
@@ -56,22 +71,25 @@ const insertQA = async (question, answer, embeddings, sources, qaId, roomId, use
 
 
 // Assuming `pool` is your database connection pool
-const updateFeedback = async (qaId, thumb, comment, roomId) => {
+const updateFeedback = async (chatbotId, qaId, thumb, comment, roomId) => {
   // Check if pool is available (server-side only)
   if (!pool) {
     console.warn("Database connection pool is not available on the client side.");
     return null; // Return null to indicate no data available
   }
+
+  // Set tenant context for Row Level Security
+  await setTenantContext(chatbotId);
   
   const query = `
-    UPDATE QuestionsAndAnswers
-    SET thumb = $2, comment = $3
-    WHERE "qaId" = $1 and "roomId" = $4
+    UPDATE questions_and_answers
+    SET thumb = $3, comment = $4
+    WHERE chatbot_id = $1 AND qa_id = $2 AND room_id = $5
     RETURNING *;
   `;
 
   try {
-    const res = await pool.query(query, [qaId, thumb, comment, roomId]);
+    const res = await pool.query(query, [chatbotId, qaId, thumb, comment, roomId]);
     return res.rows[0]; // Return the updated row
   } catch (err) {
     // Check if error is an instance of Error
@@ -84,21 +102,24 @@ const updateFeedback = async (qaId, thumb, comment, roomId) => {
   }
 };
 
-const insertQuestionEmbedderDetails = async (embeddedText, timestamp, email) => {
+const insertQuestionEmbedderDetails = async (chatbotId, embeddedText, timestamp, email) => {
   // Check if pool is available (server-side only)
   if (!pool) {
     console.warn("Database connection pool is not available on the client side.");
     return null; // Return null to indicate no data available
   }
+
+  // Set tenant context for Row Level Security
+  await setTenantContext(chatbotId);
   
   const query = `
-    INSERT INTO "QuestionEmbedder" ("Embedded_text", "timestamp", "email")
-    VALUES ($1, $2, $3)
+    INSERT INTO question_embedder (chatbot_id, embedded_text, timestamp, email)
+    VALUES ($1, $2, $3, $4)
     RETURNING *;
   `;
 
   try {
-    const res = await pool.query(query, [embeddedText, timestamp, email]);
+    const res = await pool.query(query, [chatbotId, embeddedText, timestamp, email]);
     return res.rows[0]; // Return the inserted row
   } catch (err) {
     console.error('Error running insertQuestionEmbedderDetails query:', err);
@@ -106,12 +127,15 @@ const insertQuestionEmbedderDetails = async (embeddedText, timestamp, email) => 
   }
 };
 
-const insertChatHistory = async (userEmail, conversationTitle, roomId, messages) => {
+const insertChatHistory = async (chatbotId, userEmail, conversationTitle, roomId, messages) => {
   // Check if pool is available (server-side only)
   if (!pool) {
     console.warn("Database connection pool is not available on the client side.");
     return null; // Return null to indicate no data available
   }
+
+  // Set tenant context for Row Level Security
+  await setTenantContext(chatbotId);
   // Helper function to get all previous image URLs
   const getPreviousImageUrls = (messages) => {
     const imageUrls = new Set();
@@ -143,18 +167,19 @@ const insertChatHistory = async (userEmail, conversationTitle, roomId, messages)
   });
 
   const query = `
-    INSERT INTO user_chat_history (useremail, conversation_title, "roomId", conversation_json)
-    VALUES ($1, $2, $3, $4::jsonb)
-    ON CONFLICT ("roomId")
+    INSERT INTO user_chat_history (chatbot_id, user_email, conversation_title, room_id, conversation_json)
+    VALUES ($1, $2, $3, $4, $5::jsonb)
+    ON CONFLICT (room_id)
     DO UPDATE SET
-      conversation_json = $4::jsonb,
-      conversation_title = $2,  -- Add this line to update the title
+      conversation_json = $5::jsonb,
+      conversation_title = $3,  -- Add this line to update the title
       date = CURRENT_TIMESTAMP
     RETURNING *;
   `;
 
   try {
     const result = await pool.query(query, [
+      chatbotId,
       userEmail,
       conversationTitle,
       roomId,
@@ -203,20 +228,23 @@ const getChatHistory = async (userEmail, range) => {
   }
 };
 
-const getChatHistoryByRoomId = async (roomId) => {
+const getChatHistoryByRoomId = async (chatbotId, roomId) => {
   // Check if pool is available (server-side only)
   if (!pool) {
     console.warn("Database connection pool is not available on the client side.");
     return null; // Return null to indicate no data available
   }
+
+  // Set tenant context for Row Level Security
+  await setTenantContext(chatbotId);
   
   const query = `
     SELECT conversation_json FROM user_chat_history 
-    WHERE "roomId" = $1;
+    WHERE chatbot_id = $1 AND room_id = $2;
   `;
 
   try {
-    const res = await pool.query(query, [roomId]);
+    const res = await pool.query(query, [chatbotId, roomId]);
     return res.rows[0]; // Return the chat history for this roomId
   } catch (err) {
     console.error('Error fetching chat history:', err);
