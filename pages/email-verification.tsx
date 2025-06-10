@@ -19,6 +19,7 @@ const EmailVerificationPage = () => {
   const [state, setState] = useState<VerificationState>({ step: 'verifying' });
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -29,6 +30,18 @@ const EmailVerificationPage = () => {
       const chatbotId = urlParams.get('chatbot');
 
       console.log('🔍 Email verification debug:', { mode, hasOobCode: !!oobCode, chatbotId });
+
+      // Check if this is a Firebase redirect (no mode/oobCode but has chatbot)
+      if (!mode && !oobCode && chatbotId) {
+        console.log('🔧 Firebase redirect detected - email already verified by Firebase');
+        // Firebase already handled verification and redirected here
+        // Show password setup form directly
+        setState({ 
+          step: 'set-password',
+          email: 'your verified email' // We'll get this from auth state or user input
+        });
+        return;
+      }
 
       if (mode === 'verifyEmail' && oobCode) {
         try {
@@ -88,13 +101,16 @@ const EmailVerificationPage = () => {
       return;
     }
 
-    if (!state.email) {
-      setState(prev => ({ ...prev, error: 'Email address not found' }));
+    if (!state.email && !userEmail) {
+      setState(prev => ({ ...prev, error: 'Email address is required' }));
       return;
     }
 
+    // Use email from verification state or user input
+    const emailToUse = state.email && state.email !== 'your verified email' ? state.email : userEmail;
+
     setIsLoading(true);
-    console.log('🔧 Attempting to set password for email:', state.email);
+    console.log('🔧 Attempting to set password for email:', emailToUse);
     console.log('🔍 Current auth state:', {
       currentUser: !!auth.currentUser,
       email: auth.currentUser?.email,
@@ -119,7 +135,7 @@ const EmailVerificationPage = () => {
       } else {
         console.log('⚠️ User not authenticated, trying sign in...');
         // User is not authenticated, try to sign in (this might fail for invited users)
-        await signInWithEmailAndPassword(auth, state.email, password);
+        await signInWithEmailAndPassword(auth, emailToUse, password);
         console.log('✅ Sign in successful!');
         
         setState({ step: 'success' });
@@ -176,6 +192,23 @@ const EmailVerificationPage = () => {
             </p>
             
             <form onSubmit={handlePasswordSetup} className="space-y-4">
+              {(!state.email || state.email === 'your verified email') && (
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter your email address"
+                    required
+                  />
+                </div>
+              )}
+              
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password
