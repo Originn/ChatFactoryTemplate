@@ -218,22 +218,36 @@ const EmailVerificationPage = () => {
           console.warn('⚠️ Could not mark token as used:', markError);
         }
 
-        // Step 4: Sign in user with new password
+        // Step 4: Sign in user with new password (with delay for propagation)
+        console.log('🔧 Waiting for password update to propagate...');
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+        
         console.log('🔧 Signing in user with new password...');
         try {
           await signInWithEmailAndPassword(auth, userEmailFromToken, password);
           console.log('✅ User signed in successfully');
-        } catch (signInError) {
+        } catch (signInError: any) {
           console.warn('⚠️ Sign in after password setup failed:', signInError);
-          // Continue anyway - password was set successfully
+          console.log('🔄 Retrying sign-in with a longer delay...');
+          
+          // Try again after a longer delay
+          await new Promise(resolve => setTimeout(resolve, 3000)); // 3 more seconds
+          try {
+            await signInWithEmailAndPassword(auth, userEmailFromToken, password);
+            console.log('✅ User signed in successfully on retry');
+          } catch (retryError: any) {
+            console.warn('⚠️ Sign in retry also failed:', retryError);
+            // Show manual sign-in option but continue to success
+            console.log('🔧 Proceeding to success page - user can sign in manually if needed');
+          }
         }
 
         setState({ step: 'success' });
         
-        // Redirect to chatbot after success
+        // Redirect to chatbot after success (longer delay for sign-in)
         setTimeout(() => {
           router.push('/');
-        }, 2000);
+        }, 5000); // Increased from 2 to 5 seconds
 
         setIsLoading(false);
         return;
@@ -427,9 +441,22 @@ const EmailVerificationPage = () => {
                   Success!
                 </Typography>
                 <Typography variant="body1" sx={{ mb: 3 }}>
-                  Your password has been set successfully. Redirecting you to the chatbot...
+                  Your password has been set successfully. 
+                  {auth.currentUser ? ' You are now signed in.' : ' If not automatically signed in, please use your new password to sign in manually.'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Redirecting you to the chatbot in a few seconds...
                 </Typography>
                 <CircularProgress size={30} color="success" />
+                <Box sx={{ mt: 3 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => router.push('/')}
+                    sx={{ ml: 2 }}
+                  >
+                    Go to Chatbot Now
+                  </Button>
+                </Box>
               </CardContent>
             </Card>
           </Container>
