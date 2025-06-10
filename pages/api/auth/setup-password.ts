@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { adminAuth } from '../../../utils/firebaseAdmin';
 
 // Types for Firebase Admin
 interface MainProjectCredentials {
@@ -7,6 +6,41 @@ interface MainProjectCredentials {
   clientEmail: string;
   privateKey: string;
 }
+
+// Initialize LOCAL Firebase Admin (this chatbot's project)
+let localAdminInstance: any = null;
+
+const getLocalFirebaseAdmin = () => {
+  if (localAdminInstance) {
+    return localAdminInstance;
+  }
+
+  try {
+    const admin = require('firebase-admin');
+    
+    // Check if default app already exists
+    try {
+      localAdminInstance = admin.app();
+      return localAdminInstance;
+    } catch (error) {
+      // Initialize default app for local project
+      const credentials = {
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      };
+
+      localAdminInstance = admin.initializeApp({
+        credential: admin.credential.cert(credentials),
+      });
+      
+      return localAdminInstance;
+    }
+  } catch (error) {
+    console.error('Failed to initialize local Firebase Admin:', error);
+    throw error;
+  }
+};
 
 // Initialize connection to MAIN ChatFactory project (where tokens are stored)
 let mainAppInstance: any = null;
@@ -19,25 +53,29 @@ const getMainProjectAdmin = () => {
   }
 
   try {
+    const admin = require('firebase-admin');
+    
     // Try to get existing app first
-    const admin = require('firebase-admin');
-    mainAppInstance = admin.app(mainAppName);
-    return mainAppInstance;
-  } catch (error) {
-    // Initialize new connection to main project
-    const admin = require('firebase-admin');
-    
-    const credentials: MainProjectCredentials = {
-      projectId: process.env.CHATFACTORY_MAIN_PROJECT_ID || 'docsai-chatbot-app',
-      clientEmail: process.env.CHATFACTORY_MAIN_CLIENT_EMAIL || 'firebase-adminsdk-fbsvc@docsai-chatbot-app.iam.gserviceaccount.com',
-      privateKey: process.env.CHATFACTORY_MAIN_PRIVATE_KEY || '',
-    };
+    try {
+      mainAppInstance = admin.app(mainAppName);
+      return mainAppInstance;
+    } catch (error) {
+      // Initialize new connection to main project
+      const credentials: MainProjectCredentials = {
+        projectId: process.env.CHATFACTORY_MAIN_PROJECT_ID || 'docsai-chatbot-app',
+        clientEmail: process.env.CHATFACTORY_MAIN_CLIENT_EMAIL || 'firebase-adminsdk-fbsvc@docsai-chatbot-app.iam.gserviceaccount.com',
+        privateKey: process.env.CHATFACTORY_MAIN_PRIVATE_KEY || '',
+      };
 
-    mainAppInstance = admin.initializeApp({
-      credential: admin.credential.cert(credentials),
-    }, mainAppName);
-    
-    return mainAppInstance;
+      mainAppInstance = admin.initializeApp({
+        credential: admin.credential.cert(credentials),
+      }, mainAppName);
+      
+      return mainAppInstance;
+    }
+  } catch (error) {
+    console.error('Failed to initialize main Firebase Admin:', error);
+    throw error;
   }
 };
 
@@ -85,9 +123,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Update the user's password in the LOCAL dedicated project (this chatbot's Firebase Auth)
     try {
-      const userRecord = await adminAuth.getUserByEmail(email);
+      const localApp = getLocalFirebaseAdmin();
+      const localAuth = localApp.auth();
       
-      await adminAuth.updateUser(userRecord.uid, {
+      const userRecord = await localAuth.getUserByEmail(email);
+      
+      await localAuth.updateUser(userRecord.uid, {
         password: newPassword
       });
 
