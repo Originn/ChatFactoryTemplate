@@ -1,5 +1,5 @@
 // UPDATED: Email verification page for Firebase-verified users
-// Version: 2.1 - Firebase redirect handler
+// Version: 2.2 - Material-UI styling + Firebase config debug
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { 
@@ -9,6 +9,17 @@ import {
   updatePassword
 } from 'firebase/auth';
 import { auth } from 'utils/firebase';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  CircularProgress,
+  Alert,
+  Container
+} from '@mui/material';
 
 interface VerificationState {
   step: 'verifying' | 'set-password' | 'success' | 'error';
@@ -26,6 +37,16 @@ const EmailVerificationPage = () => {
 
   useEffect(() => {
     const handleEmailVerification = async () => {
+      // Debug Firebase config
+      console.log('🔧 Email Verification Debug - Firebase Config:', {
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.slice(0, 20) + '...',
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        hasValidConfig: !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
+                          process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN && 
+                          process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)
+      });
+
       const urlParams = new URLSearchParams(window.location.search);
       const mode = urlParams.get('mode');
       const oobCode = urlParams.get('oobCode');
@@ -179,111 +200,136 @@ const EmailVerificationPage = () => {
     switch (state.step) {
       case 'verifying':
         return (
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Verifying Email...</h1>
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-xs text-gray-500 mt-4">Template v2.0 - Email Verification Handler</p>
-          </div>
+          <Container maxWidth="sm" sx={{ mt: 8 }}>
+            <Card elevation={3}>
+              <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                <Typography variant="h4" component="h1" gutterBottom fontWeight={600}>
+                  Verifying Email...
+                </Typography>
+                <CircularProgress size={40} sx={{ my: 3 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Template v2.2 - Email Verification Handler
+                </Typography>
+              </CardContent>
+            </Card>
+          </Container>
         );
 
       case 'set-password':
         return (
-          <div>
-            <h1 className="text-2xl font-bold mb-6 text-center">Set Your Password</h1>
-            <p className="text-gray-600 mb-6 text-center">
-              Welcome! Your email has been verified. Please create a password to access the chatbot.
-            </p>
-            
-            <form onSubmit={handlePasswordSetup} className="space-y-4">
-              {(!state.email || state.email === 'your verified email') && (
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={userEmail}
-                    onChange={(e) => setUserEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter your email address"
+          <Container maxWidth="sm" sx={{ mt: 8 }}>
+            <Card elevation={3}>
+              <CardContent sx={{ p: 4 }}>
+                <Typography variant="h4" component="h1" gutterBottom textAlign="center" fontWeight={600}>
+                  Set Your Password
+                </Typography>
+                <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 4 }}>
+                  Welcome! Your email has been verified. Please create a password to access the chatbot.
+                </Typography>
+                
+                <Box component="form" onSubmit={handlePasswordSetup} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {(!state.email || state.email === 'your verified email') && (
+                    <TextField
+                      type="email"
+                      label="Email Address"
+                      value={userEmail}
+                      onChange={(e) => setUserEmail(e.target.value)}
+                      fullWidth
+                      required
+                      variant="outlined"
+                      autoComplete="email"
+                    />
+                  )}
+                  
+                  <TextField
+                    type="password"
+                    label="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    fullWidth
                     required
+                    variant="outlined"
+                    inputProps={{ minLength: 6 }}
+                    helperText="Password must be at least 6 characters"
                   />
-                </div>
-              )}
-              
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter your password"
-                  required
-                  minLength={6}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Confirm your password"
-                  required
-                  minLength={6}
-                />
-              </div>
-              
-              {state.error && (
-                <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
-                  {state.error}
-                </div>
-              )}
-              
-              <button
-                type="submit"
-                disabled={isLoading || !password || !confirmPassword}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Setting Password...' : 'Create Password & Access Chatbot'}
-              </button>
-            </form>
-          </div>
+                  
+                  <TextField
+                    type="password"
+                    label="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    fullWidth
+                    required
+                    variant="outlined"
+                    inputProps={{ minLength: 6 }}
+                  />
+                  
+                  {state.error && (
+                    <Alert severity="error" sx={{ mt: 2 }}>
+                      {state.error}
+                    </Alert>
+                  )}
+                  
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    disabled={isLoading || !password || !confirmPassword}
+                    sx={{ mt: 2, py: 1.5 }}
+                  >
+                    {isLoading ? (
+                      <>
+                        <CircularProgress size={20} sx={{ mr: 1 }} />
+                        Setting Password...
+                      </>
+                    ) : (
+                      'Create Password & Access Chatbot'
+                    )}
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          </Container>
         );
 
       case 'success':
         return (
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4 text-green-600">Success!</h1>
-            <p className="text-gray-600 mb-4">
-              Your password has been set successfully. Redirecting you to the chatbot...
-            </p>
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-          </div>
+          <Container maxWidth="sm" sx={{ mt: 8 }}>
+            <Card elevation={3}>
+              <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                <Typography variant="h4" component="h1" gutterBottom fontWeight={600} color="success.main">
+                  Success!
+                </Typography>
+                <Typography variant="body1" sx={{ mb: 3 }}>
+                  Your password has been set successfully. Redirecting you to the chatbot...
+                </Typography>
+                <CircularProgress size={30} color="success" />
+              </CardContent>
+            </Card>
+          </Container>
         );
 
       case 'error':
         return (
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4 text-red-600">Verification Failed</h1>
-            <p className="text-red-600 mb-4">{state.error}</p>
-            <button
-              onClick={() => router.push('/')}
-              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
-            >
-              Go to Chatbot
-            </button>
-          </div>
+          <Container maxWidth="sm" sx={{ mt: 8 }}>
+            <Card elevation={3}>
+              <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                <Typography variant="h4" component="h1" gutterBottom fontWeight={600} color="error.main">
+                  Verification Failed
+                </Typography>
+                <Alert severity="error" sx={{ mb: 3, textAlign: 'left' }}>
+                  {state.error}
+                </Alert>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => router.push('/')}
+                >
+                  Go to Chatbot
+                </Button>
+              </CardContent>
+            </Card>
+          </Container>
         );
 
       default:
@@ -292,11 +338,15 @@ const EmailVerificationPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        {renderContent()}
-      </div>
-    </div>
+    <Box 
+      sx={{ 
+        minHeight: '100vh',
+        backgroundColor: 'background.default',
+        py: 4
+      }}
+    >
+      {renderContent()}
+    </Box>
   );
 };
 
