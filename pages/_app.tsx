@@ -62,6 +62,7 @@ function AppContent({ Component, pageProps }: { Component: AppProps['Component']
     '/password-reset-confirmation',
     '/acctmgmt',
     '/privacy-policy',
+    '/email-verification',
   ];
 
   // Add effect to disable body scrolling on the home page
