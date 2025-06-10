@@ -3,7 +3,8 @@ import { useRouter } from 'next/router';
 import { 
   applyActionCode, 
   signInWithEmailAndPassword, 
-  checkActionCode
+  checkActionCode,
+  updatePassword
 } from 'firebase/auth';
 import { auth } from 'utils/firebase';
 
@@ -27,14 +28,27 @@ const EmailVerificationPage = () => {
       const oobCode = urlParams.get('oobCode');
       const chatbotId = urlParams.get('chatbot');
 
+      console.log('🔍 Email verification debug:', { mode, hasOobCode: !!oobCode, chatbotId });
+
       if (mode === 'verifyEmail' && oobCode) {
         try {
           // First check the action code to get email information
+          console.log('🔧 Checking action code...');
           const actionCodeInfo = await checkActionCode(auth, oobCode);
           const userEmail = actionCodeInfo.data.email || '';
+          console.log('✅ Action code checked, email:', userEmail);
           
           // Apply the email verification code
+          console.log('🔧 Applying action code...');
           await applyActionCode(auth, oobCode);
+          console.log('✅ Action code applied successfully');
+          
+          // Check if user is now authenticated
+          console.log('🔍 Auth state after applyActionCode:', {
+            currentUser: !!auth.currentUser,
+            email: auth.currentUser?.email,
+            emailVerified: auth.currentUser?.emailVerified
+          });
           
           // Show password creation form
           setState({ 
@@ -42,10 +56,10 @@ const EmailVerificationPage = () => {
             email: userEmail
           });
         } catch (error: any) {
-          console.error('Error verifying email:', error);
+          console.error('❌ Error verifying email:', error);
           setState({ 
             step: 'error', 
-            error: 'Failed to verify email. The link may be expired or invalid.' 
+            error: `Failed to verify email: ${error.message}. The link may be expired or invalid.` 
           });
         }
       } else {
@@ -80,32 +94,62 @@ const EmailVerificationPage = () => {
     }
 
     setIsLoading(true);
+    console.log('🔧 Attempting to set password for email:', state.email);
+    console.log('🔍 Current auth state:', {
+      currentUser: !!auth.currentUser,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified
+    });
     
     try {
-      // Since the user was created without a password during invitation,
-      // and email is now verified, we can sign them in with email/password
-      await signInWithEmailAndPassword(auth, state.email, password);
-      
-      setState({ step: 'success' });
-      
-      // Redirect to chatbot after success
-      setTimeout(() => {
-        router.push('/');
-      }, 2000);
+      // Check if user is already authenticated from email verification
+      if (auth.currentUser) {
+        console.log('✅ User is authenticated, setting password directly...');
+        // User is already authenticated after email verification, just set password
+        await updatePassword(auth.currentUser, password);
+        console.log('✅ Password set successfully!');
+        
+        setState({ step: 'success' });
+        
+        // Redirect to chatbot after success
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
+        
+      } else {
+        console.log('⚠️ User not authenticated, trying sign in...');
+        // User is not authenticated, try to sign in (this might fail for invited users)
+        await signInWithEmailAndPassword(auth, state.email, password);
+        console.log('✅ Sign in successful!');
+        
+        setState({ step: 'success' });
+        
+        // Redirect to chatbot after success
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
+      }
       
     } catch (error: any) {
       // If sign in fails, it might be because they need to set password first
-      console.error('Sign in error:', error);
+      console.error('❌ Sign in error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       
       if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-login-credentials') {
         setState(prev => ({ 
           ...prev, 
           error: 'There was an issue setting up your account. Please contact support.' 
         }));
+      } else if (error.code === 'auth/user-not-found') {
+        setState(prev => ({ 
+          ...prev, 
+          error: 'User account not found. Please contact support.' 
+        }));
       } else {
         setState(prev => ({ 
           ...prev, 
-          error: error.message || 'Failed to complete setup. Please try again.' 
+          error: `Authentication failed: ${error.message}` 
         }));
       }
     } finally {

@@ -13,6 +13,16 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
+// Debug: Log Firebase config (remove in production)
+console.log('🔧 Firebase Config Debug:', {
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasAuthDomain: !!firebaseConfig.authDomain,
+  hasProjectId: !!firebaseConfig.projectId,
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain,
+  configIsComplete: !!(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId)
+});
+
 // Initialize Firebase only if not already initialized
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
