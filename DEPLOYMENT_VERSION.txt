@@ -1,0 +1,7 @@
+ChatFactoryTemplate v2.1
+Updated: Email verification page for Firebase redirects
+Date: 2025-06-10
+Changes:
+- Fixed email verification flow for Firebase redirect
+- Added password setup form for verified users
+- Added debugging logs for troubleshooting

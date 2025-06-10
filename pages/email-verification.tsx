@@ -1,3 +1,5 @@
+// UPDATED: Email verification page for Firebase-verified users
+// Version: 2.1 - Firebase redirect handler
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { 
@@ -180,6 +182,7 @@ const EmailVerificationPage = () => {
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Verifying Email...</h1>
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="text-xs text-gray-500 mt-4">Template v2.0 - Email Verification Handler</p>
           </div>
         );
 
