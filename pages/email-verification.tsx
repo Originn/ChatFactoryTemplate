@@ -51,8 +51,25 @@ const EmailVerificationPage = () => {
       const mode = urlParams.get('mode');
       const oobCode = urlParams.get('oobCode');
       const chatbotId = urlParams.get('chatbot');
+      const customToken = urlParams.get('token');
 
-      console.log('🔍 Email verification debug:', { mode, hasOobCode: !!oobCode, chatbotId });
+      console.log('🔍 Email verification debug:', { 
+        mode, 
+        hasOobCode: !!oobCode, 
+        chatbotId, 
+        hasCustomToken: !!customToken,
+        allParams: Object.fromEntries(urlParams.entries())
+      });
+
+      // NEW: Handle custom token flow (our new invitation system)
+      if (customToken && chatbotId && (mode === 'setup' || !mode)) {
+        console.log('✅ Custom token flow detected - proceeding to password setup');
+        setState({ 
+          step: 'set-password',
+          email: 'setup-with-token' // Special marker for custom token flow
+        });
+        return;
+      }
 
       // Check if this is a Firebase redirect (no mode/oobCode but has chatbot)
       if (!mode && !oobCode && chatbotId) {
@@ -124,15 +141,124 @@ const EmailVerificationPage = () => {
       return;
     }
 
+    setIsLoading(true);
+    
+    // Get URL parameters for custom token flow
+    const urlParams = new URLSearchParams(window.location.search);
+    const customToken = urlParams.get('token');
+    const chatbotId = urlParams.get('chatbot');
+
+    // NEW: Handle custom token flow via API
+    if (customToken && chatbotId && state.email === 'setup-with-token') {
+      console.log('🔧 Using custom token flow for password setup');
+      
+      try {
+        // Step 1: Validate token
+        console.log('🔍 Validating custom token...');
+        const tokenValidationResponse = await fetch('/api/auth/validate-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token: customToken,
+            chatbotId: chatbotId
+          })
+        });
+
+        const tokenValidation = await tokenValidationResponse.json();
+        console.log('🔍 Token validation response:', tokenValidation);
+
+        if (!tokenValidationResponse.ok) {
+          console.error('❌ Token validation failed:', tokenValidation.error);
+          setState(prev => ({ ...prev, error: tokenValidation.error || 'Invalid setup link' }));
+          setIsLoading(false);
+          return;
+        }
+
+        const userEmailFromToken = tokenValidation.email;
+        console.log('✅ Token validated for email:', userEmailFromToken);
+
+        // Step 2: Setup password via API
+        console.log('🔧 Setting up password via API...');
+        const passwordSetupResponse = await fetch('/api/auth/setup-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token: customToken,
+            newPassword: password,
+            email: userEmailFromToken
+          })
+        });
+
+        const passwordSetupResult = await passwordSetupResponse.json();
+        console.log('🔍 Password setup result:', passwordSetupResult);
+
+        if (!passwordSetupResponse.ok || !passwordSetupResult.success) {
+          console.error('❌ Password setup failed:', passwordSetupResult.error);
+          setState(prev => ({ ...prev, error: passwordSetupResult.error || 'Failed to set password' }));
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('✅ Password setup successful via API');
+
+        // Step 3: Mark token as used
+        try {
+          await fetch('/api/auth/mark-token-used', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: customToken })
+          });
+        } catch (markError) {
+          console.warn('⚠️ Could not mark token as used:', markError);
+        }
+
+        // Step 4: Sign in user with new password
+        console.log('🔧 Signing in user with new password...');
+        try {
+          await signInWithEmailAndPassword(auth, userEmailFromToken, password);
+          console.log('✅ User signed in successfully');
+        } catch (signInError) {
+          console.warn('⚠️ Sign in after password setup failed:', signInError);
+          // Continue anyway - password was set successfully
+        }
+
+        setState({ step: 'success' });
+        
+        // Redirect to chatbot after success
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
+
+        setIsLoading(false);
+        return;
+
+      } catch (error: any) {
+        console.error('❌ Custom token password setup failed:', error);
+        setState(prev => ({ 
+          ...prev, 
+          error: 'An error occurred while setting up your password. Please try again.' 
+        }));
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // EXISTING: Firebase auth flow (keep for backward compatibility)
     if (!state.email && !userEmail) {
       setState(prev => ({ ...prev, error: 'Email address is required' }));
+      setIsLoading(false);
       return;
     }
 
     // Use email from verification state or user input
     const emailToUse = state.email && state.email !== 'your verified email' ? state.email : userEmail;
 
-    setIsLoading(true);
     console.log('🔧 Attempting to set password for email:', emailToUse);
     console.log('🔍 Current auth state:', {
       currentUser: !!auth.currentUser,
@@ -228,7 +354,7 @@ const EmailVerificationPage = () => {
                 </Typography>
                 
                 <Box component="form" onSubmit={handlePasswordSetup} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  {(!state.email || state.email === 'your verified email') && (
+                  {(!state.email || (state.email !== 'setup-with-token' && state.email === 'your verified email')) && (
                     <TextField
                       type="email"
                       label="Email Address"
