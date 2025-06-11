@@ -133,47 +133,6 @@ const getMainProjectAdmin = () => {
   }
 };
 
-/**
- * Create user profile document in Firestore for admin-managed users
- */
-async function createUserProfileInFirestore(firebaseApp: any, uid: string, email: string) {
-  try {
-    console.log('📝 Creating user profile in Firestore for:', email);
-    
-    const db = firebaseApp.firestore();
-    const chatbotId = process.env.NEXT_PUBLIC_CHATBOT_ID || 'unknown';
-    const chatbotName = process.env.NEXT_PUBLIC_CHATBOT_NAME || 'Chatbot';
-    
-    const userProfile = {
-      originalEmail: email,
-      displayName: email.split('@')[0], // Use email prefix as display name
-      chatbotId: chatbotId,
-      chatbotName: chatbotName,
-      createdAt: new Date(),
-      lastLoginAt: new Date(),
-      role: 'user',
-      invitedBy: 'admin', // Indicates this user was invited by admin
-      accountType: 'managed' // Indicates this is an admin-managed account
-    };
-    
-    // Create user profile document in chatbot_users collection
-    await db.collection('chatbot_users').doc(uid).set(userProfile, { merge: true });
-    
-    console.log('✅ User profile created in Firestore:', uid);
-    console.log('📋 Profile data:', {
-      email: userProfile.originalEmail,
-      displayName: userProfile.displayName,
-      chatbotId: userProfile.chatbotId
-    });
-    
-  } catch (error: any) {
-    console.error('❌ Failed to create user profile in Firestore:', error.message);
-    // Don't throw error - the user was created successfully in Firebase Auth
-    // The profile can be created later or the user can still use the chatbot
-    console.warn('⚠️ User can still access chatbot, but profile will be null');
-  }
-}
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -253,10 +212,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         console.log('✅ Password updated successfully for user in local project:', userRecord.uid);
         console.log('✅ Email verification status set to true');
-        
-        // 🔧 FIX: Create/update user profile in Firestore
-        await createUserProfileInFirestore(localApp, userRecord.uid, email);
-        
         console.log(`⚡ Total processing time: ${Date.now() - startTime}ms`);
 
         return res.status(200).json({
@@ -277,10 +232,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               emailVerified: true // Since they came from email verification
             });
             console.log('✅ User created in local project:', userRecord.uid);
-            
-            // 🔧 FIX: Create user profile in Firestore
-            await createUserProfileInFirestore(localApp, userRecord.uid, email);
-            
             console.log(`⚡ Total processing time: ${Date.now() - startTime}ms`);
             
             return res.status(200).json({
