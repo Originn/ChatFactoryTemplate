@@ -232,10 +232,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // If we get here, user exists - update their password
       console.log('🔧 Updating password for existing user...');
       await localAuth.updateUser(userRecord.uid, {
-        password: newPassword
+        password: newPassword,
+        emailVerified: true // 🔧 FIX: Always mark email as verified for admin-managed users
       });
 
       console.log('✅ Password updated successfully for user in local project:', userRecord.uid);
+      console.log('✅ Email verification status set to true');
 
       return res.status(200).json({
         success: true,
