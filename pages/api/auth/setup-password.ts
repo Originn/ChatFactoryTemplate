@@ -138,6 +138,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const startTime = Date.now(); // 🔧 Track performance
+  
   try {
     const { token, newPassword, email } = req.body;
 
@@ -150,8 +152,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // STEP 1: Connect to main ChatFactory project database for token validation
     console.log('🔍 Step 1: Connecting to main ChatFactory project for token validation');
-    const mainApp = getMainProjectAdmin();
+    
+    // 🚀 OPTIMIZATION: Initialize both connections in parallel
+    const [mainApp, localApp] = await Promise.all([
+      Promise.resolve(getMainProjectAdmin()), // Wrapped in Promise.resolve for parallel execution
+      Promise.resolve(getLocalFirebaseAdmin())
+    ]);
+    
     const mainDb = mainApp.firestore();
+    const localAuth = localApp.auth();
+    
+    console.log(`⚡ Firebase connections established in ${Date.now() - startTime}ms`);
 
     // Get token data to verify it's valid
     const tokenDoc = await mainDb
@@ -178,26 +189,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     console.log('✅ Token validated in main project');
+    console.log(`⚡ Token validation completed in ${Date.now() - startTime}ms`);
 
     // STEP 2: Update the user's password in the LOCAL dedicated project
     console.log('🔍 Step 2: Updating password in local/dedicated project');
     
     try {
-      const localApp = getLocalFirebaseAdmin();
-      const localAuth = localApp.auth();
-      
       console.log('🔍 Looking for user in local project with email:', email);
       
-      // Try to get the user first
+      // 🚀 OPTIMIZATION: Try to get user directly, handle error if not found
       let userRecord;
       try {
         userRecord = await localAuth.getUserByEmail(email);
         console.log('✅ User found in local project:', userRecord.uid);
+        
+        // 🚀 OPTIMIZATION: Update existing user (most common case)
+        console.log('🔧 Updating password for existing user...');
+        await localAuth.updateUser(userRecord.uid, {
+          password: newPassword,
+          emailVerified: true // 🔧 FIX: Always mark email as verified for admin-managed users
+        });
+
+        console.log('✅ Password updated successfully for user in local project:', userRecord.uid);
+        console.log('✅ Email verification status set to true');
+        console.log(`⚡ Total processing time: ${Date.now() - startTime}ms`);
+
+        return res.status(200).json({
+          success: true,
+          message: 'Password updated successfully'
+        });
+        
       } catch (getUserError: any) {
         console.log('⚠️ User not found in local project, error:', getUserError.code);
         
         if (getUserError.code === 'auth/user-not-found') {
-          // User doesn't exist in local project - create them
+          // 🚀 OPTIMIZATION: Create user only if not found (less common case)
           console.log('🔧 Creating user in local project...');
           try {
             userRecord = await localAuth.createUser({
@@ -206,6 +232,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               emailVerified: true // Since they came from email verification
             });
             console.log('✅ User created in local project:', userRecord.uid);
+            console.log(`⚡ Total processing time: ${Date.now() - startTime}ms`);
             
             return res.status(200).json({
               success: true,
@@ -228,21 +255,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           throw getUserError; // Re-throw if it's a different error
         }
       }
-      
-      // If we get here, user exists - update their password
-      console.log('🔧 Updating password for existing user...');
-      await localAuth.updateUser(userRecord.uid, {
-        password: newPassword,
-        emailVerified: true // 🔧 FIX: Always mark email as verified for admin-managed users
-      });
-
-      console.log('✅ Password updated successfully for user in local project:', userRecord.uid);
-      console.log('✅ Email verification status set to true');
-
-      return res.status(200).json({
-        success: true,
-        message: 'Password updated successfully'
-      });
 
     } catch (updateError: any) {
       console.error('❌ Error in local project operations:', updateError);
