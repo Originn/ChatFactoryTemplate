@@ -26,32 +26,59 @@ const getLocalFirebaseAdmin = () => {
     } catch (error) {
       console.log('🔧 Initializing new local Firebase Admin app...');
       
-      // Get LOCAL project credentials from environment
-      const localProjectId = process.env.FIREBASE_PROJECT_ID;
-      const localClientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-      const localPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
+      // SMART DETECTION: Try to get the actual project ID from frontend config
+      const frontendProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+      const backendProjectId = process.env.FIREBASE_PROJECT_ID;
+      
+      console.log('🔍 Project ID detection:', {
+        frontendProjectId,
+        backendProjectId,
+        match: frontendProjectId === backendProjectId
+      });
+      
+      // Use frontend project ID if backend doesn't match (deployment bug scenario)
+      const actualProjectId = frontendProjectId || backendProjectId;
+      
+      // Try to construct the service account email for the actual project
+      let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+      
+      // If we detect a project mismatch, try to construct the correct service account
+      if (frontendProjectId && frontendProjectId !== backendProjectId) {
+        console.log('🔧 Detected project mismatch - attempting smart credential construction');
+        
+        // Common Firebase service account pattern: firebase-adminsdk-{random}@{project-id}.iam.gserviceaccount.com
+        // But since we don't know the random part, we'll need to use a different approach
+        
+        console.log('⚠️ Project mismatch detected. Backend configured for:', backendProjectId);
+        console.log('⚠️ Frontend uses:', frontendProjectId);
+        console.log('⚠️ This indicates a deployment automation issue.');
+        
+        // For now, let's try to use the credentials as-is but log the mismatch
+        // The proper fix would be updating the deployment system
+      }
 
       console.log('🔍 Local Firebase credentials check:', {
-        projectId: localProjectId,
-        clientEmail: localClientEmail ? 'SET' : 'MISSING',
-        privateKey: localPrivateKey ? 'SET' : 'MISSING'
+        projectId: actualProjectId,
+        clientEmail: clientEmail ? 'SET' : 'MISSING',
+        privateKey: privateKey ? 'SET' : 'MISSING'
       });
 
-      if (!localProjectId || !localClientEmail || !localPrivateKey) {
+      if (!actualProjectId || !clientEmail || !privateKey) {
         throw new Error('Missing local Firebase Admin credentials');
       }
 
       const credentials = {
-        projectId: localProjectId,
-        clientEmail: localClientEmail,
-        privateKey: localPrivateKey.replace(/\\n/g, '\n'),
+        projectId: actualProjectId,
+        clientEmail: clientEmail,
+        privateKey: privateKey.replace(/\\n/g, '\n'),
       };
 
       localAdminInstance = admin.initializeApp({
         credential: admin.credential.cert(credentials),
       });
       
-      console.log('✅ Local Firebase Admin initialized for project:', localProjectId);
+      console.log('✅ Local Firebase Admin initialized for project:', actualProjectId);
       return localAdminInstance;
     }
   } catch (error) {
@@ -84,7 +111,7 @@ const getMainProjectAdmin = () => {
       const credentials: MainProjectCredentials = {
         projectId: process.env.CHATFACTORY_MAIN_PROJECT_ID || 'docsai-chatbot-app',
         clientEmail: process.env.CHATFACTORY_MAIN_CLIENT_EMAIL || 'firebase-adminsdk-fbsvc@docsai-chatbot-app.iam.gserviceaccount.com',
-        privateKey: process.env.CHATFACTORY_MAIN_PRIVATE_KEY || '',
+        privateKey: process.env.CHATFACTORY_MAIN_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY || '',
       };
 
       console.log('🔍 Main Firebase credentials check:', {
@@ -188,6 +215,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.error('❌ Error creating user in local project:', createError);
             return res.status(500).json({ error: 'Failed to create user account' });
           }
+        } else if (getUserError.code === 'auth/insufficient-permission') {
+          console.error('❌ DEPLOYMENT BUG: Insufficient permissions for local project');
+          console.error('This indicates the deployment system did not configure the correct Firebase credentials');
+          console.error('Expected project:', process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+          console.error('Configured for:', process.env.FIREBASE_PROJECT_ID);
+          
+          return res.status(500).json({ 
+            error: 'Deployment configuration error: Firebase credentials mismatch. Please check deployment automation.' 
+          });
         } else {
           throw getUserError; // Re-throw if it's a different error
         }
@@ -217,6 +253,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ error: 'Invalid Firebase credentials for local project' });
       } else if (updateError.code === 'auth/project-not-found') {
         return res.status(500).json({ error: 'Local Firebase project not found' });
+      } else if (updateError.code === 'auth/insufficient-permission') {
+        return res.status(500).json({ 
+          error: 'Deployment configuration error: Firebase credentials have insufficient permissions for the target project.' 
+        });
       }
       
       return res.status(500).json({ error: 'Failed to update password' });
