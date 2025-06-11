@@ -81,7 +81,7 @@ export class ChatbotAuthService {
       };
 
       // Store in Firestore with original email visible
-      await setDoc(doc(db, 'chatbot_users', user.uid), userProfile);
+      await setDoc(doc(db, 'users', user.uid), userProfile);
 
       console.log('✅ User registered successfully:', {
         uid: user.uid,
@@ -127,7 +127,7 @@ export class ChatbotAuthService {
       const userCredential = await signInWithEmailAndPassword(auth, scopedEmail, password);
       
       // Update last login time
-      await setDoc(doc(db, 'chatbot_users', userCredential.user.uid), {
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
         lastLoginAt: serverTimestamp()
       }, { merge: true });
 
@@ -149,7 +149,7 @@ export class ChatbotAuthService {
    */
   static async getUserProfile(uid: string): Promise<ChatbotUserProfile | null> {
     try {
-      const docRef = doc(db, 'chatbot_users', uid);
+      const docRef = doc(db, 'users', uid);
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
