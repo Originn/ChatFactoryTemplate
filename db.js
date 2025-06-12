@@ -169,10 +169,10 @@ const insertChatHistory = async (chatbotId, userEmail, conversationTitle, roomId
   const query = `
     INSERT INTO user_chat_history (chatbot_id, user_email, conversation_title, room_id, conversation_json)
     VALUES ($1, $2, $3, $4, $5::jsonb)
-    ON CONFLICT (room_id)
+    ON CONFLICT (chatbot_id, room_id)
     DO UPDATE SET
       conversation_json = $5::jsonb,
-      conversation_title = $3,  -- Add this line to update the title
+      conversation_title = $3,
       date = CURRENT_TIMESTAMP
     RETURNING *;
   `;
