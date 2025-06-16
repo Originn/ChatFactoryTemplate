@@ -45,7 +45,8 @@ export const TEMPLATE_VARIABLES = [
   'SUPPORT_URL',
   'TECHNICAL_SUPPORT_URL',
   'PRODUCTION_URL',
-  'PINECONE_INDEX_NAME'
+  'PINECONE_INDEX_NAME',
+  'CUSTOM_DOMAIN'
 ] as const;
 
 /**
@@ -110,6 +111,17 @@ export function validateDeploymentConfig(config: DeploymentConfig): TemplateVali
     errors.push('Company domain format is invalid');
   }
 
+  // Validate custom domain if provided
+  if (config.deploymentInfo?.customDomain) {
+    const customDomainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$/;
+    if (!customDomainRegex.test(config.deploymentInfo.customDomain)) {
+      errors.push('Custom domain format is invalid');
+    }
+    if (config.deploymentInfo.customDomain.length > 253) {
+      errors.push('Custom domain is too long (max 253 characters)');
+    }
+  }
+
   // Validate Pinecone index name (lowercase, hyphens allowed)
   const pineconeRegex = /^[a-z0-9][a-z0-9\-]*[a-z0-9]$/;
   if (config.deploymentInfo?.pineconeIndexName && !pineconeRegex.test(config.deploymentInfo.pineconeIndexName)) {
@@ -143,7 +155,8 @@ export function createVariableMap(config: DeploymentConfig): Record<string, stri
     SUPPORT_URL: config.supportInfo.supportUrl,
     TECHNICAL_SUPPORT_URL: config.supportInfo.technicalSupportUrl,
     PRODUCTION_URL: config.deploymentInfo.productionUrl,
-    PINECONE_INDEX_NAME: config.deploymentInfo.pineconeIndexName
+    PINECONE_INDEX_NAME: config.deploymentInfo.pineconeIndexName,
+    CUSTOM_DOMAIN: config.deploymentInfo.customDomain || ''
   };
 }
 

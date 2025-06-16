@@ -23,6 +23,26 @@ const nextConfig = {
       }
     ]
   },
+  // Custom domain configuration
+  async headers() {
+    const customDomain = process.env.NEXT_PUBLIC_CUSTOM_DOMAIN;
+    
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Custom-Domain-Configured',
+            value: customDomain ? 'true' : 'false',
+          },
+          {
+            key: 'X-Custom-Domain',
+            value: customDomain || '',
+          },
+        ],
+      },
+    ];
+  },
   webpack(config, { dev, isServer }) {
     if (dev) {
       config.devtool = isServer ? 'source-map' : 'inline-source-map';
@@ -54,6 +74,7 @@ const nextConfig = {
     GCLOUD_STORAGE_BUCKET: process.env.GCLOUD_STORAGE_BUCKET,
     GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
     NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
+    NEXT_PUBLIC_CUSTOM_DOMAIN: process.env.NEXT_PUBLIC_CUSTOM_DOMAIN,
   },
 
 };

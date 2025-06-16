@@ -19,10 +19,16 @@ export interface TemplateConfig {
   // Support & Contact
   supportEmail: string;
   technicalSupportUrl: string;
+  
+  // Custom Domain
+  customDomain: string | null;
+  isCustomDomainConfigured: boolean;
 }
 
 // Helper function to get template values from environment variables
 export const getTemplateConfig = (): TemplateConfig => {
+  const customDomain = process.env.NEXT_PUBLIC_CUSTOM_DOMAIN || null;
+  
   return {
     // Company Information
     companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || "Your Company",
@@ -40,6 +46,10 @@ export const getTemplateConfig = (): TemplateConfig => {
     
     // Support & Contact
     supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@yourcompany.com",
-    technicalSupportUrl: process.env.NEXT_PUBLIC_TECHNICAL_SUPPORT_URL || process.env.NEXT_PUBLIC_SUPPORT_URL || "https://yourcompany.com/support"
+    technicalSupportUrl: process.env.NEXT_PUBLIC_TECHNICAL_SUPPORT_URL || process.env.NEXT_PUBLIC_SUPPORT_URL || "https://yourcompany.com/support",
+    
+    // Custom Domain
+    customDomain,
+    isCustomDomainConfigured: !!customDomain
   };
 };

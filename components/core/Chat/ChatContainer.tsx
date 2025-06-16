@@ -28,6 +28,7 @@ import Layout from '@/components/core/Layout';
 import { 
   LoadingDots 
 } from '@/components/ui/Loaders';
+import DomainAwareBranding from '@/components/core/DomainAwareBranding';
 import { 
   InitialDisclaimerModal 
 } from '@/components/ui/Modals';
@@ -666,14 +667,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
           </Box>
           </Box>
         </Container>
-        <Box component="footer" sx={{ p: 2, textAlign: 'center', mt: 'auto' }}>
-          © 2024 {config.companyName}™. All rights reserved.
-          <p>
-            <Link href="/privacy-policy" passHref>
-              Privacy Policy
-            </Link>
-          </p>
-        </Box>
+        <DomainAwareBranding />
       </Layout>
     </>
   );
