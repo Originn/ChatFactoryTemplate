@@ -30,7 +30,7 @@ import {
   Divider,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import useTheme from '@/hooks/useTheme';
+import useTheme from '../hooks/useTheme';
 
 const ThemeToggleButton = styled(Box)(({ theme }) => ({
   position: 'absolute',
