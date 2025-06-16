@@ -1,12 +1,19 @@
-// auth/CustomLoginForm.tsx - Updated for Admin-Managed Users (invitation-only)
+// auth/CustomLoginForm.tsx - Updated to support both Open Signup and Admin-Managed modes
 import React, { useState, useEffect, useRef } from 'react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  sendPasswordResetEmail, 
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  sendEmailVerification
+} from 'firebase/auth';
 import { auth } from 'utils/firebase';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Image from 'next/image';
 import { getChatbotBranding } from '../utils/logo';
-import { isAdminManagedChatbot, getChatbotConfig } from '../utils/chatbotConfig';
+import { isAdminManagedChatbot, isOpenSignupChatbot, getChatbotConfig } from '../utils/chatbotConfig';
 import {
   Box,
   Paper,
@@ -20,6 +27,7 @@ import {
   Container,
   Alert,
   Link,
+  Divider,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import useTheme from '@/hooks/useTheme';
@@ -41,18 +49,38 @@ const ThemeToggleButton = styled(Box)(({ theme }) => ({
   },
 }));
 
-const CustomLoginForm = () => {
-    // Get chatbot branding from environment variables
+const GoogleButton = styled(Button)(({ theme }) => ({
+  backgroundColor: 'white',
+  color: 'black',
+  border: '1px solid #dadce0',
+  '&:hover': {
+    backgroundColor: '#f8f9fa',
+    boxShadow: '0 1px 2px 0 rgba(60,64,67,.30), 0 1px 3px 1px rgba(60,64,67,.15)',
+  },
+  textTransform: 'none',
+  fontWeight: 500,
+  padding: '10px 24px',
+}));
+
+type AuthMode = 'signin' | 'signup';
+
+const CustomLoginForm = () => {    // Get chatbot branding and configuration
     const chatbotBranding = getChatbotBranding();
+    const chatbotConfig = getChatbotConfig();
+    const isAdminManaged = isAdminManagedChatbot();
+    const isOpenSignup = isOpenSignupChatbot();
     
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [emailSubmitted, setEmailSubmitted] = useState(false);
     const [isEmailValid, setIsEmailValid] = useState(false);
     const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
     const [recoveryEmail, setRecoveryEmail] = useState('');
+    const [authMode, setAuthMode] = useState<AuthMode>('signin');
     const passwordInputRef = useRef<HTMLInputElement>(null);
     
     // Logo loading state
@@ -66,11 +94,8 @@ const CustomLoginForm = () => {
     const moonIcon = `${baseURL}icons8-moon-50.png`;
     const iconPath = theme === 'light' ? moonIcon : "/icons8-sun.svg";
 
-    // Check if this is an admin-managed (invitation-only) chatbot
-    const isAdminManaged = isAdminManagedChatbot();
-    const chatbotConfig = getChatbotConfig();
-    const chatbotName = chatbotConfig.name;
-
+    // Initialize Google Auth Provider
+    const googleProvider = new GoogleAuthProvider();
     // Logo handling functions
     const handleLogoLoad = () => {
         console.log('✅ Logo loaded successfully:', chatbotBranding.logoUrl);
@@ -88,6 +113,29 @@ const CustomLoginForm = () => {
         }
     };
 
+    // Google Sign-In
+    const handleGoogleSignIn = async () => {
+        try {
+            setIsSubmitting(true);
+            setErrorMessage('');
+            
+            const result = await signInWithPopup(auth, googleProvider);
+            console.log('✅ Google sign-in successful:', result.user.email);
+            router.push('/');
+        } catch (error: any) {
+            console.error('❌ Google sign-in error:', error);
+            if (error.code === 'auth/popup-closed-by-user') {
+                setErrorMessage('Sign-in was cancelled.');
+            } else if (error.code === 'auth/popup-blocked') {
+                setErrorMessage('Popup was blocked. Please allow popups and try again.');
+            } else {
+                setErrorMessage('Google sign-in failed. Please try again.');
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    // Email/Password Sign-In
     const handleSignInWithEmail = async () => {
         if (!email.trim() || !password.trim()) {
             setErrorMessage('Please enter both email and password.');
@@ -110,10 +158,15 @@ const CustomLoginForm = () => {
             console.error('❌ Sign-in error:', error);
             switch (error.code) {
                 case 'auth/wrong-password':
-                    setErrorMessage('Incorrect password.');
+                case 'auth/invalid-credential':
+                    setErrorMessage('Incorrect email or password.');
                     break;
                 case 'auth/user-not-found':
-                    setErrorMessage('No account found with this email. Please contact the administrator to get invited.');
+                    if (isAdminManaged) {
+                        setErrorMessage('No account found with this email. Please contact the administrator to get invited.');
+                    } else {
+                        setErrorMessage('No account found with this email.');
+                    }
                     break;
                 case 'auth/too-many-requests':
                     setErrorMessage('Too many failed attempts. Please wait a few minutes and try again.');
@@ -131,7 +184,56 @@ const CustomLoginForm = () => {
             setIsSubmitting(false);
         }
     };
+    // Email/Password Sign-Up (only for Open Signup)
+    const handleSignUpWithEmail = async () => {
+        if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+            setErrorMessage('Please fill in all fields.');
+            return;
+        }
 
+        if (password !== confirmPassword) {
+            setErrorMessage('Passwords do not match.');
+            return;
+        }
+
+        if (password.length < 6) {
+            setErrorMessage('Password must be at least 6 characters long.');
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            setErrorMessage('');
+            
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            
+            // Send email verification
+            await sendEmailVerification(userCredential.user);
+            
+            setSuccessMessage('Account created successfully! Please check your email to verify your account before signing in.');
+            setAuthMode('signin');
+            setPassword('');
+            setConfirmPassword('');
+            
+        } catch (error: any) {
+            console.error('❌ Sign-up error:', error);
+            switch (error.code) {
+                case 'auth/email-already-in-use':
+                    setErrorMessage('An account with this email already exists.');
+                    break;
+                case 'auth/weak-password':
+                    setErrorMessage('Password is too weak. Please choose a stronger password.');
+                    break;
+                case 'auth/invalid-email':
+                    setErrorMessage('Please enter a valid email address.');
+                    break;
+                default:
+                    setErrorMessage('Account creation failed. Please try again.');
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const handleNextClick = async () => {
         if (!validateEmail(email)) {
             setErrorMessage('Please enter a valid email address.');
@@ -139,12 +241,15 @@ const CustomLoginForm = () => {
         }
         setEmailSubmitted(true);
         setErrorMessage('');
+        setSuccessMessage('');
     };
 
     const handleBackClick = () => {
         setEmailSubmitted(false);
         setPassword('');
+        setConfirmPassword('');
         setErrorMessage('');
+        setSuccessMessage('');
     };
 
     useEffect(() => {
@@ -166,16 +271,22 @@ const CustomLoginForm = () => {
         if (errorMessage && isValid) {
             setErrorMessage('');
         }
+        if (successMessage) {
+            setSuccessMessage('');
+        }
         if (e.key === 'Enter' && isValid && !errorMessage) {
             e.preventDefault();
             handleNextClick();
         }
     };
-
     const handlePasswordKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            handleSignInWithEmail();
+            if (authMode === 'signin') {
+                handleSignInWithEmail();
+            } else {
+                handleSignUpWithEmail();
+            }
         }
     };
 
@@ -207,11 +318,29 @@ const CustomLoginForm = () => {
         }
     };
 
+    const getTitle = () => {
+        if (isAdminManaged) {
+            return `Sign in to ${chatbotConfig.name}`;
+        } else if (isOpenSignup) {
+            return authMode === 'signin' ? 'Welcome Back!' : 'Create Account';
+        } else {
+            return 'Welcome Back!';
+        }
+    };
+
+    const getSubtitle = () => {
+        if (isAdminManaged) {
+            return 'This is an invitation-only chatbot. Sign in with your invited account.';
+        } else if (isOpenSignup && authMode === 'signup') {
+            return 'Create your account to get started.';
+        }
+        return null;
+    };
     return (
         <>
             <Head>
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <title>{isAdminManaged ? `Sign in to ${chatbotName}` : `${chatbotName} - Sign In`}</title>
+                <title>{getTitle()}</title>
             </Head>
             
             <ThemeToggleButton onClick={toggleTheme}>
@@ -245,8 +374,7 @@ const CustomLoginForm = () => {
                             <Typography variant="caption" display="block" sx={{ mb: 1, color: 'text.secondary' }}>
                                 Logo: {logoError ? 'Fallback' : logoLoaded ? 'Loaded' : 'Loading...'}
                             </Typography>
-                        )}
-                        
+                        )}                        
                         {/* Use regular img tag for Firebase Storage URLs */}
                         {chatbotBranding.logoUrl.includes('firebasestorage.googleapis.com') ? (
                             <img
@@ -301,8 +429,7 @@ const CustomLoginForm = () => {
                             </Box>
                         )}
                     </Box>
-
-                    {/* Sign In Form */}
+                    {/* Sign In/Up Form */}
                     <Paper
                         elevation={3}
                         sx={{
@@ -313,16 +440,53 @@ const CustomLoginForm = () => {
                         }}
                     >
                         <Typography variant="h4" component="h1" gutterBottom textAlign="center" fontWeight={600}>
-                            {isAdminManaged ? `Sign in to ${chatbotName}` : 'Welcome Back!'}
+                            {getTitle()}
                         </Typography>
 
-                        {isAdminManaged && (
+                        {getSubtitle() && (
                             <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mb: 3 }}>
-                                This is an invitation-only chatbot. Sign in with your invited account.
+                                {getSubtitle()}
                             </Typography>
                         )}
 
-                        {/* Sign In Form */}
+                        {/* Success Message */}
+                        {successMessage && (
+                            <Alert severity="success" sx={{ mb: 2 }}>
+                                {successMessage}
+                            </Alert>
+                        )}
+
+                        {/* Google Sign-In Button (only for Open Signup) */}
+                        {isOpenSignup && !emailSubmitted && (
+                            <>
+                                <GoogleButton
+                                    fullWidth
+                                    onClick={handleGoogleSignIn}
+                                    disabled={isSubmitting}
+                                    size="large"
+                                    sx={{ mb: 2 }}
+                                    startIcon={
+                                        <Image
+                                            src="/google.svg"
+                                            alt="Google"
+                                            width={18}
+                                            height={18}
+                                        />
+                                    }
+                                >
+                                    Continue with Google
+                                </GoogleButton>
+                                
+                                <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+                                    <Divider sx={{ flexGrow: 1 }} />
+                                    <Typography variant="body2" sx={{ px: 2, color: 'text.secondary' }}>
+                                        or
+                                    </Typography>
+                                    <Divider sx={{ flexGrow: 1 }} />
+                                </Box>
+                            </>
+                        )}
+                        {/* Email/Password Form */}
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             {!emailSubmitted ? (
                                 // Email Step
@@ -371,16 +535,34 @@ const CustomLoginForm = () => {
                                         onChange={(e) => {
                                             setPassword(e.target.value);
                                             setErrorMessage('');
+                                            setSuccessMessage('');
                                         }}
                                         inputRef={passwordInputRef}
                                         onKeyDown={handlePasswordKeyPress}
-                                        autoComplete="current-password"
-                                    />
+                                        autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
+                                    />                                    
+                                    {/* Confirm Password (only for signup) */}
+                                    {isOpenSignup && authMode === 'signup' && (
+                                        <TextField
+                                            type="password"
+                                            label="Confirm Password"
+                                            required
+                                            fullWidth
+                                            value={confirmPassword}
+                                            onChange={(e) => {
+                                                setConfirmPassword(e.target.value);
+                                                setErrorMessage('');
+                                            }}
+                                            onKeyDown={handlePasswordKeyPress}
+                                            autoComplete="new-password"
+                                        />
+                                    )}
+                                    
                                     {errorMessage && (
                                         <Alert severity="error">
-                                            {errorMessage.includes('Incorrect password') ? (
+                                            {errorMessage.includes('Incorrect') && authMode === 'signin' ? (
                                                 <>
-                                                    Incorrect password.{' '}
+                                                    {errorMessage}{' '}
                                                     <Link component="button" onClick={openForgotPasswordModal} type="button">
                                                         Reset password
                                                     </Link>
@@ -390,15 +572,20 @@ const CustomLoginForm = () => {
                                             )}
                                         </Alert>
                                     )}
+                                    
                                     <Button
-                                        onClick={handleSignInWithEmail}
+                                        onClick={authMode === 'signin' ? handleSignInWithEmail : handleSignUpWithEmail}
                                         variant="contained"
                                         fullWidth
-                                        disabled={!password.trim() || isSubmitting}
+                                        disabled={!password.trim() || isSubmitting || (authMode === 'signup' && !confirmPassword.trim())}
                                         size="large"
                                     >
-                                        {isSubmitting ? 'Signing in...' : 'Sign In'}
+                                        {isSubmitting 
+                                            ? (authMode === 'signin' ? 'Signing in...' : 'Creating account...') 
+                                            : (authMode === 'signin' ? 'Sign In' : 'Create Account')
+                                        }
                                     </Button>
+                                    
                                     <Box textAlign="center">
                                         <Button 
                                             onClick={handleBackClick}
@@ -412,8 +599,46 @@ const CustomLoginForm = () => {
                                 </>
                             )}
                         </Box>
+                        {/* Footer - Mode Toggle for Open Signup */}
+                        {isOpenSignup && !emailSubmitted && (
+                            <Box mt={3} pt={2} borderTop={1} borderColor="divider" textAlign="center">
+                                <Typography variant="body2" color="text.secondary">
+                                    {authMode === 'signin' ? (
+                                        <>
+                                            Don't have an account?{' '}
+                                            <Link 
+                                                component="button" 
+                                                onClick={() => {
+                                                    setAuthMode('signup');
+                                                    setErrorMessage('');
+                                                    setSuccessMessage('');
+                                                }}
+                                                type="button"
+                                            >
+                                                Create one
+                                            </Link>
+                                        </>
+                                    ) : (
+                                        <>
+                                            Already have an account?{' '}
+                                            <Link 
+                                                component="button" 
+                                                onClick={() => {
+                                                    setAuthMode('signin');
+                                                    setErrorMessage('');
+                                                    setSuccessMessage('');
+                                                }}
+                                                type="button"
+                                            >
+                                                Sign in
+                                            </Link>
+                                        </>
+                                    )}
+                                </Typography>
+                            </Box>
+                        )}
 
-                        {/* Footer Info */}
+                        {/* Footer - Admin Managed Info */}
                         {isAdminManaged && (
                             <Box mt={3} pt={2} borderTop={1} borderColor="divider">
                                 <Typography variant="body2" color="text.secondary" textAlign="center">
@@ -424,7 +649,6 @@ const CustomLoginForm = () => {
                     </Paper>
                 </Box>
             </Container>
-
             {/* Forgot Password Modal */}
             <Dialog open={showForgotPasswordModal} onClose={() => setShowForgotPasswordModal(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>Reset Your Password</DialogTitle>
