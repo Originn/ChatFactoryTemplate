@@ -9,12 +9,21 @@ import fs from 'fs';
 // Initialize Firebase Admin SDK if not already initialized
 if (!admin.apps.length) {
   try {
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    // Use service account credentials from environment variables
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        }),
+      });
+    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       admin.initializeApp({
         credential: admin.credential.applicationDefault()
       });
     } else {
-      throw new Error('GOOGLE_APPLICATION_CREDENTIALS not set');
+      console.warn('⚠️ Firebase Admin: No credentials found. Stats collection disabled for authenticated users.');
     }
   } catch (error) {
     console.error('Firebase Admin initialization error', error);
@@ -83,12 +92,17 @@ export default async function handler(
     let accountCreated = null;
     try {
       // Validate email format before attempting Firebase Auth
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        console.warn('Invalid email format provided to user-data-stats:', email);
+      // Handle anonymous users or validate email format
+      if (email === 'anonymous' || email === 'anon' || !email) {
+        console.log('Anonymous user detected, skipping Firebase auth in user-data-stats');
       } else {
-        const userRecord = await admin.auth().getUserByEmail(email);
-        accountCreated = userRecord.metadata.creationTime;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          console.warn('Invalid email format provided to user-data-stats:', email);
+        } else {
+          const userRecord = await admin.auth().getUserByEmail(email);
+          accountCreated = userRecord.metadata.creationTime;
+        }
       }
     } catch (error) {
       console.error('Error fetching user creation date:', error);

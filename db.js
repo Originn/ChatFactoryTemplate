@@ -374,7 +374,13 @@ const getAPIKeyForProvider = async (provider, userEmail) => {
     return null; // Return null on client-side
   }
   
-  // Return OpenAI API key
+  // For anonymous users or invalid emails, return default API key
+  if (!userEmail || userEmail === 'anonymous' || userEmail === 'anon') {
+    console.log('Using default API key for anonymous user');
+    return process.env.OPENAI_API_KEY;
+  }
+  
+  // Return OpenAI API key (could be enhanced to get user-specific keys later)
   return process.env.OPENAI_API_KEY;
 };
 

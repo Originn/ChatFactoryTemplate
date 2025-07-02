@@ -21,12 +21,23 @@ if (typeof window === 'undefined') {
 
   if (!admin.apps.length) {
     try {
-      if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      // Use service account credentials from environment variables
+      if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+        admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          }),
+        });
+        console.log('✅ Firebase Admin initialized with service account credentials');
+      } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
         admin.initializeApp({
           credential: admin.credential.applicationDefault(),
         });
+        console.log('✅ Firebase Admin initialized with application default credentials');
       } else {
-        console.warn('⚠️ Firebase Admin: GOOGLE_APPLICATION_CREDENTIALS not set');
+        console.warn('⚠️ Firebase Admin: No credentials found. Anonymous users will work, but authenticated features disabled.');
       }
     } catch (error) {
       console.error('❌ Firebase Admin initialization failed', error);
@@ -88,6 +99,12 @@ class MemoryService {
     // GDPR CHECK: Skip storing history if user has disabled it
     if (userEmail) {
       try {
+        // Handle anonymous users or validate email format
+        if (userEmail === 'anonymous' || userEmail === 'anon' || !userEmail) {
+          console.log('Anonymous user detected, skipping Firebase auth');
+          return;
+        }
+        
         // Validate email format before attempting Firebase Auth
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(userEmail)) {
