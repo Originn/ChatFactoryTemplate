@@ -6,7 +6,6 @@ import { MyDocument } from 'interfaces/Document';
 import { BaseRetriever } from "@langchain/core/retrievers";
 import { v4 as uuidv4 } from 'uuid';
 const TenantDB = require('./TenantDB');
-import { OpenAIEmbeddings } from '@langchain/openai';
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { MaxMarginalRelevanceSearchOptions } from "@langchain/core/vectorstores";
 import { BaseRetrieverInterface } from '@langchain/core/retrievers';
@@ -18,6 +17,7 @@ import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retr
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createChatModel } from './modelProviders';
 import { getRelevantHistory } from './contextManager';
+import { createEmbeddingModel } from './embeddingProviders';
 import {
   contextualizeQSystemPrompt,
   qaSystemPrompt,
@@ -158,20 +158,17 @@ async function updateConversationMemory(
     console.error('Error updating conversation memory:', error);
   }
 }
-// Custom Retriever Class with enhanced efficiency
+// Custom Retriever Class with enhanced efficiency and dynamic embedding support
 class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Record<string, any>> {
   lc_namespace = [];
-  private embedder: OpenAIEmbeddings;
+  private embedder: any; // Dynamic embedding model
   
   constructor(
     private vectorStore: PineconeStore,
-    embeddingsModelName: string = "text-embedding-3-small"
+    embeddingModel?: any
   ) {
     super();
-    this.embedder = new OpenAIEmbeddings({ 
-      modelName: embeddingsModelName, 
-      dimensions: 1536 
-    });
+    this.embedder = embeddingModel || createEmbeddingModel();
   }
 
   async getRelevantDocuments(query: string, options?: Partial<RunnableConfig>): Promise<DocumentInterface<Record<string, any>>[]> {
@@ -339,8 +336,9 @@ export const makeChainSSE = (
     ["human", "{input}"],
   ]);
 
-  // Initialize custom retriever with the vectorstore
-  const customRetriever = new CustomRetriever(vectorstore);
+  // Initialize custom retriever with dynamic embedding model
+  const embeddingModel = createEmbeddingModel();
+  const customRetriever = new CustomRetriever(vectorstore, embeddingModel);
 
   return {
     call: async (

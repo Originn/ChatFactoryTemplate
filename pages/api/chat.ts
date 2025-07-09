@@ -1,6 +1,5 @@
 // pages/api/chat-stream.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { OpenAIEmbeddings } from '@langchain/openai';
 import { PineconeStore } from '@langchain/pinecone';
 import { getPinecone } from '@/utils/pinecone-client';
 import { PINECONE_NAME_SPACE } from '@/config/pinecone';
@@ -8,6 +7,7 @@ import { makeChainSSE } from '@/utils/makechain-sse';
 import { MyDocument } from '@/interfaces/Document';
 import MemoryService from '@/utils/memoryService';
 import { getUserAIProvider, getAPIKeyForProvider } from '@/db';
+import { createEmbeddingModel, validateEmbeddingConfig } from '@/utils/embeddingProviders';
 
 // Function to synchronize chat history
 async function syncChatHistory(roomId: string, clientHistory: any[], userEmail: string) {
@@ -88,14 +88,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('[chat-stream] Error getting API key:', error);
     }
 
-    // Initialize Pinecone
+    // Validate embedding configuration
+    const embeddingValidation = validateEmbeddingConfig();
+    if (!embeddingValidation.isValid) {
+      console.error('[chat-stream] Embedding configuration error:', embeddingValidation.error);
+      res.write(`event: error\n`);
+      res.write(`data: ${JSON.stringify({ 
+        message: `Embedding configuration error: ${embeddingValidation.error}`,
+        code: 'EMBEDDING_CONFIG_ERROR'
+      })}\n\n`);
+      res.end();
+      return;
+    }
+
+    // Initialize Pinecone with dynamic embedding model
     const pinecone = await getPinecone();
+    const embeddingModel = createEmbeddingModel();
+    
     const vectorStore = await PineconeStore.fromExistingIndex(
-      new OpenAIEmbeddings({ 
-        modelName: "text-embedding-3-small", 
-        dimensions: 1536,
-        openAIApiKey: process.env.OPENAI_API_KEY
-      }),
+      embeddingModel,
       {
         pineconeIndex: pinecone,
         namespace: PINECONE_NAME_SPACE,
