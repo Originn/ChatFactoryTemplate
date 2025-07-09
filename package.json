@@ -15,7 +15,8 @@
     "export": "next export",
     "delete-old-chat-history": "node scripts/deleteOldChatHistory.js",
     "gdpr-anonymize-data": "node scripts/monthly-anonymization.js",
-    "test-template": "node test-template-deployment.js"
+    "test-template": "node test-template-deployment.js",
+    "install:force": "npm install --legacy-peer-deps"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
@@ -39,7 +40,7 @@
     "firebase-admin": "^12.1.1",
     "formidable": "^3.5.1",
     "js-cookie": "^3.0.5",
-    "langchain": "0.2.20",
+    "langchain": "0.3.7",
     "lucide-react": "^0.125.0",
     "mic-recorder-to-mp3": "^2.2.2",
     "next": "^14.2.18",
@@ -53,10 +54,12 @@
     "zod": "3.25.32"
   },
   "resolutions": {
-    "zod": "3.25.32"
+    "zod": "3.25.32",
+    "ignore": "^7.0.5"
   },
   "overrides": {
-    "zod": "3.25.32"
+    "zod": "3.25.32",
+    "ignore": "^7.0.5"
   },
   "devDependencies": {
     "@types/formidable": "^3.4.5",
