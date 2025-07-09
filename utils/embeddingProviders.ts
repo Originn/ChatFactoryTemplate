@@ -110,34 +110,12 @@ export function validateEmbeddingConfig(): { isValid: boolean; error?: string } 
 }
 
 /**
- * Get model dimensions for common embedding models
- * @param provider Embedding provider
- * @param model Model name
- * @returns Model dimensions
+ * Get model dimensions from environment variables
+ * ALWAYS uses EMBEDDING_DIMENSIONS env var - no hardcoded values
+ * @returns Model dimensions from environment configuration
  */
-export function getModelDimensions(provider: EmbeddingProvider, model: string): number {
-  const dimensionMap: Record<string, number> = {
-    // OpenAI models
-    'text-embedding-3-small': 1536,
-    'text-embedding-3-large': 3072,
-    'text-embedding-ada-002': 1536,
-    
-    // Jina models
-    'jina-embeddings-v4': 1024,
-    'jina-embeddings-v2-base-en': 768,
-    'jina-clip-v2': 768,
-    
-    // Cohere models
-    'embed-english-v3.0': 1024,
-    'embed-multilingual-v3.0': 1024,
-    'embed-english-light-v3.0': 384,
-    
-    // HuggingFace models (common ones)
-    'sentence-transformers/all-MiniLM-L6-v2': 384,
-    'sentence-transformers/all-mpnet-base-v2': 768,
-    'BAAI/bge-base-en-v1.5': 768,
-    'BAAI/bge-large-en-v1.5': 1024,
-  };
-
-  return dimensionMap[model] || 1536; // Default to 1536 if unknown
+export function getModelDimensions(): number {
+  const dimensions = parseInt(process.env.EMBEDDING_DIMENSIONS || '1536');
+  console.log(`🔧 Using dimensions from env: ${dimensions}D`);
+  return dimensions;
 }

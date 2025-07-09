@@ -1,5 +1,6 @@
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { OpenAIEmbeddings } from '@langchain/openai';
+import { createEmbeddingModel } from './embeddingProviders';
 
 interface HistoryOptions {
   maxTurns?: number;           // Maximum conversation turns to include (default: 3)
@@ -49,7 +50,7 @@ export async function getRelevantHistory(
   // For semantic search approach
   // Step 1: Create embeddings for the current query and history messages
   try {
-    const embedder = new OpenAIEmbeddings({ modelName: "text-embedding-3-small", dimensions: 1536 });
+    const embedder = createEmbeddingModel(); // Use dynamic embedding model from env vars
     const queryEmbedding = await embedder.embedQuery(currentQuery);
     
     // Step 2: Calculate relevance scores for each history message

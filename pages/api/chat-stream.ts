@@ -8,6 +8,7 @@ import { makeChainSSE } from '@/utils/makechain-sse';
 import { MyDocument } from '@/interfaces/Document';
 import MemoryService from '@/utils/memoryService';
 import { getUserAIProvider, getAPIKeyForProvider } from '@/db';
+import { createEmbeddingModel } from '@/utils/embeddingProviders';
 
 // Function to synchronize chat history
 async function syncChatHistory(roomId: string, clientHistory: any[], userEmail: string) {
@@ -91,11 +92,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Initialize Pinecone
     const pinecone = await getPinecone();
     const vectorStore = await PineconeStore.fromExistingIndex(
-      new OpenAIEmbeddings({ 
-        modelName: "text-embedding-3-small", 
-        dimensions: 1536,
-        openAIApiKey: process.env.OPENAI_API_KEY
-      }),
+      createEmbeddingModel(), // Use dynamic embedding model from env vars
       {
         pineconeIndex: pinecone,
         namespace: PINECONE_NAME_SPACE,
