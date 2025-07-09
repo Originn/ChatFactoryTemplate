@@ -1,5 +1,7 @@
-//config/pinecone.ts
+// SOLUTION: Enhanced namespace configuration
+// This ensures the namespace is properly set and debugged
 
+// config/pinecone.ts
 if (!process.env.PINECONE_INDEX_NAME) {
   throw new Error('Missing Pinecone index name in .env file');
 }

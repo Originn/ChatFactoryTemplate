@@ -182,6 +182,13 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
       k: k,
       fetchK: fetchK,
       lambda: lambda,
+      // 🔒 SECURITY: Filter to only include public documents
+      filter: {
+        $or: [
+          { isPublic: true },
+          { isPublic: { $exists: false } } // Backward compatibility
+        ]
+      }
     };
     
     if (isApiQuery) {
@@ -194,7 +201,13 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
       if (isApiQuery) {
         try {
           const queryEmbedding = await this.embedder.embedQuery(query);
-          const vbsFilter = { type: 'vbs' };
+          const vbsFilter = { 
+            type: 'vbs',
+            $or: [
+              { isPublic: true },
+              { isPublic: { $exists: false } }
+            ]
+          };
           const vbsResults = await this.vectorStore.similaritySearchVectorWithScore(queryEmbedding, 5, vbsFilter);
           
           if (vbsResults && vbsResults.length > 0) {
@@ -244,10 +257,19 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     minScore: number
   ): Promise<SearchResult[]> {
     try {
+      // 🔒 SECURITY: Filter to only include public documents
+      const filter = { 
+        type: type,
+        $or: [
+          { isPublic: true },
+          { isPublic: { $exists: false } } // Backward compatibility for documents without privacy flag
+        ]
+      };
+      
       const results: SearchResult[] = await this.vectorStore.similaritySearchVectorWithScore(
         queryVector, 
         limit, 
-        { type: type }
+        filter
       );
       return results.filter(([_, score]: SearchResult) => score >= minScore);
     } catch (error) {
@@ -413,6 +435,12 @@ export const makeChainSSE = (
 
       // Process and add documents to the result
       for (const [doc, score] of embeddingsStore) {
+        // 🔒 SECURITY: Filter out private documents from public chatbot
+        if (doc.metadata.isPublic === false) {
+          console.log(`🔒 Skipping private document: ${doc.metadata.source}`);
+          continue;
+        }
+        
         // Skip certain types for English queries
         if (language === 'English' && (doc.metadata.type === 'other' || doc.metadata.type === 'vbs')) {
           continue;
