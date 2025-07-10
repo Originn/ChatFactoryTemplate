@@ -2,6 +2,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import OpenAIChat from 'openai';
 import MemoryService from '@/utils/memoryService';
+import { isJinaProvider } from './embeddingProviders';
 import {
   TRANSLATION_PROMPT,
   LANGUAGE_DETECTION_PROMPT,
@@ -9,7 +10,7 @@ import {
   IMAGE_RELATION_PROMPT
 } from './prompts/promptTemplates';
 
-const IMAGE_MODEL_NAME = process.env.IMAGE_MODEL_NAME || 'gpt-4.1-mini';
+const IMAGE_MODEL_NAME = process.env.IMAGE_MODEL_NAME || 'gpt-4o-mini';
 
 // Shared OpenAI client for image processing
 const openai = new OpenAIChat();
@@ -165,7 +166,9 @@ export async function prepareInput(
   let processedInput = input;
   let imageDescription = '';
 
-  if (imageUrls && imageUrls.length > 0) {
+  // Skip OpenAI image processing if using Jina multimodal embeddings
+  if (imageUrls && imageUrls.length > 0 && !isJinaProvider()) {
+    // Only process images with OpenAI if NOT using Jina
     imageDescription = await processImageWithOpenAI(imageUrls, input);
   }
 
@@ -176,11 +179,13 @@ export async function prepareInput(
     processedInput = await translateToEnglish(processedInput, translationModel);
   }
 
-  if (imageDescription) {
+  // Only append image description if we're not using Jina (since Jina handles images directly)
+  if (imageDescription && !isJinaProvider()) {
     processedInput = `${processedInput} [Image model answer: ${imageDescription}]`;
   }
 
-  if (imageUrls.length === 0) {
+  // Handle historical images only if NOT using Jina
+  if (imageUrls.length === 0 && !isJinaProvider()) {
     const historyImageUrls = await getImageUrlsFromHistory(roomId);
     if (historyImageUrls.length > 0) {
       const relatedToImage = await isQuestionRelatedToImage(

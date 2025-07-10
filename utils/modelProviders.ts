@@ -26,7 +26,7 @@ function createOpenAIModel(params: ModelParams): ChatOpenAI {
   
   return new ChatOpenAI({
     streaming,
-    modelName: process.env.MODEL_NAME || 'gpt-4.1',
+    modelName: process.env.MODEL_NAME || 'gpt-4o',
     verbose,
     temperature: parseFloat(process.env.TEMPERATURE || '0'),
     maxTokens,
