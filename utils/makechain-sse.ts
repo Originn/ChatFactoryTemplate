@@ -168,7 +168,9 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     embeddingModel?: any
   ) {
     super();
+    console.error(`🚨 DEBUG: CustomRetriever constructor called with embeddingModel: ${embeddingModel ? 'provided' : 'null'}`);
     this.embedder = embeddingModel || createEmbeddingModel();
+    console.error(`🚨 DEBUG: CustomRetriever embedder set`);
   }
 
   async getRelevantDocuments(query: string, options?: Partial<RunnableConfig>): Promise<DocumentInterface<Record<string, any>>[]> {
@@ -337,7 +339,9 @@ export const makeChainSSE = (
   ]);
 
   // Initialize custom retriever with dynamic embedding model
+  console.error(`🚨 DEBUG: About to call createEmbeddingModel() in makechain-sse.ts`);
   const embeddingModel = createEmbeddingModel();
+  console.error(`🚨 DEBUG: Created embedding model, creating CustomRetriever...`);
   const customRetriever = new CustomRetriever(vectorstore, embeddingModel);
 
   return {
