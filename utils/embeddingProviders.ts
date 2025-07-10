@@ -33,6 +33,7 @@ export function createEmbeddingModel() {
       return new JinaEmbeddings({
         apiKey: process.env.JINA_API_KEY,
         model: model,
+        dimensions: dimensions,  // ✅ Add dimensions parameter
       });
 
     case 'openai':
