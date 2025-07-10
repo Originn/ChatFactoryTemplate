@@ -25,6 +25,8 @@ export function createEmbeddingModel() {
   const dimensions = parseInt(process.env.EMBEDDING_DIMENSIONS || '1536');
 
   console.log(`🔧 Creating embedding model: ${provider}/${model} (${dimensions}D)`);
+  console.error(`🚨 DEBUG: Creating embedding model: ${provider}/${model} (${dimensions}D)`);
+  console.error(`🚨 DEBUG: ENV VARS - PROVIDER: ${process.env.EMBEDDING_PROVIDER}, MODEL: ${process.env.EMBEDDING_MODEL}, DIMENSIONS: ${process.env.EMBEDDING_DIMENSIONS}`);
 
   switch (provider) {
     case 'jina':
