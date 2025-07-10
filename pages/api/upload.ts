@@ -4,7 +4,16 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import formidable from 'formidable';
 import fs from 'fs';
 
-const storage = new Storage();
+// Initialize Storage with Firebase service account credentials
+const storage = new Storage({
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  keyFilename: undefined, // We'll use credentials object instead
+  credentials: {
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  },
+});
+
 const publicBucket = process.env.GCLOUD_STORAGE_BUCKET || 'chatbot-documents';
 const privateBucket = process.env.GCLOUD_PRIVATE_STORAGE_BUCKET || 'chatbot-private-images';
 
