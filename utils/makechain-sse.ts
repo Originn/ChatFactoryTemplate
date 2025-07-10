@@ -18,6 +18,7 @@ import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createChatModel } from './modelProviders';
 import { getRelevantHistory } from './contextManager';
 import { createEmbeddingModel } from './embeddingProviders';
+import { isJinaProvider, createJinaMultimodalEmbedding } from './embeddingProviders';
 import {
   contextualizeQSystemPrompt,
   qaSystemPrompt,
@@ -173,7 +174,11 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     console.error(`🚨 DEBUG: CustomRetriever embedder set`);
   }
 
-  async getRelevantDocuments(query: string, options?: Partial<RunnableConfig>): Promise<DocumentInterface<Record<string, any>>[]> {
+  async getRelevantDocuments(
+    query: string, 
+    options?: Partial<RunnableConfig>, 
+    imageUrls: string[] = []
+  ): Promise<DocumentInterface<Record<string, any>>[]> {
     const isApiQuery = isApiRelatedQuery(query);
     
     const { k, fetchK, lambda } = this.getMMRSettings();
@@ -199,7 +204,15 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
       
       if (isApiQuery) {
         try {
-          const queryEmbedding = await this.embedder.embedQuery(query);
+          let queryEmbedding: number[];
+          
+          // Use multimodal embedding if Jina provider
+          if (isJinaProvider() && imageUrls.length > 0) {
+            queryEmbedding = await createJinaMultimodalEmbedding(query, imageUrls);
+          } else {
+            queryEmbedding = await this.embedder.embedQuery(query);
+          }
+          
           const vbsFilter = { 
             type: 'vbs',
             $or: [
@@ -232,8 +245,8 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
       return [];
     }
   }
-  async invoke(input: string, options?: Partial<RunnableConfig>): Promise<DocumentInterface<Record<string, any>>[]> {
-    return await this.getRelevantDocuments(input, options);
+  async invoke(input: string, options?: Partial<RunnableConfig>, imageUrls: string[] = []): Promise<DocumentInterface<Record<string, any>>[]> {
+    return await this.getRelevantDocuments(input, options, imageUrls);
   }
   
   private getMMRSettings(): { k: number, fetchK: number, lambda: number } {
@@ -276,9 +289,16 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
       return [];
     }
   }
-  async storeEmbeddings(query: string, minScoreSourcesThreshold: number) {
+  async storeEmbeddings(query: string, minScoreSourcesThreshold: number, imageUrls: string[] = []) {
     try {
-      const queryEmbedding = await this.embedder.embedQuery(query);
+      let queryEmbedding: number[];
+      
+      // Use multimodal embedding if Jina provider
+      if (isJinaProvider() && imageUrls.length > 0) {
+        queryEmbedding = await createJinaMultimodalEmbedding(query, imageUrls);
+      } else {
+        queryEmbedding = await this.embedder.embedQuery(query);
+      }
       
       const isApiQuery = isApiRelatedQuery(query);
       
@@ -432,7 +452,8 @@ export const makeChainSSE = (
       // Get relevant documents based on embeddings
       const embeddingsStore = await customRetriever.storeEmbeddings(
         language === 'English' ? ragResponse.answer : processedInput,
-        minScoreSourcesThreshold
+        minScoreSourcesThreshold,
+        imageUrls
       );
 
       // Process and add documents to the result

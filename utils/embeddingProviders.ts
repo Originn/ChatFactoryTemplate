@@ -15,6 +15,70 @@ export interface EmbeddingConfig {
   apiKey?: string;
 }
 
+// Helper function to convert image URL to base64
+export async function convertImageUrlToBase64(imageUrl: string): Promise<string> {
+  try {
+    const response = await fetch(imageUrl);
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+    return base64;
+  } catch (error) {
+    console.error('Error converting image to base64:', error);
+    throw error;
+  }
+}
+
+// Helper function to check if provider is Jina
+export function isJinaProvider(): boolean {
+  const provider = process.env.EMBEDDING_PROVIDER || 'openai';
+  return provider === 'jina';
+}
+
+// Custom Jina multimodal embedding function
+export async function createJinaMultimodalEmbedding(
+  text: string, 
+  imageUrls: string[] = []
+): Promise<number[]> {
+  if (!isJinaProvider()) {
+    throw new Error('Jina provider not configured');
+  }
+
+  try {
+    const input: any[] = [{ text }];
+    
+    // Add images if provided
+    if (imageUrls && imageUrls.length > 0) {
+      for (const imageUrl of imageUrls) {
+        const base64 = await convertImageUrlToBase64(imageUrl);
+        input.push({ image: base64 });
+      }
+    }
+
+    const response = await fetch('https://api.jina.ai/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.JINA_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: process.env.EMBEDDING_MODEL || 'jina-embeddings-v4',
+        task: 'retrieval.query',
+        input: input
+      })
+    });
+
+    const data = await response.json();
+    if (data.data && data.data.length > 0) {
+      return data.data[0].embedding;
+    }
+    
+    throw new Error('No embedding returned from Jina API');
+  } catch (error) {
+    console.error('Error creating Jina multimodal embedding:', error);
+    throw error;
+  }
+}
+
 /**
  * Creates an embedding model instance based on environment variables
  * @returns Configured embedding model instance
