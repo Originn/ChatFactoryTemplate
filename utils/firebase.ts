@@ -23,6 +23,13 @@ console.log('🔧 Firebase Config Debug:', {
   configIsComplete: !!(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId)
 });
 
+// Debug: Log auth requirement
+console.log('🔐 Auth Requirement Debug:', {
+  loginRequired: process.env.NEXT_PUBLIC_CHATBOT_LOGIN_REQUIRED,
+  loginRequiredType: typeof process.env.NEXT_PUBLIC_CHATBOT_LOGIN_REQUIRED,
+  isTrue: process.env.NEXT_PUBLIC_CHATBOT_LOGIN_REQUIRED === 'true'
+});
+
 // Initialize Firebase only if not already initialized
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
