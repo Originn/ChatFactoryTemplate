@@ -377,17 +377,20 @@ export const makeChainSSE = (
       // Generate a unique ID for this Q&A
       const qaId = generateUniqueId();
       // Initialize streaming model with SSE callback
+      console.log('[makechain-sse] Creating streaming model with callback');
       const streamingModel = createChatModel('openai', {
         streaming: true,
         verbose: false,
         maxTokens: 4000,
         callbacks: [{
           handleLLMNewToken: (token: any) => {
+            console.log('[makechain-sse] Streaming token received:', token.substring(0, 20));
             // Use the provided callback instead of socket emission
             onTokenStream(token);
           },
         }],
       });
+      console.log('[makechain-sse] Streaming model created');
 
       const {
         processedInput,
@@ -433,12 +436,14 @@ export const makeChainSSE = (
       });
 
       // Invoke RAG chain to get answer
+      console.log('[makechain-sse] Invoking RAG chain...');
       const ragResponse = await ragChain.invoke({
         input: processedInput,
         chat_history: relevantHistory as any,
         language,
         imageDescription,
       });
+      console.log('[makechain-sse] RAG chain completed, answer length:', ragResponse.answer.length);
 
       // Set threshold for document relevance
       let minScoreSourcesThreshold = ENV.MINSCORESOURCESTHRESHOLD !== undefined ? 
