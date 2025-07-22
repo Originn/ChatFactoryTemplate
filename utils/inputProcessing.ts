@@ -216,3 +216,71 @@ export async function prepareInput(
     imageDescription
   };
 }
+
+// Utility function to convert storage URLs to signed URLs if needed  
+export async function convertToSignedUrlIfNeeded(imageUrl: string): Promise<string> {
+  try {
+    // Check if it's a storage.googleapis.com URL that needs signing
+    if (imageUrl.includes('storage.googleapis.com')) {
+      
+      // Extract bucket name and filename from URL
+      const urlParts = imageUrl.replace('https://storage.googleapis.com/', '').split('/');
+      const bucketName = urlParts[0];
+      const fileName = urlParts.slice(1).join('/');
+      
+      if (!fileName) {
+        console.warn('Could not extract filename from URL:', imageUrl);
+        return imageUrl;
+      }
+
+      console.log(`🔗 Converting storage URL to signed URL - Bucket: ${bucketName}, File: ${fileName}`);
+
+      // Check if Firebase credentials are available
+      if (!process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+        console.log(`⚠️ No Firebase credentials configured. Skipping signed URL generation.`);
+        return imageUrl;
+      }
+
+      // Server-side signed URL generation using Firebase credentials
+      const { Storage } = await import('@google-cloud/storage');
+      
+      // Format the private key properly (handle escaped newlines)
+      const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+      
+      const storage = new Storage({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        credentials: {
+          client_email: process.env.FIREBASE_CLIENT_EMAIL,
+          private_key: privateKey,
+        },
+      });
+      
+      const bucket = storage.bucket(bucketName);
+      const file = bucket.file(fileName);
+
+      // Check if file exists first
+      const [exists] = await file.exists();
+      if (!exists) {
+        console.warn(`⚠️ File does not exist: ${fileName} in bucket ${bucketName}`);
+        return imageUrl; // Fallback to original URL
+      }
+
+      // Generate new 7-day signed URL
+      const options = {
+        version: 'v4' as const,
+        action: 'read' as const,
+        expires: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days
+      };
+
+      const [signedUrl] = await file.getSignedUrl(options);
+      console.log(`✅ Generated signed URL for ${fileName} using Firebase credentials`);
+      return signedUrl;
+    }
+    
+    return imageUrl; // Non-storage URLs can be used directly
+  } catch (error) {
+    console.error('Error converting URL to signed URL:', error);
+    console.error('Original URL:', imageUrl);
+    return imageUrl; // Fallback to original URL
+  }
+}

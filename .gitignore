@@ -33,6 +33,7 @@ htmlcov/
 # Environment variables
 .env*.local
 .env
+.env.old
 
 # IDE & Editors
 .idea/
