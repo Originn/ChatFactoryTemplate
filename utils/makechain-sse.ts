@@ -545,11 +545,11 @@ export const makeChainSSE = (
       // Process documents from RAG response
       const ragDocuments = ragResponse.context || [];
       
-      // Vision-first logic: If first result is an image with score > 0.52, analyze it with GPT-4o-mini vision
+      // Vision-first logic: If first result is an image with score > 0.53, analyze it with GPT-4o-mini vision
       let enhancedImageDescription = imageDescription;
       if (ragDocuments.length > 0 && 
           ragDocuments[0].metadata?.type === 'image' && 
-          (ragDocuments[0].metadata?.score || 0) > 0.52) {
+          (ragDocuments[0].metadata?.score || 0) > 0.53) {
         try {
           console.log('🖼️ First result is an image - triggering vision-first analysis');
           const firstImageDoc = ragDocuments[0];
