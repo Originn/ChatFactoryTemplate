@@ -22,38 +22,54 @@ const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
   const { theme } = useTheme();
   const [userInitials, setUserInitials] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [userPhotoURL, setUserPhotoURL] = useState<string | null>(null);
+  const [photoLoadError, setPhotoLoadError] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const router = useRouter();
 
   useEffect(() => {
-    // Get user email and initials
-    const user = auth.currentUser;
-    if (user?.email) {
-      setUserEmail(user.email);
-    }
-    
-    if (user?.displayName) {
-      // If user has a display name, use the first letter of each part
-      const names = user.displayName.split(' ');
-      const initials = names.map(name => name.charAt(0).toUpperCase()).join('');
-      setUserInitials(initials.substring(0, 2)); // Limit to 2 characters
-    } else if (user?.email) {
-      const email = user.email;
-      // Try to extract two initials from email (username part)
-      const username = email.split('@')[0];
-      // First try to split by dot or underscore to get name parts
-      let parts = username.split(/[._-]/);
-      if (parts.length > 1) {
-        // Use first letters of first two parts
-        setUserInitials((parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase());
+    // Set up real-time auth state listener for dynamic profile updates
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user?.email) {
+        setUserEmail(user.email);
       } else {
-        // If no separator, use first two letters of username
-        setUserInitials(username.substring(0, 2).toUpperCase());
+        setUserEmail('');
       }
-    } else {
-      setUserInitials('U');
-    }
+      
+      // Get user's profile photo from Google (if available)
+      if (user?.photoURL) {
+        setUserPhotoURL(user.photoURL);
+        setPhotoLoadError(false); // Reset error when new photo is loaded
+      } else {
+        setUserPhotoURL(null);
+      }
+      
+      if (user?.displayName) {
+        // If user has a display name, use the first letter of each part
+        const names = user.displayName.split(' ');
+        const initials = names.map(name => name.charAt(0).toUpperCase()).join('');
+        setUserInitials(initials.substring(0, 2)); // Limit to 2 characters
+      } else if (user?.email) {
+        const email = user.email;
+        // Try to extract two initials from email (username part)
+        const username = email.split('@')[0];
+        // First try to split by dot or underscore to get name parts
+        let parts = username.split(/[._-]/);
+        if (parts.length > 1) {
+          // Use first letters of first two parts
+          setUserInitials((parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase());
+        } else {
+          // If no separator, use first two letters of username
+          setUserInitials(username.substring(0, 2).toUpperCase());
+        }
+      } else {
+        setUserInitials('U');
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -98,16 +114,18 @@ const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
         }}
       >
         <Avatar 
+          src={(userPhotoURL && !photoLoadError) ? userPhotoURL : undefined}
+          onError={() => setPhotoLoadError(true)}
           sx={{ 
             width: 32, 
             height: 32, 
-            bgcolor: 'primary.main', 
+            bgcolor: (userPhotoURL && !photoLoadError) ? 'transparent' : 'primary.main', 
             fontSize: '0.875rem',
             position: 'relative',
             top: '0'
           }}
         >
-          {userInitials}
+          {(!userPhotoURL || photoLoadError) && userInitials}
         </Avatar>
       </Button>
       
