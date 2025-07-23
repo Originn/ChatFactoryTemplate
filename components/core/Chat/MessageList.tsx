@@ -8,6 +8,7 @@ import {
   Card,
   CardContent,
   Box,
+  Avatar,
 } from '@mui/material';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import FeedbackComponent from './FeedbackComponent';
@@ -15,6 +16,7 @@ import { ImagePreviewData } from '@/components/core/Media';
 import { handleWebinarClick, handleDocumentClick } from '@/utils/tracking';
 import { ChatMessage } from './types';
 import PdfSourceLink from './PdfSourceLink';
+import { auth } from '@/utils/firebase';
 
 interface CustomLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   href?: string;
@@ -25,6 +27,53 @@ const CustomLink: React.FC<CustomLinkProps> = ({ href, children, ...props }) => 
     {children}
   </a>
 );
+
+// User Avatar component that shows Google profile image with fallback to static icon
+const UserAvatar = memo(({ fallbackIconSrc }: { fallbackIconSrc: string }) => {
+  const [userPhotoURL, setUserPhotoURL] = React.useState<string | null>(null);
+  const [photoLoadError, setPhotoLoadError] = React.useState(false);
+
+  React.useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user?.photoURL) {
+        // Normalize Google Photos URL for consistent loading
+        let photoUrl = user.photoURL;
+        if (photoUrl.includes('googleusercontent.com')) {
+          photoUrl = photoUrl.replace(/=s\d+-c$/, '=s96-c');
+        }
+        setUserPhotoURL(photoUrl);
+        setPhotoLoadError(false);
+      } else {
+        setUserPhotoURL(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // If we have a profile photo and it hasn't failed to load, use Avatar
+  if (userPhotoURL && !photoLoadError) {
+    return (
+      <Avatar
+        src={userPhotoURL}
+        imgProps={{
+          crossOrigin: 'anonymous',
+          referrerPolicy: 'no-referrer'
+        }}
+        onError={() => setPhotoLoadError(true)}
+        sx={{
+          width: 28,
+          height: 28,
+        }}
+      />
+    );
+  }
+
+  // Fallback to static icon
+  return <Image src={fallbackIconSrc} alt="Me" width={28} height={28} priority />;
+});
+
+UserAvatar.displayName = 'UserAvatar';
 
 const shine = keyframes`
   0% {
@@ -526,7 +575,7 @@ const MessageList: React.FC<MessageListProps> = ({
               top: '10px', // Drop icon by 10px
               mr: 1
             }}>
-              <Image key={index} src={imageUrlUserIcon} alt="Me" width={28} height={28} priority />
+              <UserAvatar fallbackIconSrc={imageUrlUserIcon} />
             </Box>
           );
         }
