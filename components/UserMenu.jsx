@@ -63,7 +63,7 @@ const UserMenu = ({ className }) => {
   const handleLogout = async () => {
     try {
       await auth.signOut();
-      router.push('/login'); // Redirect to login page after logout
+      router.push('/'); // Redirect to home page after logout
     } catch (error) {
       console.error('Error signing out:', error);
     }

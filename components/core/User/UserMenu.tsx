@@ -94,7 +94,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
     try {
       await auth.signOut();
       handleClose();
-      router.push('/login'); // Redirect to login page after logout
+      router.push('/'); // Redirect to home page after logout
     } catch (error) {
       console.error('Error signing out:', error);
     }

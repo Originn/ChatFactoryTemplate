@@ -50,7 +50,7 @@ const Settings = () => {
     // Check if user is authenticated
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) {
-        router.push('/login');
+        router.push('/');
         return;
       }
       
