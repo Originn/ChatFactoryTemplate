@@ -5,7 +5,6 @@ import { User } from 'firebase/auth';
 import useChatSSE from '@/hooks/useChatSSE';
 import useTextAreaHeight from '@/hooks/useTextAreaHeight';
 import useTheme from '@/hooks/useTheme';
-import useFileUpload from '@/hooks/useFileUpload';
 import usePasteImageUpload from '@/hooks/usePasteImageUpload';
 import useFileUploadFromHome from '@/hooks/useFileUploadFromHome';
 import { getTemplateConfig } from '../../../config/template';
@@ -134,8 +133,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
     setError,
     messageState,
     setMessageState, 
-    currentStage,
-    setCurrentStage,
     submitTimeRef,
     changeRoom,
     handleNewChat: handleNewChatInternal,
@@ -168,16 +165,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
   const userEmail = (auth.currentUser && auth.currentUser.email) ? auth.currentUser.email : 'testuser@example.com';
 
   // Image upload hooks
-  const {
-    imagePreviews,             // embedding images
-    handleFileChange,          // embed file change
-    handleDeleteImage,
-    setImagePreviews,          // we can push images here in stage=4
-    uploadProgress: internalUploadProgress,
-  } = useFileUpload(setQuery, roomId, auth, setUploadStatus);
-
-  // 🎯 NEW: Control embedding generation
-  const enableImageEmbeddings = process.env.NEXT_PUBLIC_ENABLE_IMAGE_EMBEDDINGS === 'true';
 
   const {
     homeImagePreviews,
@@ -187,8 +174,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
     fileInputRef,
     uploadProgress: homeUploadProgress,
     fileErrors,
-    embeddingStatus,  // 🎯 NEW: Get embedding status
-  } = useFileUploadFromHome(setQuery, roomId, auth, setUploadStatus, enableImageEmbeddings);
+  } = useFileUploadFromHome(setQuery, roomId, auth, setUploadStatus);
 
   const {
     uploadProgress: pasteUploadProgress,
@@ -197,9 +183,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
     roomId,
     auth,
     textAreaRef,
-    setHomeImagePreviews, // normal usage
-    setImagePreviews,     // embedding usage
-    currentStage,
+    setHomeImagePreviews,
     setQuery
   );
 
@@ -238,19 +222,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
   }, [query]);  // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { value } = e.target;
-    if (currentStage === 4) {
-      const lines = value.split('\n');
-      const existingLines = query.split('\n');
-
-      const isEditingUrl = lines.some((line, index) => {
-        const existingLine = existingLines[index] || '';
-        return existingLine.startsWith('http') && line !== existingLine;
-      });
-
-      if (isEditingUrl) {
-        return;
-      }
-    }
     setQuery(value);
   };
 
@@ -291,9 +262,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
     setError(null);
     const trimmedQuery = query.trim();
   
-    // Skip validation if we're at stage 4
-    const skipValidation = currentStage === 4;
-    if (!skipValidation && !trimmedQuery && homeImagePreviews.length === 0) {
+    if (!trimmedQuery && homeImagePreviews.length === 0) {
       alert('Please input a question or upload an image');
       return;
     }
@@ -430,7 +399,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
     return () => unsubscribe(); // Cleanup subscription
   }, []);
 
-  const isPrivateDelete = currentStage !== 4;
   const { messages } = messageState;
 
   return (
@@ -483,27 +451,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
       >
         <Container maxWidth="md">
           <Box display="flex" flexDirection="column" gap={2}>
-          {/* For internal embedding - No change needed here */}
-          {imagePreviews.length > 0 && (
-            <Box
-              sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 1,
-                m: '8px 0',
-              }}
-            >
-              {imagePreviews.map((image, index) => (
-                <ImagePreview
-                  key={index}
-                  image={image}
-                  index={index}
-                  onDelete={(fileName, idx) => handleDeleteImage(fileName, idx || index)}
-                  uploadProgress={pasteUploadProgress[image.fileName] || null}
-                />
-              ))}
-            </Box>
-          )}
           
           {/* Render the EnlargedImageView when an image is clicked */}
           {enlargedImage && (
@@ -620,7 +567,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
                       key={image.fileName} // Use fileName as key
                       image={image}
                       index={index}
-                      onDelete={() => handleHomeDeleteImage(image.fileName, isPrivateDelete)}
+                      onDelete={() => handleHomeDeleteImage(image.fileName)}
                       uploadProgress={
                         pasteUploadProgress[image.fileName] ||
                         homeUploadProgress[image.fileName] ||
@@ -628,39 +575,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
                       }
                       onClick={() => setEnlargedImage(image)}
                     />
-                  ))}
-                </Box>
-              )}
-              
-              {/* Embedding status banner hidden - embeddings now created on-demand */}
-              {false && enableImageEmbeddings && Object.entries(embeddingStatus).length > 0 && (
-                <Box sx={{ mt: 1, mb: 1 }}>
-                  {Object.entries(embeddingStatus).map(([fileName, status]) => (
-                    <Box
-                      key={`embedding-${fileName}`}
-                      sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 1, 
-                        p: 1, 
-                        mb: 0.5,
-                        borderRadius: 1, 
-                        backgroundColor: status === 'success' ? 'success.light' : 
-                                       status === 'error' ? 'error.light' : 'info.light',
-                        color: status === 'success' ? 'success.contrastText' : 
-                               status === 'error' ? 'error.contrastText' : 'info.contrastText',
-                        fontSize: '0.75rem'
-                      }}
-                    >
-                      <Typography variant="caption">
-                        🧠 {fileName}: {
-                          status === 'generating' ? 'Generating embeddings...' :
-                          status === 'success' ? 'Embeddings generated ✅' :
-                          status === 'error' ? 'Embedding failed ❌' :
-                          'Unknown status'
-                        }
-                      </Typography>
-                    </Box>
                   ))}
                 </Box>
               )}
@@ -693,8 +607,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
                   handleChange={handleChange}
                   handleEnter={handleEnter}
                   textAreaRef={textAreaRef}
-                  currentStage={currentStage}
-                  handleFileChange={handleFileChange}
                   handleHomeFileChange={handleHomeFileChange}
                   fileInputRef={fileInputRef}
                 />

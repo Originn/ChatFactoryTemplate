@@ -11,17 +11,11 @@ interface UploadProgress {
   [key: string]: number;
 }
 
-/**
- * If currentStage === 4, we assume embedding mode => push images to setEmbedImagePreviews
- * Otherwise => push to setHomeImagePreviews
- */
 const usePasteImageUpload = (
   roomId: string | null,
   auth: any,
   textAreaRef: React.RefObject<HTMLTextAreaElement>,
   setHomeImagePreviews: React.Dispatch<React.SetStateAction<ImagePreview[]>>,
-  setEmbedImagePreviews: React.Dispatch<React.SetStateAction<ImagePreview[]>>,
-  currentStage: number | null,
   setQuery: (query: string | ((prevQuery: string) => string)) => void
 ) => {
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({});
@@ -42,9 +36,7 @@ const usePasteImageUpload = (
       xhr.open('POST', '/api/upload', true);
       xhr.setRequestHeader('Authorization', userEmail);
 
-      // If we are in embedding mode (stage=4), we might do a 'public' upload
-      const isPublicUpload = currentStage === 4;
-      xhr.setRequestHeader('x-upload-type', isPublicUpload ? 'public' : 'private');
+      xhr.setRequestHeader('x-upload-type', 'private');
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -86,15 +78,7 @@ const usePasteImageUpload = (
             if (data.imageUrls) {
               data.imageUrls.forEach(({ url, fileName }: { url: string; fileName: string }) => {
                 const newPreview: ImagePreview = { url, fileName };
-
-                // Decide which array to push to:
-                if (currentStage === 4) {
-                  setEmbedImagePreviews(prev => [...prev, newPreview]);
-                  // If embedding flow expects you to put the URL into the text
-                  setQuery(prev => `${prev}\n${url}`);
-                } else {
-                  setHomeImagePreviews(prev => [...prev, newPreview]);
-                }
+                setHomeImagePreviews(prev => [...prev, newPreview]);
 
                 setPastedImagePreviews(prev => [...prev, newPreview]);
 
@@ -126,9 +110,7 @@ const usePasteImageUpload = (
   }, [
     textAreaRef,
     auth,
-    currentStage,
     setHomeImagePreviews,
-    setEmbedImagePreviews,
     setQuery
   ]);
 

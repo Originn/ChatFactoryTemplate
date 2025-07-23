@@ -31,8 +31,6 @@ interface ChatInputProps {
   handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleEnter: (e: React.KeyboardEvent) => void;
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
-  currentStage: number | null;
-  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleHomeFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   fileInputRef: React.RefObject<HTMLInputElement>;
 }
@@ -49,21 +47,15 @@ const ChatInput: React.FC<ChatInputProps> = ({
   handleChange,
   handleEnter,
   textAreaRef,
-  currentStage,
-  handleFileChange,
   handleHomeFileChange,
   fileInputRef,
 }) => {
   // Get the current theme
   const { theme } = useTheme();
   
-  // Menu state for upload options (general)
+  // Menu state for upload options
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  
-  // Menu state for stage 4 upload options
-  const [anchorElStage4, setAnchorElStage4] = useState<null | HTMLElement>(null);
-  const openStage4 = Boolean(anchorElStage4);
   
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -73,36 +65,15 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setAnchorEl(null);
   };
   
-  const handleMenuClickStage4 = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorElStage4(event.currentTarget);
-  };
-  
-  const handleMenuCloseStage4 = () => {
-    setAnchorElStage4(null);
-  };
-  
   const handleImageUpload = () => {
     handleMenuClose();
     fileInputRef.current?.click();
-  };
-  
-  const handleImageUploadStage4 = () => {
-    handleMenuCloseStage4();
-    // Trigger the stage 4 file input
-    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-    fileInput?.click();
   };
   
   const handleDocumentUpload = () => {
     handleMenuClose();
     // TODO: Implement document upload logic
     console.log('Document upload will be implemented later');
-  };
-  
-  const handleDocumentUploadStage4 = () => {
-    handleMenuCloseStage4();
-    // TODO: Implement document upload logic for stage 4
-    console.log('Document upload for stage 4 will be implemented later');
   };
   
   // Auto-resize textarea based on content, but limit max height
@@ -234,7 +205,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         )}
 
         {/* Microphone recorder positioned between image upload and send button */}
-        {currentStage !== 4 && !loading && (
+        {!loading && (
           <Box sx={{ 
             position: 'absolute', 
             top: '50%', 
@@ -270,63 +241,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
           </Box>
         )}
 
-        {currentStage === 4 ? (
-          !loading && (
-            <>
-              <input
-                id="fileInput"
-                type="file"
-                accept="image/jpeg"
-                hidden
-                onChange={handleFileChange}
-                multiple
-              />
-              <Tooltip title="Upload options">
-                <IconButton 
-                  onClick={handleMenuClickStage4}
-                  sx={{ 
-                    position: 'absolute', 
-                    top: '50%', 
-                    transform: 'translateY(-50%)', 
-                    right: 56, 
-                    zIndex: 1 
-                  }}
-                >
-                  <Plus size={20} />
-                </IconButton>
-              </Tooltip>
-              <Menu
-                anchorEl={anchorElStage4}
-                open={openStage4}
-                onClose={handleMenuCloseStage4}
-                MenuListProps={{
-                  'aria-labelledby': 'upload-options-stage4-button',
-                }}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-              >
-                <MenuItem onClick={handleImageUploadStage4}>
-                  <ListItemIcon>
-                    <ImageIcon size={20} />
-                  </ListItemIcon>
-                  <ListItemText>Upload Image</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={handleDocumentUploadStage4}>
-                  <ListItemIcon>
-                    <FileText size={20} />
-                  </ListItemIcon>
-                  <ListItemText>Upload Document</ListItemText>
-                </MenuItem>
-              </Menu>
-            </>
-          )
-        ) : null}
 
         {!isMicActive && (
           <Tooltip title="Send">
