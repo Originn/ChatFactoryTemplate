@@ -327,14 +327,8 @@ const SourceDocuments = memo(({
             const webinarTimestamps = new Set();
 
             return sourceDocs
-              .filter((doc, index) => {
-                // Show first image only if it's the first result and score > 0.52
-                if (doc.metadata.type === 'image') {
-                  return index === 0 && (doc.metadata.score || 0) > 0.52;
-                }
-                // For non-image sources, use existing threshold
-                return (doc.metadata.score || 0) > 0.5348;
-              })
+              .filter(doc => doc.metadata.type !== 'image') // Filter out image sources
+              .filter(doc => (doc.metadata.score || 0) > 0.5348) // Filter by score threshold
               .map((doc, docIndex) => {
               let title;
               if (doc.metadata.type === 'youtube' || doc.metadata.type === 'vimeo') {
@@ -345,8 +339,6 @@ const SourceDocuments = memo(({
                 } else {
                   return null;
                 }
-              } else if (doc.metadata.type === 'image') {
-                title = `Image`;
               } else {
                 documentCount++;
                 title = `Document ${documentCount}`;
@@ -431,16 +423,6 @@ const SourceDocuments = memo(({
                           ) : (
                             'Unavailable'
                           )}
-                        </p>
-                      );
-                    } else if (doc.metadata.type === 'image') {
-                      return (
-                        <p>
-                          <ReactMarkdown
-                            components={{ a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} /> }}
-                          >
-                            {doc.pageContent}
-                          </ReactMarkdown>
                         </p>
                       );
                     } else if (doc.metadata.type === 'sentinel') {
