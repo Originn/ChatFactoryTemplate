@@ -96,6 +96,9 @@ const UserMessage = memo(({
         display: 'flex',
         alignItems: 'flex-start',
         color: theme === 'dark' ? '#ffffff' : '#000000',
+        wordWrap: 'break-word',
+        wordBreak: 'break-word',
+        overflowWrap: 'break-word',
         ...(highlight && {
           position: 'relative',
           overflow: 'hidden',
@@ -187,7 +190,10 @@ const ApiMessage = memo(({
         width: '100%',
         display: 'flex',
         alignItems: 'flex-start',
-        color: theme === 'dark' ? '#ffffff' : '#000000'
+        color: theme === 'dark' ? '#ffffff' : '#000000',
+        wordWrap: 'break-word',
+        wordBreak: 'break-word',
+        overflowWrap: 'break-word',
       }}
     >
       {icon}
@@ -487,7 +493,15 @@ const MessageList: React.FC<MessageListProps> = ({
   const borderColor = theme === 'dark' ? '#444444' : '#eeeeee';
 
   return (
-    <List sx={{ padding: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }} className="chat-message-list">
+    <List sx={{ 
+      padding: 0, 
+      width: '100%', 
+      maxWidth: '100%', 
+      boxSizing: 'border-box',
+      height: '100%',
+      overflow: 'visible', // Allow natural flow within container
+      margin: 0,
+    }} className="chat-message-list">
       {messages.map((message, index) => {
         let icon;
         

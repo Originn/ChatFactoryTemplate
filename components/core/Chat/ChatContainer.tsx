@@ -552,16 +552,17 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
                   sx={{
                     width: '100%',
                     border: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0',
-                    borderRadius: 1.5, // Restore rounded corners
+                    borderRadius: 1.5,
                     boxShadow: theme === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
                     backgroundColor: theme === 'dark' ? '#000000' : 'white',
                     mb: '1px',
                     position: 'relative',
                     transition: 'height 0.3s ease',
-                    flex: '1 1 auto', // Allow shrinking
+                    flex: '1 1 auto',
                     display: 'flex',
                     flexDirection: 'column',
-                    minHeight: '300px', // Increased from 280px since we reclaimed space
+                    minHeight: '300px',
+                    overflow: 'hidden', // Prevent content from overflowing chatbox borders
                   }}
                 >
                   <Box
@@ -569,14 +570,18 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
                     className="chat-message-list"
                     sx={{
                       width: '100%',
-                      flex: '1 1 auto', // Allow this to shrink
+                      height: '100%', // Take full height of container
+                      flex: '1 1 auto',
                       overflowY: 'auto', // Enable scrolling for chat messages
                       overflowX: 'hidden', // Prevent horizontal scroll
                       position: 'relative',
-                      paddingBottom: '2px', // Reduced from 5px to 2px (saves 3px)
-                      marginBottom: '0px', // Reduced from 2px to 0px (saves 2px)
-                      scrollPaddingBottom: '5px', // Reduced from 10px to 5px (saves 5px)
-                      maxHeight: '100%', // Ensure it doesn't exceed parent
+                      paddingBottom: '2px',
+                      marginBottom: '0px',
+                      scrollPaddingBottom: '5px',
+                      // Ensure messages stay within chatbox borders
+                      boxSizing: 'border-box',
+                      // Add padding to prevent messages from touching borders
+                      padding: '8px',
                     }}
                   >
                     <MessageList
