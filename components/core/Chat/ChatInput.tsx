@@ -1,12 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   TextField,
   IconButton,
   Tooltip,
   Typography,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
-import { Send } from 'lucide-react';
+import { Send, Plus, Image as ImageIcon, FileText } from 'lucide-react';
 import { LoadingDots } from '@/components/ui/Loaders';
 import { MicrophoneRecorder } from '@/components/core/Media';
 import Image from 'next/image';
@@ -52,6 +56,54 @@ const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   // Get the current theme
   const { theme } = useTheme();
+  
+  // Menu state for upload options (general)
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  
+  // Menu state for stage 4 upload options
+  const [anchorElStage4, setAnchorElStage4] = useState<null | HTMLElement>(null);
+  const openStage4 = Boolean(anchorElStage4);
+  
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+  
+  const handleMenuClickStage4 = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElStage4(event.currentTarget);
+  };
+  
+  const handleMenuCloseStage4 = () => {
+    setAnchorElStage4(null);
+  };
+  
+  const handleImageUpload = () => {
+    handleMenuClose();
+    fileInputRef.current?.click();
+  };
+  
+  const handleImageUploadStage4 = () => {
+    handleMenuCloseStage4();
+    // Trigger the stage 4 file input
+    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+    fileInput?.click();
+  };
+  
+  const handleDocumentUpload = () => {
+    handleMenuClose();
+    // TODO: Implement document upload logic
+    console.log('Document upload will be implemented later');
+  };
+  
+  const handleDocumentUploadStage4 = () => {
+    handleMenuCloseStage4();
+    // TODO: Implement document upload logic for stage 4
+    console.log('Document upload for stage 4 will be implemented later');
+  };
   
   // Auto-resize textarea based on content, but limit max height
   useEffect(() => {
@@ -123,7 +175,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           />
         </div>
 
-        {/* General file upload */}
+        {/* Upload options menu */}
         {!loading && (
           <>
             <input
@@ -135,10 +187,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
               hidden
               id="generalFileInput"
             />
-            <Tooltip title="Upload image">
+            <Tooltip title="Upload options">
               <IconButton 
-                component="label" 
-                htmlFor="generalFileInput" 
+                onClick={handleMenuClick}
                 sx={{ 
                   position: 'absolute', 
                   top: '50%', 
@@ -147,9 +198,38 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   zIndex: 1 
                 }}
               >
-                <Image src="/image-upload-48.png" alt="Upload JPG" width={20} height={20} />
+                <Plus size={20} />
               </IconButton>
             </Tooltip>
+            <Menu
+              anchorEl={anchorEl}
+              open={open}
+              onClose={handleMenuClose}
+              MenuListProps={{
+                'aria-labelledby': 'upload-options-button',
+              }}
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+            >
+              <MenuItem onClick={handleImageUpload}>
+                <ListItemIcon>
+                  <ImageIcon size={20} />
+                </ListItemIcon>
+                <ListItemText>Upload Image</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={handleDocumentUpload}>
+                <ListItemIcon>
+                  <FileText size={20} />
+                </ListItemIcon>
+                <ListItemText>Upload Document</ListItemText>
+              </MenuItem>
+            </Menu>
           </>
         )}
 
@@ -201,10 +281,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 onChange={handleFileChange}
                 multiple
               />
-              <Tooltip title="Upload image">
+              <Tooltip title="Upload options">
                 <IconButton 
-                  component="label" 
-                  htmlFor="fileInput" 
+                  onClick={handleMenuClickStage4}
                   sx={{ 
                     position: 'absolute', 
                     top: '50%', 
@@ -213,9 +292,38 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     zIndex: 1 
                   }}
                 >
-                  <Image src="/image-upload-48.png" alt="Upload JPG" width={20} height={20} />
+                  <Plus size={20} />
                 </IconButton>
               </Tooltip>
+              <Menu
+                anchorEl={anchorElStage4}
+                open={openStage4}
+                onClose={handleMenuCloseStage4}
+                MenuListProps={{
+                  'aria-labelledby': 'upload-options-stage4-button',
+                }}
+                anchorOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+              >
+                <MenuItem onClick={handleImageUploadStage4}>
+                  <ListItemIcon>
+                    <ImageIcon size={20} />
+                  </ListItemIcon>
+                  <ListItemText>Upload Image</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={handleDocumentUploadStage4}>
+                  <ListItemIcon>
+                    <FileText size={20} />
+                  </ListItemIcon>
+                  <ListItemText>Upload Document</ListItemText>
+                </MenuItem>
+              </Menu>
             </>
           )
         ) : null}
