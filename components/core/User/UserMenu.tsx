@@ -39,8 +39,13 @@ const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
       
       // Get user's profile photo from Google (if available)
       if (user?.photoURL) {
-        setUserPhotoURL(user.photoURL);
-        setPhotoLoadError(false); // Reset error when new photo is loaded
+        // Normalize Google Photos URL for consistent loading
+        let photoUrl = user.photoURL;
+        if (photoUrl.includes('googleusercontent.com')) {
+          photoUrl = photoUrl.replace(/=s\d+-c$/, '=s96-c');
+        }
+        setUserPhotoURL(photoUrl);
+        setPhotoLoadError(false);
       } else {
         setUserPhotoURL(null);
       }
@@ -115,6 +120,10 @@ const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
       >
         <Avatar 
           src={(userPhotoURL && !photoLoadError) ? userPhotoURL : undefined}
+          imgProps={{
+            crossOrigin: 'anonymous',
+            referrerPolicy: 'no-referrer'
+          }}
           onError={() => setPhotoLoadError(true)}
           sx={{ 
             width: 32, 
