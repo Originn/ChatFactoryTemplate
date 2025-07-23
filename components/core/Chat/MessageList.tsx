@@ -324,18 +324,11 @@ const SourceDocuments = memo(({
           {(() => {
             let webinarCount = 0;
             let documentCount = 0;
-            let imageCount = 0;
             const webinarTimestamps = new Set();
 
             return sourceDocs
-              .filter(doc => {
-                // Include images only if score > 0.52, otherwise filter them out
-                if (doc.metadata.type === 'image') {
-                  return (doc.metadata.score || 0) > 0.52;
-                }
-                // For non-image sources, use the existing threshold
-                return (doc.metadata.score || 0) > 0.5348;
-              })
+              .filter(doc => doc.metadata.type !== 'image') // Filter out image sources
+              .filter(doc => (doc.metadata.score || 0) > 0.5348) // Filter by score threshold
               .map((doc, docIndex) => {
               let title;
               if (doc.metadata.type === 'youtube' || doc.metadata.type === 'vimeo') {
@@ -346,9 +339,6 @@ const SourceDocuments = memo(({
                 } else {
                   return null;
                 }
-              } else if (doc.metadata.type === 'image') {
-                imageCount++;
-                title = `Image ${imageCount}`;
               } else {
                 documentCount++;
                 title = `Document ${documentCount}`;
@@ -434,40 +424,6 @@ const SourceDocuments = memo(({
                             'Unavailable'
                           )}
                         </p>
-                      );
-                    } else if (doc.metadata.type === 'image') {
-                      return (
-                        <>
-                          {doc.metadata.source && (
-                            <div style={{ marginBottom: '10px' }}>
-                              <img 
-                                src={doc.metadata.source} 
-                                alt="Source image" 
-                                style={{ 
-                                  maxWidth: '100%', 
-                                  maxHeight: '200px', 
-                                  objectFit: 'contain',
-                                  border: theme === 'dark' ? '1px solid #444444' : '1px solid #dddddd',
-                                  borderRadius: '4px'
-                                }} 
-                                onError={(e) => {
-                                  // Hide image if it fails to load
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          )}
-                          {doc.pageContent && (
-                            <ReactMarkdown
-                              components={{ a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} /> }}
-                            >
-                              {doc.pageContent.split('\n')[0]}
-                            </ReactMarkdown>
-                          )}
-                          <p className="mt-2">
-                            <b>Score:</b> {(doc.metadata.score || 0).toFixed(3)}
-                          </p>
-                        </>
                       );
                     } else if (doc.metadata.type === 'sentinel') {
                       return (
