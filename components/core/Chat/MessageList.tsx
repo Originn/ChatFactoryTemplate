@@ -483,7 +483,7 @@ const MessageList: React.FC<MessageListProps> = ({
 }) => {
   // Define theme-based colors
   const userMessageBg = theme === 'dark' ? '#333333' : '#ffffff';
-  const apiMessageBg = theme === 'dark' ? '#222222' : '#f5f5f5';
+  const apiMessageBg = theme === 'dark' ? '#000000' : '#f5f5f5';
   const borderColor = theme === 'dark' ? '#444444' : '#eeeeee';
 
   return (
