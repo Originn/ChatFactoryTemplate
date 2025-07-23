@@ -1,0 +1,35 @@
+/* Settings and Privacy Policy page styles */
+.settings-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (max-width: 960px) {
+  .settings-container {
+    width: 90%;
+  }
+}
+
+/* Dark mode specific styling for settings page */
+body[data-theme="dark"] .settings-container,
+.dark .settings-container,
+[data-theme="dark"] .settings-container {
+  color: #ffffff;
+}
+
+/* Essential dark mode form fixes only */
+[data-theme="dark"] select {
+  background-color: #000000;
+  color: #ffffff;
+  border: 1px solid #444444;
+}
+
+[data-theme="dark"] select option {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+[data-theme="dark"] input[type="checkbox"] {
+  accent-color: #3b82f6;
+}

@@ -1,0 +1,506 @@
+// UPDATED: Email verification page for Firebase-verified users
+// Version: 2.2 - Material-UI styling + Firebase config debug
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import { 
+  applyActionCode, 
+  signInWithEmailAndPassword, 
+  checkActionCode,
+  updatePassword
+} from 'firebase/auth';
+import { auth } from 'utils/firebase';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  CircularProgress,
+  Alert,
+  Container
+} from '@mui/material';
+
+interface VerificationState {
+  step: 'verifying' | 'set-password' | 'success' | 'error';
+  email?: string;
+  error?: string;
+}
+
+const EmailVerificationPage = () => {
+  const router = useRouter();
+  const [state, setState] = useState<VerificationState>({ step: 'verifying' });
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const handleEmailVerification = async () => {
+      // Debug Firebase config
+      console.log('🔧 Email Verification Debug - Firebase Config:', {
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.slice(0, 20) + '...',
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        hasValidConfig: !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
+                          process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN && 
+                          process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)
+      });
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const mode = urlParams.get('mode');
+      const oobCode = urlParams.get('oobCode');
+      const chatbotId = urlParams.get('chatbot');
+      const customToken = urlParams.get('token');
+
+      console.log('🔍 Email verification debug:', { 
+        mode, 
+        hasOobCode: !!oobCode, 
+        chatbotId, 
+        hasCustomToken: !!customToken,
+        allParams: Object.fromEntries(urlParams.entries())
+      });
+
+      // NEW: Handle custom token flow (our new invitation system)
+      if (customToken && chatbotId && (mode === 'setup' || !mode)) {
+        console.log('✅ Custom token flow detected - proceeding to password setup');
+        setState({ 
+          step: 'set-password',
+          email: 'setup-with-token' // Special marker for custom token flow
+        });
+        return;
+      }
+
+      // Check if this is a Firebase redirect (no mode/oobCode but has chatbot)
+      if (!mode && !oobCode && chatbotId) {
+        console.log('🔧 Firebase redirect detected - email already verified by Firebase');
+        // Firebase already handled verification and redirected here
+        // Show password setup form directly
+        setState({ 
+          step: 'set-password',
+          email: 'your verified email' // We'll get this from auth state or user input
+        });
+        return;
+      }
+
+      if (mode === 'verifyEmail' && oobCode) {
+        try {
+          // First check the action code to get email information
+          console.log('🔧 Checking action code...');
+          const actionCodeInfo = await checkActionCode(auth, oobCode);
+          const userEmail = actionCodeInfo.data.email || '';
+          console.log('✅ Action code checked, email:', userEmail);
+          
+          // Apply the email verification code
+          console.log('🔧 Applying action code...');
+          await applyActionCode(auth, oobCode);
+          console.log('✅ Action code applied successfully');
+          
+          // Check if user is now authenticated
+          console.log('🔍 Auth state after applyActionCode:', {
+            currentUser: !!auth.currentUser,
+            email: auth.currentUser?.email,
+            emailVerified: auth.currentUser?.emailVerified
+          });
+          
+          // Show password creation form
+          setState({ 
+            step: 'set-password',
+            email: userEmail
+          });
+        } catch (error: any) {
+          console.error('❌ Error verifying email:', error);
+          setState({ 
+            step: 'error', 
+            error: `Failed to verify email: ${error.message}. The link may be expired or invalid.` 
+          });
+        }
+      } else {
+        setState({ 
+          step: 'error', 
+          error: 'Invalid verification link.' 
+        });
+      }
+    };
+
+    if (router.isReady) {
+      handleEmailVerification();
+    }
+  }, [router.isReady]);
+
+  const handlePasswordSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      setState(prev => ({ ...prev, error: 'Passwords do not match' }));
+      return;
+    }
+    
+    if (password.length < 6) {
+      setState(prev => ({ ...prev, error: 'Password must be at least 6 characters' }));
+      return;
+    }
+
+    setIsLoading(true);
+    
+    // Get URL parameters for custom token flow
+    const urlParams = new URLSearchParams(window.location.search);
+    const customToken = urlParams.get('token');
+    const chatbotId = urlParams.get('chatbot');
+
+    // NEW: Handle custom token flow via API
+    if (customToken && chatbotId && state.email === 'setup-with-token') {
+      console.log('🔧 Using custom token flow for password setup');
+      
+      try {
+        // Step 1: Validate token
+        console.log('🔍 Validating custom token...');
+        const tokenValidationResponse = await fetch('/api/auth/validate-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token: customToken,
+            chatbotId: chatbotId
+          })
+        });
+
+        const tokenValidation = await tokenValidationResponse.json();
+        console.log('🔍 Token validation response:', tokenValidation);
+
+        if (!tokenValidationResponse.ok) {
+          console.error('❌ Token validation failed:', tokenValidation.error);
+          setState(prev => ({ ...prev, error: tokenValidation.error || 'Invalid setup link' }));
+          setIsLoading(false);
+          return;
+        }
+
+        const userEmailFromToken = tokenValidation.email;
+        console.log('✅ Token validated for email:', userEmailFromToken);
+
+        // Step 2: Setup password via API
+        console.log('🔧 Setting up password via API...');
+        const passwordSetupResponse = await fetch('/api/auth/setup-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token: customToken,
+            newPassword: password,
+            email: userEmailFromToken
+          })
+        });
+
+        const passwordSetupResult = await passwordSetupResponse.json();
+        console.log('🔍 Password setup result:', passwordSetupResult);
+
+        if (!passwordSetupResponse.ok || !passwordSetupResult.success) {
+          console.error('❌ Password setup failed:', passwordSetupResult.error);
+          setState(prev => ({ ...prev, error: passwordSetupResult.error || 'Failed to set password' }));
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('✅ Password setup successful via API');
+
+        // Step 3: Mark token as used
+        try {
+          await fetch('/api/auth/mark-token-used', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: customToken })
+          });
+        } catch (markError) {
+          console.warn('⚠️ Could not mark token as used:', markError);
+        }
+
+        // Step 4: Sign in user with new password (with delay for propagation)
+        console.log('🔧 Waiting for password update to propagate...');
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+        
+        console.log('🔧 Signing in user with new password...');
+        try {
+          await signInWithEmailAndPassword(auth, userEmailFromToken, password);
+          console.log('✅ User signed in successfully');
+        } catch (signInError: any) {
+          console.warn('⚠️ Sign in after password setup failed:', signInError);
+          console.log('🔄 Retrying sign-in with a longer delay...');
+          
+          // Try again after a longer delay
+          await new Promise(resolve => setTimeout(resolve, 3000)); // 3 more seconds
+          try {
+            await signInWithEmailAndPassword(auth, userEmailFromToken, password);
+            console.log('✅ User signed in successfully on retry');
+          } catch (retryError: any) {
+            console.warn('⚠️ Sign in retry also failed:', retryError);
+            // Show manual sign-in option but continue to success
+            console.log('🔧 Proceeding to success page - user can sign in manually if needed');
+          }
+        }
+
+        setState({ step: 'success' });
+        
+        // Redirect to chatbot after success (longer delay for sign-in)
+        setTimeout(() => {
+          router.push('/');
+        }, 5000); // Increased from 2 to 5 seconds
+
+        setIsLoading(false);
+        return;
+
+      } catch (error: any) {
+        console.error('❌ Custom token password setup failed:', error);
+        setState(prev => ({ 
+          ...prev, 
+          error: 'An error occurred while setting up your password. Please try again.' 
+        }));
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // EXISTING: Firebase auth flow (keep for backward compatibility)
+    if (!state.email && !userEmail) {
+      setState(prev => ({ ...prev, error: 'Email address is required' }));
+      setIsLoading(false);
+      return;
+    }
+
+    // Use email from verification state or user input
+    const emailToUse = state.email && state.email !== 'your verified email' ? state.email : userEmail;
+
+    console.log('🔧 Attempting to set password for email:', emailToUse);
+    console.log('🔍 Current auth state:', {
+      currentUser: !!auth.currentUser,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified
+    });
+    
+    try {
+      // Check if user is already authenticated from email verification
+      if (auth.currentUser) {
+        console.log('✅ User is authenticated, setting password directly...');
+        // User is already authenticated after email verification, just set password
+        await updatePassword(auth.currentUser, password);
+        console.log('✅ Password set successfully!');
+        
+        setState({ step: 'success' });
+        
+        // Redirect to chatbot after success
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
+        
+      } else {
+        console.log('⚠️ User not authenticated, trying sign in...');
+        // User is not authenticated, try to sign in (this might fail for invited users)
+        await signInWithEmailAndPassword(auth, emailToUse, password);
+        console.log('✅ Sign in successful!');
+        
+        setState({ step: 'success' });
+        
+        // Redirect to chatbot after success
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
+      }
+      
+    } catch (error: any) {
+      // If sign in fails, it might be because they need to set password first
+      console.error('❌ Sign in error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-login-credentials') {
+        setState(prev => ({ 
+          ...prev, 
+          error: 'There was an issue setting up your account. Please contact support.' 
+        }));
+      } else if (error.code === 'auth/user-not-found') {
+        setState(prev => ({ 
+          ...prev, 
+          error: 'User account not found. Please contact support.' 
+        }));
+      } else {
+        setState(prev => ({ 
+          ...prev, 
+          error: `Authentication failed: ${error.message}` 
+        }));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderContent = () => {
+    switch (state.step) {
+      case 'verifying':
+        return (
+          <Container maxWidth="sm" sx={{ mt: 8 }}>
+            <Card elevation={3}>
+              <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                <Typography variant="h4" component="h1" gutterBottom fontWeight={600}>
+                  Verifying Email...
+                </Typography>
+                <CircularProgress size={40} sx={{ my: 3 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Template v2.2 - Email Verification Handler
+                </Typography>
+              </CardContent>
+            </Card>
+          </Container>
+        );
+
+      case 'set-password':
+        return (
+          <Container maxWidth="sm" sx={{ mt: 8 }}>
+            <Card elevation={3}>
+              <CardContent sx={{ p: 4 }}>
+                <Typography variant="h4" component="h1" gutterBottom textAlign="center" fontWeight={600}>
+                  Set Your Password
+                </Typography>
+                <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 4 }}>
+                  Welcome! Your email has been verified. Please create a password to access the chatbot.
+                </Typography>
+                
+                <Box component="form" onSubmit={handlePasswordSetup} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {(!state.email || (state.email !== 'setup-with-token' && state.email === 'your verified email')) && (
+                    <TextField
+                      type="email"
+                      label="Email Address"
+                      value={userEmail}
+                      onChange={(e) => setUserEmail(e.target.value)}
+                      fullWidth
+                      required
+                      variant="outlined"
+                      autoComplete="email"
+                    />
+                  )}
+                  
+                  <TextField
+                    type="password"
+                    label="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    fullWidth
+                    required
+                    variant="outlined"
+                    inputProps={{ minLength: 6 }}
+                    helperText="Password must be at least 6 characters"
+                  />
+                  
+                  <TextField
+                    type="password"
+                    label="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    fullWidth
+                    required
+                    variant="outlined"
+                    inputProps={{ minLength: 6 }}
+                  />
+                  
+                  {state.error && (
+                    <Alert severity="error" sx={{ mt: 2 }}>
+                      {state.error}
+                    </Alert>
+                  )}
+                  
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    disabled={isLoading || !password || !confirmPassword}
+                    sx={{ mt: 2, py: 1.5 }}
+                  >
+                    {isLoading ? (
+                      <>
+                        <CircularProgress size={20} sx={{ mr: 1 }} />
+                        Setting Password...
+                      </>
+                    ) : (
+                      'Create Password & Access Chatbot'
+                    )}
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          </Container>
+        );
+
+      case 'success':
+        return (
+          <Container maxWidth="sm" sx={{ mt: 8 }}>
+            <Card elevation={3}>
+              <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                <Typography variant="h4" component="h1" gutterBottom fontWeight={600} color="success.main">
+                  Success!
+                </Typography>
+                <Typography variant="body1" sx={{ mb: 3 }}>
+                  Your password has been set successfully. 
+                  {auth.currentUser ? ' You are now signed in.' : ' If not automatically signed in, please use your new password to sign in manually.'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Redirecting you to the chatbot in a few seconds...
+                </Typography>
+                <CircularProgress size={30} color="success" />
+                <Box sx={{ mt: 3 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => router.push('/')}
+                    sx={{ ml: 2 }}
+                  >
+                    Go to Chatbot Now
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          </Container>
+        );
+
+      case 'error':
+        return (
+          <Container maxWidth="sm" sx={{ mt: 8 }}>
+            <Card elevation={3}>
+              <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                <Typography variant="h4" component="h1" gutterBottom fontWeight={600} color="error.main">
+                  Verification Failed
+                </Typography>
+                <Alert severity="error" sx={{ mb: 3, textAlign: 'left' }}>
+                  {state.error}
+                </Alert>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => router.push('/')}
+                >
+                  Go to Chatbot
+                </Button>
+              </CardContent>
+            </Card>
+          </Container>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Box 
+      sx={{ 
+        minHeight: '100vh',
+        backgroundColor: 'background.default',
+        py: 4
+      }}
+    >
+      {renderContent()}
+    </Box>
+  );
+};
+
+export default EmailVerificationPage;

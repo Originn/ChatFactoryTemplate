@@ -1,0 +1,25 @@
+/* Override accordion focus styles */
+[data-radix-accordion-content],
+[data-radix-accordion-trigger],
+[data-radix-accordion-item] {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: #dddddd !important;
+}
+
+[data-radix-accordion-content]:focus,
+[data-radix-accordion-trigger]:focus,
+[data-radix-accordion-item]:focus,
+[data-radix-accordion-content]:focus-visible,
+[data-radix-accordion-trigger]:focus-visible,
+[data-radix-accordion-item]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.dark [data-radix-accordion-content],
+.dark [data-radix-accordion-trigger],
+.dark [data-radix-accordion-item] {
+  border-color: #444444 !important;
+}
