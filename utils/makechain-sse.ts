@@ -16,7 +16,7 @@ import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createChatModel } from './modelProviders';
 import { getRelevantHistory } from './contextManager';
-import { createEmbeddingModel } from './embeddingProviders';
+import { createEmbeddingModel, validateEmbeddingDimensions, getModelDimensions } from './embeddingProviders';
 import { isJinaProvider, createJinaMultimodalEmbedding, createJinaImageOnlyEmbedding, createJinaMultimodalEmbeddingWithBase64, convertImageUrlToBase64 } from './embeddingProviders';
 import {
   qaSystemPrompt
@@ -68,6 +68,10 @@ async function ensureImageEmbeddingsExist(
       console.warn('⚠️ No embedding generated for images');
       return;
     }
+
+    // Validate embedding dimensions match expected
+    const expectedDims = getModelDimensions();
+    validateEmbeddingDimensions(embedding, expectedDims);
 
     console.log(`✅ Generated IMAGE-ONLY embedding with ${embedding.length} dimensions`);
 
@@ -184,6 +188,10 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     if (isJinaProvider() && imageUrls.length > 0) {
       // Keep original embedding logic for RAG compatibility
       queryEmbedding = await createJinaImageOnlyEmbedding(imageUrls);
+      
+      // Validate embedding dimensions
+      const expectedDims = getModelDimensions();
+      validateEmbeddingDimensions(queryEmbedding, expectedDims);
       
       // Separately convert images to base64 for vision processing
       console.log(`🔄 Converting ${imageUrls.length} user images to base64 for vision processing`);
@@ -340,6 +348,10 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     try {
       const { createJinaImageOnlyEmbedding } = await import('./embeddingProviders');
       const imageEmbedding = await createJinaImageOnlyEmbedding(imageUrls);
+      
+      // Validate embedding dimensions
+      const expectedDims = getModelDimensions();
+      validateEmbeddingDimensions(imageEmbedding, expectedDims);
       
       const results: SearchResult[] = await this.vectorStore.similaritySearchVectorWithScore(
         imageEmbedding,

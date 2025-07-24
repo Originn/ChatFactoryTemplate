@@ -56,8 +56,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const originalOpenAIKey = process.env.OPENAI_API_KEY;
+  const originalEmbeddingProvider = process.env.EMBEDDING_PROVIDER;
 
   try {
+    // Log current embedding configuration
+    console.log(`🔧 Embedding Config: Provider=${process.env.EMBEDDING_PROVIDER}, Model=${process.env.EMBEDDING_MODEL}, Dimensions=${process.env.EMBEDDING_DIMENSIONS}`);
+
     // Configure response for SSE
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
@@ -81,10 +85,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Sync chat history
     await syncChatHistory(roomId, history || [], userEmail);
 
-    // Get API key
+    // Get API key - only modify OpenAI key, preserve other env vars
     try {
       const apiKey = await getAPIKeyForProvider('openai', userEmail);
       process.env.OPENAI_API_KEY = apiKey;
+      // Ensure embedding provider is preserved after API key change
+      if (originalEmbeddingProvider) {
+        process.env.EMBEDDING_PROVIDER = originalEmbeddingProvider;
+      }
     } catch (error) {
       console.error('[chat-stream] Error getting API key:', error);
     }
@@ -151,8 +159,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('[chat-stream] Failed to write error:', writeError);
     }
   } finally {
-    // Restore API key
+    // Restore original environment variables
     process.env.OPENAI_API_KEY = originalOpenAIKey;
+    if (originalEmbeddingProvider) {
+      process.env.EMBEDDING_PROVIDER = originalEmbeddingProvider;
+    }
     
     // End response
     try {
@@ -162,6 +173,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 }
+
+// Force Node.js runtime for better SSE support on Vercel
+export const runtime = 'nodejs';
 
 // Important: Configure Next.js API route
 export const config = {
