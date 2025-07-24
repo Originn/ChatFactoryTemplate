@@ -10,9 +10,11 @@ import MemoryService from '@/utils/memoryService';
 import { getUserAIProvider, getAPIKeyForProvider } from '@/db';
 import { createEmbeddingModel, validateEmbeddingConfig } from '@/utils/embeddingProviders';
 
-// Force dynamic rendering for streaming
+// Force dynamic rendering for streaming - CRITICAL for Vercel
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+// Disable static optimization
+export const revalidate = 0;
 
 // Function to synchronize chat history
 async function syncChatHistory(roomId: string, clientHistory: any[], userEmail: string) {
@@ -99,66 +101,105 @@ export async function POST(request: NextRequest) {
     // Create documents array
     const documents: MyDocument[] = [];
 
-    // Create ReadableStream for proper Vercel streaming
+    // Create ReadableStream with proper Vercel streaming implementation
     const encoder = new TextEncoder();
+    
+    let controllerRef: ReadableStreamDefaultController<Uint8Array> | null = null;
+    
     const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          // Helper function to send SSE events
-          const sendEvent = (event: string, data: any) => {
-            const eventData = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-            controller.enqueue(encoder.encode(eventData));
-          };
-
-          // Send initial connection
-          sendEvent('connected', { roomId, timestamp: Date.now() });
-
-          // Send heartbeat to establish connection
-          setTimeout(() => {
-            sendEvent('heartbeat', { timestamp: Date.now() });
-          }, 100);
-
-          // Token callback for streaming
-          const sendToken = (token: string) => {
-            sendEvent('token', { token });
-          };
-
-          // Create and execute chain - pass embedding model to avoid double creation
-          const chain = makeChainSSE(vectorStore, sendToken, userEmail, embeddingModel);
-          const result = await chain.call(question, documents, roomId, userEmail, imageUrls);
-
-          // Send complete response
-          sendEvent('complete', {
-            roomId,
-            sourceDocs: documents,
-            qaId: result.qaId,
-            answer: result.answer,
-          });
-
-          // Send done
-          sendEvent('done', { timestamp: Date.now() });
-
-          // Close the stream
-          controller.close();
-
-        } catch (error: any) {
-          console.error('[chat-stream] Stream error:', error);
-          
-          // Send error event
-          const errorEvent = `event: error\ndata: ${JSON.stringify({ 
-            message: error.message || 'An error occurred',
-            code: error.code || 'UNKNOWN_ERROR'
-          })}\n\n`;
-          controller.enqueue(encoder.encode(errorEvent));
-          controller.close();
-        } finally {
-          // Restore original environment variables
-          process.env.OPENAI_API_KEY = originalOpenAIKey;
-          if (originalEmbeddingProvider) {
-            process.env.EMBEDDING_PROVIDER = originalEmbeddingProvider;
+      start(controller) {
+        controllerRef = controller;
+        
+        // Helper function to send SSE events safely
+        const sendEvent = (event: string, data: any) => {
+          if (controllerRef && (!controllerRef.desiredSize || controllerRef.desiredSize > 0)) {
+            try {
+              const eventData = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+              controllerRef.enqueue(encoder.encode(eventData));
+            } catch (err) {
+              console.error('[chat-stream] Error sending event:', err);
+            }
           }
-        }
+        };
+
+        // Async function to handle the streaming logic
+        const handleStreaming = async () => {
+          try {
+            // Send initial connection
+            sendEvent('connected', { roomId, timestamp: Date.now() });
+
+            // Send heartbeat to establish connection
+            await new Promise(resolve => setTimeout(resolve, 100));
+            sendEvent('heartbeat', { timestamp: Date.now() });
+
+            // Token callback for streaming
+            const sendToken = (token: string) => {
+              sendEvent('token', { token });
+            };
+
+            // Create and execute chain - pass embedding model to avoid double creation
+            const chain = makeChainSSE(vectorStore, sendToken, userEmail, embeddingModel);
+            const result = await chain.call(question, documents, roomId, userEmail, imageUrls);
+
+            // Send complete response
+            sendEvent('complete', {
+              roomId,
+              sourceDocs: documents,
+              qaId: result.qaId,
+              answer: result.answer,
+            });
+
+            // Send done
+            sendEvent('done', { timestamp: Date.now() });
+
+            // Close the stream safely
+            if (controllerRef) {
+              controllerRef.close();
+              controllerRef = null;
+            }
+
+          } catch (error: any) {
+            console.error('[chat-stream] Stream error:', error);
+            
+            // Send error event
+            if (controllerRef) {
+              try {
+                const errorEvent = `event: error\ndata: ${JSON.stringify({ 
+                  message: error.message || 'An error occurred',
+                  code: error.code || 'UNKNOWN_ERROR'
+                })}\n\n`;
+                controllerRef.enqueue(encoder.encode(errorEvent));
+                controllerRef.close();
+                controllerRef = null;
+              } catch (closeError) {
+                console.error('[chat-stream] Error closing stream after error:', closeError);
+              }
+            }
+          } finally {
+            // Restore original environment variables
+            process.env.OPENAI_API_KEY = originalOpenAIKey;
+            if (originalEmbeddingProvider) {
+              process.env.EMBEDDING_PROVIDER = originalEmbeddingProvider;
+            }
+          }
+        };
+
+        // Start the streaming process
+        handleStreaming();
       },
+      
+      cancel() {
+        // Clean up when stream is cancelled
+        console.log('[chat-stream] Stream cancelled');
+        if (controllerRef) {
+          controllerRef = null;
+        }
+        // Restore environment variables on cancellation
+        process.env.OPENAI_API_KEY = originalOpenAIKey;
+        if (originalEmbeddingProvider) {
+          process.env.EMBEDDING_PROVIDER = originalEmbeddingProvider;
+        }
+      }
     });
 
     // Return streaming response with proper headers for Vercel
