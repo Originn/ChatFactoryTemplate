@@ -3,12 +3,13 @@ const nextConfig = {
   reactStrictMode: false,
   swcMinify: true,
   images: {
-    domains: [
-      'localhost',
-      'firebasestorage.googleapis.com', // Allow Firebase Storage
-      'storage.googleapis.com'          // Alternative Firebase Storage domain
-    ],
     remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: 'firebasestorage.googleapis.com',
