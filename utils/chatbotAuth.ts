@@ -15,6 +15,7 @@ interface ChatbotUserProfile {
   chatbotName: string;
   createdAt: any;
   lastLoginAt: any;
+  signInProvider?: string;
 }
 
 export class ChatbotAuthService {

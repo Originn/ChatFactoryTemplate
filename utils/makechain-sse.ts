@@ -23,7 +23,7 @@ import {
 } from './prompts/promptTemplates';
 import { getTemplateConfig } from '../config/template';
 import { ensureChatSession } from './chatSession';
-import { processImagesWithContext, processImagesWithContextStreaming, processImageWithOpenAIStreaming, processInputConsolidated } from './inputProcessing';
+import { processImagesWithContext, processImagesWithContextStreaming, processImageWithOpenAI, processImageWithOpenAIStreaming, processInputConsolidated } from './inputProcessing';
 
 // Environment configuration
 const ENV = {
@@ -530,7 +530,7 @@ export const makeChainSSE = (
 
       // Create RAG chain
       const ragChain = await createRetrievalChain({
-        retriever: historyAwareRetriever,
+        retriever: historyAwareRetriever as any,
         combineDocsChain: questionAnswerChain,
       });
 
@@ -621,7 +621,7 @@ export const makeChainSSE = (
               });
               
               // Update the RAG response with enhanced version
-              ragResponse.answer = enhancedAnswer.answer || enhancedAnswer;
+              ragResponse.answer = typeof enhancedAnswer === 'string' ? enhancedAnswer : ((enhancedAnswer as any)?.answer || enhancedAnswer);
               console.log('✅ Enhanced answer generated with same documents');
             }
           }
@@ -803,7 +803,7 @@ export const makeChainSSE = (
         userEmail,
         Documents,
         qaId,
-        generatedTitle,
+        generatedTitle || undefined,
         language
       );
 

@@ -1,0 +1,3 @@
+# Local environment sync scripts (not needed on Vercel)
+scripts/clean-env.ps1
+.env.backup

@@ -6,7 +6,6 @@ import { User } from 'firebase/auth';
 import useChatSSE from '@/hooks/useChatSSE'; // Changed from useChat
 import useTextAreaHeight from '@/hooks/useTextAreaHeight';
 import useTheme from '@/hooks/useTheme';
-import useFileUpload from '@/hooks/useFileUpload';
 import usePasteImageUpload from '@/hooks/usePasteImageUpload';
 import useFileUploadFromHome from '@/hooks/useFileUploadFromHome';
 import { getTemplateConfig } from '../../../config/template';
