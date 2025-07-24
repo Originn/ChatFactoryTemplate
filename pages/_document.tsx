@@ -4,7 +4,6 @@ import Document from "next/document";
 import Script from "next/script";
 import createEmotionServer from '@emotion/server/create-instance';
 import createEmotionCache from '../utils/createEmotionCache';
-import { getFaviconUrl, getThemeColor } from '../utils/favicon';
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 const CHATBOT_NAME = process.env.NEXT_PUBLIC_CHATBOT_NAME || "AI Assistant";
@@ -18,13 +17,14 @@ export default function MyDocument({ emotionStyleTags }: MyDocumentProps) {
     <Html lang="en">
       <Head>
         {/* Favicon and App Icons */}
-        <link rel="icon" href={getFaviconUrl()} />
-        <link rel="icon" type="image/png" sizes="32x32" href={getFaviconUrl()} />
-        <link rel="icon" type="image/png" sizes="16x16" href={getFaviconUrl()} />
-        <link rel="apple-touch-icon" href={getFaviconUrl()} />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico" />
         <link rel="manifest" href="/site.webmanifest" />
-        <meta name="theme-color" content={getThemeColor()} />
-        <meta name="msapplication-TileColor" content={getThemeColor()} />
+        <meta name="theme-color" content="#000000" />
+        <meta name="msapplication-TileColor" content="#000000" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
         
         {/* Emotion insertion point for MUI styles */}

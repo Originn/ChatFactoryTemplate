@@ -4,7 +4,7 @@ import Head from 'next/head';
 import { ChatbotAuthProvider } from '../contexts/ChatbotAuthContext';
 import MainChatApp from '../components/MainChatApp';
 import { Box } from '@mui/material';
-import { getFaviconUrl, getAppTitle, getAppDescription } from '../utils/favicon';
+import { getAppTitle, getAppDescription } from '../utils/favicon';
 
 const IndexPage: React.FC = () => {
   return (
@@ -13,7 +13,7 @@ const IndexPage: React.FC = () => {
         <title>{getAppTitle()}</title>
         <meta name="description" content={getAppDescription()} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href={getFaviconUrl()} />
+        <link rel="icon" href="/favicon.ico" />
       </Head>
       <Box 
         sx={{ 
