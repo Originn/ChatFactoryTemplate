@@ -4,28 +4,30 @@ import Document from "next/document";
 import Script from "next/script";
 import createEmotionServer from '@emotion/server/create-instance';
 import createEmotionCache from '../utils/createEmotionCache';
+import { getTemplateConfig } from '../config/template';
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-const CHATBOT_NAME = process.env.NEXT_PUBLIC_CHATBOT_NAME || "AI Assistant";
 
 interface MyDocumentProps extends DocumentProps {
   emotionStyleTags: JSX.Element[];
 }
 
 export default function MyDocument({ emotionStyleTags }: MyDocumentProps) {
+  const config = getTemplateConfig();
+
   return (
     <Html lang="en">
       <Head>
-        {/* Favicon and App Icons */}
-        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico" />
-        <link rel="manifest" href="/site.webmanifest" />
-        <meta name="theme-color" content="#000000" />
-        <meta name="msapplication-TileColor" content="#000000" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
+        {/* Dynamic Favicon and App Icons */}
+        <link rel="icon" type="image/x-icon" href={config.favicon.iconUrl} />
+        <link rel="shortcut icon" type="image/x-icon" href={config.favicon.iconUrl} />
+        <link rel="icon" type="image/png" sizes="32x32" href={config.favicon.iconUrl} />
+        <link rel="icon" type="image/png" sizes="16x16" href={config.favicon.iconUrl} />
+        <link rel="apple-touch-icon" sizes="180x180" href={config.favicon.appleTouchIconUrl} />
+        <link rel="manifest" href="/api/manifest" />
+        <meta name="theme-color" content={config.favicon.themeColor} />
+        <meta name="msapplication-TileColor" content={config.favicon.themeColor} />
+        <meta name="msapplication-config" content="/api/browserconfig" />
         
         {/* Emotion insertion point for MUI styles */}
         <meta name="emotion-insertion-point" content="" />

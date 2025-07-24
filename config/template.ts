@@ -23,11 +23,24 @@ export interface TemplateConfig {
   // Custom Domain
   customDomain: string | null;
   isCustomDomainConfigured: boolean;
+
+  // Favicon Configuration
+  favicon: {
+    iconUrl: string;
+    appleTouchIconUrl: string;
+    icon192Url: string;
+    icon512Url: string;
+    themeColor: string;
+    backgroundColor: string;
+    manifestName: string;
+    manifestShortName: string;
+  };
 }
 
 // Helper function to get template values from environment variables
 export const getTemplateConfig = (): TemplateConfig => {
   const customDomain = process.env.NEXT_PUBLIC_CUSTOM_DOMAIN || null;
+  const productName = process.env.NEXT_PUBLIC_PRODUCT_NAME || process.env.NEXT_PUBLIC_CHATBOT_NAME || "AI Assistant";
   
   return {
     // Company Information
@@ -37,12 +50,12 @@ export const getTemplateConfig = (): TemplateConfig => {
     supportUrl: process.env.NEXT_PUBLIC_SUPPORT_URL || "https://yourcompany.com/support",
     
     // Product Information
-    productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || process.env.NEXT_PUBLIC_CHATBOT_NAME || "AI Assistant",
+    productName,
     productLatestVersion: process.env.NEXT_PUBLIC_PRODUCT_LATEST_VERSION || "2024",
     productAbbreviation: process.env.NEXT_PUBLIC_PRODUCT_ABBREVIATION || "AI",
     
     // Branding
-    screenshotAltText: `${process.env.NEXT_PUBLIC_PRODUCT_NAME || process.env.NEXT_PUBLIC_CHATBOT_NAME || "AI Assistant"} screenshot`,
+    screenshotAltText: `${productName} screenshot`,
     
     // Support & Contact
     supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@yourcompany.com",
@@ -50,6 +63,18 @@ export const getTemplateConfig = (): TemplateConfig => {
     
     // Custom Domain
     customDomain,
-    isCustomDomainConfigured: !!customDomain
+    isCustomDomainConfigured: !!customDomain,
+
+    // Favicon Configuration
+    favicon: {
+      iconUrl: process.env.NEXT_PUBLIC_FAVICON_URL || '/favicon.ico',
+      appleTouchIconUrl: process.env.NEXT_PUBLIC_APPLE_TOUCH_ICON_URL || '/favicon.ico',
+      icon192Url: process.env.NEXT_PUBLIC_ICON_192_URL || '/favicon.ico',
+      icon512Url: process.env.NEXT_PUBLIC_ICON_512_URL || '/favicon.ico',
+      themeColor: process.env.NEXT_PUBLIC_THEME_COLOR || '#000000',
+      backgroundColor: process.env.NEXT_PUBLIC_BACKGROUND_COLOR || '#ffffff',
+      manifestName: process.env.NEXT_PUBLIC_MANIFEST_NAME || `${productName} ChatBot`,
+      manifestShortName: process.env.NEXT_PUBLIC_MANIFEST_SHORT_NAME || productName,
+    }
   };
 };
