@@ -92,8 +92,22 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
 
   return (
     <div className={className}>
-      <IconButton onClick={handleMenuToggle} aria-label="View chat history">
-        <Menu size={24} />
+      <IconButton 
+        onClick={handleMenuToggle} 
+        aria-label="View chat history"
+        sx={{ 
+          width: { xs: 32, sm: 40 }, 
+          height: { xs: 32, sm: 40 }, 
+          mr: { xs: 0.5, sm: 1 } 
+        }}
+      >
+        <Menu 
+          size={24}
+          style={{ 
+            width: 'clamp(18px, 4vw, 24px)', 
+            height: 'clamp(18px, 4vw, 24px)' 
+          }} 
+        />
       </IconButton>
       <Drawer anchor="left" open={showMenu} onClose={handleMenuToggle}>
         <Box sx={{ width: 260 }} role="presentation">

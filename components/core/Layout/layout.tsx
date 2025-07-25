@@ -44,7 +44,11 @@ const Layout: FC<LayoutProps> = ({
   const userEmail = auth.currentUser ? auth.currentUser.email : '';
   const { moonIcon } = getIconPaths();
 
-  const iconButtonSx = { width: 40, height: 40, mr: 1 };
+  const iconButtonSx = { 
+    width: { xs: 32, sm: 40 }, 
+    height: { xs: 32, sm: 40 }, 
+    mr: { xs: 0.5, sm: 1 } 
+  };
 
   return (
     <Box 
@@ -77,7 +81,16 @@ const Layout: FC<LayoutProps> = ({
 
             <Tooltip title="Start a new chat">
               <IconButton onClick={handleNewChat} sx={{ ...iconButtonSx, bgcolor: 'primary.main', color: 'white' }} aria-label="Start a new chat">
-                <Image src="/new-chat.png" alt="Start New Chat" width={24} height={24} />
+                <Image 
+                  src="/new-chat.png" 
+                  alt="Start New Chat" 
+                  width={24} 
+                  height={24} 
+                  style={{ 
+                    width: 'clamp(18px, 4vw, 24px)', 
+                    height: 'clamp(18px, 4vw, 24px)' 
+                  }} 
+                />
               </IconButton>
             </Tooltip>
 
@@ -94,17 +107,53 @@ const Layout: FC<LayoutProps> = ({
                 aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
               >
                 {theme === 'dark' ? (
-                  <Image src="icons8-sun.svg" alt="Sun Icon" width={24} height={24} style={{ filter: 'invert(1)' }} />
+                  <Image 
+                    src="icons8-sun.svg" 
+                    alt="Sun Icon" 
+                    width={24} 
+                    height={24} 
+                    style={{ 
+                      filter: 'invert(1)',
+                      width: 'clamp(18px, 4vw, 24px)', 
+                      height: 'clamp(18px, 4vw, 24px)' 
+                    }} 
+                  />
                 ) : (
-                  <Image src={moonIcon} alt="Moon Icon" width={24} height={24} />
+                  <Image 
+                    src={moonIcon} 
+                    alt="Moon Icon" 
+                    width={24} 
+                    height={24} 
+                    style={{ 
+                      width: 'clamp(18px, 4vw, 24px)', 
+                      height: 'clamp(18px, 4vw, 24px)' 
+                    }} 
+                  />
                 )}
               </IconButton>
             </Tooltip>
           </Box>
 
           {/* Center title */}
-          <Box sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
-            <Typography variant="h5" fontWeight="bold" color="primary">
+          <Box sx={{ 
+            position: 'absolute', 
+            left: '50%', 
+            transform: 'translateX(-50%)',
+            maxWidth: { xs: '150px', sm: '300px', md: 'none' },
+            overflow: 'hidden'
+          }}>
+            <Typography 
+              variant="h5" 
+              fontWeight="bold" 
+              color="primary"
+              sx={{
+                fontSize: { xs: '0.9rem', sm: '1.1rem', md: '1.5rem' },
+                textAlign: 'center',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}
+            >
               {config.productName} ChatBot
             </Typography>
           </Box>

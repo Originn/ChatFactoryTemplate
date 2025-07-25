@@ -111,7 +111,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
         sx={{ 
           minWidth: 'auto', 
           p: 0,
-          height: '32px',
+          height: { xs: '28px', sm: '32px' },
           display: 'flex',
           alignItems: 'center',
           position: 'relative',
@@ -126,10 +126,10 @@ const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           }}
           onError={() => setPhotoLoadError(true)}
           sx={{ 
-            width: 32, 
-            height: 32, 
+            width: { xs: 28, sm: 32 }, 
+            height: { xs: 28, sm: 32 }, 
             bgcolor: (userPhotoURL && !photoLoadError) ? 'transparent' : 'primary.main', 
-            fontSize: '0.875rem',
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
             position: 'relative',
             top: '0'
           }}

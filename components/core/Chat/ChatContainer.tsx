@@ -449,7 +449,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
         }}
         handleNewChat={handleNewChat}
       >
-        <Container maxWidth="md">
+        <Container maxWidth="md" sx={{ p: { xs: 1, sm: 2 } }}>
           <Box display="flex" flexDirection="column" gap={2}>
           
           {/* Render the EnlargedImageView when an image is clicked */}
@@ -468,7 +468,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
               flexDirection: 'column',
               justifyContent: 'center',
               alignItems: 'center',
-              p: 0.5, // Reduced from 1 to 0.5 (saves ~8px)
+              p: { xs: 0, sm: 0.5 },
               height: 'calc(100vh - 64px)',
               boxSizing: 'border-box',
             }}
@@ -477,18 +477,18 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
               sx={{
                 display: 'flex',
                 flexDirection: 'column',
-                width: '76vw', // Slightly increased from 75vw for more space
-                height: 'calc(100% - 28px)', // Reduced from 30px to 28px (gains 2px)
+                width: { xs: '100%', sm: '90%', md: '76vw' },
+                height: 'calc(100% - 28px)',
                 position: 'relative',
               }}
             >
               {/* Chat pane (top) */}
               <Box
                 sx={{
-                  flex: '1 1 auto', // Allow shrinking
+                  flex: '1 1 auto',
                   minHeight: 0,
                   width: '100%',
-                  mb: '2px', // Reduced from 5px to 2px (saves 3px)
+                  mb: '2px',
                   borderRadius: 2,
                   position: 'relative',
                   display: 'flex',
@@ -509,7 +509,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
                     display: 'flex',
                     flexDirection: 'column',
                     minHeight: '300px',
-                    overflow: 'hidden', // Prevent content from overflowing chatbox borders
+                    overflow: 'hidden',
                   }}
                 >
                   <Box
@@ -517,17 +517,15 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
                     className="chat-message-list"
                     sx={{
                       width: '100%',
-                      height: '100%', // Take full height of container
+                      height: '100%',
                       flex: '1 1 auto',
-                      overflowY: 'auto', // Enable scrolling for chat messages
-                      overflowX: 'hidden', // Prevent horizontal scroll
+                      overflowY: 'auto',
+                      overflowX: 'hidden',
                       position: 'relative',
                       paddingBottom: '2px',
                       marginBottom: '0px',
                       scrollPaddingBottom: '5px',
-                      // Ensure messages stay within chatbox borders
                       boxSizing: 'border-box',
-                      // Add padding to prevent messages from touching borders
                       padding: '8px',
                     }}
                   >
@@ -564,7 +562,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
                 >
                   {homeImagePreviews.map((image, index) => (
                     <ImagePreview
-                      key={image.fileName} // Use fileName as key
+                      key={image.fileName}
                       image={image}
                       index={index}
                       onDelete={() => handleHomeDeleteImage(image.fileName)}
@@ -617,14 +615,14 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
                 sx={{ 
                   flexShrink: 0,
                   textAlign: 'center', 
-                  mt: 0.25, // Reduced from 0.5 to 0.25 (saves ~2px)
-                  pt: 0.25, // Reduced from 0.5 to 0.25 (saves ~2px)
+                  mt: 0.25,
+                  pt: 0.25,
                 }}
               >
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
                   {config.productName} ChatBot may display inaccurate info so double-check its responses
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.1 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.1, fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
                   © {new Date().getFullYear()} {config.productName}™. All rights reserved.{' '}
                   <Link href="/privacy-policy" color="inherit" underline="hover" sx={{ fontSize: 'inherit' }}>
                     Privacy Policy
