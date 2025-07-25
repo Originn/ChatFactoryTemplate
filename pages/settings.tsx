@@ -395,8 +395,8 @@ const handlePrivacySettingsUpdate = async () => {
       }}>
         <Box sx={{ 
           mx: 'auto', 
-          px: 4, 
-          py: 8, 
+          px: { xs: 2, sm: 4 }, 
+          py: { xs: 4, sm: 8 }, 
           maxWidth: 900
         }}>
           {/* Back to Chat button */}
@@ -426,7 +426,10 @@ const handlePrivacySettingsUpdate = async () => {
             </Link>
           </Box>
 
-          <Typography variant="h4" component="h1" sx={{ mb: 6 }}>
+          <Typography variant="h4" component="h1" sx={{ 
+            mb: { xs: 4, sm: 6 },
+            fontSize: { xs: '1.75rem', sm: '2.125rem' }
+          }}>
             Settings & Privacy
           </Typography>
 
@@ -440,10 +443,17 @@ const handlePrivacySettingsUpdate = async () => {
           <Tabs
             value={activeTab}
             onChange={(_, val) => setActiveTab(val)}
+            variant="scrollable"
+            scrollButtons="auto"
             sx={{ 
-              mb: 6, 
+              mb: { xs: 4, sm: 6 }, 
               borderBottom: 1, 
-              borderColor: theme === 'dark' ? '#444444' : 'divider'
+              borderColor: theme === 'dark' ? '#444444' : 'divider',
+              '& .MuiTab-root': {
+                fontSize: { xs: '0.875rem', sm: '0.9375rem' },
+                minWidth: { xs: 'auto', sm: 160 },
+                px: { xs: 1, sm: 3 }
+              }
             }}
           >
             <Tab label="Your Data" value="data" />
@@ -453,18 +463,24 @@ const handlePrivacySettingsUpdate = async () => {
 
         {activeTab === 'data' && (
 <Box>
-  <Typography variant="h6" sx={{ mb: 4 }}>
+  <Typography variant="h6" sx={{ 
+    mb: { xs: 3, sm: 4 },
+    fontSize: { xs: '1.1rem', sm: '1.25rem' }
+  }}>
     Your Data
   </Typography>
   <Box sx={{ 
     bgcolor: theme === 'dark' ? '#000000' : 'background.paper', 
-    p: 6, 
+    p: { xs: 3, sm: 6 }, 
     borderRadius: 1, 
     boxShadow: 1, 
-    mb: 6,
+    mb: { xs: 3, sm: 6 },
     border: theme === 'dark' ? '1px solid #444444' : 'none'
   }}>
-    <Typography variant="subtitle1" sx={{ mb: 4 }}>
+    <Typography variant="subtitle1" sx={{ 
+      mb: { xs: 3, sm: 4 },
+      fontSize: { xs: '1rem', sm: '1.125rem' }
+    }}>
       Your Data Summary
     </Typography>
     <Typography>Email: {userInfo?.email || 'Loading...'}</Typography>
@@ -474,16 +490,22 @@ const handlePrivacySettingsUpdate = async () => {
   </Box>
   <Box sx={{ 
     bgcolor: theme === 'dark' ? '#000000' : 'background.paper', 
-    p: 6, 
+    p: { xs: 3, sm: 6 }, 
     borderRadius: 1, 
     boxShadow: 1, 
-    mb: 6,
+    mb: { xs: 3, sm: 6 },
     border: theme === 'dark' ? '1px solid #444444' : 'none'
   }}>
-    <Typography variant="subtitle1" sx={{ mb: 2 }}>
+    <Typography variant="subtitle1" sx={{ 
+      mb: 2,
+      fontSize: { xs: '1rem', sm: '1.125rem' }
+    }}>
       Access and Export Your Data
     </Typography>
-    <Typography sx={{ mb: 4 }} color="text.secondary">
+    <Typography sx={{ 
+      mb: { xs: 3, sm: 4 },
+      fontSize: { xs: '0.875rem', sm: '1rem' }
+    }} color="text.secondary">
       Download a copy of your personal data including your chat history and account information.
     </Typography>
     <Button
@@ -505,10 +527,10 @@ const handlePrivacySettingsUpdate = async () => {
   </Box>
   <Box sx={{ 
     bgcolor: theme === 'dark' ? '#000000' : 'background.paper', 
-    p: 6, 
+    p: { xs: 3, sm: 6 }, 
     borderRadius: 1, 
     boxShadow: 1, 
-    mb: 6,
+    mb: { xs: 3, sm: 6 },
     border: theme === 'dark' ? '1px solid #444444' : 'none'
   }}>
     <Typography variant="subtitle1" sx={{ mb: 2 }}>
@@ -525,9 +547,19 @@ const handlePrivacySettingsUpdate = async () => {
         To request complete deletion of all your data including Q&A history, please contact support with your account email address.
       </Typography>
     </Box>
-    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: { sm: 'center' } }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: { xs: 'column', sm: 'row' }, 
+      gap: { xs: 2, sm: 2 }, 
+      alignItems: { xs: 'stretch', sm: 'center' } 
+    }}>
       <select
-        style={{ padding: '8px', borderRadius: '4px' }}
+        style={{ 
+          padding: '8px', 
+          borderRadius: '4px',
+          fontSize: 'clamp(14px, 2.5vw, 16px)',
+          minHeight: '40px'
+        }}
         value={deleteTimeframe}
         onChange={(e) => setDeleteTimeframe(e.target.value)}
       >
@@ -590,7 +622,10 @@ const handlePrivacySettingsUpdate = async () => {
 
         {activeTab === 'privacy' && (
           <div>
-            <Typography variant="h6" sx={{ mb: 4 }}>Privacy Settings</Typography>
+            <Typography variant="h6" sx={{ 
+              mb: { xs: 3, sm: 4 },
+              fontSize: { xs: '1.1rem', sm: '1.25rem' }
+            }}>Privacy Settings</Typography>
             
             <div >
               <Typography variant="subtitle1" sx={{ mb: 4 }}>Data Collection and Processing</Typography>
@@ -628,7 +663,12 @@ const handlePrivacySettingsUpdate = async () => {
                 Choose how long we store your information. This applies to both chat history and Q&A data. Changing this will affect existing and future data.
               </p>
               <select 
-                
+                style={{
+                  padding: '8px',
+                  borderRadius: '4px',
+                  fontSize: 'clamp(14px, 2.5vw, 16px)',
+                  minHeight: '40px'
+                }}
                 value={privacySettings.retentionPeriod}
                 onChange={(e) => setPrivacySettings({...privacySettings, retentionPeriod: e.target.value})}
               >
@@ -666,10 +706,16 @@ const handlePrivacySettingsUpdate = async () => {
 
         {activeTab === 'contact' && (
           <div>
-            <Typography variant="h6" sx={{ mb: 4 }}>Contact Information</Typography>
+            <Typography variant="h6" sx={{ 
+              mb: { xs: 3, sm: 4 },
+              fontSize: { xs: '1.1rem', sm: '1.25rem' }
+            }}>Contact Information</Typography>
             
             <div >
-              <Typography variant="subtitle1" sx={{ mb: 4 }}>GDPR Requests</Typography>
+              <Typography variant="subtitle1" sx={{ 
+                mb: { xs: 3, sm: 4 },
+                fontSize: { xs: '1rem', sm: '1.125rem' }
+              }}>GDPR Requests</Typography>
               <p >
                 For specific GDPR concerns or requests not handled through this interface, you can contact our data protection team:
               </p>
@@ -684,7 +730,10 @@ const handlePrivacySettingsUpdate = async () => {
             </div>
             
             <div >
-              <Typography variant="subtitle1" sx={{ mb: 4 }}>Legal Information</Typography>
+              <Typography variant="subtitle1" sx={{ 
+                mb: { xs: 3, sm: 4 },
+                fontSize: { xs: '1rem', sm: '1.125rem' }
+              }}>Legal Information</Typography>
               
               <div >
                 <div>

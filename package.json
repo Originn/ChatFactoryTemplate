@@ -6,7 +6,7 @@
   "author": "ChatFactory",
   "scripts": {
     "dev": "next dev",
-    "sync-env": "vercel link --yes --project=testbot && powershell -Command \"if (Test-Path .env) { Copy-Item .env .env.backup -Force }\" && vercel env pull --yes .env && powershell -ExecutionPolicy Bypass -File scripts/clean-env.ps1",
+    "sync-env": "vercel link --yes --project=testbot && powershell -Command \"if (Test-Path .env.local) { Copy-Item .env.local .env.old -Force } elseif (Test-Path .env) { Copy-Item .env .env.old -Force }\" && vercel env pull --yes .env.local && powershell -ExecutionPolicy Bypass -File scripts/clean-env.ps1",
     "build": "npm run sync-env >nul 2>&1 || echo Sync failed, continuing... && next build",
     "build:prod": "next build",
     "build:vercel": "NEXT_TELEMETRY_DISABLED=1 next build",

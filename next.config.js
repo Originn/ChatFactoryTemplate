@@ -49,9 +49,10 @@ const nextConfig = {
     ];
   },
   webpack(config, { dev, isServer }) {
-    if (dev) {
-      config.devtool = isServer ? 'source-map' : 'inline-source-map';
-    }
+    // Let Next.js use its optimized default devtool ('eval-source-map') for better performance
+    // if (dev) {
+    //   config.devtool = isServer ? 'source-map' : 'inline-source-map';
+    // }
     
     // Add top-level await support
     config.experiments = { 
