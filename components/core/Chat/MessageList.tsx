@@ -614,10 +614,9 @@ const MessageList: React.FC<MessageListProps> = ({
           icon = (
             <Box sx={{ 
               display: 'flex', 
-              alignItems: 'center', 
-              position: 'relative',
-              top: '10px', // Drop icon by 10px
-              mr: 1
+              alignItems: 'flex-start',
+              mr: 1,
+              mt: '2px' // Small adjustment to align with first line of text
             }}>
               <Image key={index} src={botimageIcon} alt="AI" width={30} height={30} priority style={{ width: 'clamp(24px, 4vw, 30px)', height: 'clamp(24px, 4vw, 30px)' }} />
             </Box>
@@ -626,10 +625,9 @@ const MessageList: React.FC<MessageListProps> = ({
           icon = (
             <Box sx={{ 
               display: 'flex', 
-              alignItems: 'center', 
-              position: 'relative',
-              top: '10px', // Drop icon by 10px
-              mr: 1
+              alignItems: 'flex-start',
+              mr: 1,
+              mt: '2px' // Small adjustment to align with first line of text
             }}>
               <UserAvatar fallbackIconSrc={imageUrlUserIcon} />
             </Box>
