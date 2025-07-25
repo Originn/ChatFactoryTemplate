@@ -192,12 +192,15 @@ const insertChatHistory = async (chatbotId, userEmail, conversationTitle, roomId
   }
 };
 
-const getChatHistory = async (userEmail, range) => {
+const getChatHistory = async (chatbotId, userEmail, range) => {
   // Check if pool is available (server-side only)
   if (!pool) {
     console.warn("Database connection pool is not available on the client side.");
     return []; // Return empty array to indicate no data available
   }
+
+  // Set tenant context for Row Level Security
+  await setTenantContext(chatbotId);
   
   let dateCondition = '';
 
@@ -215,12 +218,12 @@ const getChatHistory = async (userEmail, range) => {
 
   const query = `
     SELECT * FROM user_chat_history 
-    WHERE user_email = $1 ${dateCondition}
+    WHERE chatbot_id = $1 AND user_email = $2 ${dateCondition}
     ORDER BY date DESC;
   `;
 
   try {
-    const res = await pool.query(query, [userEmail]);
+    const res = await pool.query(query, [chatbotId, userEmail]);
     return res.rows; // Return all chat history rows
   } catch (err) {
     console.error('Error fetching chat history:', err);

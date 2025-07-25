@@ -45,6 +45,7 @@ export function insertChatHistory(
 ): Promise<any>;
 
 export function getChatHistory(
+  chatbotId: string,
   userEmail: string, 
   range?: string
 ): Promise<any[]>;

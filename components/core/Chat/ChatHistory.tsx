@@ -37,8 +37,13 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
     setIsLoading(true);
     
     try {
+      const chatbotId = process.env.NEXT_PUBLIC_CHATBOT_ID;
+      if (!chatbotId) {
+        throw new Error('Chatbot ID not configured');
+      }
+
       const response = await fetch(
-        `/api/chat-history?userEmail=${encodeURIComponent(userEmail)}&range=${range}`
+        `/api/chat-history?chatbotId=${encodeURIComponent(chatbotId)}&userEmail=${encodeURIComponent(userEmail)}&range=${range}`
       );
       
       if (!response.ok) {
