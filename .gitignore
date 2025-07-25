@@ -34,6 +34,7 @@ htmlcov/
 .env*.local
 .env
 .env.backup
+.env.old
 
 # Local development scripts
 scripts/clean-env.ps1
