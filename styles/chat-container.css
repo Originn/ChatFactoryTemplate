@@ -135,3 +135,29 @@ body[data-theme="dark"] .accordion-trigger:hover,
 [data-theme="dark"] .accordion-trigger:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
+
+/* Mobile responsive styles for chat messages */
+@media (max-width: 600px) {
+  /* Reduce padding on mobile */
+  .accordion-trigger {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    min-height: 28px !important;
+  }
+  
+  /* Smaller font size for mobile */
+  .accordion-trigger strong {
+    font-size: 13px !important;
+  }
+  
+  /* Reduce spacing in source documents */
+  .accordion-content {
+    padding: 8px 10px !important;
+  }
+  
+  /* Smaller font for source content */
+  .accordion-content p,
+  .accordion-content a {
+    font-size: 0.875rem !important;
+  }
+}

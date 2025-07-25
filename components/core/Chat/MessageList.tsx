@@ -62,15 +62,15 @@ const UserAvatar = memo(({ fallbackIconSrc }: { fallbackIconSrc: string }) => {
         }}
         onError={() => setPhotoLoadError(true)}
         sx={{
-          width: 28,
-          height: 28,
+          width: { xs: 24, sm: 28 },
+          height: { xs: 24, sm: 28 },
         }}
       />
     );
   }
 
   // Fallback to static icon
-  return <Image src={fallbackIconSrc} alt="Me" width={28} height={28} priority />;
+  return <Image src={fallbackIconSrc} alt="Me" width={24} height={24} priority style={{ width: 'clamp(20px, 4vw, 28px)', height: 'clamp(20px, 4vw, 28px)' }} />;
 });
 
 UserAvatar.displayName = 'UserAvatar';
@@ -139,7 +139,7 @@ const UserMessage = memo(({
       alignItems="flex-start"
       sx={{
         backgroundColor: backgroundColor,
-        padding: '15px',
+        padding: { xs: '10px', sm: '15px' },
         borderBottom: `1px solid ${borderColor}`,
         width: '100%',
         display: 'flex',
@@ -148,6 +148,7 @@ const UserMessage = memo(({
         wordWrap: 'break-word',
         wordBreak: 'break-word',
         overflowWrap: 'break-word',
+        fontSize: { xs: '0.875rem', sm: '1rem' },
         ...(highlight && {
           position: 'relative',
           overflow: 'hidden',
@@ -188,9 +189,36 @@ const UserMessage = memo(({
           </Box>
         )}
 
-        <ReactMarkdown components={{ a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} /> }}>
-          {formattedMessage}
-        </ReactMarkdown>
+        <Box 
+          sx={{ 
+            '& *': { 
+              fontSize: { xs: '0.875rem !important', sm: '1rem !important' } 
+            },
+            '& ul, & ol': {
+              paddingLeft: { xs: '16px', sm: '24px' },
+              marginTop: { xs: '4px', sm: '8px' },
+              marginBottom: { xs: '4px', sm: '8px' }
+            },
+            '& li': {
+              marginBottom: { xs: '2px', sm: '4px' },
+              lineHeight: { xs: 1.4, sm: 1.6 }
+            },
+            '& p': {
+              marginTop: { xs: '4px', sm: '8px' },
+              marginBottom: { xs: '4px', sm: '8px' },
+              lineHeight: { xs: 1.4, sm: 1.6 }
+            },
+            '& h1, & h2, & h3, & h4, & h5, & h6': {
+              fontSize: { xs: '1rem !important', sm: '1.125rem !important' },
+              marginTop: { xs: '8px', sm: '12px' },
+              marginBottom: { xs: '4px', sm: '8px' }
+            }
+          }}
+        >
+          <ReactMarkdown components={{ a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} /> }}>
+            {formattedMessage}
+          </ReactMarkdown>
+        </Box>
       </Box>
     </ListItem>
   );
@@ -234,7 +262,7 @@ const ApiMessage = memo(({
       alignItems="flex-start"
       sx={{
         backgroundColor: backgroundColor,
-        padding: '15px',
+        padding: { xs: '10px', sm: '15px' },
         borderBottom: `1px solid ${borderColor}`,
         width: '100%',
         display: 'flex',
@@ -243,6 +271,7 @@ const ApiMessage = memo(({
         wordWrap: 'break-word',
         wordBreak: 'break-word',
         overflowWrap: 'break-word',
+        fontSize: { xs: '0.875rem', sm: '1rem' },
       }}
     >
       {icon}
@@ -266,9 +295,36 @@ const ApiMessage = memo(({
             </Box>
           )}
 
-          <ReactMarkdown components={{ a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} /> }}>
-            {formattedMessage}
-          </ReactMarkdown>
+          <Box 
+            sx={{ 
+              '& *': { 
+                fontSize: { xs: '0.875rem !important', sm: '1rem !important' } 
+              },
+              '& ul, & ol': {
+                paddingLeft: { xs: '16px', sm: '24px' },
+                marginTop: { xs: '4px', sm: '8px' },
+                marginBottom: { xs: '4px', sm: '8px' }
+              },
+              '& li': {
+                marginBottom: { xs: '2px', sm: '4px' },
+                lineHeight: { xs: 1.4, sm: 1.6 }
+              },
+              '& p': {
+                marginTop: { xs: '4px', sm: '8px' },
+                marginBottom: { xs: '4px', sm: '8px' },
+                lineHeight: { xs: 1.4, sm: 1.6 }
+              },
+              '& h1, & h2, & h3, & h4, & h5, & h6': {
+                fontSize: { xs: '1rem !important', sm: '1.125rem !important' },
+                marginTop: { xs: '8px', sm: '12px' },
+                marginBottom: { xs: '4px', sm: '8px' }
+              }
+            }}
+          >
+            <ReactMarkdown components={{ a: (props: React.ComponentProps<'a'>) => <CustomLink {...props} /> }}>
+              {formattedMessage}
+            </ReactMarkdown>
+          </Box>
         </Box>
       </Box>
     </ListItem>
@@ -379,7 +435,7 @@ const SourceDocuments = memo(({
                       boxSizing: 'border-box',
                       paddingLeft: '15px',
                       paddingRight: '15px',
-                      minHeight: '34px', // Reduced from 40px
+                      minHeight: '34px',
                       background: 'transparent',
                       outline: 'none',
                       boxShadow: 'none',
@@ -389,9 +445,9 @@ const SourceDocuments = memo(({
                     }}
                   >
                     <strong style={{ 
-                      letterSpacing: '0.01em', // Slightly increase letter spacing
-                      fontWeight: '600', // Medium bold (not too heavy)
-                      fontSize: '15px', // Slightly larger font
+                      letterSpacing: '0.01em',
+                      fontWeight: '600',
+                      fontSize: '15px',
                       color: theme === 'dark' ? '#ffffff' : '#000000'
                     }}>{title}</strong>
                   </AccordionTrigger>
@@ -563,7 +619,7 @@ const MessageList: React.FC<MessageListProps> = ({
               top: '10px', // Drop icon by 10px
               mr: 1
             }}>
-              <Image key={index} src={botimageIcon} alt="AI" width={30} height={30} priority />
+              <Image key={index} src={botimageIcon} alt="AI" width={30} height={30} priority style={{ width: 'clamp(24px, 4vw, 30px)', height: 'clamp(24px, 4vw, 30px)' }} />
             </Box>
           );
         } else {
