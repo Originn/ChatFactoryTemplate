@@ -134,6 +134,13 @@ const insertChatHistory = async (chatbotId, userEmail, conversationTitle, roomId
     return null; // Return null to indicate no data available
   }
 
+  // Validate that messages is an array
+  if (!Array.isArray(messages)) {
+    console.error('insertChatHistory: messages parameter must be an array, received:', typeof messages, messages);
+    console.error('insertChatHistory: Full parameters:', { chatbotId, userEmail, conversationTitle, roomId, messages });
+    return null;
+  }
+
   // Set tenant context for Row Level Security
   await setTenantContext(chatbotId);
   // Helper function to get all previous image URLs

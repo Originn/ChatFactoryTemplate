@@ -498,10 +498,19 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ user, userProfile, isAnon
                 <Box
                   sx={{
                     width: '100%',
-                    border: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0',
-                    borderRadius: 1.5,
-                    boxShadow: theme === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
-                    backgroundColor: theme === 'dark' ? '#000000' : 'white',
+                    border: { 
+                      xs: 'none', 
+                      sm: theme === 'dark' ? '1px solid #444' : '1px solid #e0e0e0' 
+                    },
+                    borderRadius: { xs: 0, sm: 1.5 },
+                    boxShadow: { 
+                      xs: 'none', 
+                      sm: theme === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)' 
+                    },
+                    backgroundColor: { 
+                      xs: 'transparent', 
+                      sm: theme === 'dark' ? '#000000' : 'white' 
+                    },
                     mb: '1px',
                     position: 'relative',
                     transition: 'height 0.3s ease',
