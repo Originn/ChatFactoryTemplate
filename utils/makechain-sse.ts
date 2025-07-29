@@ -689,6 +689,12 @@ export const makeChainSSE = (
             pdf_source: doc.metadata?.pdf_source,
             page_number: doc.metadata?.page_number,
             page_numbers: doc.metadata?.page_numbers,
+            // Video-specific metadata
+            video_url: doc.metadata?.video_url,
+            video_name: doc.metadata?.video_name,
+            duration_seconds: doc.metadata?.duration_seconds,
+            chatbot_id: doc.metadata?.chatbot_id,
+            user_id: doc.metadata?.user_id,
           },
         });
 

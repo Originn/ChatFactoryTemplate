@@ -24,6 +24,12 @@ const VideoSourceLink: React.FC<VideoSourceLinkProps> = ({
     const generateSignedVideoUrl = async () => {
       try {
         setLoading(true);
+        console.log('VideoSourceLink: Generating signed URL for:', videoUrl, 'timestamp:', timestamp);
+        
+        // Check if videoUrl is valid
+        if (!videoUrl || typeof videoUrl !== 'string') {
+          throw new Error('Invalid video URL provided');
+        }
         
         // Extract base URL without timestamp fragment
         const baseUrl = videoUrl.split('#')[0];
@@ -44,6 +50,7 @@ const VideoSourceLink: React.FC<VideoSourceLinkProps> = ({
         }
 
         const data = await response.json();
+        console.log('VideoSourceLink: API response:', data);
         
         if (data.error) {
           throw new Error(data.error);
@@ -51,11 +58,12 @@ const VideoSourceLink: React.FC<VideoSourceLinkProps> = ({
 
         // Add timestamp fragment to signed URL
         const urlWithTimestamp = `${data.signedUrl}#t=${Math.floor(timestamp)}`;
+        console.log('VideoSourceLink: Final URL with timestamp:', urlWithTimestamp);
         setSignedUrl(urlWithTimestamp);
         
       } catch (err) {
+        console.error('VideoSourceLink: Error generating signed URL:', err);
         setError(err instanceof Error ? err.message : 'Failed to generate signed URL');
-        console.warn('Failed to generate signed video URL:', err);
       } finally {
         setLoading(false);
       }

@@ -383,7 +383,7 @@ const SourceDocuments = memo(({
 
             return sourceDocs
               .filter(doc => doc.metadata.type !== 'image') // Filter out image sources
-              .filter(doc => (doc.metadata.score || 0) > 0.5348) // Filter by score threshold
+              .filter(doc => (doc.metadata.score || 0) > 0.51) // Filter by score threshold
               .map((doc, docIndex) => {
               let title;
               documentCount++;
@@ -453,15 +453,45 @@ const SourceDocuments = memo(({
                   >
                   {(() => {
                     if (doc.metadata.type === 'video') {
-                      return (
-                        <VideoSourceLink
-                          videoUrl={doc.metadata.video_url}
-                          timestamp={doc.metadata.timestamp}
-                          videoName={doc.metadata.video_name}
-                          section={doc.metadata.section}
-                          onDocumentClick={handleDocumentClick}
-                        />
-                      );
+                      // Extract timestamp from pageContent using regex (format: "(MM:SS)" or "(HH:MM:SS)")
+                      const timestampMatch = doc.pageContent?.match(/\((\d{1,2}:\d{2}(?::\d{2})?)\)/);
+                      let timestamp = 0;
+                      
+                      if (timestampMatch) {
+                        const timeStr = timestampMatch[1];
+                        const parts = timeStr.split(':').map(Number);
+                        
+                        if (parts.length === 2) {
+                          // MM:SS format  
+                          timestamp = parts[0] * 60 + parts[1];
+                        } else if (parts.length === 3) {
+                          // HH:MM:SS format
+                          timestamp = parts[0] * 3600 + parts[1] * 60 + parts[2];
+                        }
+                      }
+                      
+                      // Use VideoSourceLink component if video metadata is available
+                      if (doc.metadata.video_url && doc.metadata.video_name) {
+                        return (
+                          <VideoSourceLink
+                            videoUrl={doc.metadata.video_url}
+                            timestamp={timestamp}
+                            videoName={doc.metadata.video_name}
+                            section=""
+                            onDocumentClick={handleDocumentClick}
+                          />
+                        );
+                      } else {
+                        // Fallback for legacy data
+                        return (
+                          <p>
+                            <b>Video Source:</b>{' '}
+                            <span className="text-gray-500">
+                              Video content found (timestamp: {Math.floor(timestamp / 60)}:{String(timestamp % 60).padStart(2, '0')}) - Missing video URL metadata
+                            </span>
+                          </p>
+                        );
+                      }
                     } else {
                       return (
                         <>
