@@ -63,6 +63,7 @@ export default async function handler(
     } else if (bucketName.includes('private')) {
       bucketType = 'privateImages';
     } else {
+      // Default to documents bucket for videos and other content
       bucketType = 'documents';
     }
 

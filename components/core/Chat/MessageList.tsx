@@ -13,9 +13,10 @@ import {
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import FeedbackComponent from './FeedbackComponent';
 import { ImagePreviewData } from '@/components/core/Media';
-import { handleWebinarClick, handleDocumentClick } from '@/utils/tracking';
+import { handleDocumentClick } from '@/utils/tracking';
 import { ChatMessage } from './types';
 import PdfSourceLink from './PdfSourceLink';
+import VideoSourceLink from './VideoSourceLink';
 import { auth } from '@/utils/firebase';
 
 interface CustomLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
@@ -378,27 +379,15 @@ const SourceDocuments = memo(({
             boxSizing: 'border-box'
           }}>
           {(() => {
-            let webinarCount = 0;
             let documentCount = 0;
-            const webinarTimestamps = new Set();
 
             return sourceDocs
               .filter(doc => doc.metadata.type !== 'image') // Filter out image sources
               .filter(doc => (doc.metadata.score || 0) > 0.5348) // Filter by score threshold
               .map((doc, docIndex) => {
               let title;
-              if (doc.metadata.type === 'youtube' || doc.metadata.type === 'vimeo') {
-                if (!webinarTimestamps.has(doc.metadata.timestamp)) {
-                  webinarCount++;
-                  webinarTimestamps.add(doc.metadata.timestamp);
-                  title = `Webinar ${webinarCount}`;
-                } else {
-                  return null;
-                }
-              } else {
-                documentCount++;
-                title = `Document ${documentCount}`;
-              }
+              documentCount++;
+              title = `Document ${documentCount}`;
 
               if (!title) return null;
               
@@ -463,41 +452,15 @@ const SourceDocuments = memo(({
                     }}
                   >
                   {(() => {
-                    if (doc.metadata.type === 'youtube' || doc.metadata.type === 'vimeo') {
+                    if (doc.metadata.type === 'video') {
                       return (
-                        <p>
-                          <b>Source:</b>{' '}
-                          {doc.metadata.source ? (
-                            <a
-                              href={doc.metadata.source}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={() => handleWebinarClick(doc.metadata.source)}
-                            >
-                              View Webinar
-                            </a>
-                          ) : (
-                            'Unavailable'
-                          )}
-                        </p>
-                      );
-                    } else if (doc.metadata.type === 'sentinel') {
-                      return (
-                        <p>
-                          <b>Source:</b>{' '}
-                          {doc.metadata.source ? (
-                            <a
-                              href={doc.metadata.source}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={() => handleDocumentClick(doc.metadata.source)}
-                            >
-                              View
-                            </a>
-                          ) : (
-                            'Unavailable'
-                          )}
-                        </p>
+                        <VideoSourceLink
+                          videoUrl={doc.metadata.video_url}
+                          timestamp={doc.metadata.timestamp}
+                          videoName={doc.metadata.video_name}
+                          section={doc.metadata.section}
+                          onDocumentClick={handleDocumentClick}
+                        />
                       );
                     } else {
                       return (

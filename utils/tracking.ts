@@ -23,17 +23,6 @@ const safelyTrackEvent = (eventName: string, eventParams: object) => {
 };
 
 
-export const handleWebinarClick = (url: string) => {
-  const consent = getCookieConsent();
-  if (consent === 'true') {
-    safelyTrackEvent('webinar_source_click', {
-      event_category: 'Webinars',
-      event_label: 'Webinar',
-      user_id: auth.currentUser?.uid,
-      value: url,
-    });
-  }
-};
 
 export const handleDocumentClick = (url: string) => {
   const consent = getCookieConsent();
