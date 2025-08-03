@@ -187,8 +187,7 @@ class MemoryService {
     }
   
     // Update chat history in the database with the validated title
-    const chatbotId = process.env.NEXT_PUBLIC_CHATBOT_ID || 'dev-fallback';
-    await db.insertChatHistory(chatbotId, userEmail || '', title, roomId, messages);
+    await db.insertChatHistory(userEmail || '', title, roomId, messages);
   }
   
   // Rest of the methods remain the same...
