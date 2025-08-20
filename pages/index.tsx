@@ -15,8 +15,8 @@ const IndexPage: React.FC = () => {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <Box 
-        sx={{ 
-          minHeight: '100vh',
+        sx={{
+          minHeight: '100dvh',
           height: '100%',
           width: '100%',
           backgroundColor: 'background.default',
