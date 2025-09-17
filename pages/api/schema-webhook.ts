@@ -10,6 +10,7 @@
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
+import admin, { adminDb } from '@/utils/firebaseAdmin';
 
 // Schema data structures (matching langextract_project format)
 interface SchemaInfo {
@@ -48,6 +49,7 @@ interface WebhookPayload {
   timestamp: string;
   version_hash: string;
   source: string;
+  chatbot_id?: string;
 }
 
 interface WebhookResponse {
@@ -180,6 +182,23 @@ async function handleSchemaUpdate(
 
     console.log(`✅ [WEBHOOK] Schema cached successfully in memory`);
 
+    try {
+      await adminDb.collection('schema_cache').doc('current').set({
+        schema_data: schemaData,
+        metadata: {
+          user_id: payload.user_id || null,
+          neo4j_uri: payload.neo4j_uri || null,
+          version_hash: payload.version_hash || null,
+          chatbot_id: payload.chatbot_id || null,
+          source: payload.source || 'langextract_container',
+          updated_at: admin.firestore.FieldValue.serverTimestamp(),
+        }
+      }, { merge: true });
+      console.log('🗄️ [WEBHOOK] Schema persisted to Firestore');
+    } catch (firestoreError) {
+      console.log(`⚠️ [WEBHOOK] Failed to persist schema to Firestore: ${firestoreError}`);
+    }
+
     // Try to persist to localStorage if running in browser context
     // Note: This is for client-side caching when the API is called from frontend
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -229,6 +248,21 @@ async function handleSchemaRetrieval(
 
     // Check if we have cached schema
     if (!schemaCache) {
+    try {
+      const snapshot = await adminDb.collection('schema_cache').doc('current').get();
+      if (snapshot.exists) {
+        const docData = snapshot.data() as { schema_data?: CachedSchema } | undefined;
+        if (docData?.schema_data) {
+          schemaCache = docData.schema_data;
+          schemaCacheTimestamp = Date.now();
+          console.log('📦 [WEBHOOK] Loaded schema cache from Firestore backup');
+        }
+      }
+    } catch (firestoreReadError) {
+      console.log(`⚠️ [WEBHOOK] Failed to load schema from Firestore: ${firestoreReadError}`);
+    }
+
+    if (!schemaCache) {
       console.log(`❌ [WEBHOOK] No schema cache available`);
       res.status(404).json({
         success: false,
@@ -237,6 +271,7 @@ async function handleSchemaRetrieval(
         error: 'Schema has not been received from container yet'
       });
       return;
+    }
     }
 
     // Check cache age
