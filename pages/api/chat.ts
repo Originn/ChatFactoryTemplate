@@ -126,6 +126,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       sourceDocs: documents,
       qaId: result.qaId,
       answer: result.answer,
+      graph: result.graph,
+      schemaAvailable: result.schemaAvailable ?? !!result.graph
     });
 
     // Send done

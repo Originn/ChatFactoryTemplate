@@ -11,6 +11,7 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import admin, { adminDb } from '@/utils/firebaseAdmin';
+import { primeSchemaCache } from '@/utils/schemaCache';
 
 // Schema data structures (matching langextract_project format)
 interface SchemaInfo {
@@ -192,9 +193,22 @@ async function handleSchemaUpdate(
           chatbot_id: payload.chatbot_id || null,
           source: payload.source || 'langextract_container',
           updated_at: admin.firestore.FieldValue.serverTimestamp(),
+          has_schema: true
         }
       }, { merge: true });
       console.log('🗄️ [WEBHOOK] Schema persisted to Firestore');
+      primeSchemaCache({
+        schema_data: schemaData,
+        metadata: {
+          user_id: payload.user_id || null,
+          neo4j_uri: payload.neo4j_uri || null,
+          version_hash: payload.version_hash || null,
+          chatbot_id: payload.chatbot_id || null,
+          source: payload.source || 'langextract_container',
+          updated_at: admin.firestore.Timestamp.now(),
+          has_schema: true
+        }
+      });
     } catch (firestoreError) {
       console.log(`⚠️ [WEBHOOK] Failed to persist schema to Firestore: ${firestoreError}`);
     }

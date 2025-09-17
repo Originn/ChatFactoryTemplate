@@ -13,11 +13,12 @@ import { RunnableConfig } from '@langchain/core/runnables';
 import MemoryService from '@/utils/memoryService';
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
-import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createChatModel } from './modelProviders';
 import { getRelevantHistory } from './contextManager';
 import { createEmbeddingModel, getModelDimensions } from './embeddingProviders';
 import { isJinaProvider, createJinaMultimodalEmbedding, createJinaImageOnlyEmbedding, createJinaMultimodalEmbeddingWithBase64, convertImageUrlToBase64 } from './embeddingProviders';
+import { getSchemaCache } from './schemaCache';
+import { generateGraphAugmentation } from './graphCypher';
 import {
   qaSystemPrompt
 } from './prompts/promptTemplates';
@@ -383,6 +384,15 @@ async function streamFinalAnswer(text: string, onTokenCallback: (token: string) 
   }
 }
 
+function createSnippet(content: string, maxLength = 220): string {
+  if (!content) return '';
+  const cleaned = content.replace(/\s+/g, ' ').trim();
+  if (cleaned.length <= maxLength) {
+    return cleaned;
+  }
+  return `${cleaned.slice(0, maxLength - 3)}...`;
+}
+
 // Main function to make the chain for SSE
 export const makeChainSSE = (
   vectorstore: PineconeStore, 
@@ -540,23 +550,125 @@ export const makeChainSSE = (
         prompt: qaPrompt as any,
       });
 
-      // Create RAG chain
-      const ragChain = await createRetrievalChain({
-        retriever: historyAwareRetriever as any,
-        combineDocsChain: questionAnswerChain,
+      // Retrieve relevant documents directly
+      const ragDocuments = await historyAwareRetriever.getRelevantDocuments(
+        contextualizedQuestion,
+        undefined
+      );
+
+      // Attempt graph augmentation if schema is available
+      const schemaDoc = await getSchemaCache();
+      const schemaAvailable = !!schemaDoc?.schema_data;
+      const graphAugmentation = schemaAvailable
+        ? await generateGraphAugmentation({
+            question: contextualizedQuestion,
+            llm: sharedModel,
+            schemaDoc
+          })
+        : null;
+
+      if (graphAugmentation) {
+        const graphDoc = new MyDocument({
+          pageContent: graphAugmentation.summary,
+          metadata: {
+            source: 'neo4j_graph',
+            type: 'graph',
+            score: 1,
+            cypher: graphAugmentation.cypher,
+            row_count: graphAugmentation.rowCount,
+            execution_time_ms: graphAugmentation.executionTimeMs,
+            domain: graphAugmentation.domain
+          }
+        });
+
+        Documents.unshift(graphDoc);
+        ragDocuments.unshift({
+          pageContent: graphDoc.pageContent,
+          metadata: graphDoc.metadata
+        } as any);
+
+        console.log(`🧠 Graph augmentation added (${graphAugmentation.rowCount} rows, domain: ${graphAugmentation.domain})`);
+      }
+
+      for (const doc of ragDocuments) {
+        if (doc.metadata?.isPublic === false) {
+          continue;
+        }
+
+        if (language === 'English' && (doc.metadata?.type === 'other' || doc.metadata?.type === 'vbs')) {
+          continue;
+        }
+
+        if (language !== 'English' && (doc.metadata?.type === 'txt' || doc.metadata?.type === 'user_input')) {
+          continue;
+        }
+
+        const myDoc = new MyDocument({
+          pageContent: doc.pageContent,
+          metadata: {
+            source: doc.metadata?.source,
+            type: doc.metadata?.type,
+            videoLink: doc.metadata?.videoLink,
+            file: doc.metadata?.file,
+            score: doc.metadata?.score,
+            image: doc.metadata?.image,
+            pdf_source: doc.metadata?.pdf_source,
+            page_number: doc.metadata?.page_number,
+            page_numbers: doc.metadata?.page_numbers,
+            video_url: doc.metadata?.video_url,
+            video_name: doc.metadata?.video_name,
+            duration_seconds: doc.metadata?.duration_seconds,
+            chatbot_id: doc.metadata?.chatbot_id,
+            user_id: doc.metadata?.user_id,
+          },
+        });
+
+        Documents.push(myDoc);
+      }
+
+      Documents.sort((a, b) => {
+        const scoreA = a.metadata.score || 0;
+        const scoreB = b.metadata.score || 0;
+        return scoreB - scoreA;
       });
 
-      // Invoke RAG chain to get answer
-      const ragResponse = await ragChain.invoke({
+      const embeddingDocsForContext = Documents.filter(doc => doc.metadata?.type !== 'graph');
+      const graphDocsForContext = Documents.filter(doc => doc.metadata?.type === 'graph');
+
+      const embeddingsSection = embeddingDocsForContext.length
+        ? `Embeddings:\n${embeddingDocsForContext
+            .map((doc, index) => {
+              const source = doc.metadata?.source || doc.metadata?.file || `Document ${index + 1}`;
+              const snippet = createSnippet(doc.pageContent);
+              return `- ${source}: ${snippet}`;
+            })
+            .join('\n')}`
+        : '';
+
+      const graphSection = graphDocsForContext.length
+        ? `Graph_RAG:\n${graphDocsForContext.map(doc => doc.pageContent).join('\n\n')}`
+        : '';
+
+      const combinedContext = [embeddingsSection, graphSection].filter(Boolean).join('\n\n');
+
+      const combinedContextDocs = combinedContext
+        ? [{ pageContent: combinedContext, metadata: { source: 'combined', type: 'combined' } }]
+        : ragDocuments;
+
+      const baseAnswer = await questionAnswerChain.invoke({
         input: finalProcessedInput,
         chat_history: relevantHistory as any,
+        context: combinedContextDocs,
         language,
         imageDescription,
       });
 
-      // Process documents from RAG response
-      const ragDocuments = ragResponse.context || [];
-      
+      let enhancedAnswer = typeof baseAnswer === 'string'
+        ? baseAnswer
+        : ((baseAnswer as any)?.answer ?? baseAnswer);
+
+      let finalImageDescription = imageDescription;
+
       // Vision-first logic: If first result is an image with score > 0.53, analyze it with GPT-4o-mini vision
       let enhancedImageDescription = imageDescription;
       if (ragDocuments.length > 0 && 
@@ -619,22 +731,25 @@ export const makeChainSSE = (
               enhancedImageDescription = typeof visionResponse.content === 'string' 
                 ? visionResponse.content 
                 : JSON.stringify(visionResponse.content);
+              finalImageDescription = enhancedImageDescription;
               console.log('✅ Vision analysis completed successfully');
               console.log(`📝 Vision description: ${enhancedImageDescription.substring(0, 150)}...`);
               
               // Re-generate answer with enhanced image description using same documents (no new retrieval)
               console.log('🔄 Re-generating answer with enhanced image description');
-              const enhancedAnswer = await questionAnswerChain.invoke({
+              const regeneratedAnswer = await questionAnswerChain.invoke({
                 input: processedInput,
                 chat_history: relevantHistory as any,
-                context: ragDocuments, // Use same retrieved documents
+                context: combinedContextDocs,
                 language,
-                imageDescription: enhancedImageDescription, // Use enhanced description
+                imageDescription: enhancedImageDescription,
               });
-              
-              // Update the RAG response with enhanced version
-              ragResponse.answer = typeof enhancedAnswer === 'string' ? enhancedAnswer : ((enhancedAnswer as any)?.answer || enhancedAnswer);
-              console.log('✅ Enhanced answer generated with same documents');
+
+              enhancedAnswer = typeof regeneratedAnswer === 'string'
+                ? regeneratedAnswer
+                : ((regeneratedAnswer as any)?.answer ?? regeneratedAnswer);
+
+              console.log('✅ Enhanced answer generated with combined context');
             }
           }
         } catch (error) {
@@ -643,73 +758,7 @@ export const makeChainSSE = (
         }
       }
       
-      // Set threshold for document relevance
-      let minScoreSourcesThreshold = ENV.MINSCORESOURCESTHRESHOLD !== undefined ? 
-        ENV.MINSCORESOURCESTHRESHOLD : 0.78;
-      
-      // For non-English queries, use a lower threshold
-      if (language !== 'English') {
-        minScoreSourcesThreshold = 0.45;
-      }
-
-      // Process and add documents to the result
-      let documentsAdded = 0;
-      let documentsSkipped = 0;
-      
-      for (const doc of ragDocuments) {
-        // Filter out private documents from public chatbot
-        if (doc.metadata?.isPublic === false) {
-          documentsSkipped++;
-          continue;
-        }
-        
-        // Skip certain types for English queries
-        if (language === 'English' && (doc.metadata?.type === 'other' || doc.metadata?.type === 'vbs')) {
-          documentsSkipped++;
-          continue;
-        }
-        
-        // Skip txt and user_input types for non-English queries
-        if (language !== 'English' && (doc.metadata?.type === 'txt' || doc.metadata?.type === 'user_input')) {
-          documentsSkipped++;
-          continue;
-        }
-
-        documentsAdded++;
-
-        const myDoc = new MyDocument({
-          pageContent: doc.pageContent,
-          metadata: {
-            source: doc.metadata?.source,
-            type: doc.metadata?.type,
-            videoLink: doc.metadata?.videoLink,
-            file: doc.metadata?.file,
-            score: doc.metadata?.score,
-            image: doc.metadata?.image,
-            pdf_source: doc.metadata?.pdf_source,
-            page_number: doc.metadata?.page_number,
-            page_numbers: doc.metadata?.page_numbers,
-            // Video-specific metadata
-            video_url: doc.metadata?.video_url,
-            video_name: doc.metadata?.video_name,
-            duration_seconds: doc.metadata?.duration_seconds,
-            chatbot_id: doc.metadata?.chatbot_id,
-            user_id: doc.metadata?.user_id,
-          },
-        });
-
-        Documents.push(myDoc);
-      }
-      
-      // Sort documents by score
-      Documents.sort((a, b) => {
-        const scoreA = a.metadata.score || 0;
-        const scoreB = b.metadata.score || 0;
-        return scoreB - scoreA;
-      });
-
       // Enhanced Vision Processing for Jina Provider with RAG context
-      let enhancedAnswer = ragResponse.answer;
       if (isJinaProvider() && imageUrls.length > 0) {
         try {
           // Extract context image URLs from retrieved documents
@@ -796,12 +845,26 @@ export const makeChainSSE = (
         }
       }
 
+      if (combinedContextDocs.length > 0) {
+        const finalAnswerResult = await questionAnswerChain.invoke({
+          input: finalProcessedInput,
+          chat_history: relevantHistory as any,
+          context: combinedContextDocs,
+          language,
+          imageDescription: finalImageDescription,
+        });
+
+        enhancedAnswer = typeof finalAnswerResult === 'string'
+          ? finalAnswerResult
+          : ((finalAnswerResult as any)?.answer ?? finalAnswerResult);
+      }
+
       // Store the Q&A in the database
       const db = new TenantDB();
       await db.insertQA(
         originalInput, 
         enhancedAnswer, 
-        ragResponse.context, 
+        combinedContextDocs, 
         Documents, 
         qaId, 
         roomId, 
@@ -834,7 +897,17 @@ export const makeChainSSE = (
       return {
         answer: enhancedAnswer,
         qaId: qaId,
-        sourceDocs: Documents
+        sourceDocs: Documents,
+        graph: graphAugmentation
+          ? {
+              cypher: graphAugmentation.cypher,
+              domain: graphAugmentation.domain,
+              rowCount: graphAugmentation.rowCount,
+              executionTimeMs: graphAugmentation.executionTimeMs,
+              rowsPreview: graphAugmentation.rows.slice(0, 5)
+            }
+          : null,
+        schemaAvailable
       };
     },
     vectorstore,
