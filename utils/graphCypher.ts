@@ -1,6 +1,7 @@
 import type { ChatOpenAI } from '@langchain/openai';
 import type { CachedSchema, SchemaInfo } from '@/utils/neo4jSchemaService';
 import { getSchemaCache, type SchemaCacheDocument } from '@/utils/schemaCache';
+import neo4jClient from '@/utils/neo4jClient';
 
 interface GenerateCypherParams {
   question: string;
@@ -30,9 +31,8 @@ export async function generateGraphAugmentation(
     return null;
   }
 
-  const langextractUrl = resolveLangextractUrl();
-  if (!langextractUrl) {
-    console.warn('[GRAPH-RAG] LANGEXTRACT_URL not configured; skipping graph augmentation');
+  if (!neo4jClient.isAvailable()) {
+    console.warn('[GRAPH-RAG] Neo4j not configured; skipping graph augmentation');
     return null;
   }
 
@@ -73,7 +73,7 @@ export async function generateGraphAugmentation(
       return null;
     }
 
-    const execution = await executeCypher(langextractUrl, cypher);
+    const execution = await neo4jClient.executeCypher(cypher);
 
     const summary = summarizeGraphResults({
       domain,
@@ -96,14 +96,6 @@ export async function generateGraphAugmentation(
   }
 }
 
-function resolveLangextractUrl(): string | null {
-  return (
-    process.env.LANGEXTRACT_URL ||
-    process.env.GRAPHRAG_URL ||
-    process.env.NEXT_PUBLIC_LANGEXTRACT_URL ||
-    null
-  );
-}
 
 function selectDomain(schema: CachedSchema, domainHint?: string): string {
   if (domainHint && domainHint in schema.schemas) {
@@ -237,42 +229,6 @@ function extractCypher(text: string): string | null {
   return collected.join('\n').trim() || null;
 }
 
-async function executeCypher(
-  baseUrl: string,
-  cypher: string
-): Promise<{ rows: Array<Record<string, any>>; rowCount: number; executionTimeMs: number }> {
-  const url = `${baseUrl.replace(/\/$/, '')}/cypher`;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ cypher })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Cypher execution failed: ${response.status} ${response.statusText} - ${errorText}`);
-  }
-
-  const data = await response.json();
-
-  if (data.success === false) {
-    throw new Error(data.error || 'Unknown error executing Cypher');
-  }
-
-  return {
-    rows: Array.isArray(data.rows) ? data.rows : [],
-    rowCount:
-      typeof data.row_count === 'number'
-        ? data.row_count
-        : Array.isArray(data.rows)
-        ? data.rows.length
-        : 0,
-    executionTimeMs: typeof data.execution_time_ms === 'number' ? data.execution_time_ms : 0
-  };
-}
 
 function summarizeGraphResults(params: {
   domain: string;
