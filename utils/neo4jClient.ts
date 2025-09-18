@@ -93,6 +93,11 @@ class Neo4jClient {
     const startTime = Date.now();
 
     try {
+      console.log('🔍 Executing Cypher query:', cypher);
+      if (Object.keys(params).length > 0) {
+        console.log('📋 Query parameters:', params);
+      }
+
       session = this.driver.session({ database: this.config.database });
       const result = await session.run(cypher, params);
 
@@ -107,6 +112,18 @@ class Neo4jClient {
       });
 
       const executionTimeMs = Date.now() - startTime;
+
+      console.log(`✅ Cypher execution completed in ${executionTimeMs}ms`);
+      console.log(`📊 Query returned ${rows.length} rows`);
+
+      if (rows.length > 0) {
+        console.log('🔍 Sample results (first 3 rows):');
+        rows.slice(0, 3).forEach((row, index) => {
+          console.log(`   Row ${index + 1}:`, row);
+        });
+      } else {
+        console.log('ℹ️  No data found matching the query criteria');
+      }
 
       return {
         rows,

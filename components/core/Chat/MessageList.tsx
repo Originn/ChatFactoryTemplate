@@ -387,7 +387,12 @@ const SourceDocuments = memo(({
               .map((doc, docIndex) => {
               let title;
               documentCount++;
-              title = `Document ${documentCount}`;
+              // Generate better titles for graph sources
+              if (doc.metadata?.source === 'neo4j_graph' || doc.metadata?.type === 'graph') {
+                title = 'Knowledge Graph';
+              } else {
+                title = `Document ${documentCount}`;
+              }
 
               if (!title) return null;
               
@@ -504,12 +509,58 @@ const SourceDocuments = memo(({
                             <b>Source:</b>{' '}
                             {doc.metadata && (doc.metadata.pdf_source || doc.metadata.source)
                               ? (() => {
+                                  // Handle graph database sources
+                                  if (doc.metadata.source === 'neo4j_graph' || doc.metadata.type === 'graph') {
+                                    const cypherQuery = doc.metadata.cypher;
+                                    const rowCount = doc.metadata.row_count;
+                                    const executionTime = doc.metadata.execution_time_ms;
+                                    const domain = doc.metadata.domain;
+
+                                    return (
+                                      <div>
+                                        <span className="text-gray-600">
+                                          Knowledge Graph Database ({rowCount} record{rowCount !== 1 ? 's' : ''} found)
+                                        </span>
+
+                                        <div className="mt-2 border border-gray-200 rounded-lg overflow-hidden">
+                                          <details className="group">
+                                            <summary className="cursor-pointer bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 flex items-center justify-between">
+                                              <span className="flex items-center">
+                                                🔍 View Query Details
+                                              </span>
+                                              <span className="text-xs text-gray-500 ml-2">
+                                                {executionTime}ms
+                                              </span>
+                                            </summary>
+
+                                            <div className="p-3 bg-white border-t border-gray-200">
+                                              <div className="space-y-3">
+                                                <div>
+                                                  <div className="text-xs font-medium text-gray-600 mb-1">Cypher Query:</div>
+                                                  <pre className="bg-gray-900 text-green-400 p-3 rounded text-xs overflow-x-auto font-mono">
+{cypherQuery}
+                                                  </pre>
+                                                </div>
+
+                                                <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-100">
+                                                  <span>Database: {domain || 'neo4j'}</span>
+                                                  <span>Execution: {executionTime}ms</span>
+                                                  <span>Results: {rowCount} record{rowCount !== 1 ? 's' : ''}</span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </details>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
                                   // Prioritize pdf_source + page_number/page_numbers combination
                                   if (doc.metadata.pdf_source && (doc.metadata.page_number || doc.metadata.page_numbers)) {
                                     // Use page_number if available, otherwise use first page from page_numbers array
-                                    const pageNumber = doc.metadata.page_number || 
+                                    const pageNumber = doc.metadata.page_number ||
                                       (doc.metadata.page_numbers && doc.metadata.page_numbers.length > 0 ? doc.metadata.page_numbers[0] : null);
-                                    
+
                                     if (pageNumber) {
                                       return (
                                         <PdfSourceLink
@@ -520,11 +571,11 @@ const SourceDocuments = memo(({
                                       );
                                     }
                                   }
-                                  
+
                                   // Fallback to original logic for legacy documents
                                   const sourceUrl = doc.metadata.source;
                                   if (!sourceUrl) return 'Unavailable';
-                                  
+
                                   const pageNumbers = Array.from(
                                     doc.pageContent.matchAll(/\((\d+)\)/g),
                                     (m: RegExpMatchArray) => parseInt(m[1], 10)

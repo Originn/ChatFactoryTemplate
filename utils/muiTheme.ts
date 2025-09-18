@@ -18,6 +18,13 @@ export const getMuiTheme = (mode: 'light' | 'dark') =>
         primary: mode === 'light' ? '#1e293b' : '#f1f5f9',
         secondary: mode === 'light' ? '#64748b' : '#94a3b8',
       },
+      action: {
+        active: mode === 'light' ? '#1e293b' : '#f1f5f9',
+        hover: mode === 'light' ? 'rgba(30, 41, 59, 0.04)' : 'rgba(241, 245, 249, 0.08)',
+        selected: mode === 'light' ? 'rgba(30, 41, 59, 0.08)' : 'rgba(241, 245, 249, 0.12)',
+        disabled: mode === 'light' ? 'rgba(30, 41, 59, 0.26)' : 'rgba(241, 245, 249, 0.3)',
+        disabledBackground: mode === 'light' ? 'rgba(30, 41, 59, 0.12)' : 'rgba(241, 245, 249, 0.12)',
+      },
     },
     typography: {
       fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

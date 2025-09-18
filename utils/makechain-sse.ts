@@ -435,7 +435,7 @@ export const makeChainSSE = (
       // Always disable streaming - we'll handle final answer streaming manually for consistency
       const streamingModel = createChatModel('openai', {
         streaming: false, // Always disabled - we stream final answer manually
-        verbose: false,
+        verbose: true,
         maxTokens: 4000,
         callbacks: [], // No streaming callbacks - final answer will be streamed manually
       });
@@ -639,10 +639,10 @@ export const makeChainSSE = (
         ? `Embeddings:\n${embeddingDocsForContext
             .map((doc, index) => {
               const source = doc.metadata?.source || doc.metadata?.file || `Document ${index + 1}`;
-              const snippet = createSnippet(doc.pageContent);
-              return `- ${source}: ${snippet}`;
+              const content = doc.pageContent ?? '';
+              return `- ${source}:\n${content}`;
             })
-            .join('\n')}`
+            .join('\n\n')}`
         : '';
 
       const graphSection = graphDocsForContext.length

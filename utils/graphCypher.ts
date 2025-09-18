@@ -1,4 +1,4 @@
-import type { ChatOpenAI } from '@langchain/openai';
+import { ChatOpenAI } from '@langchain/openai';
 import type { CachedSchema, SchemaInfo } from '@/utils/neo4jSchemaService';
 import { getSchemaCache, type SchemaCacheDocument } from '@/utils/schemaCache';
 import neo4jClient from '@/utils/neo4jClient';
@@ -27,7 +27,14 @@ export async function generateGraphAugmentation(
 ): Promise<CypherGeneration | null> {
   const { question, llm, maxPreviewRows = DEFAULT_PREVIEW_ROWS, domainHint } = params;
 
-  if (!question || !llm) {
+  // Create dedicated GPT-5 model instance for Cypher generation
+  const cypherModel = new ChatOpenAI({
+    modelName: 'gpt-5-chat-latest',
+    temperature: 0.1, // Lower temperature for more precise Cypher generation
+    verbose: false,
+  });
+
+  if (!question) {
     return null;
   }
 
@@ -53,7 +60,8 @@ export async function generateGraphAugmentation(
 
   try {
     const prompt = buildCypherPrompt(question, domain, domainSchema);
-    const response = await llm.invoke([
+    console.log('[GRAPH-RAG] Using gpt-5-chat-latest for Cypher generation');
+    const response = await cypherModel.invoke([
       {
         role: 'system',
         content:
@@ -66,10 +74,14 @@ export async function generateGraphAugmentation(
     ]);
 
     const textResponse = messageToString(response);
+    console.log('[GRAPH-RAG] Raw LLM response:', textResponse);
+
     const cypher = extractCypher(textResponse);
+    console.log('[GRAPH-RAG] Extracted Cypher:', cypher);
 
     if (!cypher) {
       console.warn('[GRAPH-RAG] Unable to extract Cypher from LLM response');
+      console.warn('[GRAPH-RAG] Raw response was:', textResponse);
       return null;
     }
 
@@ -137,7 +149,9 @@ GUIDELINES:
 - Only use properties and relationship types that exist in the schema above.
 - Use the relationship patterns exactly as provided (WORKS_FOR, HAS_POSITION, etc.).
 - Use DISTINCT in the RETURN clause to avoid duplicates.
-- For text filtering, use case-insensitive matching, e.g., WHERE toLower(node.text) CONTAINS 'value'.
+- For text filtering, use case-insensitive matching with CONTAINS, e.g., WHERE toLower(node.text) CONTAINS toLower('value').
+- For name searches, always use CONTAINS for partial matching since names may include first_last format like 'Alice_Johnson'.
+  Example: WHERE toLower(e.employee_name) CONTAINS toLower('alice') instead of exact equality.
 - For queries involving ordering (first/last), order by real date properties (e.g., EmploymentTerm.start_date).
 - If the question only requires a single node type, you may return a single MATCH without relationships.
 - Limit results to at most 25 rows.
@@ -205,13 +219,16 @@ function messageToString(response: any): string {
 function extractCypher(text: string): string | null {
   if (!text) return null;
 
+  // First, try to extract from code blocks (handles both cases)
+  const codeMatch = text.match(/```(?:cypher)?\s*\n([\s\S]*?)```/i);
+  if (codeMatch) {
+    return codeMatch[1].trim();
+  }
+
+  // Fallback: try the CYPHER_QUERY marker approach for raw text
   const marker = 'CYPHER_QUERY:';
   const markerIndex = text.indexOf(marker);
   if (markerIndex === -1) {
-    const codeMatch = text.match(/```(?:cypher)?\n([\s\S]*?)```/i);
-    if (codeMatch) {
-      return codeMatch[1].trim();
-    }
     return null;
   }
 
@@ -222,7 +239,8 @@ function extractCypher(text: string): string | null {
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-    if (trimmed.startsWith('```')) break;
+    if (trimmed.startsWith('```')) continue; // Skip code block markers
+    if (trimmed.startsWith('CYPHER_QUERY:')) continue; // Skip duplicate markers
     collected.push(trimmed);
   }
 
@@ -239,13 +257,12 @@ function summarizeGraphResults(params: {
   const { domain, cypher, rows, maxPreviewRows } = params;
   const lines: string[] = [];
 
-  lines.push(`Graph Query Results (domain: ${domain})`);
-  lines.push(`Cypher: ${cypher}`);
-  lines.push(`Rows returned: ${rows.length}`);
+  // Results summary without the header
+  lines.push(`Found ${rows.length} result(s) from the knowledge graph:`);
   lines.push('');
 
   if (rows.length === 0) {
-    lines.push('No matching nodes were found in the graph.');
+    lines.push('No matching data was found in the graph database.');
     return lines.join('\n');
   }
 
@@ -254,13 +271,17 @@ function summarizeGraphResults(params: {
     const formatted = Object.entries(row)
       .map(([key, value]) => `${key}: ${formatValue(value)}`)
       .join(', ');
-    lines.push(`${index + 1}. ${formatted}`);
+    lines.push(`• ${formatted}`);
   });
 
   if (rows.length > maxPreviewRows) {
     lines.push('...');
     lines.push(`(+${rows.length - maxPreviewRows} additional rows)`);
   }
+
+  lines.push('');
+  lines.push('=== END GRAPH RESULTS ===');
+  lines.push('Use this information from the graph database to answer the user\'s question.');
 
   return lines.join('\n');
 }
