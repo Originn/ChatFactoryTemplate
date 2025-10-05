@@ -15,7 +15,7 @@ export const getChatbotConfig = (): ChatbotConfig => {
     id: process.env.NEXT_PUBLIC_CHATBOT_ID || '',
     name: process.env.NEXT_PUBLIC_CHATBOT_NAME || 'AI Assistant',
     description: process.env.NEXT_PUBLIC_CHATBOT_DESCRIPTION || 'AI-powered chatbot',
-    logoUrl: process.env.NEXT_PUBLIC_CHATBOT_LOGO_URL || '/bot-icon-generic.svg',
+    logoUrl: process.env.NEXT_PUBLIC_CHATBOT_LOGO_URL || '/wizchat-brain-logo.svg',
     primaryColor: process.env.NEXT_PUBLIC_CHATBOT_PRIMARY_COLOR || '#3b82f6',
     bubbleStyle: process.env.NEXT_PUBLIC_CHATBOT_BUBBLE_STYLE || 'rounded',
     requireAuth: process.env.NEXT_PUBLIC_CHATBOT_LOGIN_REQUIRED === 'true',
