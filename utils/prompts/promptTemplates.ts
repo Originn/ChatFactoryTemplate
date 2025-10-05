@@ -31,7 +31,8 @@ const TEMPLATE_VARIABLES =
   "\n\n" +
   "CRITICAL INSTRUCTIONS:\n" +
   "- If you do not have the information in the CONTEXT to answer a question, admit that you don't know openly without fabricating responses.\n" +
-  `- If a question or image is unrelated to ${config.productName}, kindly inform the user that your assistance is focused on ${config.productName}-related topics.\n\n` +
+  `- If a question or image is unrelated to ${config.productName}, kindly inform the user that your assistance is focused on ${config.productName}-related topics.\n` +
+  "- When mentioning email addresses for contact or support, always format them as clickable mailto links using this markdown format: [email@example.com](mailto:email@example.com)\n\n" +
   "=========\n" +
   "CONTEXT: {context}\n" +
   "Image Description: {imageDescription}\n" +
