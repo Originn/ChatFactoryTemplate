@@ -125,9 +125,19 @@ const CustomLoginForm = () => {    // Get chatbot branding and configuration
         try {
             setIsSubmitting(true);
             setErrorMessage('');
-            
+
+            console.log('🔍 Starting Google sign-in...');
+            console.log('🔍 Auth instance:', auth);
+            console.log('🔍 Firebase config:', {
+                apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.substring(0, 10) + '...',
+                authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+                projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+            });
+
             const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
+
+            console.log('✅ Google sign-in successful:', user.email);
             
             // Create or update user profile in Firestore for Google OAuth users
             const chatbotId = process.env.NEXT_PUBLIC_CHATBOT_ID;
@@ -169,12 +179,16 @@ const CustomLoginForm = () => {    // Get chatbot branding and configuration
             router.push('/');
         } catch (error: any) {
             console.error('❌ Google sign-in error:', error);
+            console.error('❌ Error code:', error.code);
+            console.error('❌ Error message:', error.message);
+            console.error('❌ Full error object:', JSON.stringify(error, null, 2));
+
             if (error.code === 'auth/popup-closed-by-user') {
                 setErrorMessage('Sign-in was cancelled.');
             } else if (error.code === 'auth/popup-blocked') {
                 setErrorMessage('Popup was blocked. Please allow popups and try again.');
             } else {
-                setErrorMessage('Google sign-in failed. Please try again.');
+                setErrorMessage(`Google sign-in failed: ${error.message || 'Please try again.'}`);
             }
         } finally {
             setIsSubmitting(false);
