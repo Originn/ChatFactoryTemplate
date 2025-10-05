@@ -284,8 +284,8 @@ export async function createJinaMultimodalEmbeddingConsistent(
 
 // Simple embedding model creation
 export function createEmbeddingModel() {
-  const provider = (process.env.EMBEDDING_PROVIDER || 'openai') as EmbeddingProvider;
-  const model = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';
+  const provider = (process.env.EMBEDDING_PROVIDER || 'cohere') as EmbeddingProvider;
+  const model = process.env.EMBEDDING_MODEL || 'embed-v4.0';
 
   switch (provider) {
     case 'jina':
@@ -317,30 +317,29 @@ export function createEmbeddingModel() {
       });
 
     default:
-      console.warn(`⚠️ Unknown embedding provider: ${provider}, falling back to OpenAI`);
-      return new OpenAIEmbeddings({
-        modelName: 'text-embedding-3-small',
-        dimensions: 1536,
-        openAIApiKey: process.env.OPENAI_API_KEY,
+      console.warn(`⚠️ Unknown embedding provider: ${provider}, falling back to Cohere`);
+      return new CohereEmbeddings({
+        apiKey: process.env.COHERE_API_KEY,
+        model: 'embed-v4.0',
       });
   }
 }
 
 // Simple config getter
 export function getEmbeddingConfig(): EmbeddingConfig {
-  const provider = (process.env.EMBEDDING_PROVIDER || 'openai') as EmbeddingProvider;
-  const model = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';
-  
+  const provider = (process.env.EMBEDDING_PROVIDER || 'cohere') as EmbeddingProvider;
+  const model = process.env.EMBEDDING_MODEL || 'embed-v4.0';
+
   return {
     provider,
     model,
-    dimensions: provider === 'jina' ? 512 : parseInt(process.env.EMBEDDING_DIMENSIONS || '1536')
+    dimensions: provider === 'jina' ? 512 : parseInt(process.env.EMBEDDING_DIMENSIONS || '512')
   };
 }
 
 // Simple validation
 export function validateEmbeddingConfig(): { isValid: boolean; error?: string } {
-  const provider = process.env.EMBEDDING_PROVIDER || 'openai';
+  const provider = process.env.EMBEDDING_PROVIDER || 'cohere';
   
   switch (provider) {
     case 'jina':
@@ -372,7 +371,7 @@ export function validateEmbeddingConfig(): { isValid: boolean; error?: string } 
 
 // Simple dimensions getter
 export function getModelDimensions(): number {
-  const provider = (process.env.EMBEDDING_PROVIDER || 'openai') as EmbeddingProvider;
-  
-  return provider === 'jina' ? 512 : parseInt(process.env.EMBEDDING_DIMENSIONS || '1536');
+  const provider = (process.env.EMBEDDING_PROVIDER || 'cohere') as EmbeddingProvider;
+
+  return provider === 'jina' ? 512 : parseInt(process.env.EMBEDDING_DIMENSIONS || '512');
 }
