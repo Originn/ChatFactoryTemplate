@@ -1,101 +1,18 @@
 // utils/embeddingProviders.ts
-// Simple Jina v4 embeddings with 512D
+// Cohere embed-v4.0 embeddings with 512D Matryoshka
 
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { CohereEmbeddings } from '@langchain/cohere';
 import { HuggingFaceInferenceEmbeddings } from '@langchain/community/embeddings/hf';
-import { JinaEmbeddings } from '@langchain/community/embeddings/jina';
 import { Embeddings } from '@langchain/core/embeddings';
 
-export type EmbeddingProvider = 'openai' | 'cohere' | 'huggingface' | 'jina';
+export type EmbeddingProvider = 'openai' | 'cohere' | 'huggingface';
 
 export interface EmbeddingConfig {
   provider: EmbeddingProvider;
   model: string;
   dimensions: number;
   apiKey?: string;
-}
-
-// Direct Jina API implementation with full parameter support
-class DirectJinaEmbeddings extends Embeddings {
-  private apiKey: string;
-  private model: string;
-  private dimensions: number;
-  private task: string;
-
-  constructor(config: {
-    apiKey: string;
-    model: string;
-    dimensions: number;
-    task: string;
-  }) {
-    super({});
-    this.apiKey = config.apiKey;
-    this.model = config.model;
-    this.dimensions = config.dimensions;
-    this.task = config.task;
-  }
-
-  async embedDocuments(texts: string[]): Promise<number[][]> {
-    try {
-      const response = await fetch('https://api.jina.ai/v1/embeddings', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          input: texts,
-          model: this.model,
-          dimensions: this.dimensions,
-          task: 'retrieval.passage', // For document indexing
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Jina API error: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      return result.data.map((item: any) => item.embedding);
-    } catch (error) {
-      console.error('Error in DirectJinaEmbeddings.embedDocuments:', error);
-      throw error;
-    }
-  }
-
-  async embedQuery(text: string): Promise<number[]> {
-    try {
-      console.log(`🔍 Calling Jina API directly: model=${this.model}, dimensions=${this.dimensions}, task=${this.task}`);
-
-      const response = await fetch('https://api.jina.ai/v1/embeddings', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          input: [text],
-          model: this.model,
-          dimensions: this.dimensions,
-          task: this.task, // Use the configured task (retrieval.query)
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Jina API error: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log(`✅ Jina API call successful, received ${result.data[0].embedding.length}D embedding`);
-
-      return result.data[0].embedding;
-    } catch (error) {
-      console.error('Error in DirectJinaEmbeddings.embedQuery:', error);
-      throw error;
-    }
-  }
 }
 
 // Direct Cohere API implementation with dimensions support
@@ -202,85 +119,25 @@ export async function convertImageUrlToBase64(imageUrl: string): Promise<string>
   }
 }
 
-// Helper function to check if provider is Jina
-export function isJinaProvider(): boolean {
-  const provider = process.env.EMBEDDING_PROVIDER || 'openai';
-  return provider === 'jina';
+// Helper function to check if provider is Cohere
+export function isCohereProvider(): boolean {
+  const provider = process.env.EMBEDDING_PROVIDER || 'cohere';
+  return provider === 'cohere';
 }
 
 // Interface for multimodal embedding result
-export interface JinaMultimodalResult {
+export interface CohereMultimodalResult {
   embedding: number[];
   imageBase64Data: string[];
 }
 
-// Simple Jina multimodal embedding - 512D with base64 data return
-export async function createJinaMultimodalEmbedding(
-  text: string, 
-  imageUrls: string[] = []
-): Promise<number[]> {
-  const result = await createJinaMultimodalEmbeddingWithBase64(text, imageUrls);
-  return result.embedding;
-}
-
-// Enhanced Jina multimodal embedding - returns embedding + base64 data
-export async function createJinaMultimodalEmbeddingWithBase64(
-  text: string, 
-  imageUrls: string[] = []
-): Promise<JinaMultimodalResult> {
-  if (!isJinaProvider()) {
-    throw new Error('Jina provider not configured');
-  }
-
-  try {
-    const input: any[] = [{ text }];
-    const imageBase64Data: string[] = [];
-    
-    // Add images if provided
-    if (imageUrls && imageUrls.length > 0) {
-      for (const imageUrl of imageUrls) {
-        const base64 = await convertImageUrlToBase64(imageUrl);
-        input.push({ image: base64 });
-        imageBase64Data.push(base64); // Store base64 for later use
-      }
-    }
-    
-    const response = await fetch('https://api.jina.ai/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.JINA_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'jina-embeddings-v4',
-        task: 'retrieval.query',
-        dimensions: 512,
-        input: input
-      })
-    });
-
-    const data = await response.json();
-    
-    if (data.data && data.data.length > 0) {
-      return {
-        embedding: data.data[0].embedding,
-        imageBase64Data
-      };
-    }
-    
-    throw new Error('No embedding returned from Jina API');
-  } catch (error) {
-    console.error('Error creating Jina multimodal embedding:', error);
-    throw error;
-  }
-}
-
-// Simple Jina image-only embedding - 512D
-export async function createJinaImageOnlyEmbedding(
+// Cohere image-only embedding - 512D
+// Note: Cohere v4 does NOT support text+image in one embedding, only text OR image
+export async function createCohereImageOnlyEmbedding(
   imageUrls: string[]
 ): Promise<number[]> {
-  if (!isJinaProvider()) {
-    throw new Error('Jina provider not configured');
+  if (!isCohereProvider()) {
+    throw new Error('Cohere provider not configured');
   }
 
   if (!imageUrls || imageUrls.length === 0) {
@@ -288,83 +145,98 @@ export async function createJinaImageOnlyEmbedding(
   }
 
   try {
-    const input: any[] = [];
-    
-    // Add only images (no text)
+    // Convert images to base64 data URLs
+    const imageDataUrls: string[] = [];
+
     for (const imageUrl of imageUrls) {
       const base64 = await convertImageUrlToBase64(imageUrl);
-      input.push({ image: base64 });
+      // Cohere requires data URL format: data:image/jpeg;base64,{base64_string}
+      const dataUrl = `data:image/jpeg;base64,${base64}`;
+      imageDataUrls.push(dataUrl);
     }
-    
-    const response = await fetch('https://api.jina.ai/v1/embeddings', {
+
+    const response = await fetch('https://api.cohere.com/v2/embed', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.JINA_API_KEY}`
+        'Authorization': `Bearer ${process.env.COHERE_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'jina-embeddings-v4',
-        task: 'retrieval.query',
-        dimensions: 512,
-        input: input
+        model: 'embed-v4.0',
+        input_type: 'image',
+        embedding_types: ['float'],
+        images: imageDataUrls,
+        output_dimension: 512,
       })
     });
 
-    const data = await response.json();
-    if (data.data && data.data.length > 0) {
-      return data.data[0].embedding;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Cohere API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
-    
-    throw new Error('No embedding returned from Jina API');
+
+    const data = await response.json();
+    if (data.embeddings && data.embeddings.float && data.embeddings.float.length > 0) {
+      // Return the first image's embedding
+      return data.embeddings.float[0];
+    }
+
+    throw new Error('No embedding returned from Cohere API');
   } catch (error) {
-    console.error('Error creating image-only embedding:', error);
+    console.error('Error creating Cohere image-only embedding:', error);
     throw error;
   }
 }
 
-// Simple Jina consistent embedding - 512D
-export async function createJinaMultimodalEmbeddingConsistent(
-  text: string, 
+// Enhanced Cohere multimodal embedding with base64 data
+// Note: For Cohere, this returns image embedding + base64 data since text+image combo not supported
+export async function createCohereMultimodalEmbeddingWithBase64(
+  text: string,
   imageUrls: string[] = []
-): Promise<number[]> {
-  if (!isJinaProvider()) {
-    throw new Error('Jina provider not configured');
+): Promise<CohereMultimodalResult> {
+  if (!isCohereProvider()) {
+    throw new Error('Cohere provider not configured');
   }
 
   try {
-    const input: any[] = [{ text }];
-    
-    // Use URLs directly
+    const imageBase64Data: string[] = [];
+    let embedding: number[];
+
+    // If images provided, use image embedding (Cohere doesn't support text+image combo)
     if (imageUrls && imageUrls.length > 0) {
       for (const imageUrl of imageUrls) {
-        input.push({ image: imageUrl });
+        const base64 = await convertImageUrlToBase64(imageUrl);
+        imageBase64Data.push(base64);
       }
-    }
-    
-    const response = await fetch('https://api.jina.ai/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.JINA_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'jina-embeddings-v4',
-        task: 'retrieval.query',
+      embedding = await createCohereImageOnlyEmbedding(imageUrls);
+    } else {
+      // Text-only embedding
+      const embedder = new DirectCohereEmbeddings({
+        apiKey: process.env.COHERE_API_KEY || '',
+        model: 'embed-v4.0',
         dimensions: 512,
-        input: input
-      })
-    });
-
-    const data = await response.json();
-    if (data.data && data.data.length > 0) {
-      return data.data[0].embedding;
+        inputType: 'search_query',
+      });
+      embedding = await embedder.embedQuery(text);
     }
-    
-    throw new Error('No embedding returned from Jina API');
+
+    return {
+      embedding,
+      imageBase64Data
+    };
   } catch (error) {
-    console.error('Error creating consistent Jina multimodal embedding:', error);
+    console.error('Error creating Cohere multimodal embedding:', error);
     throw error;
   }
+}
+
+// Simple Cohere multimodal embedding wrapper
+export async function createCohereMultimodalEmbedding(
+  text: string,
+  imageUrls: string[] = []
+): Promise<number[]> {
+  const result = await createCohereMultimodalEmbeddingWithBase64(text, imageUrls);
+  return result.embedding;
 }
 
 // Simple embedding model creation
@@ -373,15 +245,6 @@ export function createEmbeddingModel() {
   const model = process.env.EMBEDDING_MODEL || 'embed-v4.0';
 
   switch (provider) {
-    case 'jina':
-      // Use custom Jina implementation with direct API for full parameter support
-      return new DirectJinaEmbeddings({
-        apiKey: process.env.JINA_API_KEY || '',
-        model: model,
-        dimensions: parseInt(process.env.EMBEDDING_DIMENSIONS || '512'),
-        task: 'retrieval.query', // Full parameter support via direct API
-      });
-
     case 'openai':
       return new OpenAIEmbeddings({
         modelName: model,
@@ -423,20 +286,15 @@ export function getEmbeddingConfig(): EmbeddingConfig {
   return {
     provider,
     model,
-    dimensions: provider === 'jina' ? 512 : parseInt(process.env.EMBEDDING_DIMENSIONS || '512')
+    dimensions: parseInt(process.env.EMBEDDING_DIMENSIONS || '512')
   };
 }
 
 // Simple validation
 export function validateEmbeddingConfig(): { isValid: boolean; error?: string } {
   const provider = process.env.EMBEDDING_PROVIDER || 'cohere';
-  
+
   switch (provider) {
-    case 'jina':
-      if (!process.env.JINA_API_KEY) {
-        return { isValid: false, error: 'JINA_API_KEY is required for Jina embeddings' };
-      }
-      break;
     case 'openai':
       if (!process.env.OPENAI_API_KEY) {
         return { isValid: false, error: 'OPENAI_API_KEY is required for OpenAI embeddings' };
@@ -461,7 +319,5 @@ export function validateEmbeddingConfig(): { isValid: boolean; error?: string } 
 
 // Simple dimensions getter
 export function getModelDimensions(): number {
-  const provider = (process.env.EMBEDDING_PROVIDER || 'cohere') as EmbeddingProvider;
-
-  return provider === 'jina' ? 512 : parseInt(process.env.EMBEDDING_DIMENSIONS || '512');
+  return parseInt(process.env.EMBEDDING_DIMENSIONS || '512');
 }

@@ -16,7 +16,7 @@ import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { createChatModel } from './modelProviders';
 import { getRelevantHistory } from './contextManager';
 import { createEmbeddingModel, getModelDimensions } from './embeddingProviders';
-import { isJinaProvider, createJinaMultimodalEmbedding, createJinaImageOnlyEmbedding, createJinaMultimodalEmbeddingWithBase64, convertImageUrlToBase64 } from './embeddingProviders';
+import { isCohereProvider, createCohereMultimodalEmbedding, createCohereImageOnlyEmbedding, createCohereMultimodalEmbeddingWithBase64, convertImageUrlToBase64 } from './embeddingProviders';
 import { getSchemaCache } from './schemaCache';
 import { generateGraphAugmentation } from './graphCypher';
 import {
@@ -55,7 +55,7 @@ async function ensureImageEmbeddingsExist(
   imageUrls: string[],
   userEmail: string
 ): Promise<void> {
-  if (!isJinaProvider() || !imageUrls || imageUrls.length === 0) {
+  if (!isCohereProvider() || !imageUrls || imageUrls.length === 0) {
     return;
   }
 
@@ -63,7 +63,7 @@ async function ensureImageEmbeddingsExist(
     console.log(`🔍 Creating on-demand embeddings for ${imageUrls.length} image(s)`);
     
     // Generate image-only embedding
-    const embedding = await createJinaImageOnlyEmbedding(imageUrls);
+    const embedding = await createCohereImageOnlyEmbedding(imageUrls);
 
     if (!embedding || embedding.length === 0) {
       console.warn('⚠️ No embedding generated for images');
@@ -186,9 +186,9 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     let queryEmbedding: number[];
     let userImageBase64Data: string[] = [];
     
-    if (isJinaProvider() && imageUrls.length > 0) {
+    if (isCohereProvider() && imageUrls.length > 0) {
       // Keep original embedding logic for RAG compatibility
-      queryEmbedding = await createJinaImageOnlyEmbedding(imageUrls);
+      queryEmbedding = await createCohereImageOnlyEmbedding(imageUrls);
       
       // Log embedding dimensions
       const expectedDims = getModelDimensions();
@@ -338,7 +338,7 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     limit: number = 10,
     minScore: number = 0.5
   ): Promise<SearchResult[]> {
-    if (!isJinaProvider()) {
+    if (!isCohereProvider()) {
       return [];
     }
 
@@ -347,8 +347,8 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     }
 
     try {
-      const { createJinaImageOnlyEmbedding } = await import('./embeddingProviders');
-      const imageEmbedding = await createJinaImageOnlyEmbedding(imageUrls);
+      const { createCohereImageOnlyEmbedding } = await import('./embeddingProviders');
+      const imageEmbedding = await createCohereImageOnlyEmbedding(imageUrls);
       
       // Log embedding dimensions
       const expectedDims = getModelDimensions();
@@ -442,8 +442,8 @@ export const makeChainSSE = (
 
       // Process images first (if any)
       let imageDescription = '';
-      if (imageUrls && imageUrls.length > 0 && !isJinaProvider()) {
-        // Only process images with OpenAI if NOT using Jina
+      if (imageUrls && imageUrls.length > 0 && !isCohereProvider()) {
+        // Only process images with OpenAI if NOT using Cohere
         const { processImageWithOpenAI } = await import('./inputProcessing');
         imageDescription = await processImageWithOpenAI(imageUrls, input);
       }
@@ -499,12 +499,12 @@ export const makeChainSSE = (
 
       // Handle image description integration (similar to prepareInput logic)
       let finalProcessedInput = processedInput;
-      if (imageDescription && !isJinaProvider()) {
+      if (imageDescription && !isCohereProvider()) {
         finalProcessedInput = `${processedInput} [Image model answer: ${imageDescription}]`;
       }
 
       // Handle historical images (if no current images but history exists)
-      if (imageUrls.length === 0 && !isJinaProvider()) {
+      if (imageUrls.length === 0 && !isCohereProvider()) {
         const { getImageUrlsFromHistory, isQuestionRelatedToImage } = await import('./inputProcessing');
         const historyImageUrls = await getImageUrlsFromHistory(roomId);
         if (historyImageUrls.length > 0) {
@@ -758,8 +758,8 @@ export const makeChainSSE = (
         }
       }
       
-      // Enhanced Vision Processing for Jina Provider with RAG context
-      if (isJinaProvider() && imageUrls.length > 0) {
+      // Enhanced Vision Processing for Cohere Provider with RAG context
+      if (isCohereProvider() && imageUrls.length > 0) {
         try {
           // Extract context image URLs from retrieved documents
           const contextImageUrls: string[] = [];
@@ -805,7 +805,7 @@ export const makeChainSSE = (
           console.log(`📊 RAG Results: Found ${ragDocuments.length} documents`);
           console.log(`🖼️ Context Images Found: ${contextImageUrls.length}`);
           console.log(`👤 User Images Available: ${userImageBase64Data.length}`);
-          console.log(`🔧 Provider: ${isJinaProvider() ? 'Jina' : 'OpenAI'}`);
+          console.log(`🔧 Provider: ${isCohereProvider() ? 'Cohere' : 'OpenAI'}`);
 
           if (contextImageUrls.length > 0 || userImageBase64Data.length > 0) {
             console.log(`🔍 Enhanced Vision: Processing ${contextImageUrls.length} context images + ${userImageBase64Data.length} user images`);
