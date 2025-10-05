@@ -2,7 +2,6 @@ import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import OpenAIChat from 'openai';
 import MemoryService from '@/utils/memoryService';
-import { isJinaProvider } from './embeddingProviders';
 import {
   IMAGE_ANALYSIS_PROMPT,
   IMAGE_RELATION_PROMPT,
