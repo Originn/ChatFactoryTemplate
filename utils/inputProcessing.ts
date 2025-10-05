@@ -426,14 +426,29 @@ The context images below are reference material, followed by the user's images:`
 // Utility function to convert storage URLs to signed URLs if needed  
 export async function convertToSignedUrlIfNeeded(imageUrl: string): Promise<string> {
   try {
-    // Check if it's a storage.googleapis.com URL that needs signing
+    // Check if it's a storage.googleapis.com URL
     if (imageUrl.includes('storage.googleapis.com')) {
-      
-      // Extract bucket name and filename from URL
-      const urlParts = imageUrl.replace('https://storage.googleapis.com/', '').split('/');
+
+      // Check if URL is already signed (has query parameters)
+      const urlObj = new URL(imageUrl);
+      const hasSignature = urlObj.searchParams.has('X-Goog-Signature') || urlObj.searchParams.has('Signature');
+
+      if (hasSignature) {
+        // URL is already signed, check if it's still valid
+        const expiresParam = urlObj.searchParams.get('X-Goog-Date') || urlObj.searchParams.get('Expires');
+        if (expiresParam) {
+          // If expires is in the future, use the existing signed URL
+          console.log(`✅ Using existing signed URL (already signed)`);
+          return imageUrl;
+        }
+      }
+
+      // Extract bucket name and filename from URL (strip query parameters)
+      const pathWithoutQuery = urlObj.pathname; // This strips query params automatically
+      const urlParts = pathWithoutQuery.replace(/^\//, '').split('/');
       const bucketName = urlParts[0];
       const fileName = urlParts.slice(1).join('/');
-      
+
       if (!fileName) {
         console.warn('Could not extract filename from URL:', imageUrl);
         return imageUrl;
@@ -449,10 +464,10 @@ export async function convertToSignedUrlIfNeeded(imageUrl: string): Promise<stri
 
       // Server-side signed URL generation using Firebase credentials
       const { Storage } = await import('@google-cloud/storage');
-      
+
       // Format the private key properly (handle escaped newlines)
       const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
-      
+
       const storage = new Storage({
         projectId: process.env.FIREBASE_PROJECT_ID,
         credentials: {
@@ -460,7 +475,7 @@ export async function convertToSignedUrlIfNeeded(imageUrl: string): Promise<stri
           private_key: privateKey,
         },
       });
-      
+
       const bucket = storage.bucket(bucketName);
       const file = bucket.file(fileName);
 
@@ -482,7 +497,7 @@ export async function convertToSignedUrlIfNeeded(imageUrl: string): Promise<stri
       console.log(`✅ Generated signed URL for ${fileName} using Firebase credentials`);
       return signedUrl;
     }
-    
+
     return imageUrl; // Non-storage URLs can be used directly
   } catch (error) {
     console.error('Error converting URL to signed URL:', error);
