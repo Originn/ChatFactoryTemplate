@@ -2,7 +2,6 @@
 // Cohere embed-v4.0 embeddings with 512D Matryoshka
 
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { CohereEmbeddings } from '@langchain/cohere';
 import { HuggingFaceInferenceEmbeddings } from '@langchain/community/embeddings/hf';
 import { Embeddings } from '@langchain/core/embeddings';
 
