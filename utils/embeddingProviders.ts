@@ -67,7 +67,7 @@ class DirectJinaEmbeddings extends Embeddings {
   async embedQuery(text: string): Promise<number[]> {
     try {
       console.log(`🔍 Calling Jina API directly: model=${this.model}, dimensions=${this.dimensions}, task=${this.task}`);
-      
+
       const response = await fetch('https://api.jina.ai/v1/embeddings', {
         method: 'POST',
         headers: {
@@ -89,10 +89,95 @@ class DirectJinaEmbeddings extends Embeddings {
 
       const result = await response.json();
       console.log(`✅ Jina API call successful, received ${result.data[0].embedding.length}D embedding`);
-      
+
       return result.data[0].embedding;
     } catch (error) {
       console.error('Error in DirectJinaEmbeddings.embedQuery:', error);
+      throw error;
+    }
+  }
+}
+
+// Direct Cohere API implementation with dimensions support
+class DirectCohereEmbeddings extends Embeddings {
+  private apiKey: string;
+  private model: string;
+  private dimensions: number;
+  private inputType: string;
+
+  constructor(config: {
+    apiKey: string;
+    model: string;
+    dimensions: number;
+    inputType: string;
+  }) {
+    super({});
+    this.apiKey = config.apiKey;
+    this.model = config.model;
+    this.dimensions = config.dimensions;
+    this.inputType = config.inputType;
+  }
+
+  async embedDocuments(texts: string[]): Promise<number[][]> {
+    try {
+      const response = await fetch('https://api.cohere.com/v2/embed', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          texts: texts,
+          model: this.model,
+          embedding_types: ['float'],
+          input_type: 'search_document',
+          output_dimension: this.dimensions, // Matryoshka dimensions support
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Cohere API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      return result.embeddings.float;
+    } catch (error) {
+      console.error('Error in DirectCohereEmbeddings.embedDocuments:', error);
+      throw error;
+    }
+  }
+
+  async embedQuery(text: string): Promise<number[]> {
+    try {
+      console.log(`🔍 Calling Cohere API directly: model=${this.model}, dimensions=${this.dimensions}, inputType=${this.inputType}`);
+
+      const response = await fetch('https://api.cohere.com/v2/embed', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          texts: [text],
+          model: this.model,
+          embedding_types: ['float'],
+          input_type: this.inputType,
+          output_dimension: this.dimensions, // Matryoshka dimensions support
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Cohere API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ Cohere API call successful, received ${result.embeddings.float[0].length}D embedding`);
+
+      return result.embeddings.float[0];
+    } catch (error) {
+      console.error('Error in DirectCohereEmbeddings.embedQuery:', error);
       throw error;
     }
   }
@@ -305,9 +390,12 @@ export function createEmbeddingModel() {
       });
 
     case 'cohere':
-      return new CohereEmbeddings({
-        apiKey: process.env.COHERE_API_KEY,
+      // Use custom Cohere implementation with dimensions support
+      return new DirectCohereEmbeddings({
+        apiKey: process.env.COHERE_API_KEY || '',
         model: model,
+        dimensions: parseInt(process.env.EMBEDDING_DIMENSIONS || '512'),
+        inputType: 'search_query',
       });
 
     case 'huggingface':
@@ -318,9 +406,11 @@ export function createEmbeddingModel() {
 
     default:
       console.warn(`⚠️ Unknown embedding provider: ${provider}, falling back to Cohere`);
-      return new CohereEmbeddings({
-        apiKey: process.env.COHERE_API_KEY,
+      return new DirectCohereEmbeddings({
+        apiKey: process.env.COHERE_API_KEY || '',
         model: 'embed-v4.0',
+        dimensions: 512,
+        inputType: 'search_query',
       });
   }
 }
