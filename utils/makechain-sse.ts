@@ -91,8 +91,8 @@ async function ensureImageEmbeddingsExist(
       context_text: contextText,
       embedding_type: 'image_only',
       source: 'chat_conversation',
-      embedding_provider: 'jina',
-      embedding_model: process.env.EMBEDDING_MODEL || 'jina-embeddings-v4',
+      embedding_provider: 'cohere',
+      embedding_model: process.env.EMBEDDING_MODEL || 'embed-v4.0',
       embedding_dimensions: embedding.length,
       embedding_task: 'retrieval.query'
     };
@@ -214,7 +214,7 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
         throw error;
       }
       
-      // For non-Jina providers, manually convert image URLs to base64 for vision processing
+      // Convert image URLs to base64 for vision processing
       if (imageUrls.length > 0) {
         console.log(`🔄 Converting ${imageUrls.length} user images to base64 for vision processing`);
         for (const imageUrl of imageUrls) {

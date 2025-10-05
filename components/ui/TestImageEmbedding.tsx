@@ -53,7 +53,7 @@ const TestImageEmbedding: React.FC<TestImageEmbeddingProps> = ({ userEmail }) =>
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Test the Jina multimodal embedding functionality with a sample image.
+        Test the Cohere multimodal embedding functionality with a sample image.
       </Typography>
 
       <Button 
@@ -69,7 +69,7 @@ const TestImageEmbedding: React.FC<TestImageEmbeddingProps> = ({ userEmail }) =>
         <Box sx={{ mb: 2 }}>
           <LinearProgress />
           <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
-            Generating embedding with Jina...
+            Generating embedding with Cohere...
           </Typography>
         </Box>
       )}
@@ -103,9 +103,9 @@ const TestImageEmbedding: React.FC<TestImageEmbeddingProps> = ({ userEmail }) =>
         <Typography variant="caption" color="text.secondary">
           <strong>Prerequisites:</strong><br/>
           • NEXT_PUBLIC_ENABLE_IMAGE_EMBEDDINGS=true<br/>
-          • EMBEDDING_PROVIDER=jina<br/>
-          • JINA_API_KEY configured<br/>
-          • Pinecone index with 1024 dimensions
+          • EMBEDDING_PROVIDER=cohere<br/>
+          • COHERE_API_KEY configured<br/>
+          • Pinecone index with 512 dimensions
         </Typography>
       </Box>
     </Box>
