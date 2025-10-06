@@ -697,40 +697,60 @@ export const makeChainSSE = (
       console.log(`${'='.repeat(80)}\n`);
 
       // Vision-first logic: If first result is an image with score > 0.52, analyze it with GPT-4o-mini vision
+      console.log(`\n${'='.repeat(80)}`);
+      console.log(`🖼️ VISION-FIRST ANALYSIS CHECK`);
+      console.log(`${'='.repeat(80)}`);
+      console.log(`Documents available: ${ragDocuments.length}`);
+      if (ragDocuments.length > 0) {
+        console.log(`First document type: ${ragDocuments[0].metadata?.type || 'N/A'}`);
+        console.log(`First document score: ${ragDocuments[0].metadata?.score?.toFixed(4) || 'N/A'}`);
+        console.log(`Score threshold: 0.52`);
+        console.log(`Should trigger vision: ${ragDocuments[0].metadata?.type === 'image' && (ragDocuments[0].metadata?.score || 0) > 0.52 ? '✅ YES' : '❌ NO'}`);
+      }
+      console.log(`${'='.repeat(80)}\n`);
+
       let enhancedImageDescription = imageDescription;
       if (ragDocuments.length > 0 &&
           ragDocuments[0].metadata?.type === 'image' &&
           (ragDocuments[0].metadata?.score || 0) > 0.52) {
         try {
-          console.log('🖼️ First result is an image with score > 0.52 - triggering vision-first analysis');
+          console.log('🖼️ ✅ VISION-FIRST TRIGGERED - First result is an image with score > 0.52');
           const firstImageDoc = ragDocuments[0];
 
           // Extract image URL from the first document
           let imageUrl = null;
+          let sourceField = null;
           if (firstImageDoc.metadata?.page_image_url) {
             imageUrl = firstImageDoc.metadata.page_image_url;
+            sourceField = 'page_image_url';
           } else if (firstImageDoc.metadata?.image_path) {
             imageUrl = firstImageDoc.metadata.image_path;
+            sourceField = 'image_path';
           } else if (firstImageDoc.metadata?.image) {
             imageUrl = firstImageDoc.metadata.image;
+            sourceField = 'image';
           } else if (firstImageDoc.metadata?.source) {
             imageUrl = firstImageDoc.metadata.source;
+            sourceField = 'source';
           }
 
-          if (imageUrl) {
-            console.log(`🔍 Analyzing image with GPT-4o-mini: ${imageUrl.substring(0, 80)}...`);
+          console.log(`📍 Image URL source field: ${sourceField || 'NONE'}`);
+          console.log(`📍 Image URL: ${imageUrl || 'NO URL FOUND'}`);
 
+          if (imageUrl) {
             // Convert to signed URL if it's a storage URL
             let accessibleImageUrl = imageUrl;
             try {
               const { convertToSignedUrlIfNeeded } = await import('./inputProcessing');
               accessibleImageUrl = await convertToSignedUrlIfNeeded(imageUrl);
-              console.log(`✅ Generated signed URL for vision model`);
+              console.log(`✅ Signed URL generated successfully`);
+              console.log(`🔗 Signed URL: ${accessibleImageUrl}`);
             } catch (urlError) {
               console.error('⚠️ Failed to generate signed URL, using original URL:', urlError);
             }
 
             // Create a vision model for analyzing the image
+            console.log(`🤖 Creating GPT-4o-mini vision model...`);
             const visionModel = new ChatOpenAI({
               streaming: false,
               verbose: false,
@@ -740,6 +760,7 @@ export const makeChainSSE = (
             });
 
             // Analyze the image with the user's question
+            console.log(`🔍 Invoking vision model with question: "${contextualizedQuestion}"`);
             const visionResponse = await visionModel.invoke([
               {
                 role: 'user',
@@ -761,11 +782,16 @@ export const makeChainSSE = (
                 ? visionResponse.content
                 : JSON.stringify(visionResponse.content);
               finalImageDescription = enhancedImageDescription; // Update final image description
-              console.log('✅ Vision analysis completed successfully');
-              console.log(`📝 Vision description: ${enhancedImageDescription.substring(0, 150)}...`);
+
+              console.log(`\n${'='.repeat(80)}`);
+              console.log(`✅ VISION ANALYSIS COMPLETED`);
+              console.log(`${'='.repeat(80)}`);
+              console.log(`📝 Full Vision Description:`);
+              console.log(enhancedImageDescription);
+              console.log(`${'='.repeat(80)}\n`);
 
               // Re-generate answer with enhanced image description using same documents (no new retrieval)
-              console.log('🔄 Re-generating answer with enhanced image description');
+              console.log('🔄 Re-generating answer with enhanced image description...');
               const regeneratedAnswer = await questionAnswerChain.invoke({
                 input: processedInput,
                 chat_history: relevantHistory as any,
@@ -779,13 +805,23 @@ export const makeChainSSE = (
                 ? regeneratedAnswer
                 : ((regeneratedAnswer as any)?.answer ?? regeneratedAnswer);
 
-              console.log('✅ Enhanced answer generated with same documents');
+              console.log(`\n${'='.repeat(80)}`);
+              console.log(`✅ ENHANCED ANSWER GENERATED`);
+              console.log(`${'='.repeat(80)}`);
+              console.log(`📝 Enhanced Answer:`);
+              console.log(enhancedAnswer);
+              console.log(`${'='.repeat(80)}\n`);
             }
+          } else {
+            console.log('⚠️ No image URL found in first document metadata - skipping vision analysis');
           }
         } catch (error) {
           console.error('❌ Error in vision-first analysis:', error);
+          console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
           // Continue with original imageDescription on error
         }
+      } else {
+        console.log('⏭️ Vision-first analysis SKIPPED - conditions not met');
       }
 
       if (combinedContextDocs.length > 0) {
