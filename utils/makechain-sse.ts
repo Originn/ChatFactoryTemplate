@@ -669,28 +669,57 @@ export const makeChainSSE = (
 
       let finalImageDescription = imageDescription;
 
-      // Vision-first logic: If first result is an image with score > 0.53, analyze it with GPT-4o-mini vision
+      // Log all embedding results with full details
+      console.log(`\n${'='.repeat(80)}`);
+      console.log(`📊 EMBEDDING SEARCH RESULTS - Total Documents: ${ragDocuments.length}`);
+      console.log(`${'='.repeat(80)}\n`);
+
+      ragDocuments.forEach((doc, index) => {
+        console.log(`📄 Document ${index + 1}/${ragDocuments.length}:`);
+        console.log(`   ├─ Score: ${doc.metadata?.score?.toFixed(4) || 'N/A'}`);
+        console.log(`   ├─ Type: ${doc.metadata?.type || 'unknown'}`);
+        console.log(`   ├─ Source: ${doc.metadata?.source || 'N/A'}`);
+        console.log(`   ├─ Content: "${doc.pageContent?.substring(0, 150).replace(/\n/g, ' ') || 'N/A'}..."`);
+        console.log(`   ├─ Images:`);
+        console.log(`   │  ├─ page_image_url: ${doc.metadata?.page_image_url ? '✅ ' + doc.metadata.page_image_url : '❌'}`);
+        console.log(`   │  ├─ image_path: ${doc.metadata?.image_path ? '✅ ' + doc.metadata.image_path : '❌'}`);
+        console.log(`   │  ├─ image: ${doc.metadata?.image ? '✅ ' + doc.metadata.image : '❌'}`);
+        console.log(`   │  └─ image_urls: ${doc.metadata?.image_urls ? `✅ (${doc.metadata.image_urls.length} images)` : '❌'}`);
+        if (doc.metadata?.image_urls && doc.metadata.image_urls.length > 0) {
+          doc.metadata.image_urls.forEach((url: string, idx: number) => {
+            console.log(`   │     └─ [${idx + 1}]: ${url}`);
+          });
+        }
+        console.log(`   └─ All Metadata Keys: ${Object.keys(doc.metadata || {}).join(', ')}`);
+        console.log('');
+      });
+
+      console.log(`${'='.repeat(80)}\n`);
+
+      // Vision-first logic: If first result is an image with score > 0.52, analyze it with GPT-4o-mini vision
       let enhancedImageDescription = imageDescription;
-      if (ragDocuments.length > 0 && 
-          ragDocuments[0].metadata?.type === 'image' && 
-          (ragDocuments[0].metadata?.score || 0) > 0.53) {
+      if (ragDocuments.length > 0 &&
+          ragDocuments[0].metadata?.type === 'image' &&
+          (ragDocuments[0].metadata?.score || 0) > 0.52) {
         try {
-          console.log('🖼️ First result is an image - triggering vision-first analysis');
+          console.log('🖼️ First result is an image with score > 0.52 - triggering vision-first analysis');
           const firstImageDoc = ragDocuments[0];
-          
+
           // Extract image URL from the first document
           let imageUrl = null;
           if (firstImageDoc.metadata?.page_image_url) {
             imageUrl = firstImageDoc.metadata.page_image_url;
+          } else if (firstImageDoc.metadata?.image_path) {
+            imageUrl = firstImageDoc.metadata.image_path;
           } else if (firstImageDoc.metadata?.image) {
             imageUrl = firstImageDoc.metadata.image;
           } else if (firstImageDoc.metadata?.source) {
             imageUrl = firstImageDoc.metadata.source;
           }
-          
+
           if (imageUrl) {
             console.log(`🔍 Analyzing image with GPT-4o-mini: ${imageUrl.substring(0, 80)}...`);
-            
+
             // Convert to signed URL if it's a storage URL
             let accessibleImageUrl = imageUrl;
             try {
@@ -700,7 +729,7 @@ export const makeChainSSE = (
             } catch (urlError) {
               console.error('⚠️ Failed to generate signed URL, using original URL:', urlError);
             }
-            
+
             // Create a vision model for analyzing the image
             const visionModel = new ChatOpenAI({
               streaming: false,
@@ -709,7 +738,7 @@ export const makeChainSSE = (
               modelName: 'gpt-4o-mini', // Using 4o-mini for vision
               openAIApiKey: process.env.OPENAI_API_KEY,
             });
-            
+
             // Analyze the image with the user's question
             const visionResponse = await visionModel.invoke([
               {
@@ -726,149 +755,36 @@ export const makeChainSSE = (
                 ]
               }
             ]);
-            
+
             if (visionResponse && visionResponse.content) {
-              enhancedImageDescription = typeof visionResponse.content === 'string' 
-                ? visionResponse.content 
+              enhancedImageDescription = typeof visionResponse.content === 'string'
+                ? visionResponse.content
                 : JSON.stringify(visionResponse.content);
-              finalImageDescription = enhancedImageDescription;
+              finalImageDescription = enhancedImageDescription; // Update final image description
               console.log('✅ Vision analysis completed successfully');
               console.log(`📝 Vision description: ${enhancedImageDescription.substring(0, 150)}...`);
-              
+
               // Re-generate answer with enhanced image description using same documents (no new retrieval)
               console.log('🔄 Re-generating answer with enhanced image description');
               const regeneratedAnswer = await questionAnswerChain.invoke({
                 input: processedInput,
                 chat_history: relevantHistory as any,
-                context: combinedContextDocs,
+                context: ragDocuments, // Use same retrieved documents
                 language,
-                imageDescription: enhancedImageDescription,
+                imageDescription: enhancedImageDescription, // Use enhanced description
               });
 
+              // Update enhanced answer for final output
               enhancedAnswer = typeof regeneratedAnswer === 'string'
                 ? regeneratedAnswer
                 : ((regeneratedAnswer as any)?.answer ?? regeneratedAnswer);
 
-              console.log('✅ Enhanced answer generated with combined context');
+              console.log('✅ Enhanced answer generated with same documents');
             }
           }
         } catch (error) {
           console.error('❌ Error in vision-first analysis:', error);
           // Continue with original imageDescription on error
-        }
-      }
-      
-      // Enhanced Vision Processing for Cohere Provider with RAG context
-      if (isCohereProvider() && imageUrls.length > 0) {
-        try {
-          // Log all embedding results with full details
-          console.log(`\n${'='.repeat(80)}`);
-          console.log(`📊 EMBEDDING SEARCH RESULTS - Total Documents: ${ragDocuments.length}`);
-          console.log(`${'='.repeat(80)}\n`);
-
-          ragDocuments.forEach((doc, index) => {
-            console.log(`📄 Document ${index + 1}/${ragDocuments.length}:`);
-            console.log(`   ├─ Score: ${doc.metadata?.score?.toFixed(4) || 'N/A'}`);
-            console.log(`   ├─ Type: ${doc.metadata?.type || 'unknown'}`);
-            console.log(`   ├─ Source: ${doc.metadata?.source || 'N/A'}`);
-            console.log(`   ├─ Content: "${doc.pageContent?.substring(0, 150).replace(/\n/g, ' ') || 'N/A'}..."`);
-            console.log(`   ├─ Images:`);
-            console.log(`   │  ├─ page_image_url: ${doc.metadata?.page_image_url ? '✅ ' + doc.metadata.page_image_url : '❌'}`);
-            console.log(`   │  ├─ image_path: ${doc.metadata?.image_path ? '✅ ' + doc.metadata.image_path : '❌'}`);
-            console.log(`   │  ├─ image: ${doc.metadata?.image ? '✅ ' + doc.metadata.image : '❌'}`);
-            console.log(`   │  └─ image_urls: ${doc.metadata?.image_urls ? `✅ (${doc.metadata.image_urls.length} images)` : '❌'}`);
-            if (doc.metadata?.image_urls && doc.metadata.image_urls.length > 0) {
-              doc.metadata.image_urls.forEach((url: string, idx: number) => {
-                console.log(`   │     └─ [${idx + 1}]: ${url}`);
-              });
-            }
-            console.log(`   └─ All Metadata Keys: ${Object.keys(doc.metadata || {}).join(', ')}`);
-            console.log('');
-          });
-
-          console.log(`${'='.repeat(80)}\n`);
-
-          // Extract context image URLs from retrieved documents
-          const contextImageUrls: string[] = [];
-          console.log(`🔍 Analyzing ${ragDocuments.length} retrieved documents for images:`);
-
-          for (let i = 0; i < ragDocuments.length; i++) {
-            const doc = ragDocuments[i];
-            console.log(`  📄 Doc ${i + 1}:`, {
-              type: doc.metadata?.type,
-              score: doc.metadata?.score,
-              source: doc.metadata?.source,
-              hasImageUrls: !!doc.metadata?.image_urls,
-              hasImage: !!doc.metadata?.image,
-              hasImagePath: !!doc.metadata?.image_path,
-              hasPageImageUrl: !!doc.metadata?.page_image_url,
-              imageUrlsLength: doc.metadata?.image_urls?.length || 0,
-              imageValue: doc.metadata?.image ? 'present' : 'absent',
-              imagePathValue: doc.metadata?.image_path ? 'present' : 'absent',
-              pageImageUrlValue: doc.metadata?.page_image_url ? 'present' : 'absent'
-            });
-            
-            // First priority: Use page_image_url if available (full page context)
-            if (doc.metadata?.page_image_url && typeof doc.metadata.page_image_url === 'string') {
-              console.log(`    🖼️ Found page image URL: ${doc.metadata.page_image_url.substring(0, 80)}...`);
-              contextImageUrls.push(doc.metadata.page_image_url);
-            } else if (doc.metadata?.image_urls && Array.isArray(doc.metadata.image_urls)) {
-              console.log(`    ✅ Found ${doc.metadata.image_urls.length} image URLs in image_urls array`);
-              contextImageUrls.push(...doc.metadata.image_urls);
-            } else if (doc.metadata?.image && typeof doc.metadata.image === 'string') {
-              console.log(`    ✅ Found single image in image field: ${doc.metadata.image.substring(0, 50)}...`);
-              contextImageUrls.push(doc.metadata.image);
-            } else if (doc.metadata?.image_path && typeof doc.metadata.image_path === 'string') {
-              console.log(`    ✅ Found image path: ${doc.metadata.image_path.substring(0, 50)}...`);
-              contextImageUrls.push(doc.metadata.image_path);
-            } else {
-              console.log(`    ❌ No images found in this document`);
-            }
-          }
-
-          // Get user image base64 data from the first document's metadata (stored during RAG)
-          const userImageBase64Data = ragDocuments[0]?.metadata?.userImageBase64Data || [];
-
-          console.log(`📊 RAG Results: Found ${ragDocuments.length} documents`);
-          console.log(`🖼️ Context Images Found: ${contextImageUrls.length}`);
-          console.log(`👤 User Images Available: ${userImageBase64Data.length}`);
-          console.log(`🔧 Provider: ${isCohereProvider() ? 'Cohere' : 'OpenAI'}`);
-
-          if (contextImageUrls.length > 0 || userImageBase64Data.length > 0) {
-            console.log(`🔍 Enhanced Vision: Processing ${contextImageUrls.length} context images + ${userImageBase64Data.length} user images`);
-            
-            // Call enhanced vision processing (non-streaming version)
-            const visionAnswer = await processImagesWithContext(
-              userImageBase64Data,
-              contextImageUrls,
-              originalInput
-            );
-
-            if (visionAnswer && visionAnswer.trim() !== '') {
-              enhancedAnswer = visionAnswer;
-              console.log('✨ Enhanced vision processing completed successfully');
-            }
-          } else if (userImageBase64Data.length > 0) {
-            // Fallback: If no context images but user has images, use regular vision processing (non-streaming)
-            console.log('📸 Fallback: Using regular vision processing for user images only');
-            
-            const fallbackAnswer = await processImageWithOpenAI(imageUrls, originalInput);
-            if (fallbackAnswer && fallbackAnswer.trim() !== '') {
-              enhancedAnswer = fallbackAnswer;
-            }
-          }
-        } catch (error) {
-          console.error('Error in enhanced vision processing:', error);
-          // Fallback to regular vision processing (non-streaming)
-          try {
-            const fallbackAnswer = await processImageWithOpenAI(imageUrls, originalInput);
-            if (fallbackAnswer && fallbackAnswer.trim() !== '') {
-              enhancedAnswer = fallbackAnswer;
-            }
-          } catch (fallbackError) {
-            console.error('Error in fallback vision processing:', fallbackError);
-            // Keep original RAG answer - will be streamed at the end
-          }
         }
       }
 
