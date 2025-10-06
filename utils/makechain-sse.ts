@@ -761,10 +761,37 @@ export const makeChainSSE = (
       // Enhanced Vision Processing for Cohere Provider with RAG context
       if (isCohereProvider() && imageUrls.length > 0) {
         try {
+          // Log all embedding results with full details
+          console.log(`\n${'='.repeat(80)}`);
+          console.log(`📊 EMBEDDING SEARCH RESULTS - Total Documents: ${ragDocuments.length}`);
+          console.log(`${'='.repeat(80)}\n`);
+
+          ragDocuments.forEach((doc, index) => {
+            console.log(`📄 Document ${index + 1}/${ragDocuments.length}:`);
+            console.log(`   ├─ Score: ${doc.metadata?.score?.toFixed(4) || 'N/A'}`);
+            console.log(`   ├─ Type: ${doc.metadata?.type || 'unknown'}`);
+            console.log(`   ├─ Source: ${doc.metadata?.source || 'N/A'}`);
+            console.log(`   ├─ Content: "${doc.pageContent?.substring(0, 150).replace(/\n/g, ' ') || 'N/A'}..."`);
+            console.log(`   ├─ Images:`);
+            console.log(`   │  ├─ page_image_url: ${doc.metadata?.page_image_url ? '✅ ' + doc.metadata.page_image_url.substring(0, 80) + '...' : '❌'}`);
+            console.log(`   │  ├─ image_path: ${doc.metadata?.image_path ? '✅ ' + doc.metadata.image_path.substring(0, 80) + '...' : '❌'}`);
+            console.log(`   │  ├─ image: ${doc.metadata?.image ? '✅ ' + doc.metadata.image.substring(0, 80) + '...' : '❌'}`);
+            console.log(`   │  └─ image_urls: ${doc.metadata?.image_urls ? `✅ (${doc.metadata.image_urls.length} images)` : '❌'}`);
+            if (doc.metadata?.image_urls && doc.metadata.image_urls.length > 0) {
+              doc.metadata.image_urls.forEach((url: string, idx: number) => {
+                console.log(`   │     └─ [${idx + 1}]: ${url.substring(0, 80)}...`);
+              });
+            }
+            console.log(`   └─ All Metadata Keys: ${Object.keys(doc.metadata || {}).join(', ')}`);
+            console.log('');
+          });
+
+          console.log(`${'='.repeat(80)}\n`);
+
           // Extract context image URLs from retrieved documents
           const contextImageUrls: string[] = [];
           console.log(`🔍 Analyzing ${ragDocuments.length} retrieved documents for images:`);
-          
+
           for (let i = 0; i < ragDocuments.length; i++) {
             const doc = ragDocuments[i];
             console.log(`  📄 Doc ${i + 1}:`, {
