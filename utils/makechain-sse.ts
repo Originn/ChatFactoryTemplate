@@ -773,13 +773,13 @@ export const makeChainSSE = (
             console.log(`   ├─ Source: ${doc.metadata?.source || 'N/A'}`);
             console.log(`   ├─ Content: "${doc.pageContent?.substring(0, 150).replace(/\n/g, ' ') || 'N/A'}..."`);
             console.log(`   ├─ Images:`);
-            console.log(`   │  ├─ page_image_url: ${doc.metadata?.page_image_url ? '✅ ' + doc.metadata.page_image_url.substring(0, 80) + '...' : '❌'}`);
-            console.log(`   │  ├─ image_path: ${doc.metadata?.image_path ? '✅ ' + doc.metadata.image_path.substring(0, 80) + '...' : '❌'}`);
-            console.log(`   │  ├─ image: ${doc.metadata?.image ? '✅ ' + doc.metadata.image.substring(0, 80) + '...' : '❌'}`);
+            console.log(`   │  ├─ page_image_url: ${doc.metadata?.page_image_url ? '✅ ' + doc.metadata.page_image_url : '❌'}`);
+            console.log(`   │  ├─ image_path: ${doc.metadata?.image_path ? '✅ ' + doc.metadata.image_path : '❌'}`);
+            console.log(`   │  ├─ image: ${doc.metadata?.image ? '✅ ' + doc.metadata.image : '❌'}`);
             console.log(`   │  └─ image_urls: ${doc.metadata?.image_urls ? `✅ (${doc.metadata.image_urls.length} images)` : '❌'}`);
             if (doc.metadata?.image_urls && doc.metadata.image_urls.length > 0) {
               doc.metadata.image_urls.forEach((url: string, idx: number) => {
-                console.log(`   │     └─ [${idx + 1}]: ${url.substring(0, 80)}...`);
+                console.log(`   │     └─ [${idx + 1}]: ${url}`);
               });
             }
             console.log(`   └─ All Metadata Keys: ${Object.keys(doc.metadata || {}).join(', ')}`);
