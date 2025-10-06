@@ -230,11 +230,18 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     
     const { k, fetchK, lambda } = this.getMMRSettings();
     
-    // Regular document search
+    // Regular document search - exclude on-demand user image embeddings
     const regularFilter = {
-      $or: [
-        { isPublic: true },
-        { isPublic: { $exists: false } }
+      $and: [
+        {
+          $or: [
+            { isPublic: true },
+            { isPublic: { $exists: false } }
+          ]
+        },
+        {
+          source: { $ne: 'chat_conversation' }  // Exclude on-demand user image embeddings
+        }
       ]
     };
     
