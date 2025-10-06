@@ -149,8 +149,8 @@ export async function createCohereImageOnlyEmbedding(
 
     for (const imageUrl of imageUrls) {
       const base64 = await convertImageUrlToBase64(imageUrl);
-      // Cohere requires data URL format: data:image/jpeg;base64,{base64_string}
-      const dataUrl = `data:image/jpeg;base64,${base64}`;
+      // Cohere requires data URL format - using png to match document processing
+      const dataUrl = `data:image/png;base64,${base64}`;
       imageDataUrls.push(dataUrl);
     }
 
