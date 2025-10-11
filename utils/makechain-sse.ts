@@ -47,76 +47,6 @@ interface DocumentInterface<T> {
 function generateUniqueId(): string {
   return uuidv4();
 }
-
-/**
- * Create embeddings on-demand for images if they don't exist in Pinecone
- */
-async function ensureImageEmbeddingsExist(
-  imageUrls: string[],
-  userEmail: string
-): Promise<void> {
-  if (!isCohereProvider() || !imageUrls || imageUrls.length === 0) {
-    return;
-  }
-
-  try {
-    console.log(`🔍 Creating on-demand embeddings for ${imageUrls.length} image(s)`);
-    
-    // Generate image-only embedding
-    const embedding = await createCohereImageOnlyEmbedding(imageUrls);
-
-    if (!embedding || embedding.length === 0) {
-      console.warn('⚠️ No embedding generated for images');
-      return;
-    }
-
-    // Validate embedding dimensions match expected
-    const expectedDims = getModelDimensions();
-    console.log(`✅ Expected dimensions: ${expectedDims}, actual: ${embedding.length}`);
-
-    console.log(`✅ Generated IMAGE-ONLY embedding with ${embedding.length} dimensions`);
-
-    // Prepare metadata
-    const timestamp = new Date().toISOString();
-    const embeddingId = `user_image_${uuidv4()}`;
-    const contextText = `User uploaded ${imageUrls.length} image(s) during conversation at ${timestamp}`;
-
-    const metadata = {
-      content_type: 'user_uploaded_image',
-      user_email: userEmail,
-      upload_timestamp: timestamp,
-      embedding_id: embeddingId,
-      image_count: imageUrls.length,
-      image_urls: imageUrls,
-      context_text: contextText,
-      embedding_type: 'image_only',
-      source: 'chat_conversation',
-      embedding_provider: 'cohere',
-      embedding_model: process.env.EMBEDDING_MODEL || 'embed-v4.0',
-      embedding_dimensions: embedding.length,
-      embedding_task: 'retrieval.query'
-    };
-
-    // Store in Pinecone directly (we're already in server context)
-    const { getPinecone } = await import('./pinecone-client');
-    const { PINECONE_NAME_SPACE } = await import('../config/pinecone');
-    
-    const pinecone = getPinecone();
-    const namespace = PINECONE_NAME_SPACE || 'default';
-    
-    await pinecone.namespace(namespace).upsert([{
-      id: embeddingId,
-      values: embedding,
-      metadata: metadata
-    }]);
-
-    console.log(`✅ On-demand embedding stored in Pinecone: ${embeddingId}`);
-
-  } catch (error) {
-    console.error('❌ Error creating on-demand embeddings:', error);
-    // Continue without embeddings - don't block the conversation
-  }
-}
 /**
  * Update the conversation history and title
  */
@@ -285,11 +215,23 @@ class CustomRetriever extends BaseRetriever implements BaseRetrieverInterface<Re
     });
     
     // Convert to documents and return
-    const documents = finalResults.map(([doc, score]) => ({
-      ...doc,
-      metadata: { ...doc.metadata, score, userImageBase64Data }
-    }));
-    
+    const documents = finalResults.map(([doc, score]) => {
+      // Parse page_image_urls if it's stored as a string
+      let parsedMetadata = { ...doc.metadata };
+      if (parsedMetadata.page_image_urls && typeof parsedMetadata.page_image_urls === 'string') {
+        try {
+          parsedMetadata.page_image_urls = JSON.parse(parsedMetadata.page_image_urls);
+        } catch (e) {
+          console.error('Failed to parse page_image_urls:', e);
+        }
+      }
+
+      return {
+        ...doc,
+        metadata: { ...parsedMetadata, score, userImageBase64Data }
+      };
+    });
+
     return documents;
   }
   async invoke(input: string, options?: Partial<RunnableConfig>, imageUrls: string[] = []): Promise<DocumentInterface<Record<string, any>>[]> {
@@ -435,10 +377,7 @@ export const makeChainSSE = (
 
       // Generate a unique ID for this Q&A
       const qaId = generateUniqueId();
-      
-      // Create embeddings on-demand for any images in the conversation
-      await ensureImageEmbeddingsExist(imageUrls, userEmail);
-      
+
       // Always disable streaming - we'll handle final answer streaming manually for consistency
       const streamingModel = createChatModel('openai', {
         streaming: false, // Always disabled - we stream final answer manually
@@ -675,6 +614,7 @@ export const makeChainSSE = (
         : ((baseAnswer as any)?.answer ?? baseAnswer);
 
       let finalImageDescription = imageDescription;
+      let visionProcessingCompleted = false; // Track if vision gave us an answer
 
       // Log all embedding results with full details
       console.log(`\n${'='.repeat(80)}`);
@@ -703,135 +643,117 @@ export const makeChainSSE = (
 
       console.log(`${'='.repeat(80)}\n`);
 
-      // Vision-first logic: If first result is an image with score > 0.52, analyze it with GPT-4o-mini vision
-      console.log(`\n${'='.repeat(80)}`);
-      console.log(`🖼️ VISION-FIRST ANALYSIS CHECK`);
-      console.log(`${'='.repeat(80)}`);
-      console.log(`Documents available: ${ragDocuments.length}`);
-      if (ragDocuments.length > 0) {
-        console.log(`First document type: ${ragDocuments[0].metadata?.type || 'N/A'}`);
-        console.log(`First document score: ${ragDocuments[0].metadata?.score?.toFixed(4) || 'N/A'}`);
-        console.log(`Score threshold: 0.52`);
-        console.log(`Should trigger vision: ${ragDocuments[0].metadata?.type === 'image' && (ragDocuments[0].metadata?.score || 0) > 0.52 ? '✅ YES' : '❌ NO'}`);
-      }
-      console.log(`${'='.repeat(80)}\n`);
-
-      let enhancedImageDescription = imageDescription;
-      if (ragDocuments.length > 0 &&
+      // Enhanced Vision Processing for Cohere Provider with RAG context (Jina-style)
+      // If first result is an image with score > 0.52, use multi-image context matching
+      if (isCohereProvider() && ragDocuments.length > 0 &&
           ragDocuments[0].metadata?.type === 'image' &&
           (ragDocuments[0].metadata?.score || 0) > 0.52) {
         try {
-          console.log('🖼️ ✅ VISION-FIRST TRIGGERED - First result is an image with score > 0.52');
+          console.log(`\n${'='.repeat(80)}`);
+          console.log(`🖼️ ENHANCED VISION PROCESSING TRIGGERED`);
+          console.log(`${'='.repeat(80)}`);
+          console.log(`First document type: image`);
+          console.log(`First document score: ${ragDocuments[0].metadata?.score?.toFixed(4)}`);
+          console.log(`${'='.repeat(80)}\n`);
+
+          const contextImageUrls: string[] = [];
           const firstImageDoc = ragDocuments[0];
 
-          // Extract image URL from the first document
-          let imageUrl = null;
-          let sourceField = null;
-          if (firstImageDoc.metadata?.page_image_url) {
-            imageUrl = firstImageDoc.metadata.page_image_url;
-            sourceField = 'page_image_url';
-          } else if (firstImageDoc.metadata?.image_path) {
-            imageUrl = firstImageDoc.metadata.image_path;
-            sourceField = 'image_path';
+          // Step 1: Get the matched content image (the specific diagram/photo that scored high)
+          if (firstImageDoc.metadata?.image_path) {
+            contextImageUrls.push(firstImageDoc.metadata.image_path);
+            console.log(`📸 Content image (matched): ${firstImageDoc.metadata.image_path.substring(0, 80)}...`);
           } else if (firstImageDoc.metadata?.image) {
-            imageUrl = firstImageDoc.metadata.image;
-            sourceField = 'image';
-          } else if (firstImageDoc.metadata?.source) {
-            imageUrl = firstImageDoc.metadata.source;
-            sourceField = 'source';
+            contextImageUrls.push(firstImageDoc.metadata.image);
+            console.log(`📸 Content image (matched): ${firstImageDoc.metadata.image.substring(0, 80)}...`);
           }
 
-          console.log(`📍 Image URL source field: ${sourceField || 'NONE'}`);
-          console.log(`📍 Image URL: ${imageUrl || 'NO URL FOUND'}`);
+          // Step 2: Try to get the page screenshot for full context
+          // Option A: If this image chunk has page_image_urls in its metadata
+          if (firstImageDoc.metadata?.page_image_urls && Array.isArray(firstImageDoc.metadata.page_image_urls) && firstImageDoc.metadata.page_image_urls.length > 0) {
+            const pageScreenshot = firstImageDoc.metadata.page_image_urls[0];
+            contextImageUrls.push(pageScreenshot);
+            console.log(`📄 Page screenshot (from image chunk): ${pageScreenshot.substring(0, 80)}...`);
+          }
+          // Option B: Find the parent text chunk and get its page screenshot
+          else if (firstImageDoc.metadata?.parent_chunk_id) {
+            const parentChunkId = firstImageDoc.metadata.parent_chunk_id;
+            console.log(`🔍 Looking for parent chunk: ${parentChunkId}`);
 
-          if (imageUrl) {
-            // Convert to signed URL if it's a storage URL
-            let accessibleImageUrl = imageUrl;
-            try {
-              const { convertToSignedUrlIfNeeded } = await import('./inputProcessing');
-              accessibleImageUrl = await convertToSignedUrlIfNeeded(imageUrl);
-              console.log(`✅ Signed URL generated successfully`);
-              console.log(`🔗 Signed URL: ${accessibleImageUrl}`);
-            } catch (urlError) {
-              console.error('⚠️ Failed to generate signed URL, using original URL:', urlError);
+            const parentChunk = ragDocuments.find(doc => doc.metadata?.chunk_id === parentChunkId);
+            if (parentChunk && parentChunk.metadata?.page_image_urls && Array.isArray(parentChunk.metadata.page_image_urls) && parentChunk.metadata.page_image_urls.length > 0) {
+              const pageScreenshot = parentChunk.metadata.page_image_urls[0];
+              contextImageUrls.push(pageScreenshot);
+              console.log(`📄 Page screenshot (from parent chunk): ${pageScreenshot.substring(0, 80)}...`);
+            } else {
+              console.log(`⚠️ Parent chunk found but no page_image_urls available`);
             }
+          }
+          // Option C: Check if first doc is actually a text chunk with page screenshots
+          else if (firstImageDoc.metadata?.type === 'text' && firstImageDoc.metadata?.page_image_urls && Array.isArray(firstImageDoc.metadata.page_image_urls) && firstImageDoc.metadata.page_image_urls.length > 0) {
+            const pageScreenshot = firstImageDoc.metadata.page_image_urls[0];
+            contextImageUrls.push(pageScreenshot);
+            console.log(`📄 Page screenshot (from text chunk): ${pageScreenshot.substring(0, 80)}...`);
+          }
 
-            // Create a vision model for analyzing the image
-            console.log(`🤖 Creating GPT-4o-mini vision model...`);
-            const visionModel = new ChatOpenAI({
-              streaming: false,
-              verbose: false,
-              maxTokens: 500,
-              modelName: 'gpt-4o-mini', // Using 4o-mini for vision
-              openAIApiKey: process.env.OPENAI_API_KEY,
-            });
+          // Get user image base64 data from the first document's metadata
+          const userImageBase64Data = firstImageDoc.metadata?.userImageBase64Data || [];
 
-            // Analyze the image with the user's question
-            console.log(`🔍 Invoking vision model with question: "${contextualizedQuestion}"`);
-            const visionResponse = await visionModel.invoke([
-              {
-                role: 'user',
-                content: [
-                  {
-                    type: 'text',
-                    text: `Please analyze this image in relation to the user's question: "${contextualizedQuestion}". Provide a short and concise description of what you see that's relevant to answering their question.`
-                  },
-                  {
-                    type: 'image_url',
-                    image_url: { url: accessibleImageUrl }
-                  }
-                ]
-              }
-            ]);
+          console.log(`\n📊 Images Summary:`);
+          console.log(`   Context Images: ${contextImageUrls.length}`);
+          contextImageUrls.forEach((url, idx) => {
+            const isScreenshot = url.includes('_screenshot.');
+            console.log(`   ${idx + 1}. ${isScreenshot ? '📄 Page Screenshot' : '📸 Content Image'}: ${url.substring(0, 80)}...`);
+          });
+          console.log(`   User Images: ${userImageBase64Data.length}`);
+          console.log('');
 
-            if (visionResponse && visionResponse.content) {
-              enhancedImageDescription = typeof visionResponse.content === 'string'
-                ? visionResponse.content
-                : JSON.stringify(visionResponse.content);
-              finalImageDescription = enhancedImageDescription; // Update final image description
+          if (contextImageUrls.length > 0 || userImageBase64Data.length > 0) {
+            console.log(`🔍 Processing with GPT-4o: ${contextImageUrls.length} context + ${userImageBase64Data.length} user images`);
 
+            // Call enhanced vision processing using processImagesWithContext (GPT-4o)
+            const { processImagesWithContext } = await import('./inputProcessing');
+            const visionAnswer = await processImagesWithContext(
+              userImageBase64Data,
+              contextImageUrls,
+              originalInput,
+              'gpt-4o' // Use GPT-4o for sophisticated multi-image analysis
+            );
+
+            if (visionAnswer && visionAnswer.trim() !== '') {
+              enhancedAnswer = visionAnswer;
+              visionProcessingCompleted = true; // Mark that vision provided the answer
               console.log(`\n${'='.repeat(80)}`);
-              console.log(`✅ VISION ANALYSIS COMPLETED`);
+              console.log(`✅ ENHANCED VISION PROCESSING COMPLETED`);
               console.log(`${'='.repeat(80)}`);
-              console.log(`📝 Full Vision Description:`);
-              console.log(enhancedImageDescription);
-              console.log(`${'='.repeat(80)}\n`);
-
-              // Re-generate answer with enhanced image description using same documents (no new retrieval)
-              console.log('🔄 Re-generating answer with enhanced image description...');
-              const regeneratedAnswer = await questionAnswerChain.invoke({
-                input: processedInput,
-                chat_history: relevantHistory as any,
-                context: ragDocuments, // Use same retrieved documents
-                language,
-                imageDescription: enhancedImageDescription, // Use enhanced description
-              });
-
-              // Update enhanced answer for final output
-              enhancedAnswer = typeof regeneratedAnswer === 'string'
-                ? regeneratedAnswer
-                : ((regeneratedAnswer as any)?.answer ?? regeneratedAnswer);
-
-              console.log(`\n${'='.repeat(80)}`);
-              console.log(`✅ ENHANCED ANSWER GENERATED`);
-              console.log(`${'='.repeat(80)}`);
-              console.log(`📝 Enhanced Answer:`);
+              console.log(`📝 Vision Answer:`);
               console.log(enhancedAnswer);
               console.log(`${'='.repeat(80)}\n`);
             }
           } else {
-            console.log('⚠️ No image URL found in first document metadata - skipping vision analysis');
+            console.log('⚠️ No images available for vision processing');
           }
         } catch (error) {
-          console.error('❌ Error in vision-first analysis:', error);
-          console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-          // Continue with original imageDescription on error
+          console.error('❌ Error in enhanced vision processing:', error);
+          // Fallback to regular vision processing
+          try {
+            if (imageUrls && imageUrls.length > 0) {
+              const { processImageWithOpenAI } = await import('./inputProcessing');
+              const fallbackAnswer = await processImageWithOpenAI(imageUrls, originalInput);
+              if (fallbackAnswer && fallbackAnswer.trim() !== '') {
+                enhancedAnswer = fallbackAnswer;
+                visionProcessingCompleted = true; // Mark that fallback vision provided the answer
+              }
+            }
+          } catch (fallbackError) {
+            console.error('Error in fallback vision processing:', fallbackError);
+            // Keep original RAG answer
+          }
         }
-      } else {
-        console.log('⏭️ Vision-first analysis SKIPPED - conditions not met');
       }
 
-      if (combinedContextDocs.length > 0) {
+      // Only run regular QA chain if vision processing didn't provide an answer
+      if (combinedContextDocs.length > 0 && !visionProcessingCompleted) {
         const finalAnswerResult = await questionAnswerChain.invoke({
           input: finalProcessedInput,
           chat_history: relevantHistory as any,
@@ -843,6 +765,8 @@ export const makeChainSSE = (
         enhancedAnswer = typeof finalAnswerResult === 'string'
           ? finalAnswerResult
           : ((finalAnswerResult as any)?.answer ?? finalAnswerResult);
+      } else if (visionProcessingCompleted) {
+        console.log('✅ Skipping regular QA chain - using vision processing result');
       }
 
       // Store the Q&A in the database
